@@ -24,3 +24,7 @@ catalog:
   vite: 8.3.1
   vitest: 5.0.2
   zod: 4.6.5
+
+# unrs-resolver ships prebuilt bindings, so its postinstall is not needed.
+ignoredBuiltDependencies:
+  - unrs-resolver

@@ -8,7 +8,13 @@
  * importing package does not list the target in its package.json.
  */
 import { fileURLToPath } from "node:url";
-import boundaries from "eslint-plugin-boundaries";
+import boundariesPlugin from "eslint-plugin-boundaries";
+
+// The plugin ships CommonJS with an ESM-style default in its types. At runtime the default
+// import is the plugin object, so narrow the type to what ESLint expects.
+const boundaries = /** @type {import("eslint").ESLint.Plugin} */ (
+  /** @type {unknown} */ (boundariesPlugin)
+);
 
 /** Repo root, two levels above packages/config. */
 export const repoRoot = fileURLToPath(new URL("../../../", import.meta.url));
@@ -175,6 +181,14 @@ function buildPolicies() {
     ],
   });
 
+  // A workspace import that did not resolve to a file under packages/ or apps/ cannot be
+  // classified, so it would skip the element rules above. Fail it instead.
+  policies.push({
+    disallow: { to: { module: { origin: "external", source: "@sysone/*" } } },
+    message:
+      "{{dependency.source}} did not resolve to a workspace file. Add it to the package exports and to packages/config/tsconfig/resolve.json.",
+  });
+
   return policies;
 }
 
@@ -206,6 +220,8 @@ export const boundariesConfig = [
         "error",
         {
           default: "disallow",
+          // Check third-party and Node builtin imports too, not only workspace files.
+          checkAllOrigins: true,
           message:
             "{{from.element.types}} may not import {{to.element.types}} (references/architecture.md, Packages and boundaries).",
           policies: buildPolicies(),

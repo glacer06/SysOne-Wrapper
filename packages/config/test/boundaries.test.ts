@@ -48,6 +48,9 @@ const cases: Case[] = [
   { name: "react -> client", file: "packages/react/src/x.ts", code: `import "@sysone/client";`, violates: false },
   { name: "react -> core contracts", file: "packages/react/src/x.ts", code: `import "@sysone/core/contracts";`, violates: false },
 
+  // Workspace imports must resolve, or they would skip the element rules.
+  { name: "unresolved workspace subpath", file: "packages/client/src/x.ts", code: `import "@sysone/core/not-a-subpath";`, violates: true },
+
   // Exclusive third-party SDKs.
   { name: "system-one-client -> @typesafe-ai/sdk", file: "packages/system-one-client/src/x.ts", code: `import "@typesafe-ai/sdk";`, violates: false },
   { name: "console -> @typesafe-ai/sdk", file: "apps/console/src/server/x.ts", code: `import "@typesafe-ai/sdk";`, violates: true },

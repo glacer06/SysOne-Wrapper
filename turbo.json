@@ -1,31 +1,65 @@
 {
   "$schema": "https://turborepo.com/schema.json",
   "ui": "stream",
-  "globalDependencies": ["pnpm-workspace.yaml"],
+  "globalDependencies": [
+    "pnpm-workspace.yaml"
+  ],
   "tasks": {
     "transit": {
-      "dependsOn": ["^transit"]
+      "dependsOn": [
+        "^transit"
+      ]
     },
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        "dist/**",
+        ".next/**",
+        "!.next/cache/**"
+      ]
     },
     "lint": {
-      "dependsOn": ["transit"],
+      "dependsOn": [
+        "transit"
+      ],
       "outputs": []
     },
     "typecheck": {
-      "dependsOn": ["transit"],
+      "dependsOn": [
+        "transit"
+      ],
       "outputs": []
     },
     "test": {
-      "dependsOn": ["transit"],
-      "outputs": ["coverage/**"]
+      "dependsOn": [
+        "transit"
+      ],
+      "outputs": []
     },
     "dev": {
-      "dependsOn": ["^build"],
+      "dependsOn": [
+        "^build"
+      ],
       "cache": false,
       "persistent": true
+    },
+    "@sysone/config#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": []
+    },
+    "@sysone/config#test": {
+      "dependsOn": [
+        "transit"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/packages/react/src/__fixtures__/**"
+      ],
+      "outputs": []
     }
   }
 }
