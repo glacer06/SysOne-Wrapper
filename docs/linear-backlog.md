@@ -3322,7 +3322,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "state": "Done",
       "description": "The builder skill and every reference exist, so each agent works from one rulebook.\n\nAcceptance criteria:\n- `SKILL.md` stays under 300 lines and indexes every reference and phase file.\n- References cover architecture, contracts, the run and management APIs, data model, security, testing, phases and the team playbook.\n\nRefs:\n- `.claude/skills/sysone-builder/SKILL.md`\n- `.claude/skills/sysone-builder/references/team-playbook.md`\n\nLocal ID: P0-01 (docs/linear-backlog.md)",
       "blockedBy": [],
-      "milestone": "Phase 0: Skill, contracts, scaffold"
+      "milestone": "Phase 0: Skill, contracts, scaffold",
+      "linearId": "NSI-489"
     },
     {
       "localId": "P0-02",
@@ -3337,7 +3338,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "state": "Done",
       "description": "Anyone opening the repo knows to load the skill and how the product works.\n\nAcceptance criteria:\n- `CLAUDE.md` tells agents to load the skill and lists commands, golden rules, env vars and writing rules.\n- `README.md` describes the product for a new reader.\n\nRefs:\n- `CLAUDE.md`\n- `README.md`\n\nLocal ID: P0-02 (docs/linear-backlog.md)",
       "blockedBy": [],
-      "milestone": "Phase 0: Skill, contracts, scaffold"
+      "milestone": "Phase 0: Skill, contracts, scaffold",
+      "linearId": "NSI-490"
     },
     {
       "localId": "P0-03",
@@ -3353,7 +3355,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "state": "Done",
       "description": "The plan and the stack decision are on record.\n\nAcceptance criteria:\n- `docs/PLAN.md` covers why, scope, phases and team kickoff prompts.\n- ADR-001 records the stack and leaves Auth.js versus Better Auth open for ADR-002.\n\nRefs:\n- `docs/PLAN.md`\n- `docs/adr/001-stack.md#open-question-for-adr-002`\n\nLocal ID: P0-03 (docs/linear-backlog.md)",
       "blockedBy": [],
-      "milestone": "Phase 0: Skill, contracts, scaffold"
+      "milestone": "Phase 0: Skill, contracts, scaffold",
+      "linearId": "NSI-492"
     },
     {
       "localId": "P0-04",
@@ -3371,7 +3374,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "state": "Done",
       "description": "The four decisions behind Nick's 2026-09-26 requirements are drafted before the contract freeze.\n\nAcceptance criteria:\n- ADR-007 headless parity, ADR-008 model registry and neutral naming, ADR-009 app integration and deploy targets, and ADR-010 rollout on pointers and the effectiveness loop exist with status proposed.\n\nRefs:\n- `docs/adr/007-headless-parity.md`\n- `docs/adr/008-system-one-model-registry.md`\n- `docs/adr/009-app-integration-and-deploy-targets.md`\n- `docs/adr/010-rollout-pointers-and-effectiveness-loop.md`\n\nLocal ID: P0-04 (docs/linear-backlog.md)",
       "blockedBy": [],
-      "milestone": "Phase 0: Skill, contracts, scaffold"
+      "milestone": "Phase 0: Skill, contracts, scaffold",
+      "linearId": "NSI-494"
     },
     {
       "localId": "P0-05",
@@ -3387,7 +3391,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "state": "Done",
       "description": "Agents copy from working templates instead of guessing shapes.\n\nAcceptance criteria:\n- `templates/question-set.example.json`, `templates/adr.md` and `templates/plugin.template.ts` exist.\n- The example spec has no `rollout` key.\n\nRefs:\n- `.claude/skills/sysone-builder/templates/question-set.example.json`\n- `.claude/skills/sysone-builder/templates/adr.md`\n- `.claude/skills/sysone-builder/templates/plugin.template.ts`\n\nLocal ID: P0-05 (docs/linear-backlog.md)",
       "blockedBy": [],
-      "milestone": "Phase 0: Skill, contracts, scaffold"
+      "milestone": "Phase 0: Skill, contracts, scaffold",
+      "linearId": "NSI-495"
     },
     {
       "localId": "P0-06",
@@ -3407,7 +3412,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-04"
       ],
-      "milestone": "Phase 0: Skill, contracts, scaffold"
+      "milestone": "Phase 0: Skill, contracts, scaffold",
+      "linearId": "NSI-497"
     },
     {
       "localId": "P0-07",
@@ -3421,7 +3427,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "state": "Todo",
       "description": "Create the monorepo layout every role builds in.\n\nAcceptance criteria:\n- A pnpm workspace and `turbo.json` hold every app and package listed in architecture.md, each with a `package.json` and an empty `src`.\n- `pnpm i && pnpm turbo lint typecheck test build` passes on the empty scaffold.\n- No package name, path or code identifier says jev; model ids such as `jev-1.13.0` are data. The client package is `packages/system-one-client` (ADR-008).\n\nRefs:\n- `.claude/skills/sysone-builder/references/architecture.md#packages-and-boundaries`\n- `.claude/skills/sysone-builder/references/conventions.md#naming`\n\nLocal ID: P0-07 (docs/linear-backlog.md)",
       "blockedBy": [],
-      "milestone": "Phase 0: Skill, contracts, scaffold"
+      "milestone": "Phase 0: Skill, contracts, scaffold",
+      "linearId": "NSI-498"
     },
     {
       "localId": "P0-08",
@@ -3438,7 +3445,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-07"
       ],
-      "milestone": "Phase 0: Skill, contracts, scaffold"
+      "milestone": "Phase 0: Skill, contracts, scaffold",
+      "linearId": "NSI-500"
     },
     {
       "localId": "P0-09",
@@ -3456,7 +3464,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P0-06",
         "P0-07"
       ],
-      "milestone": "Phase 0: Skill, contracts, scaffold"
+      "milestone": "Phase 0: Skill, contracts, scaffold",
+      "linearId": "NSI-502"
     },
     {
       "localId": "P0-10",
@@ -3476,7 +3485,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P0-06",
         "P0-07"
       ],
-      "milestone": "Phase 0: Skill, contracts, scaffold"
+      "milestone": "Phase 0: Skill, contracts, scaffold",
+      "linearId": "NSI-504"
     },
     {
       "localId": "P0-11",
@@ -3495,7 +3505,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P0-09",
         "P0-10"
       ],
-      "milestone": "Phase 0: Skill, contracts, scaffold"
+      "milestone": "Phase 0: Skill, contracts, scaffold",
+      "linearId": "NSI-506"
     },
     {
       "localId": "P0-12",
@@ -3513,7 +3524,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-11"
       ],
-      "milestone": "Phase 0: Skill, contracts, scaffold"
+      "milestone": "Phase 0: Skill, contracts, scaffold",
+      "linearId": "NSI-507"
     },
     {
       "localId": "P0-13",
@@ -3530,7 +3542,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-10"
       ],
-      "milestone": "Phase 0: Skill, contracts, scaffold"
+      "milestone": "Phase 0: Skill, contracts, scaffold",
+      "linearId": "NSI-509"
     },
     {
       "localId": "P0-14",
@@ -3546,7 +3559,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-07"
       ],
-      "milestone": "Phase 0: Skill, contracts, scaffold"
+      "milestone": "Phase 0: Skill, contracts, scaffold",
+      "linearId": "NSI-511"
     },
     {
       "localId": "P0-15",
@@ -3563,7 +3577,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-07"
       ],
-      "milestone": "Phase 0: Skill, contracts, scaffold"
+      "milestone": "Phase 0: Skill, contracts, scaffold",
+      "linearId": "NSI-513"
     },
     {
       "localId": "P0-16",
@@ -3579,7 +3594,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-08"
       ],
-      "milestone": "Phase 0: Skill, contracts, scaffold"
+      "milestone": "Phase 0: Skill, contracts, scaffold",
+      "linearId": "NSI-514"
     },
     {
       "localId": "P0-17",
@@ -3594,7 +3610,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "state": "Todo",
       "description": "Every PR states its contract, tenancy and security impact.\n\nAcceptance criteria:\n- The template has Summary, Phase and checklist item, Contract impact, Tenancy impact, Security impact, Tests added and Docs updated.\n- It asks for the Linear issue key (for example `NSI-412`) in the PR title.\n\nRefs:\n- `.claude/skills/sysone-builder/references/team-playbook.md#pr-template-sections`\n- `.claude/skills/sysone-builder/references/team-playbook.md#working-rules`\n\nLocal ID: P0-17 (docs/linear-backlog.md)",
       "blockedBy": [],
-      "milestone": "Phase 0: Skill, contracts, scaffold"
+      "milestone": "Phase 0: Skill, contracts, scaffold",
+      "linearId": "NSI-516"
     },
     {
       "localId": "P0-18",
@@ -3611,7 +3628,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "state": "Todo",
       "description": "Record the open infrastructure decisions before the phases that need them.\n\nAcceptance criteria:\n- ADR-002 picks the auth library: Auth.js v5 (approved in the plan) or Better Auth (recommended by the design review). The choice supports many orgs per user, invites, five roles and audited impersonation, and is accepted before Phase 2 starts.\n- ADR-003 key vault, ADR-004 cache, ADR-005 jobs runner and ADR-006 billing model are written from `templates/adr.md` and saved in `docs/adr/` with a status line.\n\nRefs:\n- `docs/adr/001-stack.md#open-question-for-adr-002`\n- `.claude/skills/sysone-builder/templates/adr.md`\n- `.claude/skills/sysone-builder/references/security.md#typesafe-keys`\n- `.claude/skills/sysone-builder/references/architecture.md#caching`\n- `.claude/skills/sysone-builder/references/architecture.md#background-jobs`\n\nNote: Split from the phase-0.md ADR item (P0-06, P0-18): ADRs 007 to 010 must be accepted before the contracts freeze, and ADR-002 must be decided before Phase 2 starts.\n\nLocal ID: P0-18 (docs/linear-backlog.md)",
       "blockedBy": [],
-      "milestone": "Phase 0: Skill, contracts, scaffold"
+      "milestone": "Phase 0: Skill, contracts, scaffold",
+      "linearId": "NSI-517"
     },
     {
       "localId": "P0-19",
@@ -3634,7 +3652,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P0-17",
         "P0-18"
       ],
-      "milestone": "Phase 0: Skill, contracts, scaffold"
+      "milestone": "Phase 0: Skill, contracts, scaffold",
+      "linearId": "NSI-518"
     },
     {
       "localId": "P1-01",
@@ -3651,7 +3670,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-09"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-491"
     },
     {
       "localId": "P1-02",
@@ -3668,7 +3688,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P1-01"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-493"
     },
     {
       "localId": "P1-03",
@@ -3685,7 +3706,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-09"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-496"
     },
     {
       "localId": "P1-04",
@@ -3702,7 +3724,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-09"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-499"
     },
     {
       "localId": "P1-05",
@@ -3720,7 +3743,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P0-09",
         "P0-13"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-501"
     },
     {
       "localId": "P1-06",
@@ -3739,7 +3763,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P0-09",
         "P0-13"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-503"
     },
     {
       "localId": "P1-07",
@@ -3756,7 +3781,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-09"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-505"
     },
     {
       "localId": "P1-08",
@@ -3774,7 +3800,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-09"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-508"
     },
     {
       "localId": "P1-09",
@@ -3792,7 +3819,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-09"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-510"
     },
     {
       "localId": "P1-10",
@@ -3808,7 +3836,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-09"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-512"
     },
     {
       "localId": "P1-11",
@@ -3828,7 +3857,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P1-09",
         "P0-08"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-515"
     },
     {
       "localId": "P1-12",
@@ -3846,7 +3876,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-09"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-519"
     },
     {
       "localId": "P1-13",
@@ -3863,7 +3894,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P1-12"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-520"
     },
     {
       "localId": "P1-14",
@@ -3882,7 +3914,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P1-12",
         "P1-13"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-521"
     },
     {
       "localId": "P1-15",
@@ -3899,7 +3932,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P1-13"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-523"
     },
     {
       "localId": "P1-16",
@@ -3915,7 +3949,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P1-12"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-526"
     },
     {
       "localId": "P1-17",
@@ -3932,7 +3967,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P1-15"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-527"
     },
     {
       "localId": "P1-18",
@@ -3949,7 +3985,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-09"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-530"
     },
     {
       "localId": "P1-19",
@@ -3967,7 +4004,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P1-15"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-532"
     },
     {
       "localId": "P1-20",
@@ -3986,7 +4024,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P1-15",
         "P1-18"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-536"
     },
     {
       "localId": "P1-21",
@@ -4003,7 +4042,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P1-09"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-540"
     },
     {
       "localId": "P1-22",
@@ -4020,7 +4060,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P1-21"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-541"
     },
     {
       "localId": "P1-23",
@@ -4037,7 +4078,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-13"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-543"
     },
     {
       "localId": "P1-24",
@@ -4057,7 +4099,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P1-04",
         "P1-15"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-546"
     },
     {
       "localId": "P1-25",
@@ -4076,7 +4119,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P1-15",
         "P1-17"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-549"
     },
     {
       "localId": "P1-26",
@@ -4093,7 +4137,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P1-09"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-551"
     },
     {
       "localId": "P1-27",
@@ -4125,7 +4170,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P1-25",
         "P1-26"
       ],
-      "milestone": "Phase 1: Core engine and data layer"
+      "milestone": "Phase 1: Core engine and data layer",
+      "linearId": "NSI-552"
     },
     {
       "localId": "P2-01",
@@ -4144,7 +4190,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P0-18",
         "P1-15"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-522"
     },
     {
       "localId": "P2-02",
@@ -4161,7 +4208,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P2-01"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-524"
     },
     {
       "localId": "P2-03",
@@ -4181,7 +4229,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P1-09",
         "P2-01"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-525"
     },
     {
       "localId": "P2-04",
@@ -4198,7 +4247,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P2-03"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-528"
     },
     {
       "localId": "P2-05",
@@ -4216,7 +4266,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P2-01"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-529"
     },
     {
       "localId": "P2-06",
@@ -4234,7 +4285,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P2-01"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-531"
     },
     {
       "localId": "P2-07",
@@ -4252,7 +4304,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P2-06"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-533"
     },
     {
       "localId": "P2-08",
@@ -4272,7 +4325,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P1-08",
         "P2-06"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-534"
     },
     {
       "localId": "P2-09",
@@ -4290,7 +4344,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P2-08"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-535"
     },
     {
       "localId": "P2-10",
@@ -4308,7 +4363,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P2-09"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-537"
     },
     {
       "localId": "P2-11",
@@ -4325,7 +4381,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P2-08"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-538"
     },
     {
       "localId": "P2-12",
@@ -4347,7 +4404,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P1-03",
         "P1-19"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-539"
     },
     {
       "localId": "P2-13",
@@ -4364,7 +4422,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P2-05"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-542"
     },
     {
       "localId": "P2-14",
@@ -4381,7 +4440,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P2-03"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-544"
     },
     {
       "localId": "P2-15",
@@ -4399,7 +4459,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P2-01"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-545"
     },
     {
       "localId": "P2-16",
@@ -4419,7 +4480,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P2-05",
         "P2-06"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-547"
     },
     {
       "localId": "P2-17",
@@ -4437,7 +4499,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P2-08"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-548"
     },
     {
       "localId": "P2-18",
@@ -4455,7 +4518,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P2-01",
         "P2-17"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-550"
     },
     {
       "localId": "P2-19",
@@ -4471,7 +4535,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-09"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-553"
     },
     {
       "localId": "P2-20",
@@ -4489,7 +4554,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P2-01",
         "P0-18"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-554"
     },
     {
       "localId": "P2-21",
@@ -4506,7 +4572,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P2-20"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-555"
     },
     {
       "localId": "P2-22",
@@ -4523,7 +4590,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P2-20",
         "P1-19"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-556"
     },
     {
       "localId": "P2-23",
@@ -4540,7 +4608,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P1-19"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-557"
     },
     {
       "localId": "P2-24",
@@ -4559,7 +4628,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P1-12",
         "P2-18"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-558"
     },
     {
       "localId": "P2-25",
@@ -4576,7 +4646,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P1-19"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-559"
     },
     {
       "localId": "P2-26",
@@ -4594,7 +4665,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P2-19",
         "P2-25"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-561"
     },
     {
       "localId": "P2-27",
@@ -4612,7 +4684,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P2-02",
         "P2-08"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-562"
     },
     {
       "localId": "P2-28",
@@ -4631,7 +4704,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P2-09",
         "P2-27"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-563"
     },
     {
       "localId": "P2-29",
@@ -4653,7 +4727,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P2-09",
         "P2-13"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-564"
     },
     {
       "localId": "P2-30",
@@ -4684,7 +4759,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P2-28",
         "P2-29"
       ],
-      "milestone": "Phase 2: Tenancy, auth, keys, billing"
+      "milestone": "Phase 2: Tenancy, auth, keys, billing",
+      "linearId": "NSI-565"
     },
     {
       "localId": "P3-01",
@@ -4703,7 +4779,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P2-11",
         "P1-06"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-560"
     },
     {
       "localId": "P3-02",
@@ -4724,7 +4801,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P1-07",
         "P3-35"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-566"
     },
     {
       "localId": "P3-03",
@@ -4743,7 +4821,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-01",
         "P1-24"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-567"
     },
     {
       "localId": "P3-04",
@@ -4761,7 +4840,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P2-08"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-568"
     },
     {
       "localId": "P3-05",
@@ -4778,7 +4858,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-12"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-569"
     },
     {
       "localId": "P3-06",
@@ -4794,7 +4875,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P3-01"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-570"
     },
     {
       "localId": "P3-07",
@@ -4810,7 +4892,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P3-01"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-572"
     },
     {
       "localId": "P3-08",
@@ -4827,7 +4910,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-01",
         "P1-06"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-573"
     },
     {
       "localId": "P3-09",
@@ -4845,7 +4929,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-04",
         "P3-08"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-575"
     },
     {
       "localId": "P3-10",
@@ -4861,7 +4946,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P3-08"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-576"
     },
     {
       "localId": "P3-11",
@@ -4877,7 +4963,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P3-08"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-578"
     },
     {
       "localId": "P3-12",
@@ -4895,7 +4982,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-08",
         "P1-05"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-580"
     },
     {
       "localId": "P3-13",
@@ -4913,7 +5001,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-02",
         "P3-32"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-581"
     },
     {
       "localId": "P3-14",
@@ -4929,7 +5018,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P3-02"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-583"
     },
     {
       "localId": "P3-15",
@@ -4945,7 +5035,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P3-02"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-585"
     },
     {
       "localId": "P3-16",
@@ -4963,7 +5054,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P2-08",
         "P0-18"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-587"
     },
     {
       "localId": "P3-17",
@@ -4981,7 +5073,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P2-09"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-589"
     },
     {
       "localId": "P3-18",
@@ -5000,7 +5093,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P2-28",
         "P3-02"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-590"
     },
     {
       "localId": "P3-19",
@@ -5019,7 +5113,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P2-27",
         "P2-06"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-592"
     },
     {
       "localId": "P3-20",
@@ -5036,7 +5131,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P2-08"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-593"
     },
     {
       "localId": "P3-21",
@@ -5055,7 +5151,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P2-08",
         "P2-12"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-594"
     },
     {
       "localId": "P3-22",
@@ -5073,7 +5170,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P2-07",
         "P0-12"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-595"
     },
     {
       "localId": "P3-23",
@@ -5095,7 +5193,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-04",
         "P3-21"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-596"
     },
     {
       "localId": "P3-24",
@@ -5114,7 +5213,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-01",
         "P3-03"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-598"
     },
     {
       "localId": "P3-25",
@@ -5137,7 +5237,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-21",
         "P2-07"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-600"
     },
     {
       "localId": "P3-26",
@@ -5158,7 +5259,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-03",
         "P3-04"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-602"
     },
     {
       "localId": "P3-27",
@@ -5175,7 +5277,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-03",
         "P3-14"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-603"
     },
     {
       "localId": "P3-28",
@@ -5191,7 +5294,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P3-04"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-605"
     },
     {
       "localId": "P3-29",
@@ -5207,7 +5311,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P3-03"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-606"
     },
     {
       "localId": "P3-30",
@@ -5224,7 +5329,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P1-19",
         "P0-10"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-607"
     },
     {
       "localId": "P3-31",
@@ -5240,7 +5346,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P3-03"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-609"
     },
     {
       "localId": "P3-32",
@@ -5258,7 +5365,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-03",
         "P3-16"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-611"
     },
     {
       "localId": "P3-33",
@@ -5277,7 +5385,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-03",
         "P1-10"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-612"
     },
     {
       "localId": "P3-34",
@@ -5293,7 +5402,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P3-33"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-614"
     },
     {
       "localId": "P3-35",
@@ -5309,7 +5419,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-10"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-616"
     },
     {
       "localId": "P3-36",
@@ -5326,7 +5437,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-35",
         "P3-02"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-617"
     },
     {
       "localId": "P3-37",
@@ -5344,7 +5456,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-21",
         "P3-30"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-619"
     },
     {
       "localId": "P3-38",
@@ -5362,7 +5475,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-04",
         "P1-20"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-620"
     },
     {
       "localId": "P3-39",
@@ -5379,7 +5493,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P3-04"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-622"
     },
     {
       "localId": "P3-40",
@@ -5397,7 +5512,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-02",
         "P1-06"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-623"
     },
     {
       "localId": "P3-41",
@@ -5414,7 +5530,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-04",
         "P2-25"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-624"
     },
     {
       "localId": "P3-42",
@@ -5431,7 +5548,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-04",
         "P2-25"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-626"
     },
     {
       "localId": "P3-43",
@@ -5449,7 +5567,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-42",
         "P1-20"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-627"
     },
     {
       "localId": "P3-44",
@@ -5466,7 +5585,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P3-04"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-628"
     },
     {
       "localId": "P3-45",
@@ -5511,7 +5631,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-43",
         "P3-44"
       ],
-      "milestone": "Phase 3: Console and management API"
+      "milestone": "Phase 3: Console and management API",
+      "linearId": "NSI-630"
     },
     {
       "localId": "P3b-01",
@@ -5527,7 +5648,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P1-03"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-571"
     },
     {
       "localId": "P3b-02",
@@ -5544,7 +5666,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3b-01",
         "P3-35"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-574"
     },
     {
       "localId": "P3b-03",
@@ -5562,7 +5685,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3b-02",
         "P3-16"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-577"
     },
     {
       "localId": "P3b-04",
@@ -5579,7 +5703,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3b-03",
         "P3-11"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-579"
     },
     {
       "localId": "P3b-05",
@@ -5598,7 +5723,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-23",
         "P3-25"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-582"
     },
     {
       "localId": "P3b-06",
@@ -5615,7 +5741,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-35",
         "P3-30"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-584"
     },
     {
       "localId": "P3b-07",
@@ -5632,7 +5759,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P3b-06"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-586"
     },
     {
       "localId": "P3b-08",
@@ -5648,7 +5776,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P3b-07"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-588"
     },
     {
       "localId": "P3b-09",
@@ -5667,7 +5796,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-23",
         "P3-25"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-591"
     },
     {
       "localId": "P3b-10",
@@ -5684,7 +5814,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P3-01"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-597"
     },
     {
       "localId": "P3b-11",
@@ -5702,7 +5833,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3b-06",
         "P3b-10"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-599"
     },
     {
       "localId": "P3b-12",
@@ -5718,7 +5850,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P3b-10"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-601"
     },
     {
       "localId": "P3b-13",
@@ -5737,7 +5870,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-23",
         "P3-25"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-604"
     },
     {
       "localId": "P3b-14",
@@ -5755,7 +5889,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P3-02"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-608"
     },
     {
       "localId": "P3b-15",
@@ -5771,7 +5906,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P3b-14"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-610"
     },
     {
       "localId": "P3b-16",
@@ -5789,7 +5925,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P3b-14"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-613"
     },
     {
       "localId": "P3b-17",
@@ -5807,7 +5944,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3b-01",
         "P3-35"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-615"
     },
     {
       "localId": "P3b-18",
@@ -5826,7 +5964,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-23",
         "P3-25"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-618"
     },
     {
       "localId": "P3b-19",
@@ -5847,7 +5986,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-03",
         "P3-16"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-621"
     },
     {
       "localId": "P3b-20",
@@ -5865,7 +6005,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P1-20",
         "P3-43"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-625"
     },
     {
       "localId": "P3b-21",
@@ -5883,7 +6024,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3b-20",
         "P3b-19"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-629"
     },
     {
       "localId": "P3b-22",
@@ -5900,7 +6042,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P3b-21"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-631"
     },
     {
       "localId": "P3b-23",
@@ -5921,7 +6064,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-23",
         "P3-25"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-632"
     },
     {
       "localId": "P3b-24",
@@ -5940,7 +6084,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3b-10",
         "P1-10"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-635"
     },
     {
       "localId": "P3b-25",
@@ -5957,7 +6102,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3b-24",
         "P3-34"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-637"
     },
     {
       "localId": "P3b-26",
@@ -5976,7 +6122,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-23",
         "P3-25"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-639"
     },
     {
       "localId": "P3b-27",
@@ -5993,7 +6140,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P1-24",
         "P3-03"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-641"
     },
     {
       "localId": "P3b-28",
@@ -6012,7 +6160,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-03",
         "P2-15"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-642"
     },
     {
       "localId": "P3b-29",
@@ -6029,7 +6178,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P3-03"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-645"
     },
     {
       "localId": "P3b-30",
@@ -6046,7 +6196,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3b-06",
         "P3-42"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-647"
     },
     {
       "localId": "P3b-31",
@@ -6081,7 +6232,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3b-29",
         "P3b-30"
       ],
-      "milestone": "Phase 3b: Effectiveness loop"
+      "milestone": "Phase 3b: Effectiveness loop",
+      "linearId": "NSI-649"
     },
     {
       "localId": "P4-01",
@@ -6098,7 +6250,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P3-26"
       ],
-      "milestone": "Phase 4: Embed kit"
+      "milestone": "Phase 4: Embed kit",
+      "linearId": "NSI-633"
     },
     {
       "localId": "P4-02",
@@ -6114,7 +6267,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P4-01"
       ],
-      "milestone": "Phase 4: Embed kit"
+      "milestone": "Phase 4: Embed kit",
+      "linearId": "NSI-634"
     },
     {
       "localId": "P4-03",
@@ -6130,7 +6284,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P4-01"
       ],
-      "milestone": "Phase 4: Embed kit"
+      "milestone": "Phase 4: Embed kit",
+      "linearId": "NSI-636"
     },
     {
       "localId": "P4-04",
@@ -6148,7 +6303,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P4-01",
         "P2-13"
       ],
-      "milestone": "Phase 4: Embed kit"
+      "milestone": "Phase 4: Embed kit",
+      "linearId": "NSI-638"
     },
     {
       "localId": "P4-05",
@@ -6165,7 +6321,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P4-01"
       ],
-      "milestone": "Phase 4: Embed kit"
+      "milestone": "Phase 4: Embed kit",
+      "linearId": "NSI-640"
     },
     {
       "localId": "P4-06",
@@ -6181,7 +6338,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P4-01"
       ],
-      "milestone": "Phase 4: Embed kit"
+      "milestone": "Phase 4: Embed kit",
+      "linearId": "NSI-643"
     },
     {
       "localId": "P4-07",
@@ -6197,7 +6355,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P4-06"
       ],
-      "milestone": "Phase 4: Embed kit"
+      "milestone": "Phase 4: Embed kit",
+      "linearId": "NSI-644"
     },
     {
       "localId": "P4-08",
@@ -6215,7 +6374,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P4-04",
         "P4-05"
       ],
-      "milestone": "Phase 4: Embed kit"
+      "milestone": "Phase 4: Embed kit",
+      "linearId": "NSI-646"
     },
     {
       "localId": "P4-09",
@@ -6232,7 +6392,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P4-01"
       ],
-      "milestone": "Phase 4: Embed kit"
+      "milestone": "Phase 4: Embed kit",
+      "linearId": "NSI-648"
     },
     {
       "localId": "P4-10",
@@ -6253,7 +6414,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P4-08",
         "P4-09"
       ],
-      "milestone": "Phase 4: Embed kit"
+      "milestone": "Phase 4: Embed kit",
+      "linearId": "NSI-650"
     },
     {
       "localId": "P4b-01",
@@ -6269,7 +6431,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P2-05"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-652"
     },
     {
       "localId": "P4b-02",
@@ -6287,7 +6450,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P4b-01",
         "P0-10"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-654"
     },
     {
       "localId": "P4b-03",
@@ -6304,7 +6468,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P4b-02",
         "P1-10"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-656"
     },
     {
       "localId": "P4b-04",
@@ -6323,7 +6488,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-23",
         "P3-25"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-657"
     },
     {
       "localId": "P4b-05",
@@ -6339,7 +6505,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P4b-02"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-659"
     },
     {
       "localId": "P4b-06",
@@ -6356,7 +6523,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P4b-02",
         "P3-34"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-660"
     },
     {
       "localId": "P4b-07",
@@ -6373,7 +6541,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P1-07"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-663"
     },
     {
       "localId": "P4b-08",
@@ -6392,7 +6561,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P4b-11",
         "P3-04"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-665"
     },
     {
       "localId": "P4b-09",
@@ -6410,7 +6580,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P4b-08",
         "P3-22"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-668"
     },
     {
       "localId": "P4b-10",
@@ -6426,7 +6597,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P4b-08"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-669"
     },
     {
       "localId": "P4b-11",
@@ -6443,7 +6615,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P4b-01"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-671"
     },
     {
       "localId": "P4b-12",
@@ -6459,7 +6632,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P4b-11"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-673"
     },
     {
       "localId": "P4b-13",
@@ -6478,7 +6652,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P1-06",
         "P1-07"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-674"
     },
     {
       "localId": "P4b-14",
@@ -6495,7 +6670,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P2-12"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-675"
     },
     {
       "localId": "P4b-15",
@@ -6515,7 +6691,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-22",
         "P4-01"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-676"
     },
     {
       "localId": "P4b-16",
@@ -6531,7 +6708,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P4b-09"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-677"
     },
     {
       "localId": "P4b-17",
@@ -6547,7 +6725,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P4b-16"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-678"
     },
     {
       "localId": "P4b-18",
@@ -6564,7 +6743,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-06"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-679"
     },
     {
       "localId": "P4b-19",
@@ -6581,7 +6761,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P4b-18",
         "P4b-07"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-681"
     },
     {
       "localId": "P4b-20",
@@ -6599,7 +6780,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-06"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-684"
     },
     {
       "localId": "P4b-21",
@@ -6617,7 +6799,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P4b-20",
         "P4b-07"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-686"
     },
     {
       "localId": "P4b-22",
@@ -6636,7 +6819,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P4b-09",
         "P4b-15"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-688"
     },
     {
       "localId": "P4b-23",
@@ -6662,7 +6846,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P4b-17",
         "P4b-22"
       ],
-      "milestone": "Phase 4b: Integrate and deploy"
+      "milestone": "Phase 4b: Integrate and deploy",
+      "linearId": "NSI-690"
     },
     {
       "localId": "P5-01",
@@ -6679,7 +6864,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-09"
       ],
-      "milestone": "Phase 5: Plugins and templates"
+      "milestone": "Phase 5: Plugins and templates",
+      "linearId": "NSI-651"
     },
     {
       "localId": "P5-02",
@@ -6696,7 +6882,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P5-01"
       ],
-      "milestone": "Phase 5: Plugins and templates"
+      "milestone": "Phase 5: Plugins and templates",
+      "linearId": "NSI-653"
     },
     {
       "localId": "P5-03",
@@ -6713,7 +6900,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P5-02",
         "P3-12"
       ],
-      "milestone": "Phase 5: Plugins and templates"
+      "milestone": "Phase 5: Plugins and templates",
+      "linearId": "NSI-655"
     },
     {
       "localId": "P5-04",
@@ -6730,7 +6918,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P5-01"
       ],
-      "milestone": "Phase 5: Plugins and templates"
+      "milestone": "Phase 5: Plugins and templates",
+      "linearId": "NSI-658"
     },
     {
       "localId": "P5-05",
@@ -6747,7 +6936,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P5-01",
         "P4b-05"
       ],
-      "milestone": "Phase 5: Plugins and templates"
+      "milestone": "Phase 5: Plugins and templates",
+      "linearId": "NSI-661"
     },
     {
       "localId": "P5-06",
@@ -6766,7 +6956,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P5-01",
         "P2-03"
       ],
-      "milestone": "Phase 5: Plugins and templates"
+      "milestone": "Phase 5: Plugins and templates",
+      "linearId": "NSI-662"
     },
     {
       "localId": "P5-07",
@@ -6782,7 +6973,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P5-01"
       ],
-      "milestone": "Phase 5: Plugins and templates"
+      "milestone": "Phase 5: Plugins and templates",
+      "linearId": "NSI-664"
     },
     {
       "localId": "P5-08",
@@ -6799,7 +6991,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P5-07"
       ],
-      "milestone": "Phase 5: Plugins and templates"
+      "milestone": "Phase 5: Plugins and templates",
+      "linearId": "NSI-666"
     },
     {
       "localId": "P5-09",
@@ -6817,7 +7010,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P3-20",
         "P2-14"
       ],
-      "milestone": "Phase 5: Plugins and templates"
+      "milestone": "Phase 5: Plugins and templates",
+      "linearId": "NSI-667"
     },
     {
       "localId": "P5-10",
@@ -6835,7 +7029,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P4b-17",
         "P3-24"
       ],
-      "milestone": "Phase 5: Plugins and templates"
+      "milestone": "Phase 5: Plugins and templates",
+      "linearId": "NSI-670"
     },
     {
       "localId": "P5-11",
@@ -6857,7 +7052,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P5-09",
         "P5-10"
       ],
-      "milestone": "Phase 5: Plugins and templates"
+      "milestone": "Phase 5: Plugins and templates",
+      "linearId": "NSI-672"
     },
     {
       "localId": "P6-01",
@@ -6874,7 +7070,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P0-07"
       ],
-      "milestone": "Phase 6: Chrome extension"
+      "milestone": "Phase 6: Chrome extension",
+      "linearId": "NSI-680"
     },
     {
       "localId": "P6-02",
@@ -6893,7 +7090,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P6-01",
         "P2-07"
       ],
-      "milestone": "Phase 6: Chrome extension"
+      "milestone": "Phase 6: Chrome extension",
+      "linearId": "NSI-682"
     },
     {
       "localId": "P6-03",
@@ -6909,7 +7107,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P6-02"
       ],
-      "milestone": "Phase 6: Chrome extension"
+      "milestone": "Phase 6: Chrome extension",
+      "linearId": "NSI-683"
     },
     {
       "localId": "P6-04",
@@ -6928,7 +7127,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P5-02",
         "P4-06"
       ],
-      "milestone": "Phase 6: Chrome extension"
+      "milestone": "Phase 6: Chrome extension",
+      "linearId": "NSI-685"
     },
     {
       "localId": "P6-05",
@@ -6945,7 +7145,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P6-04"
       ],
-      "milestone": "Phase 6: Chrome extension"
+      "milestone": "Phase 6: Chrome extension",
+      "linearId": "NSI-687"
     },
     {
       "localId": "P6-06",
@@ -6962,7 +7163,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P6-05"
       ],
-      "milestone": "Phase 6: Chrome extension"
+      "milestone": "Phase 6: Chrome extension",
+      "linearId": "NSI-689"
     },
     {
       "localId": "P6-07",
@@ -6980,7 +7182,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P5-02",
         "P3-06"
       ],
-      "milestone": "Phase 6: Chrome extension"
+      "milestone": "Phase 6: Chrome extension",
+      "linearId": "NSI-691"
     },
     {
       "localId": "P6-08",
@@ -7000,7 +7203,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P6-05",
         "P6-06"
       ],
-      "milestone": "Phase 6: Chrome extension"
+      "milestone": "Phase 6: Chrome extension",
+      "linearId": "NSI-692"
     },
     {
       "localId": "P6-09",
@@ -7018,7 +7222,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P6-07",
         "P6-08"
       ],
-      "milestone": "Phase 6: Chrome extension"
+      "milestone": "Phase 6: Chrome extension",
+      "linearId": "NSI-693"
     },
     {
       "localId": "P7-01",
@@ -7043,7 +7248,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P4b-04",
         "P4b-09"
       ],
-      "milestone": "Phase 7: Claude Code plugin and MCP"
+      "milestone": "Phase 7: Claude Code plugin and MCP",
+      "linearId": "NSI-694"
     },
     {
       "localId": "P7-02",
@@ -7060,7 +7266,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P7-01"
       ],
-      "milestone": "Phase 7: Claude Code plugin and MCP"
+      "milestone": "Phase 7: Claude Code plugin and MCP",
+      "linearId": "NSI-695"
     },
     {
       "localId": "P7-03",
@@ -7078,7 +7285,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P7-01"
       ],
-      "milestone": "Phase 7: Claude Code plugin and MCP"
+      "milestone": "Phase 7: Claude Code plugin and MCP",
+      "linearId": "NSI-696"
     },
     {
       "localId": "P7-04",
@@ -7095,7 +7303,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P7-03"
       ],
-      "milestone": "Phase 7: Claude Code plugin and MCP"
+      "milestone": "Phase 7: Claude Code plugin and MCP",
+      "linearId": "NSI-697"
     },
     {
       "localId": "P7-05",
@@ -7112,7 +7321,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       "blockedBy": [
         "P7-03"
       ],
-      "milestone": "Phase 7: Claude Code plugin and MCP"
+      "milestone": "Phase 7: Claude Code plugin and MCP",
+      "linearId": "NSI-698"
     },
     {
       "localId": "P7-06",
@@ -7131,7 +7341,8 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
         "P7-04",
         "P7-05"
       ],
-      "milestone": "Phase 7: Claude Code plugin and MCP"
+      "milestone": "Phase 7: Claude Code plugin and MCP",
+      "linearId": "NSI-699"
     }
   ],
   "linearProject": {
@@ -7141,3 +7352,221 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
   }
 }
 ```
+
+## 5. Linear issue keys
+
+Created 2026-09-26 in project SysOne (`P-NSI-36`). 211 issues, 203 with blocked-by links. Use the Linear key in PR titles and branch names.
+
+| Local ID | Linear | Title |
+|---|---|---|
+| P0-01 | [NSI-489](https://linear.app/nsims/issue/NSI-489) | Write the sysone-builder skill and its references |
+| P0-02 | [NSI-490](https://linear.app/nsims/issue/NSI-490) | Write the root CLAUDE.md and README.md |
+| P0-03 | [NSI-492](https://linear.app/nsims/issue/NSI-492) | Write docs/PLAN.md and ADR-001 |
+| P0-04 | [NSI-494](https://linear.app/nsims/issue/NSI-494) | Draft ADRs 007 to 010 with status proposed |
+| P0-05 | [NSI-495](https://linear.app/nsims/issue/NSI-495) | Add templates: example question set, ADR and plugin |
+| P0-06 | [NSI-497](https://linear.app/nsims/issue/NSI-497) | Review and accept ADRs 007 to 010 before the contract freeze |
+| P0-07 | [NSI-498](https://linear.app/nsims/issue/NSI-498) | Scaffold the pnpm workspace and turborepo with empty packages |
+| P0-08 | [NSI-500](https://linear.app/nsims/issue/NSI-500) | Add packages/config with strict tsconfig, boundary lint and vitest |
+| P0-09 | [NSI-502](https://linear.app/nsims/issue/NSI-502) | Write the spec, policy, run and error contracts in zod |
+| P0-10 | [NSI-504](https://linear.app/nsims/issue/NSI-504) | Write the management, model, deploy, loop and event contracts |
+| P0-11 | [NSI-506](https://linear.app/nsims/issue/NSI-506) | Build the operation registry skeleton with stubbed handlers |
+| P0-12 | [NSI-507](https://linear.app/nsims/issue/NSI-507) | Generate openapi.json from the registry and add the parity skeleton |
+| P0-13 | [NSI-509](https://linear.app/nsims/issue/NSI-509) | Seed ModelProfile rows for jev-1.13.0, jev-latest and jev-preview |
+| P0-14 | [NSI-511](https://linear.app/nsims/issue/NSI-511) | Add the apps/console placeholder page and src/env.ts |
+| P0-15 | [NSI-513](https://linear.app/nsims/issue/NSI-513) | Add .env.example with every documented variable |
+| P0-16 | [NSI-514](https://linear.app/nsims/issue/NSI-514) | Add GitHub Actions CI for lint, typecheck, test and build |
+| P0-17 | [NSI-516](https://linear.app/nsims/issue/NSI-516) | Add the PR template with contract, tenancy and security sections |
+| P0-18 | [NSI-517](https://linear.app/nsims/issue/NSI-517) | Draft and decide ADRs 002 to 006 |
+| P0-19 | [NSI-518](https://linear.app/nsims/issue/NSI-518) | Pass the Phase 0 exit gate |
+| P1-01 | [NSI-491](https://linear.app/nsims/issue/NSI-491) | Build the spec compiler with noul, choice and score modules |
+| P1-02 | [NSI-493](https://linear.app/nsims/issue/NSI-493) | Build the stage orchestrator: checks, when, stateFrom and batch split |
+| P1-03 | [NSI-496](https://linear.app/nsims/issue/NSI-496) | Build the confidence router per the normative table |
+| P1-04 | [NSI-499](https://linear.app/nsims/issue/NSI-499) | Implement cost and savings math for all three kinds |
+| P1-05 | [NSI-501](https://linear.app/nsims/issue/NSI-501) | Add token preflight from ModelProfile limits |
+| P1-06 | [NSI-503](https://linear.app/nsims/issue/NSI-503) | Implement lints with stable rule ids, including model and weakness lints |
+| P1-07 | [NSI-505](https://linear.app/nsims/issue/NSI-505) | Implement interfaceOf and diffInterface |
+| P1-08 | [NSI-508](https://linear.app/nsims/issue/NSI-508) | Write the authz.ts role matrix |
+| P1-09 | [NSI-510](https://linear.app/nsims/issue/NSI-510) | Build system-one-client with SDK and fixture transports |
+| P1-10 | [NSI-512](https://linear.app/nsims/issue/NSI-512) | Build llm-client with the LlmTransport port and a fixture transport |
+| P1-11 | [NSI-515](https://linear.app/nsims/issue/NSI-515) | Build sysone run --local in packages/cli/src/local |
+| P1-12 | [NSI-519](https://linear.app/nsims/issue/NSI-519) | Write the full Drizzle schema with RLS in migration 0001 |
+| P1-13 | [NSI-520](https://linear.app/nsims/issue/NSI-520) | Implement withTenant with transaction-local set_config |
+| P1-14 | [NSI-521](https://linear.app/nsims/issue/NSI-521) | Add the RLS setting test for app.org_id |
+| P1-15 | [NSI-523](https://linear.app/nsims/issue/NSI-523) | Add repositories for every table with no raw db export |
+| P1-16 | [NSI-526](https://linear.app/nsims/issue/NSI-526) | Add the immutability trigger on published versions |
+| P1-17 | [NSI-527](https://linear.app/nsims/issue/NSI-527) | Add the two-org seed |
+| P1-18 | [NSI-530](https://linear.app/nsims/issue/NSI-530) | Add dev implementations: local KEK vault, in-memory limiter and quota |
+| P1-19 | [NSI-532](https://linear.app/nsims/issue/NSI-532) | Implement RunSink over the repositories |
+| P1-20 | [NSI-536](https://linear.app/nsims/issue/NSI-536) | Run the registry sync, alias probe and contract watch jobs |
+| P1-21 | [NSI-540](https://linear.app/nsims/issue/NSI-540) | Record the minimum fixture set, including an alias-resolved response |
+| P1-22 | [NSI-541](https://linear.app/nsims/issue/NSI-541) | Add the fixture contract test against zod |
+| P1-23 | [NSI-543](https://linear.app/nsims/issue/NSI-543) | Add the pinned-classification table test |
+| P1-24 | [NSI-546](https://linear.app/nsims/issue/NSI-546) | Build the packages/evals CLI |
+| P1-25 | [NSI-549](https://linear.app/nsims/issue/NSI-549) | Build the cross-tenant suite generator |
+| P1-26 | [NSI-551](https://linear.app/nsims/issue/NSI-551) | Add the live smoke script for the smoke list models |
+| P1-27 | [NSI-552](https://linear.app/nsims/issue/NSI-552) | Pass the Phase 1 exit gate |
+| P2-01 | [NSI-522](https://linear.app/nsims/issue/NSI-522) | Wire auth per ADR-002: orgs, memberships, invites, roles, active org |
+| P2-02 | [NSI-524](https://linear.app/nsims/issue/NSI-524) | Add the org switcher and /[orgSlug] routing |
+| P2-03 | [NSI-525](https://linear.app/nsims/issue/NSI-525) | Build the BYO key vault with envelope encryption and validation |
+| P2-04 | [NSI-528](https://linear.app/nsims/issue/NSI-528) | Add platform key mode |
+| P2-05 | [NSI-529](https://linear.app/nsims/issue/NSI-529) | Add app tokens: sk_live_, sk_test_ and pk_live_ |
+| P2-06 | [NSI-531](https://linear.app/nsims/issue/NSI-531) | Add agent tokens (sa_live_) with role ceiling, scopes and expiry |
+| P2-07 | [NSI-533](https://linear.app/nsims/issue/NSI-533) | Build the device flow for agent tokens (RFC 8628) |
+| P2-08 | [NSI-534](https://linear.app/nsims/issue/NSI-534) | Implement runOperation steps: actor, validation, can() and If-Match |
+| P2-09 | [NSI-535](https://linear.app/nsims/issue/NSI-535) | Add approval_requests and the approval step in runOperation |
+| P2-10 | [NSI-537](https://linear.app/nsims/issue/NSI-537) | Add the agentApprovals org setting and the always-gated list |
+| P2-11 | [NSI-538](https://linear.app/nsims/issue/NSI-538) | Add idempotency middleware on idempotency_keys |
+| P2-12 | [NSI-539](https://linear.app/nsims/issue/NSI-539) | Serve runs through set.run on POST /api/v1/sets/{ref}/run |
+| P2-13 | [NSI-542](https://linear.app/nsims/issue/NSI-542) | Add browser token minting with ES256 and the JWKS route |
+| P2-14 | [NSI-544](https://linear.app/nsims/issue/NSI-544) | Add org_webhook_secrets, encrypted like TypeSafe keys |
+| P2-15 | [NSI-545](https://linear.app/nsims/issue/NSI-545) | Split retention into state, answers and dataset settings |
+| P2-16 | [NSI-547](https://linear.app/nsims/issue/NSI-547) | Add rate limiters per org, token, eval bucket and model budget |
+| P2-17 | [NSI-548](https://linear.app/nsims/issue/NSI-548) | Write audit rows inside withTenant for every mutation |
+| P2-18 | [NSI-550](https://linear.app/nsims/issue/NSI-550) | Build the platform admin route group with impersonation |
+| P2-19 | [NSI-553](https://linear.app/nsims/issue/NSI-553) | Write plans.ts with plan limits |
+| P2-20 | [NSI-554](https://linear.app/nsims/issue/NSI-554) | Set up Stripe products, meters, Checkout and Customer Portal |
+| P2-21 | [NSI-555](https://linear.app/nsims/issue/NSI-555) | Handle Stripe webhooks with idempotency and read-only mode |
+| P2-22 | [NSI-556](https://linear.app/nsims/issue/NSI-556) | Build the meter outbox job to Stripe |
+| P2-23 | [NSI-557](https://linear.app/nsims/issue/NSI-557) | Carry the resolved model on usage events into metering |
+| P2-24 | [NSI-558](https://linear.app/nsims/issue/NSI-558) | Add price book defaults and per-org overrides by versioned model |
+| P2-25 | [NSI-559](https://linear.app/nsims/issue/NSI-559) | Build the nightly usage_daily rollup |
+| P2-26 | [NSI-561](https://linear.app/nsims/issue/NSI-561) | Add the quota guard on usage_daily plus a same-day Redis counter |
+| P2-27 | [NSI-562](https://linear.app/nsims/issue/NSI-562) | Build the console shell and settings pages |
+| P2-28 | [NSI-563](https://linear.app/nsims/issue/NSI-563) | Build the approvals inbox: list, approve and reject |
+| P2-29 | [NSI-564](https://linear.app/nsims/issue/NSI-564) | Review keys, tokens, device flow and approvals for security |
+| P2-30 | [NSI-565](https://linear.app/nsims/issue/NSI-565) | Pass the Phase 2 exit gate |
+| P3-01 | [NSI-560](https://linear.app/nsims/issue/NSI-560) | Register project, goal, template, set and draft operations |
+| P3-02 | [NSI-566](https://linear.app/nsims/issue/NSI-566) | Register version, release and rollout operations with dry runs |
+| P3-03 | [NSI-567](https://linear.app/nsims/issue/NSI-567) | Register dataset, eval, compare and review operations |
+| P3-04 | [NSI-568](https://linear.app/nsims/issue/NSI-568) | Register run, usage, report, audit, alert, model and org operations |
+| P3-05 | [NSI-569](https://linear.app/nsims/issue/NSI-569) | Enforce the full parity test in CI |
+| P3-06 | [NSI-570](https://linear.app/nsims/issue/NSI-570) | Build goals CRUD with a QualityTarget and business KPI |
+| P3-07 | [NSI-572](https://linear.app/nsims/issue/NSI-572) | Build the set list and create flow, seeding two templates |
+| P3-08 | [NSI-573](https://linear.app/nsims/issue/NSI-573) | Build the question editor with form and JSON modes and live lints |
+| P3-09 | [NSI-575](https://linear.app/nsims/issue/NSI-575) | Build the model picker from model.list |
+| P3-10 | [NSI-576](https://linear.app/nsims/issue/NSI-576) | Build the options editor for choice, score and noul |
+| P3-11 | [NSI-578](https://linear.app/nsims/issue/NSI-578) | Build the policy editor with band sliders and live preview |
+| P3-12 | [NSI-580](https://linear.app/nsims/issue/NSI-580) | Build the input schema editor, redact paths and preflight meter |
+| P3-13 | [NSI-581](https://linear.app/nsims/issue/NSI-581) | Build the publish flow with lints, eval gate and dry-run preview |
+| P3-14 | [NSI-583](https://linear.app/nsims/issue/NSI-583) | Build version history, diffs, release events, rollback and promote |
+| P3-15 | [NSI-585](https://linear.app/nsims/issue/NSI-585) | Build per-channel rollout control with gate status |
+| P3-16 | [NSI-587](https://linear.app/nsims/issue/NSI-587) | Add the jobs endpoint GET /api/v1/jobs/{id} |
+| P3-17 | [NSI-589](https://linear.app/nsims/issue/NSI-589) | Send approval emails and the 24-hour reminder |
+| P3-18 | [NSI-590](https://linear.app/nsims/issue/NSI-590) | Build the approvals decision UI with diff, gates and dry run |
+| P3-19 | [NSI-592](https://linear.app/nsims/issue/NSI-592) | Build agent token management for admins |
+| P3-20 | [NSI-593](https://linear.app/nsims/issue/NSI-593) | Serve the event feed GET /api/v1/events |
+| P3-21 | [NSI-594](https://linear.app/nsims/issue/NSI-594) | Serve the feedback API with a server-derived source |
+| P3-22 | [NSI-595](https://linear.app/nsims/issue/NSI-595) | Build the sysone CLI foundation: login, profiles, status, sysone api |
+| P3-23 | [NSI-596](https://linear.app/nsims/issue/NSI-596) | Add the Phase 3 named CLI commands |
+| P3-24 | [NSI-598](https://linear.app/nsims/issue/NSI-598) | Add specs as code: spec pull, push, diff, validate, datasets push |
+| P3-25 | [NSI-600](https://linear.app/nsims/issue/NSI-600) | Ship the MCP stdio server with the Phase 3 curated tools |
+| P3-26 | [NSI-602](https://linear.app/nsims/issue/NSI-602) | Regenerate OpenAPI and MSW mocks from the registry |
+| P3-27 | [NSI-603](https://linear.app/nsims/issue/NSI-603) | Build the playground with structural and behavioral diffs |
+| P3-28 | [NSI-605](https://linear.app/nsims/issue/NSI-605) | Build the runs explorer and run detail |
+| P3-29 | [NSI-606](https://linear.app/nsims/issue/NSI-606) | Build the review queue for action and label items |
+| P3-30 | [NSI-607](https://linear.app/nsims/issue/NSI-607) | Build the audit sampler per the labeling policy |
+| P3-31 | [NSI-609](https://linear.app/nsims/issue/NSI-609) | Build dataset screens with fixed splits and snapshots |
+| P3-32 | [NSI-611](https://linear.app/nsims/issue/NSI-611) | Build eval runs on snapshots with calibration charts |
+| P3-33 | [NSI-612](https://linear.app/nsims/issue/NSI-612) | Build the Definition Studio operations and server holdout rules |
+| P3-34 | [NSI-614](https://linear.app/nsims/issue/NSI-614) | Build the Definition Studio wizard |
+| P3-35 | [NSI-616](https://linear.app/nsims/issue/NSI-616) | Build the gate evaluator with Wilson lower bounds |
+| P3-36 | [NSI-617](https://linear.app/nsims/issue/NSI-617) | Run the hourly gate evaluator and auto-demote job |
+| P3-37 | [NSI-619](https://linear.app/nsims/issue/NSI-619) | Warn when a live set has no truth source |
+| P3-38 | [NSI-620](https://linear.app/nsims/issue/NSI-620) | Build the platform admin Models page |
+| P3-39 | [NSI-622](https://linear.app/nsims/issue/NSI-622) | Build the org model list |
+| P3-40 | [NSI-623](https://linear.app/nsims/issue/NSI-623) | Enforce model lints at publish |
+| P3-41 | [NSI-624](https://linear.app/nsims/issue/NSI-624) | Build savings and usage dashboards for org, project and set |
+| P3-42 | [NSI-626](https://linear.app/nsims/issue/NSI-626) | Build the standard reports with CSV export and monthly PDF |
+| P3-43 | [NSI-627](https://linear.app/nsims/issue/NSI-627) | Add the model upgrades report and alias-moved and deprecation alerts |
+| P3-44 | [NSI-628](https://linear.app/nsims/issue/NSI-628) | Build the audit log viewer with filters and CSV export |
+| P3-45 | [NSI-630](https://linear.app/nsims/issue/NSI-630) | Pass the Phase 3 exit gate |
+| P3b-01 | [NSI-571](https://linear.app/nsims/issue/NSI-571) | Build policy replay in packages/core/src/learning |
+| P3b-02 | [NSI-574](https://linear.app/nsims/issue/NSI-574) | Build suggestThresholds returning ThresholdProposal |
+| P3b-03 | [NSI-577](https://linear.app/nsims/issue/NSI-577) | Add the policy.suggest operation as a job |
+| P3b-04 | [NSI-579](https://linear.app/nsims/issue/NSI-579) | Add "Suggest from labels" to the policy editor |
+| P3b-05 | [NSI-582](https://linear.app/nsims/issue/NSI-582) | Add MCP suggest_thresholds and sysone tune |
+| P3b-06 | [NSI-584](https://linear.app/nsims/issue/NSI-584) | Build the question_daily rollup and SetHealth |
+| P3b-07 | [NSI-586](https://linear.app/nsims/issue/NSI-586) | Add the health.get and health.list operations |
+| P3b-08 | [NSI-588](https://linear.app/nsims/issue/NSI-588) | Build the Health tab and the org "Needs attention" list |
+| P3b-09 | [NSI-591](https://linear.app/nsims/issue/NSI-591) | Add MCP get_set_health and sysone health |
+| P3b-10 | [NSI-597](https://linear.app/nsims/issue/NSI-597) | Add the proposals table and proposal operations |
+| P3b-11 | [NSI-599](https://linear.app/nsims/issue/NSI-599) | Build the weekly threshold-refit job and health-rule proposals |
+| P3b-12 | [NSI-601](https://linear.app/nsims/issue/NSI-601) | Build the proposals inbox |
+| P3b-13 | [NSI-604](https://linear.app/nsims/issue/NSI-604) | Add MCP proposal tools, update_set and sysone proposals |
+| P3b-14 | [NSI-608](https://linear.app/nsims/issue/NSI-608) | Add the experiments table and experiment operations |
+| P3b-15 | [NSI-610](https://linear.app/nsims/issue/NSI-610) | Dual-run the challenger on a sample after the champion responds |
+| P3b-16 | [NSI-613](https://linear.app/nsims/issue/NSI-613) | Start an experiment on production publish of controlled or full sets |
+| P3b-17 | [NSI-615](https://linear.app/nsims/issue/NSI-615) | Build the experiment scorer job and the promotion rule |
+| P3b-18 | [NSI-618](https://linear.app/nsims/issue/NSI-618) | Add MCP experiment tools and sysone experiments commands |
+| P3b-19 | [NSI-621](https://linear.app/nsims/issue/NSI-621) | Add the set.try_model operation as a job |
+| P3b-20 | [NSI-625](https://linear.app/nsims/issue/NSI-625) | Build the model-upgrade candidates job |
+| P3b-21 | [NSI-629](https://linear.app/nsims/issue/NSI-629) | Add eval deltas to model.upgrades and the model-upgrades report |
+| P3b-22 | [NSI-631](https://linear.app/nsims/issue/NSI-631) | Build the Model upgrades page |
+| P3b-23 | [NSI-632](https://linear.app/nsims/issue/NSI-632) | Add MCP try_model and sysone upgrade list and try |
+| P3b-24 | [NSI-635](https://linear.app/nsims/issue/NSI-635) | Build the set.improve job with typed edits and holdout rules |
+| P3b-25 | [NSI-637](https://linear.app/nsims/issue/NSI-637) | Build the Studio improve screen |
+| P3b-26 | [NSI-639](https://linear.app/nsims/issue/NSI-639) | Add sysone improve and MCP improve_set |
+| P3b-27 | [NSI-641](https://linear.app/nsims/issue/NSI-641) | Add eval repeats and a per-question stability metric |
+| P3b-28 | [NSI-642](https://linear.app/nsims/issue/NSI-642) | Copy labeled and feedback runs into dataset_cases before purge |
+| P3b-29 | [NSI-645](https://linear.app/nsims/issue/NSI-645) | Add the dataset.features endpoint for drafting and calibration |
+| P3b-30 | [NSI-647](https://linear.app/nsims/issue/NSI-647) | Compute quality-adjusted value in rollups, health and ROI |
+| P3b-31 | [NSI-649](https://linear.app/nsims/issue/NSI-649) | Pass the Phase 3b exit gate |
+| P4-01 | [NSI-633](https://linear.app/nsims/issue/NSI-633) | Build @sysone/client with run, run<T>, reportFeedback and route helpers |
+| P4-02 | [NSI-634](https://linear.app/nsims/issue/NSI-634) | Keep @sysone/client fetch-only and test it in the edge runtime |
+| P4-03 | [NSI-636](https://linear.app/nsims/issue/NSI-636) | Handle 429 with Retry-After in a single retry layer |
+| P4-04 | [NSI-638](https://linear.app/nsims/issue/NSI-638) | Mint browser tokens through POST /api/v1/tokens/browser |
+| P4-05 | [NSI-640](https://linear.app/nsims/issue/NSI-640) | Support publishable pk_ mode |
+| P4-06 | [NSI-643](https://linear.app/nsims/issue/NSI-643) | Build @sysone/react components and headless hooks |
+| P4-07 | [NSI-644](https://linear.app/nsims/issue/NSI-644) | Add theming through CSS variables with accessible defaults |
+| P4-08 | [NSI-646](https://linear.app/nsims/issue/NSI-646) | Build apps/example-embed using both modes |
+| P4-09 | [NSI-648](https://linear.app/nsims/issue/NSI-648) | Write integration recipes for Next.js, Express, curl and httpx |
+| P4-10 | [NSI-650](https://linear.app/nsims/issue/NSI-650) | Pass the Phase 4 exit gate |
+| P4b-01 | [NSI-652](https://linear.app/nsims/issue/NSI-652) | Add app profile fields language, framework and repo_url |
+| P4b-02 | [NSI-654](https://linear.app/nsims/issue/NSI-654) | Add app_opportunities and the opportunity operations |
+| P4b-03 | [NSI-656](https://linear.app/nsims/issue/NSI-656) | Build the console "Describe your app" form |
+| P4b-04 | [NSI-657](https://linear.app/nsims/issue/NSI-657) | Add MCP opportunity tools, create_app and sysone opportunities |
+| P4b-05 | [NSI-659](https://linear.app/nsims/issue/NSI-659) | Add the pattern enum and the pattern advisor to the drafting prompt |
+| P4b-06 | [NSI-660](https://linear.app/nsims/issue/NSI-660) | Prefill the Definition Studio from an Opportunity |
+| P4b-07 | [NSI-663](https://linear.app/nsims/issue/NSI-663) | Build the packages/codegen TypeScript target |
+| P4b-08 | [NSI-665](https://linear.app/nsims/issue/NSI-665) | Add the set.codegen operation and route |
+| P4b-09 | [NSI-668](https://linear.app/nsims/issue/NSI-668) | Add sysone codegen and MCP generate_client |
+| P4b-10 | [NSI-669](https://linear.app/nsims/issue/NSI-669) | Add the console "Use in your app" tab |
+| P4b-11 | [NSI-671](https://linear.app/nsims/issue/NSI-671) | Add app_set_bindings and the binding operations |
+| P4b-12 | [NSI-673](https://linear.app/nsims/issue/NSI-673) | Build the app page and the set Consumers panel |
+| P4b-13 | [NSI-674](https://linear.app/nsims/issue/NSI-674) | Make interface.breaking use bindings plus recent app runs |
+| P4b-14 | [NSI-675](https://linear.app/nsims/issue/NSI-675) | Enforce the SysOne-Interface header on runs |
+| P4b-15 | [NSI-676](https://linear.app/nsims/issue/NSI-676) | Build sysone init |
+| P4b-16 | [NSI-677](https://linear.app/nsims/issue/NSI-677) | Write .sysone/lock.json from sysone codegen |
+| P4b-17 | [NSI-678](https://linear.app/nsims/issue/NSI-678) | Build sysone check with exit code 2 on drift |
+| P4b-18 | [NSI-679](https://linear.app/nsims/issue/NSI-679) | Decide the ADR-009 Python section |
+| P4b-19 | [NSI-681](https://linear.app/nsims/issue/NSI-681) | Build the Python client, Python codegen and examples/fastapi |
+| P4b-20 | [NSI-684](https://linear.app/nsims/issue/NSI-684) | Decide the ADR-009 Standalone section |
+| P4b-21 | [NSI-686](https://linear.app/nsims/issue/NSI-686) | Build the standalone export and POST /api/v1/runs/ingest |
+| P4b-22 | [NSI-688](https://linear.app/nsims/issue/NSI-688) | Review codegen output and sysone init tokens for security |
+| P4b-23 | [NSI-690](https://linear.app/nsims/issue/NSI-690) | Pass the Phase 4b exit gate |
+| P5-01 | [NSI-651](https://linear.app/nsims/issue/NSI-651) | Build plugin-sdk with definePlugin and the plugin interfaces |
+| P5-02 | [NSI-653](https://linear.app/nsims/issue/NSI-653) | Build the built-in input adapters |
+| P5-03 | [NSI-655](https://linear.app/nsims/issue/NSI-655) | Add the adapter picker to the input editor |
+| P5-04 | [NSI-658](https://linear.app/nsims/issue/NSI-658) | Build the built-in actions: webhook, Slack, email and review item |
+| P5-05 | [NSI-661](https://linear.app/nsims/issue/NSI-661) | Seed the remaining nine templates, each tagged with a pattern |
+| P5-06 | [NSI-662](https://linear.app/nsims/issue/NSI-662) | Add per-org plugin enablement with encrypted config |
+| P5-07 | [NSI-664](https://linear.app/nsims/issue/NSI-664) | Build the plugin conformance test suite |
+| P5-08 | [NSI-666](https://linear.app/nsims/issue/NSI-666) | Add an example third-party plugin in examples/ |
+| P5-09 | [NSI-667](https://linear.app/nsims/issue/NSI-667) | Deliver org event webhooks with HMAC signatures and retries |
+| P5-10 | [NSI-670](https://linear.app/nsims/issue/NSI-670) | Publish a GitHub Action for sysone check and spec diff comments |
+| P5-11 | [NSI-672](https://linear.app/nsims/issue/NSI-672) | Pass the Phase 5 exit gate |
+| P6-01 | [NSI-680](https://linear.app/nsims/issue/NSI-680) | Scaffold the WXT MV3 extension with activeTab and storage only |
+| P6-02 | [NSI-682](https://linear.app/nsims/issue/NSI-682) | Sign in with the device flow and keep the token in session storage |
+| P6-03 | [NSI-683](https://linear.app/nsims/issue/NSI-683) | Add the org and set picker |
+| P6-04 | [NSI-685](https://linear.app/nsims/issue/NSI-685) | Build evaluate page mode with the web page adapter |
+| P6-05 | [NSI-687](https://linear.app/nsims/issue/NSI-687) | Build action picker mode |
+| P6-06 | [NSI-689](https://linear.app/nsims/issue/NSI-689) | Enforce the autonomy rule for extension clicks |
+| P6-07 | [NSI-691](https://linear.app/nsims/issue/NSI-691) | Default web page adapter sets to high risk with adversarial cases |
+| P6-08 | [NSI-692](https://linear.app/nsims/issue/NSI-692) | Review the extension against the threat model |
+| P6-09 | [NSI-693](https://linear.app/nsims/issue/NSI-693) | Pass the Phase 6 exit gate |
+| P7-01 | [NSI-694](https://linear.app/nsims/issue/NSI-694) | Add the MCP HTTP transport and any missing 3b and 4b tools |
+| P7-02 | [NSI-695](https://linear.app/nsims/issue/NSI-695) | Authenticate the MCP server with an agent token only |
+| P7-03 | [NSI-696](https://linear.app/nsims/issue/NSI-696) | Package plugins/claude-code with sysone-operator and sysone-integrate |
+| P7-04 | [NSI-697](https://linear.app/nsims/issue/NSI-697) | Keep the sysone-builder skill out of the plugin |
+| P7-05 | [NSI-698](https://linear.app/nsims/issue/NSI-698) | Publish a marketplace repo or local marketplace entry |
+| P7-06 | [NSI-699](https://linear.app/nsims/issue/NSI-699) | Pass the Phase 7 exit gate |
