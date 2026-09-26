@@ -4,6 +4,9 @@
   "private": true,
   "description": "@sysone/cli (bin sysone): management commands over /api/v1, plus --local fixture mode. Phase 3.",
   "type": "module",
+  "bin": {
+    "sysone": "./dist/bin.js"
+  },
   "exports": {
     ".": {
       "@sysone/source": "./src/index.ts",
@@ -20,8 +23,22 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
+  "peerDependencies": {
+    "@sysone/core": "workspace:*",
+    "@sysone/system-one-client": "workspace:*"
+  },
+  "peerDependenciesMeta": {
+    "@sysone/core": {
+      "optional": true
+    },
+    "@sysone/system-one-client": {
+      "optional": true
+    }
+  },
   "devDependencies": {
     "@sysone/config": "workspace:*",
+    "@sysone/core": "workspace:*",
+    "@sysone/system-one-client": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "typescript": "catalog:",
