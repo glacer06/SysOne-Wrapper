@@ -1,0 +1,129 @@
+{
+  "schemaVersion": 1,
+  "model": "jev-1.13.0",
+  "rollout": "shadow",
+  "input": {
+    "schema": {
+      "type": "object",
+      "required": ["email", "me"],
+      "properties": {
+        "email": {
+          "type": "object",
+          "required": ["from", "subject", "body"],
+          "properties": {
+            "from": { "type": "string" },
+            "subject": { "type": "string" },
+            "body": { "type": "string" }
+          }
+        },
+        "me": {
+          "type": "object",
+          "properties": {
+            "name": { "type": "string" },
+            "known_contacts": { "type": "array", "items": { "type": "string" } }
+          }
+        }
+      }
+    },
+    "redactPaths": ["email.body_signature"]
+  },
+  "stages": [
+    {
+      "id": "triage",
+      "questions": {
+        "real_person": {
+          "type": "noul",
+          "instructions": "Was `email` written by a real person to the recipient, rather than sent by an automated system, newsletter, or marketing tool?",
+          "criteria": {
+            "true": "A person wrote this message to the recipient.",
+            "false": "Automated, bulk, newsletter, receipt, or marketing mail."
+          },
+          "meta": { "label": "Real person wrote it" }
+        },
+        "someone_waiting": {
+          "type": "noul",
+          "instructions": {
+            "question": "Is someone the recipient knows waiting on the recipient to reply or act?",
+            "recipient": "`me.name`",
+            "known_contacts": "`me.known_contacts`",
+            "email": "`email`"
+          },
+          "criteria": {
+            "true": "The sender or someone named is blocked on, or explicitly waiting for, the recipient.",
+            "false": "No one is waiting on the recipient."
+          },
+          "meta": { "label": "Someone is waiting" }
+        },
+        "cost_of_ignoring": {
+          "type": "score",
+          "instructions": "What will it cost the recipient to ignore `email` for a week?",
+          "criteria": [
+            "Nothing. Safe to ignore.",
+            "Minor. A small delay or a mildly annoyed contact.",
+            "Real. A missed deadline, lost money, or a damaged relationship.",
+            "Severe. Legal, financial, or safety consequences."
+          ],
+          "meta": { "label": "Cost of ignoring" }
+        },
+        "category": {
+          "type": "choice",
+          "instructions": "What kind of message is `email`?",
+          "criteria": {
+            "work_request": "Someone needs work, a decision, or information from the recipient.",
+            "scheduling": "Meeting times, invites, or calendar changes.",
+            "personal": "Friends or family.",
+            "newsletter": "Subscribed content or digests.",
+            "transactional": "Receipts, notifications, password resets.",
+            "none_of_these": null
+          },
+          "meta": { "label": "Category" }
+        }
+      }
+    }
+  ],
+  "policies": {
+    "real_person": {
+      "gating": true,
+      "thresholds": { "high": 0.75, "medium": 0.45 },
+      "noul": { "trueAt": 0.85, "falseAt": 0.15, "reviewMargin": 0.1 },
+      "actions": { "high": { "kind": "auto" }, "medium": { "kind": "auto" }, "low": { "kind": "review" } }
+    },
+    "someone_waiting": {
+      "gating": true,
+      "thresholds": { "high": 0.75, "medium": 0.45 },
+      "noul": { "trueAt": 0.85, "falseAt": 0.15, "reviewMargin": 0.1 },
+      "actions": { "high": { "kind": "auto" }, "medium": { "kind": "review" }, "low": { "kind": "review" } }
+    },
+    "cost_of_ignoring": {
+      "gating": true,
+      "thresholds": { "high": 0.75, "medium": 0.45 },
+      "actions": { "high": { "kind": "auto" }, "medium": { "kind": "review" }, "low": { "kind": "review" } }
+    },
+    "category": {
+      "gating": false,
+      "thresholds": { "high": 0.6, "medium": 0.3 },
+      "actions": { "high": { "kind": "auto" }, "medium": { "kind": "auto" }, "low": { "kind": "fallback", "config": { "value": "none_of_these" } } }
+    }
+  },
+  "composites": [
+    {
+      "id": "urgency",
+      "kind": "weighted",
+      "terms": [
+        { "q": "real_person", "weight": 0.25 },
+        { "q": "someone_waiting", "weight": 0.35 },
+        { "q": "cost_of_ignoring", "weight": 0.4 }
+      ],
+      "policy": {
+        "gating": true,
+        "thresholds": { "high": 0.7, "medium": 0.4 },
+        "actions": { "high": { "kind": "auto", "handler": "builtin.slack.notify" }, "medium": { "kind": "review" }, "low": { "kind": "auto" } }
+      }
+    }
+  ],
+  "routes": [
+    { "when": { "composite": "urgency", "gte": 0.7 }, "output": "urgent" },
+    { "when": { "q": "category", "eq": "newsletter" }, "output": "read_later" }
+  ],
+  "savings": { "comparatorModel": "claude-haiku-4-5", "estOutputTokensPerQuestion": 60, "kind": "decision" }
+}

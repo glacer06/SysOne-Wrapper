@@ -1,0 +1,53 @@
+# ADR-001: Stack and tenancy model
+
+- **Status:** accepted
+- **Date:** 2026-09-26
+- **Owner:** Architect / Lead
+- **Contract impact:** establishes the initial contracts
+
+## Context
+
+SysOne is a multi-tenant SaaS that wraps TypeSafe's Jev model. Nick sells it and also runs it across his own orgs (SGR, Personal, Dallas). It needs a console, a public API, an embed kit, billing, and later a Chrome extension and an MCP server. A team of agents will build it in parallel, so the stack must be common, well typed, and easy to split into lanes.
+
+## Decision
+
+| Area | Choice |
+|---|---|
+| Language | TypeScript, strict, ESM, Node 20+ |
+| Repo | pnpm workspaces + turborepo |
+| Web | Next.js App Router (console, public API, webhooks) |
+| Database | Postgres (Neon or Supabase), Drizzle ORM, Row Level Security on every tenant table |
+| Auth | Auth.js v5 with a Drizzle adapter, plus our own `organizations` and `memberships` tables. See open question below. |
+| Cache and rate limits | Redis (Upstash) |
+| Background jobs | Inngest or an equivalent serverless job runner (decided in ADR-005) |
+| Billing | Stripe Billing with usage meters |
+| Jev | `@typesafe-ai/sdk`, imported only by `packages/jev-client` |
+| Other LLMs | `@anthropic-ai/sdk`, imported only by `packages/llm-client` |
+| UI | shadcn/ui, Tailwind, TanStack Table |
+| Tests | Vitest, Playwright, k6 |
+| Hosting | Vercel |
+
+**Tenancy:** organizations are the security and billing boundary. One user can belong to many orgs and switches between them. Projects group work inside an org. Every tenant table carries `org_id`, enforced two ways: a repository layer (`withTenant`) and Postgres RLS with a transaction-local `app.org_id`.
+
+## Options considered
+
+| Option | Pros | Cons |
+|---|---|---|
+| Auth.js v5 + own org tables | Familiar, open source, full control of org model | We build invites, org switching, and impersonation ourselves |
+| Better Auth with organization and admin plugins | Orgs, invites, roles, impersonation, and SSO built in; Drizzle adapter | Younger library; plugin APIs may shift |
+| Clerk Organizations | Fastest to ship, SSO included | Auth data outside our DB, per-seat cost, vendor lock-in |
+| Org, then Workspace (two levels) | Matches "one bill, many workspaces" | Doubles RLS, role, and billing work now |
+
+## Open question for ADR-002
+
+The plan Nick approved names Auth.js. The design review recommends Better Auth because its organization and admin plugins cover invites, active org, roles, and impersonation out of the box. ADR-002 decides before Phase 2 starts. Whichever wins, it must support many orgs per user, invites, five roles, and audited impersonation.
+
+## Consequences
+
+- Every package boundary is enforced by lint, so agents can work in parallel with little overlap.
+- RLS adds some migration work per table. That cost is accepted because retrofitting tenancy later is how SaaS products leak data.
+- Pinning to Vercel and serverless jobs means no long-running workers. Rollups and meter pushes run as scheduled jobs.
+
+## Rollout
+
+Phase 0 part two scaffolds this stack. Any change needs a new ADR.
