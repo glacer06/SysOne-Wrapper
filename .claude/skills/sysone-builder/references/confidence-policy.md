@@ -1,31 +1,50 @@
 # Confidence policy, bands, and rollout
 
-Jev reports certainty two ways. Choice and Score answers carry `confidence` (0 to 1, derived from how concentrated the probability distribution is). Noul answers carry only `noul`, the probability of yes. SysOne turns both into one of three **bands**, then turns each band into an **action**. Read `https://docs.typesafe.ai/confidence.md` for the source material.
+System One models report certainty two ways. Choice and Score answers carry `confidence` (0 to 1, derived from how concentrated the probability distribution is). Noul answers carry only `noul`, the probability of yes. SysOne turns both into one of three **bands**, then turns each band into an **action**. Read `https://docs.typesafe.ai/confidence.md` for the source material. Jev is the first model; nothing here depends on it except the starting thresholds.
 
 ## Policy shape
 
 ```ts
-ConfidencePolicy = {
-  gating: boolean,                              // counts toward the run's overall band
-  thresholds: { high: number, medium: number }, // choice/score: applied to `confidence`
-  perOption?: Record<string, { high: number, medium: number }>, // stricter bars for risky options
-  noul?: { trueAt: number, falseAt: number, reviewMargin: number },
-  actions: {
-    high: ActionRef,
-    medium: ActionRef,
-    low: ActionRef,
-  },
-}
+ConfidencePolicy =
+  | { type: "noul", gating: boolean, relevantWhen?: Condition,
+      noul: { trueAt: number, falseAt: number, reviewMargin: number }, actions: BandActions }
+  | { type: "choice", gating: boolean, relevantWhen?: Condition,
+      thresholds: Thresholds, perOption?: Record<string, Thresholds>, actions: BandActions }
+  | { type: "score", gating: boolean, relevantWhen?: Condition,
+      thresholds: Thresholds, actions: BandActions }
+  | { type: "composite", gating: boolean,
+      levelThresholds: Thresholds, actions: BandActions }   // actions keyed by level
 
-ActionRef = { kind: "auto" | "review" | "fallback" | "escalate_to_llm", handler?: string, config?: unknown }
+Thresholds  = { high: number, medium: number }   // choice/score: applied to `confidence`
+BandActions = { high: ActionRef, medium: ActionRef, low: ActionRef }
+ActionRef   = { kind: "auto" | "review" | "fallback" | "escalate_to_llm", handler?: string, config?: unknown }
+              // for kind "fallback", config is a FallbackConfig (spec-schema.md)
 ```
 
+- `gating: true` means the decision counts toward the run's band.
+- `relevantWhen` (a `Condition`, see [spec-schema.md](spec-schema.md)) marks a speculative question that only matters in some cases. When it is false, the decision is irrelevant (see below).
+- The policy `type` must match the question type (lint `policy.type_mismatch`). A noul policy carries no `thresholds`; it needs only its `noul` block. A future question type brings its own policy variant with its module.
+- `perOption` sets stricter bars for risky options.
+
+### Preset: top choice only
+
+When only the best option matters, take the top choice and don't threshold it. TypeSafe: "If all you care about is choosing the best option, you just need to choose the option with the highest confidence."
+
+```json
+{ "type": "choice", "gating": false, "thresholds": { "high": 0, "medium": 0 },
+  "actions": { "high": { "kind": "auto" }, "medium": { "kind": "auto" }, "low": { "kind": "auto" } } }
+```
+
+The lint `policy.all_gating_thresholded` suggests this preset when every question in a set is gating and thresholded.
+
 ## Band algorithm
+
+Each question type module owns its band function ([spec-schema.md](spec-schema.md)). The v1 rules:
 
 **Choice and Score**
 
 ```
-t = perOption[answer.choice] ?? thresholds   // Score ignores perOption
+t = perOption[answer.choice] ?? thresholds   // Score has no perOption
 band = confidence >= t.high   ? "high"
      : confidence >= t.medium ? "medium"
      : "low"
@@ -43,53 +62,95 @@ else                                      -> low, value null
 
 A Noul near 0.5 means "yes and no are about equally likely". It is not a medium-strength yes.
 
-**Run band:** the lowest band among questions with `gating: true`. Composites with their own policy count as gating questions.
+**Composite:** two separate things.
+
+- **Level** (magnitude): `levelThresholds` applied to the composite's 0 to 1 value. The level picks the action from `actions`.
+- **Band** (certainty): the minimum band of its question terms. Check terms count as `high`.
+
+Only the band feeds `runBand`. A confidently non-urgent email has a low level and a high band, so it does not drag the run into review.
+
+**Run band:** the lowest band among relevant decisions with `gating: true`, including composites with a policy. With no relevant gating decision, it is the lowest band among all relevant decisions. With no relevant decision at all, it is `low`.
+
+**Irrelevant decisions:** when `relevantWhen` is false, the decision has `relevant: false` and `effectiveAction: fallback`. It creates no review item, runs no action, does not lower `runBand` or `overallAction`, and is left out of calibration metrics and the savings count. Questions in a skipped spec stage are treated the same way, with value `null`.
 
 ## Actions
 
 | Kind | What happens |
 |---|---|
 | `auto` | The answer is applied. Plugin action handlers run after commit. |
-| `review` | A review item is created. Nothing else happens until a human resolves it. |
-| `fallback` | Run the configured fallback (default rule, another set, or a no-op). |
-| `escalate_to_llm` | Hand off to a reasoning model. Counts toward "escalations" in the savings ledger. |
+| `review` | A review item of kind `action` is created. Nothing else happens until a human resolves it. |
+| `fallback` | Run the configured `FallbackConfig`: a value, another set, or a no-op. |
+| `escalate_to_llm` | Hand off to a reasoning model through `llm-client`. Counts toward "escalations" in the savings ledger. |
 
-## Rollout stages (per question set)
+Most to least conservative: `review > fallback > escalate_to_llm > auto`. `overallAction` is the most conservative `effectiveAction` among relevant decisions. With no relevant decision, it is `fallback`.
 
-| Stage | Behavior |
+A review item of kind `action` is created exactly when a decision's `effectiveAction` is `review`. The configured fallback runs only when the policy action itself is `fallback` and the rollout stage lets policy actions through. When the rollout stage forces `fallback`, it means "keep your existing path" and nothing runs.
+
+## Effective action by rollout stage (normative)
+
+This table is the only definition. [architecture.md](architecture.md) and [savings-model.md](savings-model.md) link here instead of restating it. It is enforced in `packages/core` only, through `effectiveAction`. No other package reinterprets it.
+
+| Rollout stage | Band | Policy action | `effectiveAction` | Executes? |
+|---|---|---|---|---|
+| `inactive` | any | any | none: the channel returns `409 set_not_live` | No |
+| `shadow` | any | any | `fallback` | No |
+| `controlled` | high | any | the policy action | Yes |
+| `controlled` | medium or low, decision is gating | any | `review` | No (a review item is created) |
+| `controlled` | medium or low, decision is not gating | any | `fallback` | No |
+| `full` | any | any | the policy action | Yes |
+| `paused` | any | any | `fallback` | No |
+
+- "Executes" means `auto` handlers dispatch, `escalate_to_llm` calls the LLM, `review` creates its item and a configured fallback runs.
+- Irrelevant decisions are `fallback` in every stage and are excluded as described above.
+- `slug@draft` runs behave as `shadow`.
+- **Staging channel:** effective actions are computed the same way, but side-effect handlers do not dispatch unless the set sets `dispatchActionsOnStaging`. Staging books cost, not savings.
+
+## Rollout stages (per set, per channel)
+
+| Rollout stage | Behavior |
 |---|---|
-| `draft` | Runs only from the console playground. |
-| `shadow` | Runs and logs everything. Every `effectiveAction` is `fallback`, so the caller keeps its existing path. Use it to measure before trusting. A sample of runs creates labeling review items. |
-| `controlled` | Only `high` band actions execute. Medium and low go to review regardless of policy. |
+| `inactive` | Not live on this channel. Runs return `409 set_not_live`. The draft still runs as `slug@draft` from the console, `sk_test_` tokens and agent tokens with `sets:write`. |
+| `shadow` | Runs and logs everything. Every `effectiveAction` is `fallback`, so the caller keeps its existing path. Use it to measure before trusting. The labeling policy picks audit items. |
+| `controlled` | High-band decisions keep their policy action. Medium and low go to review when gating and to fallback when not. |
 | `full` | Policy actions execute as written. |
-| `paused` | Kill switch. Every `effectiveAction` is `fallback`. Manual, or set by auto-demote. |
+| `paused` | Kill switch. Every `effectiveAction` is `fallback`. Set only by humans. |
 
-The rollout stage is enforced in `packages/core` only, through `effectiveAction`. No other package reinterprets it.
+- The rollout stage is stored on `release_pointers.rollout_stage`, one per `(set, channel)`. It is not in the spec.
+- It changes only through the `rollout.change` operation ([management-api.md](management-api.md)), which evaluates the gates below and writes a `release_events` row.
+- Gates apply to the `production` channel. `staging` can be set freely.
+- Moves toward safety (pause, back to `shadow`, rollback) are never gated. Moving toward `full` or out of `paused` is a high-risk operation, so an agent needs a human approval ([security.md](security.md)).
 
-### Default gates (per set, editable, stricter for high-risk sets)
+The console shows the rollout stage per channel as a status chip with a timeline and gate checklist, and writes every change to the audit log.
+
+### Default gates (production channel, editable per set, stricter for high-risk sets)
 
 | Move | Gate |
 |---|---|
-| draft to shadow | Published, model pinned, eval or Studio test split with at least 30 cases |
-| shadow to controlled | At least 200 shadow runs, at least 50 labeled, high-band agreement at or above target (95% standard, 98% high risk) |
-| controlled to full | At least 14 days or 500 controlled runs, medium-band agreement at target, review SLA met. Admin role required. |
+| `inactive` to `shadow` | A published version on the channel. A moving model is allowed. |
+| `shadow` to `controlled` | A pinned versioned model; at least 200 shadow runs; labeled high-band decisions at least `QualityTarget.minLabeledHigh`; the 95% Wilson lower bound of high-band precision at or above `highPrecision` |
+| `controlled` to `full` | Coverage at or above `minCoverage` and the precision lower bound at target over a trailing 7 days; admin role; agents need an approval |
 
-### Auto-demote (full to controlled, with an alert)
+Below the label minimum a gate returns `insufficient_data`, never pass. A failed gate returns `409 gate_not_met` with a `gates` list of `{ id, required, actual, met }` ([api.md](api.md)).
 
-- High-band agreement falls below target over a trailing 7 days.
-- Band mix drifts (PSI above 0.2 against the baseline).
-- The resolved model changes on a set that uses an alias.
-- Jev error rate above 5%.
+### Auto-demote
+
+The hourly gate evaluator (Phase 3) moves `full` to `controlled` and `controlled` to `shadow`, with an alert, when:
+
+- the precision lower bound falls below target over a trailing 7 days,
+- the band mix drifts: PSI above 0.2 against the baseline (the first 14 days after the version's last promotion), or
+- the resolved model changes.
+
+`paused` is set only by humans. Auto-demote runs as a system actor through `rollout.change` and emits `rollout.auto_demoted` ([events.md](events.md)).
+
+A set with no truth source (no app feedback and no audit sample) shows a "no truth source" warning, and its precision-based auto-demote is marked inactive rather than silently never firing.
 
 ### New versions of live sets
 
-Publishing a new version of a set that is already `controlled` or `full` defaults to champion and challenger: the new version runs in shadow on a sample of traffic and creates diff review items, then gets promoted. An admin can skip this with a written reason, which is audited.
-
-The console shows the stage as a status chip with a timeline and gate checklist, and writes every change to the audit log.
+Publishing a new version of a set whose production pointer is `controlled` or `full` defaults to champion and challenger: the new version runs as an experiment on a sample of traffic and is promoted when it matches or beats the champion. An admin can skip this with a written reason, which is audited; an agent needs an approval. Rules are in [effectiveness-loop.md](effectiveness-loop.md).
 
 ## Default thresholds by risk tier
 
-These are starting points to evaluate, not rules. Tune on the org's own labeled data.
+Starting points measured on jev-1.13; re-tune per model. Tune on the org's own labeled data.
 
 | Tier | Example | high | medium | Noul trueAt / falseAt / margin |
 |---|---|---|---|---|
@@ -103,17 +164,43 @@ Guidance from the TypeSafe docs:
 - If all you need is the best option, take the top choice. Don't threshold everything.
 - Low confidence on a harmless preference choice can be fine. Several acceptable options spread probability.
 - Confidence summarizes the distribution. It is not workflow correctness or permission to act.
+- Don't carry a threshold tuned on a Noul over to a Choice.
+
+## Quality targets
+
+Each goal stores one `QualityTarget` in `goals.quality_target`. This is the only place precision targets are defined.
+
+```ts
+QualityTarget = { tier: "low" | "standard" | "high", highPrecision: number, mediumPrecision: number,
+                  minCoverage: number, minLabeledHigh: number }
+```
+
+| Tier | highPrecision | mediumPrecision | minCoverage | minLabeledHigh |
+|---|---|---|---|---|
+| Low risk | 0.90 | 0.75 | 0.60 | 50 |
+| Standard | 0.95 | 0.85 | 0.50 | 100 |
+| High risk | 0.98 | 0.95 | 0.30 | 250 |
+
+Gates compare the 95% Wilson lower bound, not the point estimate. The high-risk minimum is 250 labels because a perfect record only clears 0.98 at about 190.
 
 ## Calibration targets (evals)
 
-- High band precision at or above the set's target (default 0.97 for high risk, 0.92 standard).
+- Targets come from the goal's `QualityTarget` above.
 - Coverage: the share of cases routed `auto`. Report it next to precision; raising a threshold trades coverage for precision.
 - Expected calibration error (ECE) and a reliability table per question.
-- A publish that drops high-band precision beyond the configured margin versus the production version's last eval is blocked when "require evals" is on.
+- Evals are required when publishing to a production pointer in `controlled` or `full`. The regression gate scores the champion and the candidate on the same dataset snapshot ([testing.md](testing.md)).
+
+## Labeling and truth
+
+Truth comes from three sources: app feedback, a random audit sample per band in every rollout stage, and reviewers. Precision (from any source) drives gates and auto-demote. Agreement is the reviewer-only subset. Targeted picks (near a threshold, challenger disagreements) feed datasets and the Studio, never gate metrics. Agent labels count only after a human confirms them. The labeling policy and the threshold suggester are in [effectiveness-loop.md](effectiveness-loop.md).
 
 ## Question design rules that affect confidence
 
-- One narrow judgment per question. Split fuzzy asks into separate checks (see `definition-studio.md`).
+- One narrow judgment per question. Split fuzzy asks into separate checks (see [definition-studio.md](definition-studio.md)).
 - Include a "none of these" option when nothing may fit. Without it, the model is forced to spread probability across wrong answers.
 - Score levels must describe concrete situations and stand on their own.
 - Give each question the state it needs. Missing evidence shows up as low confidence, which is the model telling you the truth.
+- Ask independent and speculative questions in one stage and use `relevantWhen`.
+- Do not copy a noul threshold to a choice.
+- Word noul true criteria positively.
+- If only the best option matters, use the top-choice preset.

@@ -1,13 +1,14 @@
 # ADR-001: Stack and tenancy model
 
 - **Status:** accepted
+- **Amended by:** ADR-008 (package and identifier renames), ADR-009 (customer SDK languages)
 - **Date:** 2026-09-26
 - **Owner:** Architect / Lead
 - **Contract impact:** establishes the initial contracts
 
 ## Context
 
-SysOne is a multi-tenant SaaS that wraps TypeSafe's Jev model. Nick sells it and also runs it across his own orgs (SGR, Personal, Dallas). It needs a console, a public API, an embed kit, billing, and later a Chrome extension and an MCP server. A team of agents will build it in parallel, so the stack must be common, well typed, and easy to split into lanes.
+SysOne is a multi-tenant SaaS that wraps TypeSafe's System One models, starting with Jev. Nick sells it and also runs it across his own orgs (SGR, Personal, Dallas). It needs a console, a public API, an embed kit, billing, and later a Chrome extension and an MCP server. A team of agents will build it in parallel, so the stack must be common, well typed, and easy to split into lanes.
 
 ## Decision
 
@@ -21,7 +22,7 @@ SysOne is a multi-tenant SaaS that wraps TypeSafe's Jev model. Nick sells it and
 | Cache and rate limits | Redis (Upstash) |
 | Background jobs | Inngest or an equivalent serverless job runner (decided in ADR-005) |
 | Billing | Stripe Billing with usage meters |
-| Jev | `@typesafe-ai/sdk`, imported only by `packages/jev-client` |
+| System One models (Jev first) | `@typesafe-ai/sdk`, imported only by `packages/system-one-client` (renamed from `jev-client` by ADR-008) |
 | Other LLMs | `@anthropic-ai/sdk`, imported only by `packages/llm-client` |
 | UI | shadcn/ui, Tailwind, TanStack Table |
 | Tests | Vitest, Playwright, k6 |
@@ -47,6 +48,7 @@ The plan Nick approved names Auth.js. The design review recommends Better Auth b
 - Every package boundary is enforced by lint, so agents can work in parallel with little overlap.
 - RLS adds some migration work per table. That cost is accepted because retrofitting tenancy later is how SaaS products leak data.
 - Pinning to Vercel and serverless jobs means no long-running workers. Rollups and meter pushes run as scheduled jobs.
+- This ADR covers SysOne's own stack. SDKs and generated code shipped to customers may include Python (ADR-009); that adds a second toolchain only in `packages/client-py`.
 
 ## Rollout
 

@@ -43,10 +43,10 @@ Phase 2   Platform (auth, app and agent tokens, approvals, limits)  ||  Billing 
 Phase 3   Console UI  ||  Platform (operations, /api/v1)  ||  Integrations (CLI, MCP stdio)
           ||  Quality / Learning (gates, auto-demote, audit sampler)  ||  Billing (reports)  ||  Embed Kit on mocks
    |
-   +--------------------------------+---------------------------------+
-   |                                |                                 |
-Phase 4   Embed Kit  ||  QA      Phase 3b  Quality / Learning      Phase 4b  Integrations
-          (in parallel with 3b and 4b)
+Phase 4   Embed Kit (real API)  ||  QA (bundle scan, E2E)
+          ||  Phase 3b  Quality / Learning (effectiveness loop)
+          ||  Phase 4b  Integrations (integrate and deploy)
+          All three start when Phase 3 lands and run in parallel.
    |
 Phase 5   Extensions (plugins, templates, org webhooks)
    |

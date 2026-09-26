@@ -1,7 +1,6 @@
 {
   "schemaVersion": 1,
   "model": "jev-1.13.0",
-  "rollout": "shadow",
   "input": {
     "schema": {
       "type": "object",
@@ -13,7 +12,8 @@
           "properties": {
             "from": { "type": "string" },
             "subject": { "type": "string" },
-            "body": { "type": "string" }
+            "body": { "type": "string" },
+            "signature": { "type": "string" }
           }
         },
         "me": {
@@ -25,7 +25,7 @@
         }
       }
     },
-    "redactPaths": ["email.body_signature"]
+    "redactPaths": ["email.signature"]
   },
   "stages": [
     {
@@ -77,32 +77,56 @@
             "none_of_these": null
           },
           "meta": { "label": "Category" }
+        },
+        "work_type": {
+          "type": "choice",
+          "instructions": "Assume `email` is a work request to the recipient. What does the sender need the recipient to do?",
+          "criteria": {
+            "decision": "Make or approve a decision.",
+            "information": "Send facts, an answer, or a document.",
+            "review": "Review or give feedback on something the sender made.",
+            "none_of_these": null
+          },
+          "meta": { "label": "Work type", "description": "Speculative: only relevant when category is work_request." }
         }
       }
     }
   ],
   "policies": {
     "real_person": {
+      "type": "noul",
       "gating": true,
-      "thresholds": { "high": 0.75, "medium": 0.45 },
       "noul": { "trueAt": 0.85, "falseAt": 0.15, "reviewMargin": 0.1 },
       "actions": { "high": { "kind": "auto" }, "medium": { "kind": "auto" }, "low": { "kind": "review" } }
     },
     "someone_waiting": {
+      "type": "noul",
       "gating": true,
-      "thresholds": { "high": 0.75, "medium": 0.45 },
       "noul": { "trueAt": 0.85, "falseAt": 0.15, "reviewMargin": 0.1 },
       "actions": { "high": { "kind": "auto" }, "medium": { "kind": "review" }, "low": { "kind": "review" } }
     },
     "cost_of_ignoring": {
+      "type": "score",
       "gating": true,
       "thresholds": { "high": 0.75, "medium": 0.45 },
       "actions": { "high": { "kind": "auto" }, "medium": { "kind": "review" }, "low": { "kind": "review" } }
     },
     "category": {
+      "type": "choice",
       "gating": false,
       "thresholds": { "high": 0.6, "medium": 0.3 },
-      "actions": { "high": { "kind": "auto" }, "medium": { "kind": "auto" }, "low": { "kind": "fallback", "config": { "value": "none_of_these" } } }
+      "actions": {
+        "high": { "kind": "auto" },
+        "medium": { "kind": "auto" },
+        "low": { "kind": "fallback", "config": { "kind": "value", "value": "none_of_these" } }
+      }
+    },
+    "work_type": {
+      "type": "choice",
+      "gating": true,
+      "relevantWhen": { "q": "category", "eq": "work_request" },
+      "thresholds": { "high": 0.75, "medium": 0.45 },
+      "actions": { "high": { "kind": "auto" }, "medium": { "kind": "review" }, "low": { "kind": "review" } }
     }
   },
   "composites": [
@@ -115,8 +139,9 @@
         { "q": "cost_of_ignoring", "weight": 0.4 }
       ],
       "policy": {
+        "type": "composite",
         "gating": true,
-        "thresholds": { "high": 0.7, "medium": 0.4 },
+        "levelThresholds": { "high": 0.7, "medium": 0.4 },
         "actions": { "high": { "kind": "auto", "handler": "builtin.slack.notify" }, "medium": { "kind": "review" }, "low": { "kind": "auto" } }
       }
     }
@@ -125,5 +150,6 @@
     { "when": { "composite": "urgency", "gte": 0.7 }, "output": "urgent" },
     { "when": { "q": "category", "eq": "newsletter" }, "output": "read_later" }
   ],
+  "defaultRoute": "normal",
   "savings": { "comparatorModel": "claude-haiku-4-5", "estOutputTokensPerQuestion": 60, "kind": "decision" }
 }

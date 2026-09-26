@@ -1,18 +1,21 @@
 # Phase 4: Embed kit
 
-**Owners:** Embed Kit, QA. **Needs:** frozen `openapi.json` (Phase 3). Components can start earlier against MSW mocks.
+**Owners:** Embed Kit, QA, Docs (recipes). **Needs:** `openapi.json` from Phase 0, extended in Phase 3. Components can start earlier against MSW mocks.
 
-- [ ] `@sysone/client`: `createClient({ baseUrl, token }).run(setRef, state)`, `createRunRoute()` for Next.js, Express handler
-- [ ] Browser token minting (5-minute JWT bound to origin and set list)
+- [ ] `@sysone/client`: `createClient({ baseUrl, token }).run(setRef, state)`, a generic `run<T>()` for generated clients ([deploy-and-codegen.md](../deploy-and-codegen.md)), `reportFeedback()`, `Idempotency-Key` support, the optional `SysOne-Interface` header, and `requestId` exposure; `createRunRoute()` for Next.js, Express handler
+- [ ] `@sysone/client` is fetch-only, with no Node built-ins, so it runs on Node, Vercel Edge, Cloudflare Workers and Deno; CI runs its tests under `@edge-runtime/vm`
+- [ ] `429` handling honors `Retry-After` with bounded retries in a single retry layer
+- [ ] Browser token minting through `POST /api/v1/tokens/browser` (ES256 JWT bound to origin and set list)
 - [ ] Publishable `pk_` mode support
-- [ ] `@sysone/react`: `QuestionSetRunner`, `ConfidenceBadge`, `ProbabilityBars`, `ScoreGauge`, `ReviewQueue`, `SavingsCard`, plus headless hooks
+- [ ] `@sysone/react`: `QuestionSetRunner`, `ConfidenceBadge`, `ProbabilityBars`, `ScoreGauge`, `ReviewQueue`, `SavingsCard`, plus headless hooks. `ReviewQueue` and `SavingsCard` require Mode A; add `createReviewRoutes()` and `createUsageRoute()` server helpers.
 - [ ] Theming through CSS variables, accessible by default
 - [ ] `apps/example-embed` using both modes
-- [ ] Quickstart docs
+- [ ] Integration recipes per [deploy-and-codegen.md](../deploy-and-codegen.md): Next.js route handler, Express, plain HTTP (curl), Python httpx; each branches on `effectiveAction`
 
 ## Exit gate
 - `example-embed` E2E passes in both modes.
 - CI bundle scan finds no key patterns in client output.
 - `@sysone/react` under 15 kB gzip.
-- Components render all three question types and all three bands.
+- Components render every question type in the core registry and all three bands.
+- Client tests pass in the edge runtime.
 - Revoking a token blocks it within 60 seconds.

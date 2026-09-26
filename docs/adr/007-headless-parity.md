@@ -46,7 +46,7 @@ OperationDef<I, O> = {
 }
 ```
 
-`runOperation(id, ctx, input, { idempotencyKey?, ifMatch?, dryRun? })` runs the same steps for every caller: check scope and role with `can()`, apply the approval gate, look up the idempotency key, check `If-Match`, run the handler inside `withTenant`, write the audit row and the event, and store the idempotent response.
+`runOperation(id, ctx, input, { idempotencyKey?, ifMatch?, dryRun? })` runs the same steps for every caller: resolve the actor, check scope and role with `can()`, apply the approval gate, look up the idempotency key, check `If-Match`, run the handler inside `withTenant`, write the audit row and the event, and store the idempotent response.
 
 - Server Actions and `/api/v1` route handlers are thin adapters over `runOperation`. Console UI code calls operations, never repositories.
 - `@sysone/cli` and the MCP server call `/api/v1` over HTTP. Neither touches the database or a TypeSafe key.
@@ -97,7 +97,7 @@ High-risk operations:
 - PII or retention changes
 - org deletion
 
-Moves toward safety (pause, rollback, demote) are never gated, so an agent can always make things safer without waiting for a human.
+Moves toward safety (pause, rollback, demote) are never gated, even on production for a protected set, so an agent can always make things safer without waiting for a human. That is why rollback is not on the list above.
 
 Per-org setting `agentApprovals`:
 
@@ -163,7 +163,7 @@ New codes: `403 insufficient_scope` (the resource is in the caller's org but the
 
 ## Rollout
 
-- **Phase 0 part two:** `OperationDef`, the agent actor, the `Role` and `Scope` unions, error envelope v2 and the registry skeleton land in `packages/core/src/contracts` before the freeze. This ADR is accepted in the same step. No code exists yet, so these are doc edits, not per-field ADRs.
+- **Phase 0 part two:** `OperationDef`, the agent actor, the `Role` and `Scope` unions and error envelope v2 land in `packages/core/src/contracts`, and the registry skeleton in `apps/console/src/server/operations`, before the freeze. This ADR is accepted in the same step. No code exists yet, so these are doc edits, not per-field ADRs.
 - **Phase 2:** agent tokens and the device flow, the approval gate and `approval_requests`, idempotency keys and `If-Match`.
 - **Phase 3:** every operation in management-api.md, the parity test, `@sysone/cli` management commands, the MCP server over stdio and the event feed.
 - **Phase 7:** the MCP HTTP transport and the Claude Code plugin packaging.

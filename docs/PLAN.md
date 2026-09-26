@@ -108,7 +108,7 @@ Checklists: `.claude/skills/sysone-builder/references/phases/`.
 Each role runs as its own Claude Code session (or subagent) on its own branch and worktree. Every session starts by loading the builder skill. Suggested kickoff prompts:
 
 **Architect / Lead (Phase 0 part two)**
-> Load the sysone-builder skill. Complete Phase 0 part two from `references/phases/phase-0.md`: scaffold the pnpm and turborepo workspace, write the zod contracts in `packages/core/src/contracts` (including OperationDef, the error envelope v2, ModelProfile, SetInterface and the agent actor), the operation registry skeleton, generate `openapi.json`, add boundary lint rules and CI, and draft ADRs 002 through 010. Open a draft PR per logical chunk.
+> Load the sysone-builder skill. Complete Phase 0 part two from `references/phases/phase-0.md`: scaffold the pnpm and turborepo workspace, write the zod contracts in `packages/core/src/contracts` (including OperationDef, the error envelope v2, ModelProfile, SetInterface and the agent actor) and the operation registry skeleton, generate `openapi.json`, add boundary lint rules and CI, and draft ADRs 002 through 010. Open a draft PR per logical chunk.
 
 **Core Engine (Phase 1)**
 > Load the sysone-builder skill. Build the Core Engine items in `references/phases/phase-1.md`. Start with the confidence router and its table-driven tests, then the compiler, stages, savings math, preflight, and lints. Use the fixture transport only. Don't touch `packages/db`.
