@@ -6,7 +6,7 @@
 import js from "@eslint/js";
 import globals from "globals";
 import tseslint from "typescript-eslint";
-import { boundariesConfig } from "./boundaries.js";
+import { boundariesConfig, purityConfig } from "./boundaries.js";
 
 /** @type {import("eslint").Linter.Config[]} */
 export const ignores = [
@@ -54,4 +54,7 @@ const sysone = [
 ];
 
 export default sysone;
-export { boundariesConfig } from "./boundaries.js";
+export { boundariesConfig, purityConfig } from "./boundaries.js";
+
+/** The shared config plus the purity rules, for core and codegen. */
+export const pure = [...sysone, ...purityConfig];

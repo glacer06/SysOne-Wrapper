@@ -4,11 +4,15 @@ import {
   QUESTION_TYPE_IDS,
   QuestionDef,
   QuestionTypeId,
+  type AnswerOf,
+  type ChoiceTypeModule,
   type NoulTypeModule,
+  type PolicyOf,
+  type QuestionOf,
   type QuestionTypeModules,
   isQuestionTypeId,
 } from "./question-types.js";
-import { NoulAnswer } from "./system-one.js";
+import { NoulAnswer, type SystemOneQuestion } from "./system-one.js";
 
 const meta = { label: "Label" };
 
@@ -96,5 +100,28 @@ describe("QuestionTypeModule", () => {
       actions: { high: { kind: "auto" as const }, medium: { kind: "review" as const }, low: { kind: "review" as const } },
     };
     expect(noul.band({ type: "noul", noul: 0.9 }, policy)).toEqual({ value: true, band: "high" });
+  });
+});
+
+describe("QuestionTypeModules", () => {
+  it("dispatches through the map for a generic type, with no switch and no cast", () => {
+    // Compile-time check: these generic helpers must typecheck without `as` or `never`.
+    function compileAny<K extends QuestionTypeId>(
+      modules: QuestionTypeModules,
+      q: QuestionOf<K> & { type: K },
+    ): SystemOneQuestion {
+      return modules[q.type].compile(q);
+    }
+    function bandAny<K extends QuestionTypeId>(
+      modules: QuestionTypeModules,
+      type: K,
+      answer: AnswerOf<K>,
+      policy: PolicyOf<K>,
+    ): { value: unknown; band: string } {
+      return modules[type].band(answer, policy);
+    }
+    expectTypeOf(compileAny).returns.toEqualTypeOf<SystemOneQuestion>();
+    expectTypeOf(bandAny).toBeFunction();
+    expectTypeOf<QuestionTypeModules["choice"]>().toEqualTypeOf<ChoiceTypeModule>();
   });
 });

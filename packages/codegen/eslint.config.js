@@ -1,3 +1,3 @@
-import sysone from "@sysone/config/eslint";
+import { pure } from "@sysone/config/eslint";
 
-export default sysone;
+export default pure;

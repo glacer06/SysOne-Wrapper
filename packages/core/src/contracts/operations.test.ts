@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, expectTypeOf, it } from "vitest";
 import { z } from "zod";
 
 import {
@@ -17,11 +17,15 @@ import {
   OPERATION_ID_PATTERN,
   OperationCatalogEntry,
   type OperationDef,
+  NO_SET_RISK_RESOURCE,
+  type OperationContextFor,
+  type OrgLessOperationId,
   catalogActors,
   catalogEntry,
   describeOperation,
+  runsWithoutOrg,
 } from "./operations.js";
-import type { TenantContext } from "./tenant.js";
+import type { OperationContext, TenantContext } from "./tenant.js";
 
 const ids = OPERATION_CATALOG.map((e) => e.id);
 
@@ -88,6 +92,28 @@ describe("OPERATION_CATALOG", () => {
   });
 });
 
+describe("org-less operations", () => {
+  it("are org.create and the platform rows, all session only", () => {
+    const orgLess = OPERATION_CATALOG.filter(runsWithoutOrg).map((e) => e.id);
+    expect(orgLess).toContain("org.create");
+    expect(orgLess.filter((id) => id !== "org.create").every((id) => id.startsWith("platform_"))).toBe(true);
+    expect(orgLess).not.toContain("browser_token.create");
+    for (const id of orgLess) expect(catalogActors(catalogEntry(id))).toEqual(["user"]);
+  });
+
+  it("type their handler context as OperationContext, every other operation as TenantContext", () => {
+    expectTypeOf<"org.create">().toExtend<OrgLessOperationId>();
+    expectTypeOf<OperationContextFor<"org.create">>().toEqualTypeOf<OperationContext>();
+    expectTypeOf<OperationContextFor<"platform_org.suspend">>().toEqualTypeOf<OperationContext>();
+    expectTypeOf<OperationContextFor<"set.publish">>().toEqualTypeOf<TenantContext>();
+    expectTypeOf<OperationContextFor<"browser_token.create">>().toEqualTypeOf<TenantContext>();
+  });
+
+  it("have a RiskResource with no set", () => {
+    expect(NO_SET_RISK_RESOURCE).toEqual({ protected: false, stages: { production: null, staging: null }, storageMode: null });
+  });
+});
+
 describe("catalogActors", () => {
   it("applies the management-api.md actor rules", () => {
     expect(catalogActors(catalogEntry("approval.decide"))).toEqual(["user"]);
@@ -119,7 +145,7 @@ describe("catalog matches management-api.md", () => {
     r.startsWith("none") ? "none" : r === "admin (per org)" ? "admin" : r === "the requested operation's role" ? "requested_operation" : r;
 
   // Deliberate differences from the table, each explained in operations.ts.
-  const riskOverrides: Record<string, string> = { "experiment.start": "high*" };
+  const riskOverrides: Record<string, string> = { "set.update": "high*", "experiment.start": "high*" };
 
   it("has one entry per operation row", () => {
     expect(docRows.length).toBe(OPERATION_CATALOG.length);
@@ -161,7 +187,7 @@ describe("describeOperation", () => {
     minRole: "editor",
     actors: ["user", "agent"],
     risk: (_ctx, input, resource) =>
-      input.channel === "production" && (resource.protected || resource.productionStage === "full") ? "high" : "normal",
+      input.channel === "production" && (resource.protected || resource.stages.production === "full") ? "high" : "normal",
     towardSafety: false,
     readOnly: false,
     destructive: false,

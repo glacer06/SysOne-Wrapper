@@ -18,13 +18,16 @@ catalog:
   react: 19.3.0
   react-dom: 19.3.0
   server-only: 0.0.1
+  tsx: 4.23.15
   turbo: 2.11.4
+  # TypeScript 7 is outside the typescript-eslint 8 peer range (>=4.8.4 <6.1.0), so this pins the newest 5.x.
   typescript: 5.9.3
   typescript-eslint: 8.70.1
   vite: 8.3.1
   vitest: 5.0.2
   zod: 4.6.5
 
-# unrs-resolver ships prebuilt bindings, so its postinstall is not needed.
+# unrs-resolver and esbuild (through tsx) ship prebuilt bindings, so their postinstalls are not needed.
 ignoredBuiltDependencies:
+  - esbuild
   - unrs-resolver

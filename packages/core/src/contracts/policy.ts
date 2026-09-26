@@ -1,7 +1,7 @@
 // Conditions, checks, confidence policies and actions.
 // Sources: references/spec-schema.md (sections 2, 3, 7 and 8) and references/confidence-policy.md
 // (policy shape, band algorithm, actions). Every schema here is part of the strict spec, so unknown
-// keys fail. Free-form values stay open: the handler `config` on an `auto` or `review` action.
+// keys fail. Free-form values stay open: the handler `config` on an `auto` action (section 13).
 //
 // Condition and Check live here rather than in spec.ts because policies (`relevantWhen`) need them
 // and spec.ts imports policies. Keeping the import graph acyclic avoids module init order bugs.
@@ -42,6 +42,56 @@ export type Condition =
 /** Max length of a `matches` regular expression. It runs on a linear-time engine. */
 export const CONDITION_MATCHES_MAX_LENGTH = 256;
 
+/**
+ * Why a `matches` pattern falls outside the linear-time subset, or null when it is inside.
+ *
+ * The subset is JavaScript regular expression syntax with the `u` flag, minus the features no
+ * linear-time (automaton) engine can run: backreferences (`\1`, `\k<name>`) and lookaround
+ * (`(?=`, `(?!`, `(?<=`, `(?<!`). Core matches this subset with its own pure automaton, so
+ * JavaScript's backtracking RegExp never runs untrusted patterns on state.
+ */
+export function matchesPatternProblem(pattern: string): string | null {
+  try {
+    new RegExp(pattern, "u");
+  } catch {
+    return "not a valid regular expression (u flag)";
+  }
+  let inClass = false;
+  for (let i = 0; i < pattern.length; i++) {
+    const c = pattern[i];
+    if (c === "\\") {
+      const next = pattern[i + 1] ?? "";
+      if (!inClass && (/[1-9]/.test(next) || next === "k")) return "backreferences are not supported";
+      i++;
+      continue;
+    }
+    if (inClass) {
+      if (c === "]") inClass = false;
+      continue;
+    }
+    if (c === "[") {
+      inClass = true;
+      continue;
+    }
+    if (c === "(" && pattern[i + 1] === "?") {
+      const rest = pattern.slice(i + 2, i + 4);
+      if (rest.startsWith("=") || rest.startsWith("!") || rest === "<=" || rest === "<!") {
+        return "lookahead and lookbehind are not supported";
+      }
+    }
+  }
+  return null;
+}
+
+const MatchesPattern = z
+  .string()
+  .min(1)
+  .max(CONDITION_MATCHES_MAX_LENGTH)
+  .superRefine((pattern, ctx) => {
+    const problem = matchesPatternProblem(pattern);
+    if (problem !== null) ctx.addIssue({ code: "custom", message: `matches: ${problem}` });
+  });
+
 const hasBound = (r: Range): boolean => r.gte !== undefined || r.lte !== undefined;
 const RANGE_MESSAGE = "a range condition needs gte, lte or both";
 
@@ -70,7 +120,7 @@ export const Condition: z.ZodType<Condition> = z.lazy(() =>
     z.strictObject({ input: StatePath, neq: Value }),
     z.strictObject({ input: StatePath, in: z.array(Value) }),
     z.strictObject({ input: StatePath, exists: z.boolean() }),
-    z.strictObject({ input: StatePath, matches: z.string().min(1).max(CONDITION_MATCHES_MAX_LENGTH) }),
+    z.strictObject({ input: StatePath, matches: MatchesPattern }),
     inputRange,
   ]),
 );
@@ -124,10 +174,14 @@ const AutoActionRef = z.strictObject({
   /** Handler config, free-form. */
   config: z.unknown().optional(),
 });
+/**
+ * No config: handler config applies only to an auto action, since handlers run only when
+ * effectiveAction is auto (spec-schema.md sections 8 and 13). A review `config` fails as an
+ * unknown key.
+ */
 const ReviewActionRef = z.strictObject({
   kind: z.literal("review"),
   handler: HandlerId.optional(),
-  config: z.unknown().optional(),
 });
 const FallbackActionRef = z.strictObject({
   kind: z.literal("fallback"),

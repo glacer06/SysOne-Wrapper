@@ -2,7 +2,13 @@ import { describe, expect, it } from "vitest";
 
 import { KNOWN_WEAKNESS_IDS, ModelProfile, classifyModelName } from "../contracts/models.js";
 import { ModelPrice } from "../contracts/ports.js";
-import { SEED_MODEL_PROFILES, SEED_PLATFORM_DEFAULT_MODEL, SEED_SYSTEM_ONE_PRICES } from "./catalog.js";
+import {
+  SEED_COMPARATOR_PRICES,
+  SEED_DEFAULT_COMPARATOR_MODEL,
+  SEED_MODEL_PROFILES,
+  SEED_PLATFORM_DEFAULT_MODEL,
+  SEED_SYSTEM_ONE_PRICES,
+} from "./catalog.js";
 
 function row(id: string): ModelProfile {
   const found = SEED_MODEL_PROFILES.find((p) => p.id === id);
@@ -29,8 +35,8 @@ describe("seed catalog", () => {
   });
 
   it("matches the jev-1.13.0 seed table row", () => {
-    const jev = row("jev-1.13.0");
-    expect(jev).toMatchObject({
+    const pinned = row("jev-1.13.0");
+    expect(pinned).toMatchObject({
       family: "jev",
       kind: "versioned",
       status: "stable",
@@ -45,11 +51,11 @@ describe("seed catalog", () => {
       jaggednessUrl: "https://docs.typesafe.ai/model-jaggedness/jev-1.13.md",
       lastReviewed: "2026-09-26",
     });
-    expect(jev.weaknesses).toEqual([...KNOWN_WEAKNESS_IDS]);
+    expect(pinned.weaknesses).toEqual([...KNOWN_WEAKNESS_IDS]);
   });
 
   it("gives the aliases the documented status and target, copying the target's facts", () => {
-    const jev = row("jev-1.13.0");
+    const pinned = row("jev-1.13.0");
     for (const [id, status] of [
       ["jev-latest", "stable"],
       ["jev-preview", "preview"],
@@ -67,10 +73,10 @@ describe("seed catalog", () => {
         docsUrl: "https://docs.typesafe.ai/models.md",
         lastReviewed: "2026-09-26",
       });
-      expect(a.limits).toEqual(jev.limits);
-      expect(a.questionTypes).toEqual(jev.questionTypes);
-      expect(a.inputModalities).toEqual(jev.inputModalities);
-      expect(a.weaknesses).toEqual(jev.weaknesses);
+      expect(a.limits).toEqual(pinned.limits);
+      expect(a.questionTypes).toEqual(pinned.questionTypes);
+      expect(a.inputModalities).toEqual(pinned.inputModalities);
+      expect(a.weaknesses).toEqual(pinned.weaknesses);
     }
   });
 
@@ -106,5 +112,23 @@ describe("seed prices", () => {
     for (const p of SEED_MODEL_PROFILES) {
       expect(Object.keys(p).some((k) => k.toLowerCase().includes("price"))).toBe(false);
     }
+  });
+});
+
+describe("seed comparator prices", () => {
+  it("matches the savings-model.md seed rows in micro-USD per million tokens", () => {
+    expect(SEED_COMPARATOR_PRICES).toEqual([
+      { model: "claude-haiku-4-5", inputPerMtokMicroUsd: 1_000_000, outputPerMtokMicroUsd: 5_000_000 },
+      { model: "claude-fable-5-1", inputPerMtokMicroUsd: 10_000_000, outputPerMtokMicroUsd: 50_000_000 },
+    ]);
+    for (const { model: _model, ...price } of SEED_COMPARATOR_PRICES) {
+      expect(ModelPrice.parse(price)).toEqual(price);
+    }
+  });
+
+  it("prices the default comparator and never a System One model", () => {
+    expect(SEED_COMPARATOR_PRICES.map((p) => p.model)).toContain(SEED_DEFAULT_COMPARATOR_MODEL);
+    const systemOneIds = new Set(SEED_MODEL_PROFILES.map((p) => p.id));
+    for (const p of SEED_COMPARATOR_PRICES) expect(systemOneIds.has(p.model)).toBe(false);
   });
 });

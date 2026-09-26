@@ -50,10 +50,10 @@ describe("FeedbackReport", () => {
     expect(FeedbackReport.safeParse(rest).success).toBe(false);
   });
 
-  it("allows an optional source for the server to check, but only a known one", () => {
-    expect(FeedbackReport.safeParse({ ...byRef, source: "app" }).success).toBe(true);
-    expect(FeedbackReport.safeParse({ ...byRef, source: "reviewer" }).success).toBe(true);
-    expect(FeedbackReport.safeParse({ ...byRef, source: "human" }).success).toBe(false);
+  it("has no source field: the server derives it, so any body source fails", () => {
+    for (const source of ["app", "agent", "reviewer", "audit", "human"]) {
+      expect(FeedbackReport.safeParse({ ...byRef, source }).success, source).toBe(false);
+    }
   });
 
   it("is strict and checks the target shape", () => {

@@ -15,19 +15,86 @@ import {
   ExperimentArm,
   ExperimentId,
   KeyMode,
+  MicroUsd,
   MicroUsdPerMtok,
-  type PiiMode,
+  PiiMode,
+  type PointerChannel,
   ReviewItemId,
   RolloutStage,
   RunId,
+  SetId,
+  StorageMode,
   TokenCount,
   VersionId,
 } from "./common.js";
+import { ErrorCode } from "./errors.js";
 import { ModelProfile } from "./models.js";
 import { RunResult } from "./run.js";
-import { QuestionSetSpec, RunRequest } from "./spec.js";
+import { QuestionSetSpec, RunRequest, type RunSource } from "./spec.js";
 import { type SystemOneRequest, SystemOneResponse } from "./system-one.js";
 import type { TenantContext } from "./tenant.js";
+
+// ---------------------------------------------------------------------------
+// Transport errors
+
+/**
+ * Internal-only codes a transport may throw besides the api.md codes. None of them is ever
+ * returned to a caller:
+ * - `client_aborted`: the AbortSignal fired (system-one-api-contract.md, SDK error mapping). A run
+ *   whose budget ran out reports `system_one_unavailable`.
+ * - `llm_unavailable`: the LLM provider failed after its retries.
+ * - `llm_invalid_reply`: the reply was not one value of the question's type.
+ */
+export const INTERNAL_TRANSPORT_ERROR_CODES = ["client_aborted", "llm_unavailable", "llm_invalid_reply"] as const;
+
+export const TransportErrorCode = z.union([ErrorCode, z.enum(INTERNAL_TRANSPORT_ERROR_CODES)]);
+export type TransportErrorCode = z.infer<typeof TransportErrorCode>;
+
+export const TransportErrorInfo = z.strictObject({
+  code: TransportErrorCode,
+  retryable: z.boolean(),
+  /** The provider's request id (x-typesafe-request-id for System One), when a response arrived. */
+  requestId: z.string().nullable(),
+});
+export type TransportErrorInfo = z.infer<typeof TransportErrorInfo>;
+
+const TRANSPORT_ERROR_BRAND = "sysone.transport_error";
+
+/**
+ * What SystemOneTransport and LlmTransport throw. system-one-client maps SDK errors to the
+ * system_one_* codes, llm-client maps provider errors to the llm_* codes, and both map an abort to
+ * `client_aborted`. Core narrows with isTransportError, never with instanceof on a class from
+ * another package, and never reads the message, which is already scrubbed of payloads.
+ */
+export class TransportError extends Error implements TransportErrorInfo {
+  override readonly name = "TransportError";
+  readonly brand = TRANSPORT_ERROR_BRAND;
+  readonly code: TransportErrorCode;
+  readonly retryable: boolean;
+  readonly requestId: string | null;
+
+  constructor(info: TransportErrorInfo, message: string) {
+    super(message);
+    this.code = info.code;
+    this.retryable = info.retryable;
+    this.requestId = info.requestId;
+  }
+}
+
+/** True for a TransportError, including one built by another copy of this module. */
+export function isTransportError(e: unknown): e is TransportError {
+  if (e instanceof TransportError) return true;
+  if (typeof e !== "object" || e === null) return false;
+  const candidate = e as { brand?: unknown; code?: unknown; retryable?: unknown; requestId?: unknown };
+  return (
+    candidate.brand === TRANSPORT_ERROR_BRAND &&
+    TransportErrorInfo.safeParse({
+      code: candidate.code,
+      retryable: candidate.retryable,
+      requestId: candidate.requestId,
+    }).success
+  );
+}
 
 // ---------------------------------------------------------------------------
 // SystemOneTransport
@@ -54,7 +121,7 @@ export const SystemOneCallResult = z.strictObject({
 });
 export type SystemOneCallResult = z.infer<typeof SystemOneCallResult>;
 
-/** One System One request. Throws a mapped system_one_* error (system-one-api-contract.md). */
+/** One System One request. Throws a TransportError with a system_one_* code or client_aborted. */
 export interface SystemOneTransport {
   call(req: SystemOneRequest, opts: SystemOneCallOptions): Promise<SystemOneCallResult>;
 }
@@ -131,7 +198,10 @@ export type QuotaGuard = (ctx: TenantContext, model: string, estTokens: number) 
 // ---------------------------------------------------------------------------
 // RunSink
 
-/** runs.stages as the sink receives it: one row per spec stage, totals over its calls. */
+/**
+ * Per-stage totals over a stage's calls: the input for usage_events and the per-stage latency
+ * report. `runs.stages` stores `result.stages` (RunStage, with its calls), not these rows.
+ */
 export const RunSinkStage = z.strictObject({
   id: z.string().min(1),
   skipped: z.boolean(),
@@ -142,15 +212,41 @@ export const RunSinkStage = z.strictObject({
 });
 export type RunSinkStage = z.infer<typeof RunSinkStage>;
 
-export const RunSinkRecord = z.strictObject({
-  result: RunResult,
-  /** externalRef, source, metadata. */
-  request: RunRequest,
-  /** As stored: redacted per pii_mode, null for hash-only sets. */
-  state: z.unknown(),
-  stateHash: z.string().min(1),
-  stages: z.array(RunSinkStage),
-});
+export const RunSinkRecord = z
+  .strictObject({
+    result: RunResult,
+    /** externalRef, source, metadata. */
+    request: RunRequest,
+    /** As stored: redacted per pii_mode, null for hash_only sets. */
+    state: z.unknown().nullable(),
+    stateHash: z.string().min(1),
+    /** Totals derived from result.stages, one per spec stage in the same order. */
+    stages: z.array(RunSinkStage),
+    /** runs.key_mode, from the KeyResolver call the run already made. runs.error_code is result.error?.code. */
+    keyMode: KeyMode,
+    /** runs.parent_run_id: set on a linked run started by a `set` fallback (spec-schema.md section 7). */
+    parentRunId: RunId.nullable(),
+  })
+  .superRefine((r, ctx) => {
+    const expected = r.result.stages;
+    if (r.stages.length !== expected.length) {
+      ctx.addIssue({ code: "custom", path: ["stages"], message: "needs one row per result stage" });
+      return;
+    }
+    for (const [i, row] of r.stages.entries()) {
+      const stage = expected[i];
+      if (stage === undefined) continue;
+      const input = stage.calls.reduce((n, c) => n + c.inputTokens, 0);
+      const output = stage.calls.reduce((n, c) => n + c.outputTokens, 0);
+      if (row.id !== stage.id || row.skipped !== stage.skipped || row.inputTokens !== input || row.outputTokens !== output) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["stages", i],
+          message: "must match the id, skipped flag and token totals of result.stages at the same index",
+        });
+      }
+    }
+  });
 export type RunSinkRecord = z.infer<typeof RunSinkRecord>;
 
 export const RunSinkResult = z.strictObject({
@@ -223,7 +319,10 @@ export const LlmCompletion = z.strictObject({
 });
 export type LlmCompletion = z.infer<typeof LlmCompletion>;
 
-/** Used by escalate_to_llm, Studio drafting, improve mode and opportunity drafting. */
+/**
+ * Used by escalate_to_llm, Studio drafting, improve mode and opportunity drafting. Throws a
+ * TransportError with an llm_* code or client_aborted.
+ */
 export interface LlmTransport {
   complete(req: LlmCompletionRequest & { signal: AbortSignal }): Promise<LlmCompletion>;
 }
@@ -265,21 +364,120 @@ export interface RunPorts {
   /** escalate_to_llm. */
   llm?: LlmTransport;
   redactor?: Redactor;
+  /** `set` fallbacks. Missing: the decision keeps its value and the run gets `fallback_set_failed`. */
+  linkedRun?: LinkedRunPort;
 }
+
+// ---------------------------------------------------------------------------
+// Linked runs (spec-schema.md section 7)
+
+export interface LinkedRunOptions {
+  /** The caller's channel, so the linked set's own pointer and rollout stage on it apply. */
+  channel: PointerChannel;
+  parentRunId: RunId;
+  /** Fires when the parent's remaining latency budget runs out. */
+  signal: AbortSignal;
+}
+
+/**
+ * Runs another set on the caller's original state as a linked run, before the parent run is
+ * persisted. The linked run is persisted with `runs.parent_run_id` set; the parent's decision gets
+ * `fallbackRunId`.
+ */
+export type LinkedRunPort = (setRef: string, state: unknown, opts: LinkedRunOptions) => Promise<RunResult>;
+
+// ---------------------------------------------------------------------------
+// Latency budgets (architecture.md, Latency budgets)
+
+/** The surfaces with a latency budget. */
+export const RunSurface = z.enum(["api", "embed", "extension", "eval"]);
+export type RunSurface = z.infer<typeof RunSurface>;
+
+/** Total budget per run, in ms. Every System One call's timeout and retry budget come from what is left. */
+export const LATENCY_BUDGET_MS = {
+  api: 8_000,
+  embed: 5_000,
+  extension: 3_000,
+  eval: 30_000,
+} as const satisfies Record<RunSurface, number>;
+
+/** Which budget a run source uses. Console, playground, CLI and MCP runs go through the API budget. */
+export const RUN_SOURCE_SURFACE = {
+  console: "api",
+  playground: "api",
+  api: "api",
+  embed: "embed",
+  extension: "extension",
+  mcp: "api",
+  eval: "eval",
+  cli: "api",
+} as const satisfies Record<RunSource, RunSurface>;
+
+/** The latency budget for a run source. */
+export function latencyBudgetMs(source: RunSource): number {
+  return LATENCY_BUDGET_MS[RUN_SOURCE_SURFACE[source]];
+}
+
+// ---------------------------------------------------------------------------
+// runQuestionSet
+
+/**
+ * Set and org settings the router and the envelope builder read. The resolver reads them with the
+ * pointer; core never reads a store.
+ */
+export const RunSettings = z.strictObject({
+  /** question_sets.dispatch_actions_on_staging. Without it, auto on staging is not executed. */
+  dispatchActionsOnStaging: z.boolean(),
+  /** question_sets.storage_mode. hash_only: RunSinkRecord.state is null. */
+  storageMode: StorageMode,
+  /** organizations.pii_mode, passed to the Redactor. */
+  piiMode: PiiMode,
+  /**
+   * The org's default comparator: RunCost.comparatorModel when spec.savings.comparatorModel is
+   * absent, and the EscalationConfig.model default.
+   */
+  defaultComparatorModel: z.string().min(1),
+  /**
+   * Mean cost of the org's actual escalations, for escalation_avoided savings (savings-model.md).
+   * Null when the org has none; core then estimates it with the comparator.
+   */
+  avgEscalationCostMicroUsd: MicroUsd.nullable(),
+});
+export type RunSettings = z.infer<typeof RunSettings>;
 
 /** What the pointer resolver hands to runQuestionSet. */
 export const ResolvedRun = z.strictObject({
   spec: QuestionSetSpec,
+  setId: SetId,
+  /** The version number; the draft row's number for slug@draft. */
+  version: z.number().int().positive(),
   versionId: VersionId,
+  interfaceMajor: z.number().int().nonnegative(),
+  interfaceHash: z.string().min(1),
   channel: Channel,
   rollout: RolloutStage,
   experiment: z.strictObject({ id: ExperimentId, arm: ExperimentArm }).optional(),
+  settings: RunSettings,
 });
 export type ResolvedRun = z.infer<typeof ResolvedRun>;
 
+/** Cancellation and the latency budget for one run. */
+export interface RunControl {
+  /** Fires when the caller goes away (client disconnect) or the budget runs out. */
+  signal: AbortSignal;
+  /** Total budget in ms, usually latencyBudgetMs(req.source). Core measures it with ports.clock. */
+  budgetMs: number;
+}
+
+/**
+ * Runs one question set. Returns a RunResult for every run that got a runId, including failed ones
+ * (status other than "ok", with `error`). Throws only before a run row exists, for example on
+ * invalid state or an inactive channel.
+ */
 export type RunQuestionSet = (
   ctx: TenantContext,
   req: RunRequest,
   resolved: ResolvedRun,
   ports: RunPorts,
+  control: RunControl,
 ) => Promise<RunResult>;

@@ -26,9 +26,11 @@ const resolveTsconfig = fileURLToPath(new URL("../tsconfig/resolve.json", import
  * Element types. Order matters: the first matching pattern wins, so narrower
  * folders (core contracts, client server entrypoints, cli local mode, console
  * pages) come before the package that contains them.
- * @type {Array<{ type: string; pattern: string }>}
+ * @type {Array<{ type: string; pattern: string; mode?: "file" | "folder" }>}
  */
 export const elements = [
+  // The generated OpenAPI document: data, not code. The HTTP clients build against it.
+  { type: "core-openapi", pattern: "packages/core/openapi.json", mode: "file" },
   { type: "core-contracts", pattern: "packages/core/src/contracts" },
   { type: "core", pattern: "packages/core" },
   { type: "system-one-client", pattern: "packages/system-one-client" },
@@ -60,6 +62,7 @@ export const elements = [
  * @type {Record<string, string[]>}
  */
 export const allowedElementDeps = {
+  "core-openapi": [],
   "core-contracts": ["core"],
   core: ["core-contracts"],
   "system-one-client": ["core", "core-contracts"],
@@ -68,13 +71,13 @@ export const allowedElementDeps = {
   tenancy: ["core", "core-contracts"],
   billing: ["core", "core-contracts"],
   "client-server": ["client", "core", "core-contracts"],
-  client: ["core", "core-contracts"],
+  client: ["core", "core-contracts", "core-openapi"],
   react: ["client", "core", "core-contracts"],
   evals: ["core", "core-contracts", "system-one-client"],
-  "cli-local": ["cli", "client", "codegen", "core", "core-contracts", "system-one-client"],
-  cli: ["cli-local", "client", "codegen"],
+  "cli-local": ["cli", "client", "codegen", "core", "core-contracts", "core-openapi", "system-one-client"],
+  cli: ["cli-local", "client", "codegen", "core-openapi"],
   codegen: ["core-contracts"],
-  "mcp-server": ["client", "core-contracts"],
+  "mcp-server": ["client", "core-contracts", "core-openapi"],
   "plugin-sdk": ["core", "core-contracts"],
   "plugins-builtin": ["plugin-sdk", "core", "core-contracts"],
   config: [],
@@ -103,7 +106,7 @@ export const allowedElementDeps = {
     "plugin-sdk",
     "plugins-builtin",
   ],
-  "example-embed": ["client", "client-server", "react", "core-contracts"],
+  "example-embed": ["client", "client-server", "react", "core-contracts", "core-openapi"],
   "extension-chrome": ["client", "react", "core-contracts"],
 };
 
@@ -227,6 +230,78 @@ export const boundariesConfig = [
           policies: buildPolicies(),
         },
       ],
+    },
+  },
+];
+
+// ---------------------------------------------------------------------------
+// Purity (golden rule 3): core, core contracts and codegen have no clock, id source, randomness,
+// timers, env or network of their own. Imports are covered above; these rules cover globals.
+
+const PURITY_MESSAGE = "is not allowed in a pure package (core, codegen). Take it through RunPorts or an argument.";
+
+/**
+ * Globals that reach the outside world, read the clock or schedule work.
+ * @type {Array<{ name: string; message: string }>}
+ */
+export const pureRestrictedGlobals = [
+  "process",
+  "Buffer",
+  "setTimeout",
+  "setInterval",
+  "setImmediate",
+  "clearTimeout",
+  "clearInterval",
+  "clearImmediate",
+  "fetch",
+  "crypto",
+  "performance",
+  "require",
+  "__dirname",
+  "__filename",
+  "globalThis",
+].map((name) => ({ name, message: `${name} ${PURITY_MESSAGE}` }));
+
+/**
+ * Clock and randomness reads through otherwise allowed globals.
+ * @type {Array<{ object: string; property: string; message: string }>}
+ */
+export const pureRestrictedProperties = [
+  { object: "Date", property: "now" },
+  { object: "Math", property: "random" },
+  { object: "crypto", property: "randomUUID" },
+  { object: "crypto", property: "getRandomValues" },
+  { object: "performance", property: "now" },
+].map(({ object, property }) => ({ object, property, message: `${object}.${property}() ${PURITY_MESSAGE}` }));
+
+/** `new Date()` and `Date()` with no argument read the clock. `new Date(epochMs)` is fine. */
+export const pureRestrictedSyntax = [
+  {
+    selector: "NewExpression[callee.name='Date'][arguments.length=0]",
+    message: `new Date() ${PURITY_MESSAGE}`,
+  },
+  {
+    selector: "CallExpression[callee.name='Date']",
+    message: `Date() ${PURITY_MESSAGE}`,
+  },
+];
+
+/**
+ * Add to the eslint.config.js of every pure package, after the shared config:
+ * `export default [...sysone, ...purityConfig];`. Tests, test helpers and fixtures are exempt,
+ * since they may read files and use Node. Flat config globs are relative to the package, so the
+ * pure packages opt in; the boundary tests check that core and codegen do.
+ * @type {import("eslint").Linter.Config[]}
+ */
+export const purityConfig = [
+  {
+    name: "sysone/purity",
+    files: ["src/**/*.{js,mjs,cjs,ts,mts,cts,tsx,jsx}"],
+    ignores: ["**/*.test.{ts,tsx,js}", "**/test/**", "**/__fixtures__/**"],
+    rules: {
+      "no-restricted-globals": ["error", ...pureRestrictedGlobals],
+      "no-restricted-properties": ["error", ...pureRestrictedProperties],
+      "no-restricted-syntax": ["error", ...pureRestrictedSyntax],
     },
   },
 ];

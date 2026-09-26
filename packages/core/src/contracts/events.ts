@@ -14,11 +14,13 @@ import {
   DatasetId,
   DecisionId,
   ExperimentId,
+  ExperimentKind,
   IsoTimestamp,
   JsonObject,
   JsonValue,
   OrgId,
   PointerChannel,
+  ProposalKind,
   RolloutStage,
   RunId,
   SetId,
@@ -259,8 +261,17 @@ export const ModelAvailableData = z.object({
   family: z.string().min(1),
   status: z.enum(["preview", "stable"]),
   releaseDate: IsoDate.nullable(),
-  /** Sets in this org pinned to another model of the same family. */
-  pinnedSetsInFamily: z.array(SetId),
+  /**
+   * The org's upgrade candidates (system-one-models.md sections 6 and 11): live sets pinned to an
+   * older model in the same family, or to a model or family in the new model's `supersedes`, whose
+   * question types the new model covers.
+   */
+  candidateSetIds: z.array(SetId),
+  /** The subset of candidateSetIds found only through `supersedes`, marked cross-family. */
+  crossFamilySetIds: z.array(SetId),
+}).refine((d) => d.crossFamilySetIds.every((id) => d.candidateSetIds.includes(id)), {
+  path: ["crossFamilySetIds"],
+  message: "every cross-family set is also a candidate",
 });
 
 export const ModelAliasMovedData = z.object({
@@ -280,24 +291,14 @@ export const ModelDeprecatedData = z.object({
 
 export const ProposalCreatedData = z.object({
   setId: SetId,
-  /** proposals.kind (data-model.md, effectiveness-loop.md section 8). */
-  kind: z.enum([
-    "tune_thresholds",
-    "model_upgrade",
-    "question_fix",
-    "add_none_option",
-    "split_question",
-    "narrow_state",
-    "label_more",
-    "demote",
-  ]),
+  kind: ProposalKind,
   metricsDelta: Metrics,
 });
 
 export const ExperimentStartedData = z.object({
   setId: SetId,
   channel: PointerChannel,
-  kind: z.enum(["version", "model", "policy"]),
+  kind: ExperimentKind,
   championVersionId: VersionId,
   challengerVersionId: VersionId,
   /** Share of runs, 0 to 1. */

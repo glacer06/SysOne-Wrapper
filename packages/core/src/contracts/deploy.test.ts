@@ -84,6 +84,7 @@ describe("OpportunityRecord", () => {
   const record = {
     ...opportunity,
     id: "0190a3c2-6f1e-7a3b-8c4d-5e6f7a8b9c0f",
+    orgId: "0190a3c2-6f1e-7a3b-8c4d-5e6f7a8b9c11",
     createdByUserId: "0190a3c2-6f1e-7a3b-8c4d-5e6f7a8b9c10",
     createdByTokenId: null,
     createdAt: "2026-09-26T14:02:00Z",
@@ -92,6 +93,12 @@ describe("OpportunityRecord", () => {
   it("adds the server fields", () => {
     expect(OpportunityRecord.parse(record)).toEqual(record);
     expect(OpportunityRecord.safeParse({ ...record, createdAt: "yesterday" }).success).toBe(false);
+  });
+
+  it("is a row schema: needs orgId and strips a column added later", () => {
+    const { orgId: _orgId, ...withoutOrg } = record;
+    expect(OpportunityRecord.safeParse(withoutOrg).success).toBe(false);
+    expect(OpportunityRecord.parse({ ...record, updatedAt: "2026-09-27T00:00:00Z" })).toEqual(record);
   });
 
   it("keeps the built rule", () => {

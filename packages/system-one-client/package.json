@@ -21,7 +21,8 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@sysone/core": "workspace:*"
+    "@sysone/core": "workspace:*",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@sysone/config": "workspace:*",

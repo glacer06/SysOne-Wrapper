@@ -5,6 +5,11 @@ import { describe, expect, it } from "vitest";
 import {
   ActionJob,
   EffectiveModel,
+  isTransportError,
+  LATENCY_BUDGET_MS,
+  latencyBudgetMs,
+  RUN_SOURCE_SURFACE,
+  TransportError,
   LlmCompletion,
   LlmCompletionRequest,
   ModelPrice,
@@ -13,6 +18,7 @@ import {
   ResolvedKey,
   ResolvedRun,
   RunSinkRecord,
+  type LinkedRunPort,
   type LlmTransport,
   type ModelCatalog,
   type PriceBook,
@@ -74,16 +80,88 @@ describe("port payloads", () => {
       state: null,
       stateHash: "sha256:ab12",
       stages: [{ id: "triage", skipped: false, inputTokens: 318, outputTokens: 0, latencyMs: 412, typesafeRequestId: "req_01J9Z3QK4T" }],
+      keyMode: "byo",
+      parentRunId: null,
     };
     expect(RunSinkRecord.safeParse(record).success).toBe(true);
     expect(RunSinkRecord.safeParse({ ...record, stateHash: "" }).success).toBe(false);
+    expect(RunSinkRecord.safeParse({ ...record, parentRunId: sampleResult.versionId }).success).toBe(true);
+    const { keyMode: _keyMode, ...withoutKeyMode } = record;
+    expect(RunSinkRecord.safeParse(withoutKeyMode).success).toBe(false);
   });
 
-  it("ResolvedRun takes the example spec and a pointer's channel and rollout stage", () => {
-    const resolved = { spec: exampleSpec, versionId: sampleResult.versionId, channel: "production", rollout: "controlled" };
+  it("RunSinkRecord stage totals must match result.stages", () => {
+    const base = {
+      result: sampleResult,
+      request: { setRef: "email-triage", state: {}, source: "api", options: {} },
+      state: null,
+      stateHash: "sha256:ab12",
+      keyMode: "platform",
+      parentRunId: null,
+    };
+    const row = { id: "triage", skipped: false, inputTokens: 318, outputTokens: 0, latencyMs: 412, typesafeRequestId: null };
+    expect(RunSinkRecord.safeParse({ ...base, stages: [row] }).success).toBe(true);
+    expect(RunSinkRecord.safeParse({ ...base, stages: [{ ...row, inputTokens: 1 }] }).success).toBe(false);
+    expect(RunSinkRecord.safeParse({ ...base, stages: [{ ...row, id: "other" }] }).success).toBe(false);
+    expect(RunSinkRecord.safeParse({ ...base, stages: [] }).success).toBe(false);
+  });
+
+  const resolved = {
+    spec: exampleSpec,
+    setId: sampleResult.setId,
+    version: sampleResult.version,
+    versionId: sampleResult.versionId,
+    interfaceMajor: sampleResult.interfaceMajor,
+    interfaceHash: sampleResult.interfaceHash,
+    channel: "production",
+    rollout: "controlled",
+    settings: {
+      dispatchActionsOnStaging: false,
+      storageMode: "full",
+      piiMode: "redact_logs",
+      defaultComparatorModel: "claude-haiku-4-5",
+      avgEscalationCostMicroUsd: null,
+    },
+  };
+
+  it("ResolvedRun carries what the envelope needs: set, version, interface and settings", () => {
     expect(ResolvedRun.safeParse(resolved).success).toBe(true);
     expect(ResolvedRun.safeParse({ ...resolved, experiment: { id: sampleResult.versionId, arm: "challenger" } }).success).toBe(true);
     expect(ResolvedRun.safeParse({ ...resolved, rollout: "canary" }).success).toBe(false);
+    for (const key of ["setId", "version", "interfaceMajor", "interfaceHash", "settings"] as const) {
+      const { [key]: _omit, ...rest } = resolved;
+      expect(ResolvedRun.safeParse(rest).success, key).toBe(false);
+    }
+    expect(ResolvedRun.safeParse({ ...resolved, settings: { ...resolved.settings, storageMode: "none" } }).success).toBe(false);
+    expect(ResolvedRun.safeParse({ ...resolved, settings: { ...resolved.settings, avgEscalationCostMicroUsd: 0.5 } }).success).toBe(false);
+  });
+});
+
+describe("transport errors", () => {
+  it("narrows a TransportError, including a structurally equal copy", () => {
+    const e = new TransportError({ code: "system_one_rate_limited", retryable: true, requestId: "req_1" }, "rate limited");
+    expect(isTransportError(e)).toBe(true);
+    expect(e.code).toBe("system_one_rate_limited");
+    const copy = Object.assign(new Error("x"), { brand: "sysone.transport_error", code: "client_aborted", retryable: false, requestId: null });
+    expect(isTransportError(copy)).toBe(true);
+  });
+
+  it("rejects other errors and unknown codes", () => {
+    expect(isTransportError(new Error("boom"))).toBe(false);
+    expect(isTransportError(null)).toBe(false);
+    expect(isTransportError({ brand: "sysone.transport_error", code: "teapot", retryable: false, requestId: null })).toBe(false);
+  });
+});
+
+describe("latency budgets", () => {
+  it("matches architecture.md and maps every run source to a surface", () => {
+    expect(LATENCY_BUDGET_MS).toEqual({ api: 8_000, embed: 5_000, extension: 3_000, eval: 30_000 });
+    expect(Object.keys(RUN_SOURCE_SURFACE).sort()).toEqual(
+      ["api", "cli", "console", "embed", "eval", "extension", "mcp", "playground"],
+    );
+    expect(latencyBudgetMs("embed")).toBe(5_000);
+    expect(latencyBudgetMs("mcp")).toBe(8_000);
+    expect(latencyBudgetMs("eval")).toBe(30_000);
   });
 });
 
@@ -101,6 +179,8 @@ describe("in-memory ports satisfy the interfaces", () => {
     const llm: LlmTransport = {
       complete: (req) => Promise.resolve({ text: "billing", model: req.model, inputTokens: 90, outputTokens: 4 }),
     };
+    const linkedRun: LinkedRunPort = (_setRef, _state, opts) =>
+      Promise.resolve({ ...sampleResult, channel: opts.channel });
     let next = 0;
     const ports: RunPorts = {
       systemOne: { call: () => Promise.reject(new Error("no live calls in unit tests")) },
@@ -115,11 +195,18 @@ describe("in-memory ports satisfy the interfaces", () => {
       newId: () => `id-${String(next++)}`,
       llm,
       redactor: (state) => state,
+      linkedRun,
     };
     expect(await ports.prices.get("org", "jev-1.13.0")).toEqual(prices["jev-1.13.0"]);
     expect(await ports.prices.get("org", "jev-latest")).toBeNull();
     expect([ports.newId(), ports.newId()]).toEqual(["id-0", "id-1"]);
     const completion = await ports.llm?.complete({ model: "claude-haiku-4-5", system: "", prompt: "", maxOutputTokens: 8, signal: new AbortController().signal });
     expect(LlmCompletion.parse(completion).model).toBe("claude-haiku-4-5");
+    const linked = await ports.linkedRun?.("fallback-set", {}, {
+      channel: "staging",
+      parentRunId: sampleResult.runId,
+      signal: new AbortController().signal,
+    });
+    expect(linked?.channel).toBe("staging");
   });
 });

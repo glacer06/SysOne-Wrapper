@@ -29,6 +29,7 @@ import {
   Value,
   VersionId,
 } from "./common.js";
+import { ErrorCode } from "./errors.js";
 import { SystemOneAnswer } from "./system-one.js";
 
 // ---------------------------------------------------------------------------
@@ -135,6 +136,13 @@ export const Decision = z
     /** Whether it ran: handlers, the LLM call, the review item, the fallback. */
     executed: z.boolean(),
     escalation: Escalation.optional(),
+    /**
+     * Set only when the policy action is a `set` FallbackConfig and a linked run row was written
+     * (spec-schema.md section 7). Points at that run, or at the failed run when the linked run
+     * failed after its row was written. `value` never changes; callers read the linked result with
+     * `GET /api/v1/runs/{fallbackRunId}`.
+     */
+    fallbackRunId: RunId.optional(),
   })
   .superRefine((d, ctx) => {
     if (d.kind === "question" && d.level !== undefined) {
@@ -182,6 +190,17 @@ export type RunStatus = z.infer<typeof RunStatus>;
 export const RunExperiment = z.object({ id: ExperimentId, arm: ExperimentArm });
 export type RunExperiment = z.infer<typeof RunExperiment>;
 
+/**
+ * Why a run did not finish with status "ok". `code` is the api.md code the error envelope carries
+ * for the persisted failed run (`runs.error_code`), for example `system_one_unavailable` when the
+ * latency budget ran out.
+ */
+export const RunError = z.object({
+  code: ErrorCode,
+  message: z.string(),
+});
+export type RunError = z.infer<typeof RunError>;
+
 /** The RunResult object without its cross-field checks, for callers that need `.shape`. */
 export const RunResultObject = z.object({
   runId: RunId,
@@ -195,6 +214,8 @@ export const RunResultObject = z.object({
   rollout: RolloutStage,
   experiment: RunExperiment.optional(),
   status: RunStatus,
+  /** Present exactly when status is not "ok". */
+  error: RunError.optional(),
   modelRequested: z.string().min(1),
   /** The first call's versioned id. Null only when no call was made. */
   modelResolved: z.string().min(1).nullable(),
@@ -218,6 +239,13 @@ export const RunResultObject = z.object({
 });
 
 export const RunResult = RunResultObject.superRefine((r, ctx) => {
+  if ((r.status === "ok") !== (r.error === undefined)) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["error"],
+      message: r.status === "ok" ? "an ok run has no error" : "a failed run carries its error code",
+    });
+  }
   const calls = r.stages.flatMap((s) => s.calls);
   const first = calls[0];
   if (first === undefined) {

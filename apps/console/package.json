@@ -13,7 +13,12 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@sysone/billing": "workspace:*",
     "@sysone/core": "workspace:*",
+    "@sysone/db": "workspace:*",
+    "@sysone/llm-client": "workspace:*",
+    "@sysone/system-one-client": "workspace:*",
+    "@sysone/tenancy": "workspace:*",
     "@t3-oss/env-nextjs": "catalog:",
     "next": "catalog:",
     "react": "catalog:",

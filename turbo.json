@@ -60,6 +60,28 @@
         "$TURBO_ROOT$/packages/react/src/__fixtures__/**"
       ],
       "outputs": []
+    },
+    "@sysone/core#test": {
+      "dependsOn": [
+        "transit"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/.claude/skills/sysone-builder/templates/**",
+        "$TURBO_ROOT$/.claude/skills/sysone-builder/references/**"
+      ],
+      "outputs": []
+    },
+    "@sysone/console#test": {
+      "dependsOn": [
+        "transit"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/.claude/skills/sysone-builder/templates/**",
+        "$TURBO_ROOT$/packages/core/openapi.json"
+      ],
+      "outputs": []
     }
   }
 }

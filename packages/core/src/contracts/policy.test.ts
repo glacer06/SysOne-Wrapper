@@ -8,6 +8,7 @@ import {
   ConfidencePolicy,
   EscalationConfig,
   FallbackConfig,
+  matchesPatternProblem,
 } from "./policy.js";
 
 const ok = (schema: { safeParse: (v: unknown) => { success: boolean } }, value: unknown) =>
@@ -67,6 +68,17 @@ describe("Condition", () => {
     expect(ok(Condition, { input: "a", matches: "x".repeat(257) })).toBe(false);
   });
 
+  it("accepts only the linear-time subset in matches", () => {
+    for (const good of ["^(Re|RE):", "@noreply\\.", "[(?=]x", "\\(?=", "a{2,5}b*", "(?:ab)+", "(?<name>x)"]) {
+      expect(ok(Condition, { input: "a", matches: good }), good).toBe(true);
+      expect(matchesPatternProblem(good), good).toBeNull();
+    }
+    for (const bad of ["(a)\\1", "(?<n>a)\\k<n>", "a(?=b)", "a(?!b)", "(?<=a)b", "(?<!a)b", "(", "[a-"]) {
+      expect(ok(Condition, { input: "a", matches: bad }), bad).toBe(false);
+      expect(matchesPatternProblem(bad), bad).not.toBeNull();
+    }
+  });
+
   it("parses deep nesting", () => {
     let c: unknown = { check: "has_body" };
     for (let i = 0; i < 20; i++) c = i % 2 ? { not: c } : { all: [c] };
@@ -109,6 +121,11 @@ describe("ActionRef", () => {
       true,
     );
     expect(ok(ActionRef, { kind: "escalate_to_llm", config: { temperature: 0 } })).toBe(false);
+  });
+
+  it("takes no config on a review action", () => {
+    expect(ok(ActionRef, { kind: "review" })).toBe(true);
+    expect(ok(ActionRef, { kind: "review", config: { queue: "ops" } })).toBe(false);
   });
 
   it("leaves handler config on auto free-form", () => {

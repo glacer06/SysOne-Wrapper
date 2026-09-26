@@ -15,11 +15,12 @@ import {
   Role,
   type RolloutStage,
   Scope,
+  type StorageMode,
 } from "./common.js";
 import { ErrorDetail, GateResult } from "./errors.js";
 import { JobError, JobKind, JobStatus, type EventType } from "./events.js";
 import { SpecDiff } from "./spec-diff.js";
-import type { ActorKind, TenantContext } from "./tenant.js";
+import type { ActorKind, OperationContext, TenantContext } from "./tenant.js";
 
 // ---------------------------------------------------------------------------
 // Primitives
@@ -47,11 +48,28 @@ export const DEFAULT_OPERATION_ACTORS = ["user", "agent"] as const satisfies rea
 export const OperationMinRole = z.union([Role, z.literal("superadmin"), z.literal("none")]);
 export type OperationMinRole = z.infer<typeof OperationMinRole>;
 
-/** What the approval gate needs to decide a conditional risk. */
-export interface RiskResource {
-  protected: boolean;
-  productionStage: RolloutStage | null;
+/** Each pointer channel's current rollout stage. Null when that channel has no pointer yet. */
+export interface ChannelStages {
+  production: RolloutStage | null;
+  staging: RolloutStage | null;
 }
+
+/** What the approval gate needs to decide a conditional risk. Operations without a set pass the defaults. */
+export interface RiskResource {
+  /** question_sets.protected; false when the operation has no set. */
+  protected: boolean;
+  /** The set's pointers; both null when the operation has no set. */
+  stages: ChannelStages;
+  /** question_sets.storage_mode, for set.update; null when the operation has no set. */
+  storageMode: StorageMode | null;
+}
+
+/** The RiskResource for an operation that touches no set. */
+export const NO_SET_RISK_RESOURCE: RiskResource = Object.freeze({
+  protected: false,
+  stages: Object.freeze({ production: null, staging: null }),
+  storageMode: null,
+});
 
 export interface OperationHttp {
   method: HttpMethod;
@@ -87,8 +105,12 @@ export type DryRunResult = z.infer<typeof DryRunResult>;
 // ---------------------------------------------------------------------------
 // OperationDef (ADR-007 section 1)
 
-/** One management capability. Registered once, behind the console, the API, the CLI and MCP. */
-export interface OperationDef<I, O> {
+/**
+ * One management capability. Registered once, behind the console, the API, the CLI and MCP.
+ * `C` is the context the handler receives: TenantContext, or OperationContext for the operations
+ * in ORG_LESS_OPERATIONS.
+ */
+export interface OperationDef<I, O, C extends OperationContext = TenantContext> {
   id: string;
   /** One line: the OpenAPI summary, CLI help and MCP tool description. */
   summary: string;
@@ -102,7 +124,7 @@ export interface OperationDef<I, O> {
   /** Defaults to ["user", "agent"]. ["user"] means session only. */
   actors: OperationActor[];
   /** A function for the conditional high* rows of the catalog. */
-  risk: "normal" | "high" | ((ctx: TenantContext, input: I, resource: RiskResource) => "normal" | "high");
+  risk: "normal" | "high" | ((ctx: C, input: I, resource: RiskResource) => "normal" | "high");
   /** Only ever makes things safer (pause, rollback, demote, stop, revoke): never gated. */
   towardSafety: boolean;
   readOnly: boolean;
@@ -115,8 +137,8 @@ export interface OperationDef<I, O> {
   /** Events it writes; [] for read-only operations. */
   emits: EventType[];
   /** Only on operations that accept ?dryRun=true. */
-  preview?: (ctx: TenantContext, input: I) => Promise<DryRunResult>;
-  handler: (ctx: TenantContext, input: I) => Promise<O>;
+  preview?: (ctx: C, input: I) => Promise<DryRunResult>;
+  handler: (ctx: C, input: I) => Promise<O>;
 }
 
 /** A scope as a descriptor or the catalog records it. A channel-dependent scope becomes "release:<channel>". */
@@ -147,7 +169,7 @@ export interface OperationDescriptor {
   dryRun: boolean;
 }
 
-export function describeOperation<I, O>(op: OperationDef<I, O>): OperationDescriptor {
+export function describeOperation<I, O, C extends OperationContext>(op: OperationDef<I, O, C>): OperationDescriptor {
   const d: OperationDescriptor = {
     id: op.id,
     summary: op.summary,
@@ -314,7 +336,9 @@ export const OPERATION_CATALOG = rows([
   ["GET", "/sets", "set.list", "sets:read", "viewer", "read", "3"],
   ["POST", "/sets", "set.create", "sets:write", "editor", "normal", "3"],
   ["GET", "/sets/{ref}", "set.get", "sets:read", "viewer", "read", "3"],
-  ["PATCH", "/sets/{ref}", "set.update", "sets:write", "editor", "normal", "3"],
+  // high*, not the table's normal: data-model.md makes a storageMode move to a less private mode a
+  // PII change, high risk for agents. The management-api.md row needs the same change.
+  ["PATCH", "/sets/{ref}", "set.update", "sets:write", "editor", "high*", "3"],
   ["POST", "/sets/{ref}/archive", "set.archive", "sets:write", "editor", "normal", "3"],
   ["GET", "/sets/{ref}/draft", "draft.get", "sets:read", "viewer", "read", "3"],
   ["PUT", "/sets/{ref}/draft", "draft.update", "sets:write", "editor", "normal", "3"],
@@ -334,6 +358,8 @@ export const OPERATION_CATALOG = rows([
   ["PUT", "/sets/{ref}/channels/{channel}/rollout", "rollout.change", "release:<channel>", "editor", "high*", "3"],
 
   // Experiments (Phase 3b)
+  // high*, not the table's normal: effectiveness-loop.md section 9 makes samplePct above 0.25 high
+  // risk for agents. The management-api.md row needs the same change.
   ["POST", "/sets/{ref}/experiments", "experiment.start", "release:<channel>", "editor", "high*", "3b"],
   ["GET", "/experiments/{id}", "experiment.get", "sets:read", "viewer", "read", "3b"],
   ["POST", "/experiments/{id}/promote", "experiment.promote", "release:<channel>", "editor", "high", "3b"],
@@ -493,12 +519,32 @@ export const HIGH_RISK_CONDITIONS = {
     "The set is protected or its production stage is controlled or full. With skipExperiment it is always high.",
   "rollout.change":
     "A move into controlled or full from a lower stage, or any move out of paused. Moves into paused, down from full or controlled, and inactive to shadow are never gated.",
+  "set.update":
+    "The change moves storageMode to a less private mode: hash_only to redacted or full, or redacted to full (data-model.md).",
   "experiment.start": "samplePct above 0.25.",
   "app_token.create":
     "The new token has a write scope, except feedback:write on an sk_test_ token bound to staging.",
   "agent_token.create": "The new token has a write scope. An admin:write token is always gated.",
   "settings.update": "The change touches PII mode or retention, or lowers agentApprovals.",
 } as const satisfies Partial<Record<OperationId, string>>;
+
+/** A catalog row with no org in scope: org.create and the platform_* rows (see OrgLessContext). */
+export type OrgLessCatalogEntry = Extract<
+  (typeof OPERATION_CATALOG)[number],
+  { scope: "platform_admin" } | { scope: "session_only"; minRole: "none" }
+>;
+
+export type OrgLessOperationId = OrgLessCatalogEntry["id"];
+
+/** True when the row runs without an org, so its handler takes an OperationContext. */
+export function runsWithoutOrg(entry: Pick<OperationCatalogEntry, "scope" | "minRole">): boolean {
+  return entry.scope === "platform_admin" || (entry.scope === "session_only" && entry.minRole === "none");
+}
+
+/** The context an operation's handler receives. */
+export type OperationContextFor<Id extends OperationId> = Id extends OrgLessOperationId
+  ? OperationContext
+  : TenantContext;
 
 /** The actors a catalog row allows (management-api.md, Operation registry). */
 export function catalogActors(entry: Pick<OperationCatalogEntry, "id" | "scope">): OperationActor[] {

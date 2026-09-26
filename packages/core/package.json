@@ -14,15 +14,17 @@
       "@sysone/source": "./src/contracts/index.ts",
       "types": "./dist/contracts/index.d.ts",
       "import": "./dist/contracts/index.js"
-    }
+    },
+    "./openapi.json": "./openapi.json"
   },
   "files": [
-    "dist"
+    "dist",
+    "openapi.json"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.build.json",
     "test": "vitest run"
   },
   "dependencies": {

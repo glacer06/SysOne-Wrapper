@@ -187,6 +187,46 @@ describe("Decision", () => {
     };
     expect(Decision.parse(d).escalation?.status).toBe("failed");
   });
+
+  it("keeps fallbackRunId from a set fallback through a round trip", () => {
+    const d = {
+      kind: "question",
+      value: "work_request",
+      band: "low",
+      relevant: true,
+      action: "fallback",
+      effectiveAction: "fallback",
+      executed: true,
+      fallbackRunId: "01923f4e-7b2b-7c3d-8e4f-5a6b7c8d9e99",
+    };
+    const first = Decision.parse(d);
+    expect(first.fallbackRunId).toBe(d.fallbackRunId);
+    expect(Decision.parse(JSON.parse(JSON.stringify(first)))).toEqual(first);
+    expect(Decision.safeParse({ ...d, fallbackRunId: "run-1" }).success).toBe(false);
+  });
+
+  it("keeps fallbackRunId inside a RunResult round trip", () => {
+    const raw = sample();
+    const category = raw.decisions.category;
+    if (category === undefined) throw new Error("sample has no category decision");
+    const withLinked = {
+      ...raw,
+      decisions: { ...raw.decisions, category: { ...category, fallbackRunId: "01923f4e-7b2b-7c3d-8e4f-5a6b7c8d9e99" } },
+    };
+    const parsed = RunResult.parse(JSON.parse(JSON.stringify(withLinked)));
+    expect(parsed.decisions.category?.fallbackRunId).toBe("01923f4e-7b2b-7c3d-8e4f-5a6b7c8d9e99");
+  });
+});
+
+describe("RunResult error", () => {
+  it("is absent on an ok run and required on a failed one", () => {
+    const ok = sample();
+    expect(RunResult.safeParse({ ...ok, error: { code: "system_one_unavailable", message: "x" } }).success).toBe(false);
+    const failed = { ...ok, status: "error", error: { code: "system_one_unavailable", message: "The latency budget ran out." } };
+    expect(RunResult.parse(failed).error?.code).toBe("system_one_unavailable");
+    expect(RunResult.safeParse({ ...ok, status: "error" }).success).toBe(false);
+    expect(RunResult.safeParse({ ...failed, error: { code: "client_aborted", message: "x" } }).success).toBe(false);
+  });
 });
 
 describe("RunCost money fields", () => {

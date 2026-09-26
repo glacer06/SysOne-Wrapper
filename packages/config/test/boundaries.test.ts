@@ -82,6 +82,12 @@ const cases: Case[] = [
   { name: "cli local -> core", file: "packages/cli/src/local/x.ts", code: `import "@sysone/core";`, violates: false },
   { name: "cli local -> system-one-client", file: "packages/cli/src/local/x.ts", code: `import "@sysone/system-one-client";`, violates: false },
 
+  // The HTTP clients build against the generated OpenAPI document by package name.
+  { name: "cli -> core openapi.json", file: "packages/cli/src/x.ts", code: `import "@sysone/core/openapi.json";`, violates: false },
+  { name: "mcp-server -> core openapi.json", file: "packages/mcp-server/src/x.ts", code: `import "@sysone/core/openapi.json";`, violates: false },
+  { name: "example-embed -> core openapi.json", file: "apps/example-embed/src/x.ts", code: `import "@sysone/core/openapi.json";`, violates: false },
+  { name: "mcp-server -> core root", file: "packages/mcp-server/src/x.ts", code: `import "@sysone/core";`, violates: true },
+
   // mcp-server calls /api/v1 over HTTP only.
   { name: "mcp-server -> db", file: "packages/mcp-server/src/x.ts", code: `import "@sysone/db";`, violates: true },
 
@@ -104,5 +110,57 @@ describe("boundary rules from references/architecture.md", () => {
     } else {
       expect(errors, `expected no boundary error for ${file}`).toEqual([]);
     }
+  });
+});
+
+// Golden rule 3: core, core contracts and codegen have no clock, randomness, timers, env or network.
+function purityErrors(results: ESLint.LintResult[]): string[] {
+  const rules = new Set(["no-restricted-globals", "no-restricted-properties", "no-restricted-syntax"]);
+  return results.flatMap((result) =>
+    result.messages.filter((m) => m.ruleId !== null && rules.has(m.ruleId) && m.severity === 2).map((m) => m.message),
+  );
+}
+
+const impure: Array<{ name: string; code: string }> = [
+  { name: "process.env", code: `export const k = process.env["TYPESAFE_API_KEY"];` },
+  { name: "Date.now()", code: `export const t = Date.now();` },
+  { name: "new Date()", code: `export const d = new Date();` },
+  { name: "Date()", code: `export const d = Date();` },
+  { name: "Math.random()", code: `export const r = Math.random();` },
+  { name: "crypto.randomUUID()", code: `export const id = crypto.randomUUID();` },
+  { name: "setTimeout", code: `setTimeout(() => undefined, 1);` },
+  { name: "setInterval", code: `setInterval(() => undefined, 1);` },
+  { name: "Buffer", code: `export const b = Buffer.from("x");` },
+  { name: "fetch", code: `export const p = fetch("https://example.com");` },
+  { name: "globalThis", code: `export const g = globalThis;` },
+];
+
+describe("purity rules for core, core contracts and codegen", () => {
+  const eslint = makeEslint(repoRoot);
+  const pureFiles = ["packages/core/src/x.ts", "packages/core/src/contracts/x.ts", "packages/codegen/src/x.ts"];
+
+  for (const file of pureFiles) {
+    it.each(impure)(`${file}: $name is an error`, async ({ code }) => {
+      const results = await eslint.lintText(code, { filePath: at(file) });
+      expect(purityErrors(results)).not.toHaveLength(0);
+    });
+  }
+
+  it("allows a clock value passed in, and new Date(epochMs)", async () => {
+    const code = `export function iso(now: () => number): string { return new Date(now()).toISOString(); }`;
+    const results = await eslint.lintText(code, { filePath: at("packages/core/src/x.ts") });
+    expect(purityErrors(results)).toEqual([]);
+  });
+
+  it("exempts tests in pure packages", async () => {
+    const results = await eslint.lintText(`export const t = Date.now();`, { filePath: at("packages/core/src/x.test.ts") });
+    expect(purityErrors(results)).toEqual([]);
+  });
+
+  it("does not apply to server packages", async () => {
+    const results = await eslint.lintText(`export const t = Date.now(); export const k = process.env["X"];`, {
+      filePath: at("packages/system-one-client/src/x.ts"),
+    });
+    expect(purityErrors(results)).toEqual([]);
   });
 });

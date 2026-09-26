@@ -21,6 +21,7 @@ import {
   type EpochMs,
   ExperimentArm,
   ExperimentId,
+  GoalId,
   IsoTimestamp,
   JsonValue,
   KeyMode,
@@ -38,17 +39,100 @@ import {
   RunId,
   SavingsKind,
   SetId,
+  StorageMode,
   TokenCount,
   TokenId,
   UserId,
   VersionId,
 } from "./common.js";
 import { EventEnvelope, EventType } from "./events.js";
-import type { FeedbackReport } from "./learning.js";
+import { type FeedbackReport, LabelingPolicy } from "./learning.js";
 import { CounterfactualMode, Decision, RunStage, RunStatus, SavingsSuppressed } from "./run.js";
 import { QuestionSetSpec, RunSource } from "./spec.js";
 import { SystemOneAnswer } from "./system-one.js";
-import type { TenantContext } from "./tenant.js";
+import type { OrgLessContext, TenantContext } from "./tenant.js";
+
+// ---------------------------------------------------------------------------
+// Sets
+
+/** question_sets.value_settings: feeds the quality-adjusted value (savings-model.md). */
+export const ValueSettings = z.strictObject({
+  errorCostUsd: z.number().nonnegative(),
+  reviewCostUsd: z.number().nonnegative(),
+});
+export type ValueSettings = z.infer<typeof ValueSettings>;
+
+/** question_sets.gate_margins: the regression gate and experiment promotion margins. */
+export const GateMargins = z.strictObject({
+  coverageDrop: z.number().min(0).max(1),
+  reviewLoadRise: z.number().min(0),
+});
+export type GateMargins = z.infer<typeof GateMargins>;
+
+export const DEFAULT_GATE_MARGINS: GateMargins = { coverageDrop: 0.02, reviewLoadRise: 0.1 };
+
+/** A question_sets row. There is no rollout column: the rollout stage lives on release_pointers. */
+export const SetRecord = z.object({
+  id: SetId,
+  orgId: OrgId,
+  projectId: ProjectId,
+  goalId: GoalId,
+  slug: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().nullable(),
+  protected: z.boolean(),
+  labeling: LabelingPolicy,
+  dispatchActionsOnStaging: z.boolean(),
+  valueSettings: ValueSettings.nullable(),
+  gateMargins: GateMargins,
+  storageMode: StorageMode,
+  userGenerated: z.boolean(),
+  /** Null: the result cache is off. */
+  resultCacheTtlSeconds: z.number().int().positive().nullable(),
+  draftVersionId: VersionId,
+  archivedAt: IsoTimestamp.nullable(),
+  createdByUserId: UserId.nullable(),
+  createdByTokenId: TokenId.nullable(),
+});
+export type SetRecord = z.infer<typeof SetRecord>;
+
+/** Which version a `{ref}` asks for. "channel": no suffix, so the caller's channel pointer decides. */
+export const VersionSelector = z.discriminatedUnion("kind", [
+  z.strictObject({ kind: z.literal("channel") }),
+  z.strictObject({ kind: z.literal("draft") }),
+  z.strictObject({ kind: z.literal("version"), version: z.number().int().positive() }),
+]);
+export type VersionSelector = z.infer<typeof VersionSelector>;
+
+/** A parsed `{ref}`: the set part (an id or a slug) and the version selector. */
+export interface ParsedSetRef {
+  set: string;
+  selector: VersionSelector;
+}
+
+const SET_REF_PATTERN = /^([^@\s]+)(?:@(draft|[1-9][0-9]*))?$/;
+
+/** Parse `id`, `slug`, `slug@7` or `slug@draft`. Null for anything else. */
+export function parseSetRef(ref: string): ParsedSetRef | null {
+  const m = SET_REF_PATTERN.exec(ref);
+  if (m === null) return null;
+  const [, set, suffix] = m;
+  if (set === undefined) return null;
+  if (suffix === undefined) return { set, selector: { kind: "channel" } };
+  if (suffix === "draft") return { set, selector: { kind: "draft" } };
+  return { set, selector: { kind: "version", version: Number(suffix) } };
+}
+
+export const ResolvedSetRef = z.object({ set: SetRecord, selector: VersionSelector });
+export type ResolvedSetRef = z.infer<typeof ResolvedSetRef>;
+
+export interface SetStore {
+  /**
+   * Resolve a `{ref}` (id, slug, slug@7 or slug@draft) to the set row and the version selector.
+   * Null when no set in the caller's org matches, which the operation returns as 404.
+   */
+  resolveRef(ctx: TenantContext, ref: string): Promise<ResolvedSetRef | null>;
+}
 
 // ---------------------------------------------------------------------------
 // Versions and pointers
@@ -128,6 +212,8 @@ export const MovePointerInput = z.strictObject({
   toVersionId: VersionId,
   kind: ReleaseKind,
   reason: z.string().nullable(),
+  /** release_events.approval_id: the approval an agent operation ran under, else null. */
+  approvalId: ApprovalId.nullable(),
 });
 export type MovePointerInput = z.infer<typeof MovePointerInput>;
 
@@ -137,6 +223,8 @@ export const SetRolloutStageInput = z.strictObject({
   to: RolloutStage,
   kind: z.enum(["rollout_change", "auto_demote"]),
   reason: z.string(),
+  /** release_events.approval_id: the approval an agent operation ran under, else null. */
+  approvalId: ApprovalId.nullable(),
 });
 export type SetRolloutStageInput = z.infer<typeof SetRolloutStageInput>;
 
@@ -181,6 +269,8 @@ export const RunRecord = z.object({
   rollout: RolloutStage,
   experimentId: ExperimentId.nullable(),
   arm: ExperimentArm.nullable(),
+  /** Set on a linked run started by a `set` fallback: the parent run (spec-schema.md section 7). */
+  parentRunId: RunId.nullable(),
   source: RunRecordSource,
   appId: AppId.nullable(),
   actorUserId: UserId.nullable(),
@@ -194,7 +284,13 @@ export const RunRecord = z.object({
   /** Null for hash-only sets and after state retention. */
   state: JsonValue.nullable(),
   stateHash: z.string().min(1),
+  /** result.stages as returned, with every call. */
   stages: z.array(RunStage),
+  /**
+   * spec.checks results by check id. Kept after the state purge, so policy replay can re-evaluate
+   * relevantWhen and routes that read checks (savings-model.md).
+   */
+  checks: z.record(DecisionId, z.boolean()),
   /** Always the full SystemOneAnswer JSON, including probabilities. */
   answers: z.record(QuestionId, SystemOneAnswer),
   decisions: z.record(DecisionId, Decision),
@@ -222,6 +318,7 @@ export const RunRecord = z.object({
   contextTokensPruned: z.number().int().nullable(),
   latencyMs: z.number().int().nonnegative(),
   status: RunStatus,
+  /** RunResult.error.code. A plain string, so a code added later in v1 still parses. */
   errorCode: z.string().nullable(),
   createdAt: IsoTimestamp,
 });
@@ -372,6 +469,11 @@ export type AuditListFilter = z.infer<typeof AuditListFilter>;
 /** Append-only: no update or delete method exists. */
 export interface AuditStore {
   append(ctx: TenantContext, row: AuditAppendInput): Promise<void>;
+  /**
+   * An org_id null row for an operation that runs without an org (org.create before the org
+   * exists, the platform_* operations). Written through the audited platform path.
+   */
+  appendOrgLess(ctx: OrgLessContext, row: AuditAppendInput): Promise<void>;
   list(ctx: TenantContext, filter: AuditListFilter, page: PageReq): Promise<Page<AuditRow>>;
 }
 

@@ -3,17 +3,24 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { microFromUsd, RunResult } from "./run.js";
+import { DEFAULT_LABELING_POLICY } from "./learning.js";
 import {
   Approval,
   AuditAppendInput,
   AuditRow,
+  DEFAULT_GATE_MARGINS,
+  GateMargins,
   MovePointerInput,
+  parseSetRef,
   Pointer,
+  ResolvedSetRef,
   ReviewItem,
   RunListFilter,
   RunRecord,
   RunRecordSource,
+  SetRecord,
   SetRolloutStageInput,
+  ValueSettings,
   VersionRecord,
 } from "./stores.js";
 
@@ -43,6 +50,7 @@ function rowFromResult(r: RunResult): unknown {
     rollout: r.rollout,
     experimentId: null,
     arm: null,
+    parentRunId: null,
     source: "api",
     appId: null,
     actorUserId: null,
@@ -56,6 +64,7 @@ function rowFromResult(r: RunResult): unknown {
     state: { email: { subject: "Re: contract" } },
     stateHash: "sha256:ab12",
     stages: r.stages,
+    checks: r.checks,
     answers: r.answers,
     decisions: r.decisions,
     runBand: r.runBand,
@@ -92,6 +101,17 @@ describe("RunRecord", () => {
     expect(row.counterfactualMicroUsd).toBe(1218);
     expect(row.savingsMicroUsd).toBe(1205);
     expect(row.savingsMicroUsd).toBe(row.counterfactualMicroUsd - 13 - row.escalationCostMicroUsd);
+  });
+
+  it("keeps checks and the parent run, so replay and linked runs survive the state purge", () => {
+    const row = rowFromResult(result) as Record<string, unknown>;
+    const parsed = RunRecord.parse({ ...row, state: null, checks: { has_body: true }, parentRunId: result.runId });
+    expect(parsed.checks).toEqual({ has_body: true });
+    expect(parsed.parentRunId).toBe(result.runId);
+    const { checks: _checks, ...withoutChecks } = row;
+    expect(RunRecord.safeParse(withoutChecks).success).toBe(false);
+    const { parentRunId: _parent, ...withoutParent } = row;
+    expect(RunRecord.safeParse(withoutParent).success).toBe(false);
   });
 
   it("rejects float money columns", () => {
@@ -154,12 +174,25 @@ describe("versions and pointers", () => {
   });
 
   it("pointer inputs are strict and typed", () => {
-    const move = { setId: result.setId, channel: "staging", toVersionId: result.versionId, kind: "rollback", reason: null };
+    const move = { setId: result.setId, channel: "staging", toVersionId: result.versionId, kind: "rollback", reason: null, approvalId: null };
     expect(MovePointerInput.safeParse(move).success).toBe(true);
     expect(MovePointerInput.safeParse({ ...move, kind: "canary" }).success).toBe(false);
-    const stage = { setId: result.setId, channel: "production", to: "paused", kind: "auto_demote", reason: "precision_below_target" };
+    const stage = {
+      setId: result.setId,
+      channel: "production",
+      to: "paused",
+      kind: "auto_demote",
+      reason: "precision_below_target",
+      approvalId: null,
+    };
     expect(SetRolloutStageInput.safeParse(stage).success).toBe(true);
     expect(SetRolloutStageInput.safeParse({ ...stage, kind: "publish" }).success).toBe(false);
+    // release_events.approval_id: an approved agent operation records its approval.
+    const approvalId = "01923f4e-7b2b-7c3d-8e4f-5a6b7c8d9e30";
+    expect(MovePointerInput.safeParse({ ...move, approvalId }).success).toBe(true);
+    expect(SetRolloutStageInput.safeParse({ ...stage, approvalId }).success).toBe(true);
+    const { approvalId: _a, ...withoutApproval } = move;
+    expect(MovePointerInput.safeParse(withoutApproval).success).toBe(false);
   });
 });
 
@@ -236,5 +269,52 @@ describe("review, audit and approvals", () => {
     };
     expect(Approval.safeParse(approval).success).toBe(true);
     expect(Approval.safeParse({ ...approval, status: "cancelled" }).success).toBe(false);
+  });
+});
+
+describe("sets", () => {
+  const set = {
+    id: result.setId,
+    orgId: ORG,
+    projectId: PROJECT,
+    goalId: "01923f40-0000-7aaa-9bbb-0000000000e1",
+    slug: "email-triage",
+    name: "Email triage",
+    description: null,
+    protected: false,
+    labeling: DEFAULT_LABELING_POLICY,
+    dispatchActionsOnStaging: false,
+    valueSettings: { errorCostUsd: 12, reviewCostUsd: 1.5 },
+    gateMargins: DEFAULT_GATE_MARGINS,
+    storageMode: "hash_only",
+    userGenerated: false,
+    resultCacheTtlSeconds: null,
+    draftVersionId: result.versionId,
+    archivedAt: null,
+    createdByUserId: USER,
+    createdByTokenId: null,
+  };
+
+  it("parses a question_sets row, with no rollout column", () => {
+    expect(SetRecord.safeParse(set).success).toBe(true);
+    expect(SetRecord.safeParse({ ...set, storageMode: "none" }).success).toBe(false);
+    expect(SetRecord.parse({ ...set, rolloutStage: "full" })).not.toHaveProperty("rolloutStage");
+    expect(ValueSettings.safeParse({ errorCostUsd: -1, reviewCostUsd: 0 }).success).toBe(false);
+    expect(GateMargins.safeParse({ coverageDrop: 2, reviewLoadRise: 0 }).success).toBe(false);
+  });
+
+  it("parses every {ref} form", () => {
+    expect(parseSetRef("email-triage")).toEqual({ set: "email-triage", selector: { kind: "channel" } });
+    expect(parseSetRef("email-triage@7")).toEqual({ set: "email-triage", selector: { kind: "version", version: 7 } });
+    expect(parseSetRef("email-triage@draft")).toEqual({ set: "email-triage", selector: { kind: "draft" } });
+    expect(parseSetRef(result.setId)).toEqual({ set: result.setId, selector: { kind: "channel" } });
+    for (const bad of ["", "@7", "slug@0", "slug@07", "slug@latest", "a@1@2", "has space"]) {
+      expect(parseSetRef(bad), bad).toBeNull();
+    }
+  });
+
+  it("a resolved ref carries the row and the selector", () => {
+    expect(ResolvedSetRef.safeParse({ set, selector: { kind: "version", version: 7 } }).success).toBe(true);
+    expect(ResolvedSetRef.safeParse({ set, selector: { kind: "version", version: 0 } }).success).toBe(false);
   });
 });

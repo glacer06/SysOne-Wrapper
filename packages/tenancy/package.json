@@ -20,6 +20,10 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
+  "dependencies": {
+    "@sysone/core": "workspace:*",
+    "zod": "catalog:"
+  },
   "devDependencies": {
     "@sysone/config": "workspace:*",
     "@types/node": "catalog:",

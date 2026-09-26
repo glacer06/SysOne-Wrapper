@@ -216,6 +216,23 @@ export type ReleaseKind = z.infer<typeof ReleaseKind>;
 export const ExperimentArm = z.enum(["champion", "challenger"]);
 export type ExperimentArm = z.infer<typeof ExperimentArm>;
 
+/** experiments.kind: what the challenger changes. */
+export const ExperimentKind = z.enum(["version", "model", "policy"]);
+export type ExperimentKind = z.infer<typeof ExperimentKind>;
+
+/** proposals.kind (effectiveness-loop.md section 8). */
+export const ProposalKind = z.enum([
+  "tune_thresholds",
+  "model_upgrade",
+  "question_fix",
+  "add_none_option",
+  "split_question",
+  "narrow_state",
+  "label_more",
+  "demote",
+]);
+export type ProposalKind = z.infer<typeof ProposalKind>;
+
 // ---------------------------------------------------------------------------
 // Savings and privacy
 
@@ -225,6 +242,22 @@ export type SavingsKind = z.infer<typeof SavingsKind>;
 /** organizations.pii_mode. */
 export const PiiMode = z.enum(["off", "redact_logs", "redact_logs_and_input"]);
 export type PiiMode = z.infer<typeof PiiMode>;
+
+/**
+ * question_sets.storage_mode (security.md, PII and data handling): `full` keeps state, `redacted`
+ * keeps redacted state, `hash_only` keeps only `runs.state_hash`. Listed from most to least private
+ * in STORAGE_MODE_PRIVACY_ORDER.
+ */
+export const StorageMode = z.enum(["full", "redacted", "hash_only"]);
+export type StorageMode = z.infer<typeof StorageMode>;
+
+/** Most to least private. A move toward the end of this list is a PII change. */
+export const STORAGE_MODE_PRIVACY_ORDER = ["hash_only", "redacted", "full"] as const satisfies readonly StorageMode[];
+
+/** True when `to` keeps more data than `from` (hash_only to redacted or full, redacted to full). */
+export function isLessPrivateStorageMode(from: StorageMode, to: StorageMode): boolean {
+  return STORAGE_MODE_PRIVACY_ORDER.indexOf(to) > STORAGE_MODE_PRIVACY_ORDER.indexOf(from);
+}
 
 /** organizations.key_mode and KeyResolver's mode. */
 export const KeyMode = z.enum(["byo", "platform"]);

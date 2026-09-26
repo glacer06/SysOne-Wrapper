@@ -42,6 +42,10 @@ export type UserActor = z.infer<typeof UserActor>;
 export const AppTokenKind = z.enum(["secret", "publishable", "browser"]);
 export type AppTokenKind = z.infer<typeof AppTokenKind>;
 
+/** app_tokens.prefix. sk_ tokens are secret, pk_live_ is publishable. */
+export const AppTokenPrefix = z.enum(["sk_live_", "sk_test_", "pk_live_"]);
+export type AppTokenPrefix = z.infer<typeof AppTokenPrefix>;
+
 /** slug@draft needs test mode (sk_test_). */
 export const AppTokenMode = z.enum(["live", "test"]);
 export type AppTokenMode = z.infer<typeof AppTokenMode>;
@@ -105,6 +109,39 @@ export const TenantContext = z.strictObject({
 export type TenantContext = z.infer<typeof TenantContext>;
 
 // ---------------------------------------------------------------------------
+// OrgLessContext
+
+/**
+ * A signed-in person acting outside any org. No membership, so no role. Impersonation always
+ * happens inside an org, so there is no impersonator here.
+ */
+export const OrgLessUserActor = z.strictObject({
+  type: z.literal("user"),
+  userId: UserId,
+  /** users.platform_role. The platform_* operations need "superadmin". */
+  platformRole: PlatformRole.nullable(),
+});
+export type OrgLessUserActor = z.infer<typeof OrgLessUserActor>;
+
+/**
+ * The context for operations that run without an org: `org.create` (any signed-in user, even one
+ * with no membership) and the platform_* operations. Session only, so the actor is always a user.
+ * Their audit rows have org_id null (AuditStore.appendOrgLess).
+ */
+export const OrgLessContext = z.strictObject({
+  orgId: z.null(),
+  actor: OrgLessUserActor,
+  /** "console" for Server Actions, "api" for cookie calls to /api/v1. */
+  client: z.enum(["console", "api"]),
+  requestId: z.string().min(1),
+});
+export type OrgLessContext = z.infer<typeof OrgLessContext>;
+
+/** What an operation handler receives: an org context, or for org-less operations either kind. */
+export const OperationContext = z.union([TenantContext, OrgLessContext]);
+export type OperationContext = z.infer<typeof OperationContext>;
+
+// ---------------------------------------------------------------------------
 // PublishCtx
 
 /** A channel checked for interface.breaking. */
@@ -137,6 +174,11 @@ export const PublishCtx = z.strictObject({
   newMajor: z.number().int().nonnegative(),
   /** org_typesafe_keys.models. */
   reachableModels: z.array(z.string()),
+  /**
+   * Exact model ids with a price_books row the org can read (its own rows plus the platform rows).
+   * Lint `escalation.model_unpriced` checks EscalationConfig.model against it.
+   */
+  pricedModels: z.array(z.string().min(1)),
   allowPreviewModels: z.boolean(),
   /** Action handlers installed and enabled for the org. */
   enabledHandlers: z.array(z.string()),

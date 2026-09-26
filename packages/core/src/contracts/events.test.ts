@@ -116,6 +116,22 @@ describe("EventEnvelope", () => {
 });
 
 describe("event data", () => {
+  it("model.available lists candidate sets and marks the cross-family ones", () => {
+    const OTHER = "01923f40-0000-7aaa-9bbb-0000000000e9";
+    const data = {
+      modelId: "jev-2.0.0",
+      family: "jev",
+      status: "stable",
+      releaseDate: "2026-10-01",
+      candidateSetIds: [SET, OTHER],
+      crossFamilySetIds: [OTHER],
+    };
+    expect(parseEventData("model.available", data)).toEqual(data);
+    expect(() => parseEventData("model.available", { ...data, candidateSetIds: [SET] })).toThrow();
+    const { crossFamilySetIds: _omit, ...legacy } = data;
+    expect(() => parseEventData("model.available", { ...legacy, pinnedSetsInFamily: [SET] })).toThrow();
+  });
+
   it("accepts dismissed review.resolved with a null resolution", () => {
     const data = {
       setId: SET,

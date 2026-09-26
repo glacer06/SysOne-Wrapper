@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 
-import { AppId, IsoTimestamp, SetId, TokenId, UserId, Uuid } from "./common.js";
+import { AppId, IsoTimestamp, OrgId, SetId, TokenId, UserId, Uuid } from "./common.js";
 import { QuestionTypeId } from "./question-types.js";
 
 // ---------------------------------------------------------------------------
@@ -87,11 +87,16 @@ function builtNeedsSet(o: { status: OpportunityStatus; setId: string | null }, c
 export const Opportunity = z.strictObject(opportunityShape).superRefine(builtNeedsSet);
 export type Opportunity = z.infer<typeof Opportunity>;
 
-/** An `app_opportunities` row: the contract plus the fields the server adds. */
+/**
+ * An `app_opportunities` row: the contract plus the fields the server adds. Like the other row
+ * schemas it strips unknown keys, so a column added by a later migration does not break an older
+ * reader. The input-side Opportunity stays strict.
+ */
 export const OpportunityRecord = z
-  .strictObject({
+  .object({
     ...opportunityShape,
     id: Uuid,
+    orgId: OrgId,
     createdByUserId: UserId.nullable(),
     createdByTokenId: TokenId.nullable(),
     createdAt: IsoTimestamp,

@@ -22,7 +22,7 @@ const count = z.number().int().nonnegative();
 // ---------------------------------------------------------------------------
 // Truth sources
 
-/** `run_feedback.source`. The server derives it from the caller; see FeedbackReport.source. */
+/** `run_feedback.source`. The server derives it from the caller; FeedbackReport has no source field. */
 export const FeedbackSource = z.enum(["app", "reviewer", "audit", "agent"]);
 export type FeedbackSource = z.infer<typeof FeedbackSource>;
 
@@ -37,9 +37,9 @@ export type FeedbackTarget = z.infer<typeof FeedbackTarget>;
  * One item of `POST /api/v1/feedback` (1 to 1,000 per body). Matched to a run by exactly one of
  * `runId` or `externalRef`, and idempotent on its own `idempotencyKey`.
  *
- * `source` is optional. The server derives `run_feedback.source` from the caller (`app` for an
- * `sk_` token, `agent` for an agent token) and returns `400 invalid_request` when a body sends a
- * different value. Checking that needs the caller, so it happens in the operation, not here.
+ * There is no `source` field (effectiveness-loop.md section 3). The server derives
+ * `run_feedback.source` from the caller: `app` for an `sk_` token, `agent` for an agent token.
+ * The schema is strict, so a body that sends `source` fails with `400 invalid_request`.
  */
 export const FeedbackReport = z
   .strictObject({
@@ -48,7 +48,6 @@ export const FeedbackReport = z
     target: FeedbackTarget,
     /** Option key, boolean, score level index, composite level or route output. */
     observed: JsonValue,
-    source: FeedbackSource.optional(),
     observedAt: IsoTimestamp,
     idempotencyKey: z.string().min(1),
   })

@@ -77,59 +77,75 @@ export type ModelLimits = z.infer<typeof ModelLimits>;
  * - `aliasTarget` is set only on alias rows (a versioned row never points elsewhere).
  * - `questionTypes` has no duplicates.
  */
-export const ModelProfile = z
-  .strictObject({
-    /** "jev-1.13.0", "jev-latest". TypeSafe's name, kept as is. */
-    id: z.string().min(1),
-    /** "jev". */
-    family: z.string().min(1),
-    kind: ModelKind,
-    /** Last observed versioned id, aliases only. Null until detection sees one. */
-    aliasTarget: z.string().min(1).nullable(),
-    status: ModelStatus,
-    /** YYYY-MM-DD. */
-    releaseDate: IsoDate.nullable(),
-    /** YYYY-MM-DD. After this date the row is `retired`. */
-    retireAt: IsoDate.nullable(),
-    /** Subset of the closed v1 union. */
-    questionTypes: z.array(QuestionTypeId),
-    /** Null only while `unreviewed`. */
-    limits: ModelLimits.nullable(),
-    /** ["text"]. */
-    inputModalities: z.array(z.string().min(1)),
-    /** Weakness ids, see KNOWN_WEAKNESS_IDS. */
-    weaknesses: z.array(z.string().min(1)),
-    /**
-     * Model or family ids this model can replace (system-one-models.md section 11). Set by the
-     * platform admin at review; [] for none. ADR-008 predates this field, so input may omit it.
-     */
-    supersedes: z.array(z.string().min(1)).default([]),
-    docsUrl: z.url(),
-    jaggednessUrl: z.url().nullable(),
-    /** YYYY-MM-DD: the date a human checked the row against the docs. */
-    lastReviewed: IsoDate,
-  })
-  .superRefine((p, ctx) => {
-    if (p.limits === null && p.status !== "unreviewed") {
-      ctx.addIssue({
-        code: "custom",
-        path: ["limits"],
-        message: `limits may be null only on an unreviewed row, not on a ${p.status} row`,
-      });
-    }
-    if (p.kind === "versioned" && p.aliasTarget !== null) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["aliasTarget"],
-        message: "a versioned row has no aliasTarget",
-      });
-    }
-    if (new Set(p.questionTypes).size !== p.questionTypes.length) {
-      ctx.addIssue({ code: "custom", path: ["questionTypes"], message: "must not repeat a question type" });
-    }
-  });
+const modelProfileShape = {
+  /** "jev-1.13.0", "jev-latest". TypeSafe's name, kept as is. */
+  id: z.string().min(1),
+  /** "jev". */
+  family: z.string().min(1),
+  kind: ModelKind,
+  /** Last observed versioned id, aliases only. Null until detection sees one. */
+  aliasTarget: z.string().min(1).nullable(),
+  status: ModelStatus,
+  /** YYYY-MM-DD. */
+  releaseDate: IsoDate.nullable(),
+  /** YYYY-MM-DD. After this date the row is `retired`. */
+  retireAt: IsoDate.nullable(),
+  /** Subset of the closed v1 union. */
+  questionTypes: z.array(QuestionTypeId),
+  /** Null only while `unreviewed`. */
+  limits: ModelLimits.nullable(),
+  /** ["text"]. */
+  inputModalities: z.array(z.string().min(1)),
+  /** Weakness ids, see KNOWN_WEAKNESS_IDS. */
+  weaknesses: z.array(z.string().min(1)),
+  /**
+   * Model or family ids this model can replace (system-one-models.md sections 3 and 11). Set by
+   * the platform admin at review; [] for none. Required: without it a new family never shows up
+   * as an upgrade. Rows written before this field are backfilled by the migration, not here.
+   */
+  supersedes: z.array(z.string().min(1)),
+  docsUrl: z.url(),
+  jaggednessUrl: z.url().nullable(),
+  /** YYYY-MM-DD: the date a human checked the row against the docs. */
+  lastReviewed: IsoDate,
+};
+
+/** The row rules listed above, shared by ModelProfile and ModelListItem. */
+function checkModelProfile(
+  p: z.output<z.ZodObject<typeof modelProfileShape>>,
+  ctx: z.RefinementCtx,
+): void {
+  if (p.limits === null && p.status !== "unreviewed") {
+    ctx.addIssue({
+      code: "custom",
+      path: ["limits"],
+      message: `limits may be null only on an unreviewed row, not on a ${p.status} row`,
+    });
+  }
+  if (p.kind === "versioned" && p.aliasTarget !== null) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["aliasTarget"],
+      message: "a versioned row has no aliasTarget",
+    });
+  }
+  if (new Set(p.questionTypes).size !== p.questionTypes.length) {
+    ctx.addIssue({ code: "custom", path: ["questionTypes"], message: "must not repeat a question type" });
+  }
+}
+
+export const ModelProfile = z.strictObject(modelProfileShape).superRefine(checkModelProfile);
 export type ModelProfile = z.infer<typeof ModelProfile>;
 export type ModelProfileInput = z.input<typeof ModelProfile>;
+
+/**
+ * One item of `model.list` (system-one-models.md section 14): a ModelProfile plus whether it is the
+ * calling org's default model. Built from the shape, since zod v4 cannot extend a refined object.
+ */
+export const ModelListItem = z
+  .strictObject({ ...modelProfileShape, isDefault: z.boolean() })
+  .superRefine(checkModelProfile);
+export type ModelListItem = z.infer<typeof ModelListItem>;
 
 // ---------------------------------------------------------------------------
 // Pinned or moving

@@ -14,7 +14,7 @@ const DOCS_URL = "https://docs.typesafe.ai/models.md";
 const LAST_REVIEWED = "2026-09-26";
 
 /** jev-1.13.0: the only versioned row, so the only pinned one. */
-const JEV_1_13_0: ModelProfileInput = {
+const VERSIONED_ROW: ModelProfileInput = {
   id: "jev-1.13.0",
   family: "jev",
   kind: "versioned",
@@ -65,10 +65,10 @@ function aliasOf(id: string, status: "stable" | "preview", target: ModelProfileI
 }
 
 const SEED_INPUT: readonly ModelProfileInput[] = [
-  JEV_1_13_0,
-  aliasOf("jev-latest", "stable", JEV_1_13_0),
+  VERSIONED_ROW,
+  aliasOf("jev-latest", "stable", VERSIONED_ROW),
   // TypeSafe says jev-preview moves ahead of jev-latest when a preview build exists. None exists today.
-  aliasOf("jev-preview", "preview", JEV_1_13_0),
+  aliasOf("jev-preview", "preview", VERSIONED_ROW),
 ];
 
 /** Seed ModelProfile rows, parsed at load so a bad edit fails loudly. */
@@ -79,7 +79,7 @@ export const SEED_MODEL_PROFILES: readonly ModelProfile[] = Object.freeze(
 /** Seed value of the platform setting `defaultModel`: a stable versioned id (section 14). */
 export const SEED_PLATFORM_DEFAULT_MODEL = "jev-1.13.0";
 
-/** A platform `price_books` row (org_id null) for a System One model, keyed by exact versioned id. */
+/** A platform `price_books` row (org_id null), keyed by exact model id. */
 export interface SeedModelPrice extends ModelPrice {
   model: string;
 }
@@ -92,3 +92,17 @@ export interface SeedModelPrice extends ModelPrice {
 export const SEED_SYSTEM_ONE_PRICES: readonly SeedModelPrice[] = Object.freeze([
   { model: "jev-1.13.0", inputPerMtokMicroUsd: 42_000, outputPerMtokMicroUsd: 0 },
 ]);
+
+/**
+ * Platform comparator price rows (savings-model.md, Price book): the provider's exact model ids.
+ * Haiku 4.5 is the seeded default comparator and the one the example spec names. Prices are from
+ * the savings-model.md seed table (Every newsletter, 2026-09-23); confirm them against the vendors'
+ * pricing pages before the first customer report. The Gemini row waits for Google's exact id.
+ */
+export const SEED_COMPARATOR_PRICES: readonly SeedModelPrice[] = Object.freeze([
+  { model: "claude-haiku-4-5", inputPerMtokMicroUsd: 1_000_000, outputPerMtokMicroUsd: 5_000_000 },
+  { model: "claude-fable-5-1", inputPerMtokMicroUsd: 10_000_000, outputPerMtokMicroUsd: 50_000_000 },
+]);
+
+/** Seed value of the org default comparator (savings-model.md: Haiku 4.5 unless changed). */
+export const SEED_DEFAULT_COMPARATOR_MODEL = "claude-haiku-4-5";

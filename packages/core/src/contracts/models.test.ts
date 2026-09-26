@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   KNOWN_WEAKNESS_IDS,
   ModelLimits,
+  ModelListItem,
   ModelProfile,
   type ModelProfileInput,
   classifyModelName,
@@ -45,9 +46,17 @@ describe("ModelProfile", () => {
     expect(ModelProfile.safeParse({ ...versioned, priceIn: 0.042 }).success).toBe(false);
   });
 
-  it("defaults supersedes to [] for an ADR-008 shaped row without it", () => {
+  it("requires supersedes, so a hand-written row cannot forget it", () => {
     const { supersedes: _omit, ...withoutSupersedes } = versioned;
-    expect(ModelProfile.parse(withoutSupersedes).supersedes).toEqual([]);
+    expect(ModelProfile.safeParse(withoutSupersedes).success).toBe(false);
+    expect(ModelProfile.safeParse({ ...versioned, supersedes: [""] }).success).toBe(false);
+  });
+
+  it("ModelListItem is a profile plus isDefault, with the same row rules", () => {
+    expect(ModelListItem.parse({ ...versioned, isDefault: true }).isDefault).toBe(true);
+    expect(ModelListItem.safeParse(versioned).success).toBe(false);
+    expect(ModelListItem.safeParse({ ...versioned, isDefault: false, aliasTarget: "jev-latest" }).success).toBe(false);
+    expect(ModelListItem.safeParse({ ...versioned, isDefault: false, extra: 1 }).success).toBe(false);
   });
 
   it("allows null limits only on an unreviewed row", () => {

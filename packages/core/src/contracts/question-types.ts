@@ -111,37 +111,48 @@ export type QuestionTypeLint<Q extends QuestionDef = QuestionDef> = (
 ) => LintResult[];
 
 /**
+ * Each question type's QuestionDef variant, answer and policy. QuestionTypeModule and
+ * QuestionTypeModules index it by type id (the correlated-union pattern), so
+ * `questionTypes[q.type].compile(q)` typechecks for a `q` whose type is a generic `K`, with no
+ * switch on the type string and no cast.
+ */
+export interface QuestionTypeMap {
+  noul: { question: NoulQuestion; answer: NoulAnswer; policy: NoulPolicy };
+  choice: { question: ChoiceQuestion; answer: ChoiceAnswer; policy: ChoicePolicy };
+  score: { question: ScoreQuestion; answer: ScoreAnswer; policy: ScorePolicy };
+}
+
+/** The QuestionDef variant of type K. */
+export type QuestionOf<K extends QuestionTypeId> = QuestionTypeMap[K]["question"];
+/** The SystemOneAnswer variant of type K. */
+export type AnswerOf<K extends QuestionTypeId> = QuestionTypeMap[K]["answer"];
+/** The ConfidencePolicy variant of type K. */
+export type PolicyOf<K extends QuestionTypeId> = QuestionTypeMap[K]["policy"];
+
+/**
  * All per-type logic. The router, compiler, composites, manifest, editor and Studio iterate the
  * module map instead of switching on the type string.
  */
-export interface QuestionTypeModule<
-  Q extends QuestionDef = QuestionDef,
-  A = unknown,
-  P = unknown,
-> {
-  id: Q["type"];
+export interface QuestionTypeModule<K extends QuestionTypeId> {
+  id: K;
   /** This type's QuestionDef variant. */
-  questionSchema: z.ZodType<Q>;
+  questionSchema: z.ZodType<QuestionOf<K>>;
   /** This type's SystemOneAnswer variant (passthrough). */
-  answerSchema: z.ZodType<A>;
+  answerSchema: z.ZodType<AnswerOf<K>>;
   /** The API question body. */
-  compile(question: Q): SystemOneQuestion;
+  compile(question: QuestionOf<K>): SystemOneQuestion;
   /** Value and band, by the rules in confidence-policy.md. */
-  band(answer: A, policy: P): { value: Value; band: Band };
+  band(answer: AnswerOf<K>, policy: PolicyOf<K>): { value: Value; band: Band };
   /** 0 to 1 composite term value. */
-  compositeValue?(answer: A, term: QuestionCompositeTerm): number;
-  lints: QuestionTypeLint<Q>[];
-  manifestHint(question: Q): ManifestQuestion;
+  compositeValue?(answer: AnswerOf<K>, term: QuestionCompositeTerm): number;
+  lints: QuestionTypeLint<QuestionOf<K>>[];
+  manifestHint(question: QuestionOf<K>): ManifestQuestion;
   uiKind: UiKind;
 }
 
-export type NoulTypeModule = QuestionTypeModule<NoulQuestion, NoulAnswer, NoulPolicy>;
-export type ChoiceTypeModule = QuestionTypeModule<ChoiceQuestion, ChoiceAnswer, ChoicePolicy>;
-export type ScoreTypeModule = QuestionTypeModule<ScoreQuestion, ScoreAnswer, ScorePolicy>;
+export type NoulTypeModule = QuestionTypeModule<"noul">;
+export type ChoiceTypeModule = QuestionTypeModule<"choice">;
+export type ScoreTypeModule = QuestionTypeModule<"score">;
 
 /** The shape of `questionTypes` in packages/core/src/question-types/index.ts. */
-export interface QuestionTypeModules {
-  noul: NoulTypeModule;
-  choice: ChoiceTypeModule;
-  score: ScoreTypeModule;
-}
+export type QuestionTypeModules = { [K in QuestionTypeId]: QuestionTypeModule<K> };

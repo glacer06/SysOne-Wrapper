@@ -1,5 +1,8 @@
-// Operation registry: one OperationDef per management capability, shared by
-// Server Actions, /api/v1, the sysone CLI and the MCP server
-// (references/management-api.md). The registry skeleton lands in Phase 0 part two.
+// Operation registry: one OperationDef per management capability, shared by Server Actions,
+// /api/v1, the sysone CLI and the MCP server (references/management-api.md).
 
-export {};
+export * from "./define";
+export * from "./errors";
+export * from "./registry";
+export * from "./run-operation";
+export { buildOpenApiDocument, renderOpenApi, type OpenApiDocument } from "./openapi";
