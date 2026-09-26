@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@sysone/core": "workspace:*",
+    "@typesafe-ai/sdk": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
