@@ -30,6 +30,14 @@ describe("boundary lint fixture", () => {
     expect(errors[0]).toContain("react may not import db");
   });
 
+  it("reports the deliberate SDK transport import in packages/cli/src/local", async () => {
+    const eslint = makeEslint(at("packages/cli"));
+    const results = await eslint.lintFiles([at("packages/cli/src/local/__fixtures__/bad-sdk-import.ts")]);
+    const errors = boundaryErrors(results);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain("cli-local may not import system-one-client");
+  });
+
   it("skips __fixtures__ in the normal lint run", async () => {
     const eslint = new ESLint({ cwd: at("packages/react") });
     expect(await eslint.isPathIgnored(at("packages/react/src/__fixtures__/bad-import.ts"))).toBe(true);
@@ -80,7 +88,14 @@ const cases: Case[] = [
   { name: "cli -> client", file: "packages/cli/src/x.ts", code: `import "@sysone/client";`, violates: false },
   { name: "cli -> core", file: "packages/cli/src/x.ts", code: `import "@sysone/core";`, violates: true },
   { name: "cli local -> core", file: "packages/cli/src/local/x.ts", code: `import "@sysone/core";`, violates: false },
-  { name: "cli local -> system-one-client", file: "packages/cli/src/local/x.ts", code: `import "@sysone/system-one-client";`, violates: false },
+  // Local mode takes only the fixture subpath: the SDK transport is off limits (phase-1.md exit gate).
+  { name: "cli local -> system-one-client SDK transport", file: "packages/cli/src/local/x.ts", code: `import "@sysone/system-one-client";`, violates: true },
+  { name: "cli local -> system-one-client fixture", file: "packages/cli/src/local/x.ts", code: `import "@sysone/system-one-client/fixture";`, violates: false },
+  { name: "cli local -> @typesafe-ai/sdk", file: "packages/cli/src/local/x.ts", code: `import "@typesafe-ai/sdk";`, violates: true },
+  { name: "cli -> system-one-client fixture", file: "packages/cli/src/x.ts", code: `import "@sysone/system-one-client/fixture";`, violates: true },
+  { name: "system-one-client fixture -> @typesafe-ai/sdk", file: "packages/system-one-client/src/fixture/x.ts", code: `import "@typesafe-ai/sdk";`, violates: true },
+  { name: "system-one-client fixture -> SDK transport", file: "packages/system-one-client/src/fixture/x.ts", code: `import "../sdk-transport.js";`, violates: true },
+  { name: "system-one-client -> its fixture folder", file: "packages/system-one-client/src/x.ts", code: `import "./fixture/index.js";`, violates: false },
 
   // The HTTP clients build against the generated OpenAPI document by package name.
   { name: "cli -> core openapi.json", file: "packages/cli/src/x.ts", code: `import "@sysone/core/openapi.json";`, violates: false },

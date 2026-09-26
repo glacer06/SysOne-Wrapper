@@ -196,6 +196,12 @@ importers:
       '@sysone/config':
         specifier: workspace:*
         version: link:../config
+      '@sysone/core':
+        specifier: workspace:*
+        version: link:../core
+      '@sysone/system-one-client':
+        specifier: workspace:*
+        version: link:../system-one-client
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.4

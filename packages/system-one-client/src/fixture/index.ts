@@ -1,0 +1,9 @@
+// @sysone/system-one-client/fixture: the fixture transport and fixture loading. This subpath
+// never imports @typesafe-ai/sdk, so `sysone run --local` can use it with no SDK and no key
+// (architecture.md, Packages and boundaries).
+
+export { FixtureTransport, type FixtureCall, type FixtureTransportOptions } from "./fixture-transport.js";
+export { Fixture, FixtureError, fixtureKey } from "./fixture.js";
+export { BUNDLED_FIXTURES_DIR, loadBundledFixtures, loadFixturesFromDir } from "./load.js";
+export { systemOneCodeForStatus, transportErrorForStatus } from "./status-map.js";
+export { syntheticResponse } from "./synthetic.js";
