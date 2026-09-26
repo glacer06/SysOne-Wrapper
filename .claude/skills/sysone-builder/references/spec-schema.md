@@ -99,7 +99,7 @@ Condition =
   | { check: string }
   | { input: StatePath, eq: Value } | { input: StatePath, neq: Value } | { input: StatePath, in: Value[] }
   | { input: StatePath, exists: boolean }
-  | { input: StatePath, matches: string }                  // regular expression, linear-time engine, max 256 chars
+  | { input: StatePath, matches: string }                  // JS regex syntax with the u flag, max 256 chars, see below
   | { input: StatePath, gte?: number, lte?: number }
 ```
 
@@ -107,6 +107,7 @@ Condition =
 - `q` with `gte` or `lte` reads the numeric answer: `noul` for a noul, the raw `score` for a score. It is invalid on a choice.
 - `composite` reads the composite's 0 to 1 value. `check` is true when that check held.
 - `input` reads the validated input before redaction. The input form is how Studio code checks are expressed.
+- `matches` takes JavaScript regular expression syntax, compiled with the `u` flag, at most 256 characters. Backreferences (`\1`, `\k<name>`) and lookaround (`(?=`, `(?!`, `(?<=`, `(?<!`) are rejected when the spec is parsed (`matchesPatternProblem` in `packages/core/src/contracts/policy.ts`). With those gone, every pattern fits a linear-time automaton. Core evaluates `matches` with its own pure automaton over this subset, never with the backtracking `RegExp`.
 - Conditions read the model's answer before rollout or fallback change anything, so the same state routes the same way in every rollout stage.
 - A leaf that points at a question that was not asked (its spec stage was skipped) or at a path that does not resolve is false. `exists: false` is the one leaf that is true in that case.
 
@@ -351,7 +352,7 @@ diffInterface(a: SetInterface, b: SetInterface): { breaking: string[], additive:
 
 ## 13. Strict spec schema
 
-The spec zod schema is strict: unknown keys fail validation. Free-form values stay open: `instructions`, `criteria`, `meta`, `input.schema`, adapter `config`, and the handler `config` on an `auto` action. The `config` on a `fallback` or `escalate_to_llm` action is typed (section 7). Errors use the error envelope's `details` shape ([api.md](api.md)). A `rollout` key names the operation to use instead:
+The spec zod schema is strict: unknown keys fail validation. Free-form values stay open: `instructions`, `criteria`, `meta`, `input.schema`, adapter `config`, and the handler `config` on an `auto` action. That `auto` config is the only free-form action `config`. The `config` on a `fallback` or `escalate_to_llm` action is typed (section 7), and a `review` action takes no `config` at all, so one fails as an unknown key. Errors use the error envelope's `details` shape ([api.md](api.md)). A `rollout` key names the operation to use instead:
 
 ```json
 { "path": "/rollout", "rule": "spec.unknown_key", "severity": "error",
