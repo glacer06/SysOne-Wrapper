@@ -18,11 +18,13 @@ alter table question_sets enable row level security;
 alter table question_sets force row level security;
 
 create policy tenant_isolation on question_sets
-  using (org_id = current_setting('app.org_id', true)::uuid)
-  with check (org_id = current_setting('app.org_id', true)::uuid);
+  using (org_id = nullif(current_setting('app.org_id', true), '')::uuid)
+  with check (org_id = nullif(current_setting('app.org_id', true), '')::uuid);
 ```
 
-The app connects as a role without `BYPASSRLS`. Platform admin queries run through a separate, audited path that sets `app.platform_admin = true` and a policy that allows it.
+`nullif` matters. Once a transaction-local `app.org_id` has been set on a pooled connection, `current_setting('app.org_id', true)` returns `''` (not null) after that transaction ends, and `''::uuid` raises an error. The generated policies in `packages/db/src/rls.ts` always read the setting through `nullif`.
+
+The app connects as a login role that is a member of `sysone_app` (NOLOGIN, no `BYPASSRLS`, no `SUPERUSER`). Platform rows (`org_id` null in `price_books`, `audit_log` and `events`, and the platform tables) are written by the `sysone_platform` role, whose policies match only `org_id is null`. The app role is never a member of it. Migration 0001 creates both roles, and its security block is generated from the table classes in `packages/db/src/schema/classes.ts`.
 
 ## Tables
 
@@ -161,7 +163,7 @@ Actor columns named `*_user_id` and `*_token_id` come in pairs. A person acting 
 - `usage_daily`: rollup, see [savings-model.md](savings-model.md).
 - `price_books`: `org_id (null = platform default), model, provider (typesafe|openrouter) null, display_name, input_per_mtok_micro_usd, output_per_mtok_micro_usd, updated_by_user_id, updated_by_token_id, updated_at`. Unique `(org_id, model, provider)` with `nulls not distinct`, so each model has one platform row per provider value and at most one override per org and provider.
   - `provider` null means the price holds on every provider. A row for the run's provider wins over the null row (ADR-011). Provider-reported `usage.cost` wins over both.
-  - Hybrid table, the one exception to tenancy rule 1. Read policy: `using (org_id is null or org_id = current_setting('app.org_id', true)::uuid)`. Write policy: `with check (org_id = current_setting('app.org_id', true)::uuid)`. Platform rows (`org_id` null) are written only through the audited platform admin path.
+  - Hybrid table, the one exception to tenancy rule 1. Read policy: `using (org_id is null or org_id = nullif(current_setting('app.org_id', true), '')::uuid)`. Write policies: `with check (org_id = nullif(current_setting('app.org_id', true), '')::uuid)`. Platform rows (`org_id` null) are written only by the `sysone_platform` role.
   - The `PriceBook` port runs inside `withTenant`, so it sees the platform rows and the caller's own overrides, and an org row wins over the platform row for the same model.
   - The cross-tenant suite checks that org A cannot read or write org B's override, and that both orgs read the platform rows.
   - `model` is an exact model id. For System One rows it must be a versioned id in `system_one_models`; alias rows are rejected, because they would misprice runs after the alias moves. Comparator rows use the provider's exact model id.

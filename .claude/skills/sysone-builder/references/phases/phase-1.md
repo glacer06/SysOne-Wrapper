@@ -22,13 +22,13 @@
 - [ ] `packages/cli` local mode: `pnpm sysone run --local spec.json state.json` (fixture transport only; no network, no key). The code lives in `packages/cli/src/local/**`, the only CLI folder that may import `core` and the fixture subpath export of `system-one-client`. It never imports the SDK transport ([architecture.md](../architecture.md#packages-and-boundaries)). Demo spec: the skill's `templates/question-set.example.json`. The seeded question templates in [definition-studio.md](../definition-studio.md) are a different thing and arrive in Phases 3 and 5.
 
 ## Platform / Tenancy
-- [ ] Full Drizzle schema with every table in [data-model.md](../data-model.md), with `org_id` and RLS on every tenant table (migration 0001), including the platform tables `system_one_models` (seeded from `packages/core/src/models/catalog.ts`), `system_one_model_routes` (seeded from `SEED_MODEL_ROUTES`) and `model_alias_observations` (with `provider`). The keys table ships as `org_system_one_keys` with a `provider` column, so no rename migration is ever needed
-- [ ] `withTenant(ctx, fn)` with transaction-local `set_config`
-- [ ] RLS setting test: every policy and `withTenant` use `app.org_id`
-- [ ] Repositories for every table; no raw `db` export
-- [ ] Immutability trigger on published versions
-- [ ] Two-org seed
-- [ ] Dev implementations: local KEK vault, in-memory limiter and quota
+- [x] Full Drizzle schema with every table in [data-model.md](../data-model.md), with `org_id` and RLS on every tenant table (migration 0001), including the platform tables `system_one_models` (seeded from `packages/core/src/models/catalog.ts`), `system_one_model_routes` (seeded from `SEED_MODEL_ROUTES`) and `model_alias_observations` (with `provider`). The keys table ships as `org_system_one_keys` with a `provider` column, so no rename migration is ever needed
+- [x] `withTenant(ctx, fn)` with transaction-local `set_config`
+- [x] RLS setting test: every policy and `withTenant` use `app.org_id`
+- [x] Repositories for every table; no raw `db` export
+- [x] Immutability trigger on published versions
+- [x] Two-org seed
+- [x] Dev implementations: local KEK vault, in-memory limiter and quota
 
 ## QA
 - [ ] Recorded fixtures (see [testing.md](../testing.md) minimum set), including a response whose `model` differs from the requested alias
@@ -36,7 +36,7 @@
 - [ ] Fixture contract test against zod; each fixture records TypeSafe's `openapi.json` version
 - [ ] Pinned-classification table test (registry `kind` only)
 - [ ] `packages/evals` CLI: `pnpm eval --org <slug> --set <slug> --version <n> --dataset <name> [--model <id>] [--repeats <k>]`
-- [ ] Cross-tenant suite generator
+- [x] Cross-tenant suite generator
 - [ ] Live smoke script across the models in the smoke list per [testing.md](../testing.md), with `--provider openrouter` when `OPENROUTER_API_KEY` is set
 
 ## Exit gate
