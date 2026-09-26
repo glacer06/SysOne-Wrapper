@@ -9,10 +9,17 @@
       "@sysone/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./fixture": {
+      "@sysone/source": "./src/fixture/index.ts",
+      "types": "./dist/fixture/index.d.ts",
+      "import": "./dist/fixture/index.js"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "fixtures",
+    "contract"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -22,6 +29,7 @@
   },
   "dependencies": {
     "@sysone/core": "workspace:*",
+    "@typesafe-ai/sdk": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

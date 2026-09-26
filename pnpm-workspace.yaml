@@ -14,6 +14,9 @@ catalog:
   "@types/react-dom": 19.3.0
   drizzle-kit: 0.31.11
   drizzle-orm: 0.45.3
+  # Pre-1.0: a caret on 0.x stays within the minor. Upgrades go through a PR that re-records fixtures.
+  "@typesafe-ai/sdk": ^0.6.0
+  "@vitest/coverage-v8": 5.0.2
   eslint: 10.11.0
   eslint-import-resolver-typescript: 4.4.5
   eslint-plugin-boundaries: 7.2.0

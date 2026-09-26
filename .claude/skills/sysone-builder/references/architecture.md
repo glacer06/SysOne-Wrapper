@@ -59,7 +59,7 @@ Import boundaries are enforced with `eslint-plugin-boundaries`:
 - `react` never imports `client` server entrypoints, `tenancy`, `db`, or `system-one-client`.
 - `core` imports nothing with side effects.
 - `codegen` imports only `core` contracts.
-- `cli` imports `client` and `codegen` and calls `/api/v1` over HTTP. Only `packages/cli/src/local/**` may also import `core` and `system-one-client`. That folder backs `sysone run --local` and is loaded through a dynamic import, so the published package keeps `core` and `system-one-client` as optional peer dependencies. A boundary-lint fixture test covers this exception.
+- `cli` imports `client` and `codegen` and calls `/api/v1` over HTTP. Only `packages/cli/src/local/**` may also import `core` and the fixture subpath `@sysone/system-one-client/fixture`, never the SDK transport. That folder backs `sysone run --local` and is loaded through a dynamic import, so the published package keeps `core` and `system-one-client` as optional peer dependencies. A boundary-lint fixture test (`packages/cli/src/local/__fixtures__/bad-sdk-import.ts`) covers this exception.
 - `mcp-server` calls `/api/v1` over HTTP only.
 - Console pages under `app/(org)` and `app/(platform)` call operations, never repositories.
 
