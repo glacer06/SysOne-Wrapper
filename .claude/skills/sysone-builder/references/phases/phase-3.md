@@ -11,8 +11,8 @@ Every console screen in this phase calls an operation ([management-api.md](../ma
 - [ ] Model picker fed from the registry (`model.list`), showing each model's status, limits and weaknesses
 - [ ] Options editor: choice options (up to 255, "none" suggestion), score levels (2 to 10, ordered), noul true/false criteria. The 255 options and 2 to 10 levels are API-wide rules; other limits come from the model profile.
 - [ ] Policy editor with band sliders and a live preview on sample state
-- [ ] Input schema editor, adapter picker, redact paths, token preflight meter
-- [ ] Publish flow: `If-Match` on the draft ETag, lints (including the model lints and `interface.breaking`, which counts apps with runs until bindings land in Phase 4b), an eval gate that is required when the production pointer is `controlled` or `full`, changelog, channel choice, and a dry-run preview
+- [ ] Input schema editor, redact paths, token preflight meter; the adapter picker stays hidden until Phase 5, so sets run on raw JSON state
+- [ ] Publish flow: `If-Match` on the draft ETag, lints (including the model lints and `interface.breaking`, which counts apps with runs until bindings land in Phase 4b), an eval gate that is required when the production pointer is `controlled` or `full` (the same-snapshot regression gate in [effectiveness-loop.md](../effectiveness-loop.md), section 5), changelog, channel choice, and a dry-run preview
 - [ ] Version history, diffs, release events, one-click rollback and promote
 - [ ] Rollout stage control per channel (`inactive`, `shadow`, `controlled`, `full`, `paused`) through `rollout.change`, with gate status and audit ([confidence-policy.md](../confidence-policy.md))
 
@@ -22,7 +22,7 @@ Every console screen in this phase calls an operation ([management-api.md](../ma
 - [ ] Approvals inbox and decision UI: the stored input, a diff, gate results and the dry-run preview for each request
 - [ ] Agent token management UI for admins: every member's tokens, scopes, ceiling, last use, revoke
 - [ ] Event feed `GET /api/v1/events` per [events.md](../events.md)
-- [ ] Feedback API `POST /api/v1/feedback` ([api.md](../api.md))
+- [ ] Feedback API `POST /api/v1/feedback` ([api.md](../api.md)); the server sets each row's `source` from the caller (`app` for `sk_` tokens, `agent` for agent tokens)
 - [ ] `@sysone/cli` Phase 3 commands, including `sysone spec pull`, `push`, `diff` and `validate` ([headless-and-agents.md](../headless-and-agents.md); Integrations)
 - [ ] `packages/mcp-server` stdio transport with the Phase 3 curated tools ([headless-and-agents.md](../headless-and-agents.md); Integrations)
 - [ ] OpenAPI and MSW mocks regenerated from the registry
@@ -32,8 +32,8 @@ Every console screen in this phase calls an operation ([management-api.md](../ma
 - [ ] Runs explorer with filters, run detail with per-stage payload and answers
 - [ ] Review queue with kind `action` and `label`, the reason each item was picked, assign, resolve, dismiss, add to dataset, SLA timers
 - [ ] Audit sampler per the labeling policy in [effectiveness-loop.md](../effectiveness-loop.md) (Quality / Learning)
-- [ ] Datasets with fixed splits and snapshots
-- [ ] Eval runs with calibration charts and the model recorded on each run
+- [ ] Datasets with fixed splits and snapshots (`dataset_snapshots`)
+- [ ] Eval runs on a dataset snapshot (`snapshotId`), with calibration charts and the model recorded on each run
 - [ ] Definition Studio per [definition-studio.md](../definition-studio.md), including `studio_sessions`, the `studio.*` operations and server-enforced holdout rules
 
 ## Rollout safety (Quality / Learning)
@@ -43,8 +43,7 @@ Every console screen in this phase calls an operation ([management-api.md](../ma
 
 ## Models
 - [ ] Platform admin Models page: review unreviewed models, set status, limits, weaknesses and `retireAt` ([system-one-models.md](../system-one-models.md))
-- [ ] Org model list
-- [ ] Registry sync and contract watch jobs (Platform)
+- [ ] Org model list (the registry sync, alias probe and contract watch jobs run from Phase 1)
 - [ ] Model lints enforced at publish
 
 ## Administration and ROI

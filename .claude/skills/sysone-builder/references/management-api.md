@@ -6,11 +6,15 @@ Owner: Platform / Tenancy (registry, operations, routes). Console UI calls opera
 
 This is the management half of `/api/v1`. The run surface, auth modes, feedback and the error envelope are in [api.md](api.md). Management routes use the same auth modes and the same envelope.
 
-Rule: **no capability exists only in the console.** Every console screen reads and changes org data through an operation in this file. The same operation is reachable over HTTP, from `@sysone/cli`, and, when it is on the curated list, from the MCP server ([headless-and-agents.md](headless-and-agents.md)). Three exceptions stay console-only on purpose:
+Rule: **no capability exists only in the console.** Every console screen reads and changes org data through an operation in this file. The same operation is reachable over HTTP, from `@sysone/cli`, and, when it is on the curated list, from the MCP server ([headless-and-agents.md](headless-and-agents.md)). These exceptions stay console-only on purpose:
 
-- Stripe checkout and the billing portal (Stripe hosts them).
-- Approval decisions (a person must decide; see [Approvals](#approvals)).
-- Platform admin impersonation.
+- Stripe checkout and the billing portal (Stripe hosts them). No operation.
+- Platform admin impersonation. No operation.
+- Session-only operations, marked *session only* in the catalog (`actors: ["user"]`). They are operations with routes, so the console still goes through the registry and the audit log, but no token can call them:
+  - `approval.decide`: a person must decide ([Approvals](#approvals)).
+  - `review.confirm`: a person confirms agent labels and agent resolutions ([Review and feedback](#review-and-feedback)).
+  - `org.create` and `portfolio.get`: they span orgs, and every token belongs to one org.
+  - Platform operations (`/platform/*`): a superadmin session with MFA.
 
 ## Operation registry
 
@@ -23,7 +27,8 @@ OperationDef<I, O> = {
   input: ZodType<I>,          // path params, query and body merged into one object
   output: ZodType<O>,
   scope: Scope | ((input: I) => Scope), // a function when the channel decides: release:staging or release:production
-  minRole: Role,              // the floor; can() raises it for protected sets and for entering full
+  minRole: Role,              // the floor; can() raises it for protected sets, entering full and skipExperiment
+  actors: Array<"user" | "agent" | "apiKey" | "system">, // who may call it; ["user"] means session only
   risk: "normal" | "high",    // "high": an agent may need an approval (conditions below and in security.md)
   towardSafety: boolean,      // only ever makes things safer (rollback, stop, revoke): never gated
   readOnly: boolean,
@@ -37,7 +42,13 @@ OperationDef<I, O> = {
 }
 ```
 
-`emits` and `preview` extend the shape in ADR-007 so the event rule ([events.md](events.md)) and dry runs have one home.
+`emits`, `preview` and `actors` extend the shape in ADR-007 so the event rule ([events.md](events.md)), dry runs and session-only operations have one home.
+
+`actors` defaults to `["user", "agent"]`:
+
+- App tokens (`apiKey`) reach only the operations their scopes cover ([security.md](security.md), App tokens): `set.run`, `set.list`, `set.manifest`, `version.get` (manifest only), `model.list`, `run.list`, `run.get`, `run.ingest`, `usage.get`, `review.list`, `review.assign`, `review.resolve`, `review.dismiss`, `feedback.report`, `event.list` (review events for that app's runs only; [events.md](events.md)) and `browser_token.create`.
+- Operations that a job calls add `"system"`: `rollout.change` (auto-demote) and `experiment.stop` (the experiment scorer).
+- `["user"]` marks a session-only operation. It has a route and an OpenAPI path, and no CLI command or MCP tool may map to it.
 
 ### runOperation
 
@@ -45,7 +56,7 @@ OperationDef<I, O> = {
 
 1. **Resolve the actor** into `TenantContext`: console session, app token or agent token. For an agent token, role = min(`role_ceiling`, current membership role), read on every request.
 2. **Validate input** with `op.input`. Failure: `400 invalid_request` with `details[]` (JSON Pointers into the body).
-3. **Check scope and role** with `can(ctx, op, resource)`. It checks the scope, the role (app tokens have no role, so only scope, set allowlist and channel apply), and resource rules such as "protected sets need an admin to publish". A resource in the caller's org that the actor may not touch: `403 insufficient_scope` with `requiredScope`. A resource in another org, or a set outside the token's allowlist: `404 not_found`.
+3. **Check actor, scope and role** with `can(ctx, op, resource)`. An actor type not in `op.actors` gets `403 insufficient_scope`; for a session-only operation the message says a console session is required. It then checks the scope, the role (app tokens have no role, so only scope, set allowlist and channel apply), and resource rules such as "protected sets need an admin to publish". A resource in the caller's org that the actor may not touch: `403 insufficient_scope` with `requiredScope`. A resource in another org, or a set outside the token's allowlist: `404 not_found`.
 4. **Approval gate.** Only for agent actors. If the operation is high risk for this input (see [Approvals](#approvals)), store an `approval_requests` row, emit `approval.requested` and return `202`. If the same token already has a request for the same `op_id` and `input_hash` that is pending, or was approved or executed in the last 24 hours, return that request instead of opening a second one. A replayed call therefore gets the same approval back.
 5. **Idempotency lookup** by `(org_id, actor_key, key)`. A stored response is replayed.
 6. **If-Match check** for operations that require it. Missing: `428 precondition_required`. Mismatch: `412 precondition_failed` with `currentEtag`.
@@ -67,8 +78,8 @@ An approved request runs through `runOperation` with the stored input, the store
 
 ### OpenAPI and the parity test
 
-- `openapi.json` is generated from the registry and the zod contracts, committed as `packages/core/openapi.json`, and served at `GET /api/v1/openapi.json`. Each path's `operationId` is the operation id, and the extensions `x-sysone-scope`, `x-sysone-min-role` and `x-sysone-risk` carry the registry metadata. MSW mocks, CLI help and MCP tool schemas come from the same file.
-- The parity test runs on every PR ([testing.md](testing.md), Headless API tests). It fails when an operation has no route or no OpenAPI path, when a curated MCP tool maps to no operation, or when code under `app/(org)/**` or `app/(platform)/**` imports a repository.
+- `openapi.json` is generated from the registry and the zod contracts, committed as `packages/core/openapi.json`, and served at `GET /api/v1/openapi.json`. Each path's `operationId` is the operation id, and the extensions `x-sysone-scope`, `x-sysone-min-role`, `x-sysone-risk` and `x-sysone-actors` carry the registry metadata. MSW mocks, CLI help and MCP tool schemas come from the same file.
+- The parity test runs on every PR ([testing.md](testing.md), Headless API tests). It fails when an operation has no route or no OpenAPI path, when a curated MCP tool or a CLI command maps to no operation or to a session-only operation, or when code under `app/(org)/**` or `app/(platform)/**` imports a repository. The run surface is in the registry too (`set.run` and the rest of [Runs and usage](#runs-and-usage)), so the MCP tool `run_set` and `sysone run` map to `set.run`.
 
 ## Conventions for every route
 
@@ -87,14 +98,38 @@ Legend for the Risk column:
 - `high*`: an agent needs an approval only under the conditions listed below.
 - `safety`: `towardSafety`; never gated.
 
+A row whose Scope column says *session only* has `actors: ["user"]`: no token can call it.
+
 `release:<channel>` means `release:staging` or `release:production`, picked by the channel the call touches. Conditions for `high*`:
 
-- `set.publish` and `channel.promote`: the channel is production and the set is protected or its production stage is `controlled` or `full`. Publishing with `skipExperiment` is always high.
+- `set.publish` and `channel.promote`: the channel is production and the set is protected or its production stage is `controlled` or `full`. Publishing or promoting with `skipExperiment` is always high.
 - `rollout.change`: a move into `controlled` or `full` from a lower stage, or any move out of `paused`. Moves into `paused`, and moves from `full` or `controlled` down to `controlled` or `shadow`, are never gated. `inactive` to `shadow` is normal, because nothing executes in shadow.
-- `app_token.create` and `agent_token.create`: the new token has a write scope. An `admin:write` agent token is always gated.
+- `app_token.create` and `agent_token.create`: the new token has a write scope. One exception: `feedback:write` on an `sk_test_` app token bound to `staging` does not count, so `sysone init` needs no approval ([deploy-and-codegen.md](deploy-and-codegen.md)). An `admin:write` agent token is always gated.
 - `settings.update`: the change touches PII mode, retention, or lowers `agentApprovals`.
 
 The org setting `agentApprovals` narrows which of these are gated; see [security.md](security.md).
+
+### Runs and usage
+
+The run surface in [api.md](api.md) is registered like every other operation.
+
+| Method | Path | Operation | Scope | Min role | Risk | Phase |
+|---|---|---|---|---|---|---|
+| POST | `/sets/{ref}/run` | `set.run` | `run` | viewer | normal | 2 |
+| GET | `/sets/{ref}/manifest` | `set.manifest` | `sets:read` | viewer | read | 3 |
+| GET | `/runs` | `run.list` | `runs:read` | viewer | read | 3 |
+| GET | `/runs/{id}` | `run.get` | `runs:read` | viewer | read | 3 |
+| GET | `/usage` | `usage.get` | `usage:read` | viewer | read | 3 |
+| POST | `/tokens/browser` | `browser_token.create` | `run` | none (`sk_` only) | normal | 2 |
+| POST | `/runs/ingest` | `run.ingest` | `runs:write` | viewer | normal | 4b |
+
+- `set.run` takes a `RunRequest` ([spec-schema.md](spec-schema.md)) and returns `RunResult`, or `RunDryRunResult` when `options.dryRun` is set. Actors: sessions, agent tokens and app tokens. `Idempotency-Key` is accepted but not required. The run's own `options.dryRun` is its preview; the generic `?dryRun=true` does not apply. MCP tool `run_set`, CLI `sysone run`. The console playground calls it too.
+- `set.manifest` returns the manifest in [api.md](api.md): no instructions, criteria or thresholds. The embed kit and codegen read it.
+- `run.list` backs the console runs explorer. Filters: `set`, `version`, `channel`, `source`, `status`, `band` (run band), `action` (overall action), `from` and `to`, plus `limit` and `cursor`. It returns run summaries without state.
+- `run.get` returns the run envelope with its per-stage payloads and answers, plus the run's review items with their status and resolution, so a host app can poll how a review ended. State is omitted unless the set's storage mode kept it.
+- `usage.get` returns the org's usage and savings rollups ([savings-model.md](savings-model.md)).
+- `browser_token.create` is for `sk_` app tokens only (`actors: ["apiKey"]`). The body names the origin and the sets (a subset of the token's allowlist). It returns `{ token, expiresAt }`.
+- `run.ingest` is for the standalone deploy target only, behind ADR-009 ([deploy-and-codegen.md](deploy-and-codegen.md)). Callers: `sk_` app tokens and agent tokens with `runs:write`.
 
 ### Projects and goals
 
@@ -112,6 +147,7 @@ Goals carry `qualityTarget` (a `QualityTarget`) and `businessKpi`. See [effectiv
 
 | Method | Path | Operation | Scope | Min role | Risk | Phase |
 |---|---|---|---|---|---|---|
+| GET | `/templates` | `template.list` | `sets:read` | viewer | read | 3 |
 | GET | `/sets` | `set.list` | `sets:read` | viewer | read | 3 |
 | POST | `/sets` | `set.create` | `sets:write` | editor | normal | 3 |
 | GET | `/sets/{ref}` | `set.get` | `sets:read` | viewer | read | 3 |
@@ -121,9 +157,10 @@ Goals carry `qualityTarget` (a `QualityTarget`) and `businessKpi`. See [effectiv
 | PUT | `/sets/{ref}/draft` | `draft.update` | `sets:write` | editor | normal | 3 |
 | POST | `/sets/{ref}/draft/validate` | `draft.validate` | `sets:read` | viewer | read | 3 |
 
+- `template.list` returns `{ id, name, pattern, parameters }` for each seeded template ([definition-studio.md](definition-studio.md)), so an agent can find a `fromTemplate` id.
 - `set.create` takes `{ slug, name, goalId, fromTemplate?, fromVersion? }`. `fromTemplate` is a template id ([definition-studio.md](definition-studio.md)). `fromVersion` is `slug@n` of another set in the org. The new set has a draft and no published version.
 - `set.get` returns the set row, each channel pointer with its version, rollout stage and active experiment, and the live interface major.
-- `set.update` changes `name`, `protected` (admin only), `labeling`, `dispatchActionsOnStaging` and `valueSettings`.
+- `set.update` changes `name`, `protected` (admin only), `labeling`, `dispatchActionsOnStaging`, `valueSettings` and `gateMargins` (`{ coverageDrop, reviewLoadRise }`, used by the regression gate and experiment promotion in [effectiveness-loop.md](effectiveness-loop.md)).
 - `set.archive` is `destructive`.
 - `draft.get` returns the spec with `ETag: "<spec_hash>"`. `draft.update` replaces the whole spec, requires `If-Match`, and returns the new ETag. The body is a strict `QuestionSetSpec` ([spec-schema.md](spec-schema.md)); a `rollout` key fails with a message naming `rollout.change`.
 - `draft.validate` takes an optional spec in the body (default: the stored draft) and returns `{ errors[], warnings[] }`. Each item has the `details` shape from api.md: `{ path, rule, severity, message }`. It writes nothing, so an agent can iterate on a local file.
@@ -142,10 +179,14 @@ Goals carry `qualityTarget` (a `QualityTarget`) and `businessKpi`. See [effectiv
 
 - `version.get` returns the full spec to sessions and agent tokens. App tokens get the manifest only ([api.md](api.md)).
 - `version.diff` takes `?from=&to=`. Each side is a version number, `draft`, or a channel name.
-- `set.publish` takes `{ channel, changelog, requireEval?, skipExperiment? }` and requires `If-Match` with the draft ETag. It runs lints (`422 spec_invalid`), runs the eval gate when required (`409 gate_not_met`), freezes the draft into version N+1, moves the channel pointer and opens a new draft. A channel's first publish creates its pointer at `inactive`. `skipExperiment: { reason }` (Phase 3b) skips champion/challenger on a live set.
+- `set.publish` takes `{ channel, changelog, requireEval?, skipExperiment?: { reason }, interfaceBump?: { reason } }` and requires `If-Match` with the draft ETag. It runs lints (`422 spec_invalid`), runs the eval gate when required (`409 gate_not_met`), freezes the draft into version N+1 and opens a new draft. It returns `{ version, versionId, experimentId? }`.
+- **Pointer rule for `set.publish`.** If the target is production at `controlled` or `full` and `skipExperiment` is absent, the pointer does not move. The new version becomes the challenger of an auto-started experiment (defaults: `samplePct` 0.1, `minRuns` 500, `minLabeled` = the goal's `QualityTarget.minLabeledHigh`), and the response includes `experimentId`. Otherwise the pointer moves. A channel's first publish creates its pointer at `inactive`. Experiments ship in Phase 3b; until then the pointer always moves.
+- `skipExperiment: { reason }` (Phase 3b) moves the pointer on a live set without an experiment. It needs the admin role, and an agent also needs an approval.
+- `interfaceBump: { reason }` gives the new version the set's highest interface major plus one. It is the only way to clear the `interface.breaking` lint, and a publish that carries it is never a no-op. The reason is audited on the release event ([deploy-and-codegen.md](deploy-and-codegen.md), section 5).
 - `channel.rollback` takes `{ toVersion? }` and defaults to the previous version on that channel.
-- `channel.promote`: `{channel}` is `production`. It points production at the version staging serves, with the same lints and gates as a production publish. To move a version that is already on staging, promote it; do not publish it again.
-- The set's protected flag and the `controlled` to `full` rule raise the role to admin inside `can()`.
+- `channel.promote`: `{channel}` is `production`. It takes `{ changelog?, skipExperiment?: { reason } }` and points production at the version staging serves, with the same lints and gates as a production publish. It creates the production pointer at `inactive` when none exists. On a live production pointer (`controlled` or `full`) it starts an experiment under the same pointer rule as `set.publish`, and the pointer stays on the champion. To move a version that is already on staging, promote it; do not publish it again.
+- `channel.promote` takes no `interfaceBump`. The major belongs to the version, and published versions are immutable. The staging publish already checks production's consumers, so a breaking change is bumped there. If a promote still fails `interface.breaking` (production gained consumers after the staging publish), publish to staging again with `interfaceBump`, then promote.
+- The set's protected flag, the `controlled` to `full` rule and `skipExperiment` raise the role to admin inside `can()`.
 
 ### Rollout
 
@@ -166,7 +207,7 @@ Goals carry `qualityTarget` (a `QualityTarget`) and `businessKpi`. See [effectiv
 | POST | `/experiments/{id}/promote` | `experiment.promote` | `release:<channel>` | editor | high | 3b |
 | POST | `/experiments/{id}/stop` | `experiment.stop` | `release:<channel>` | editor | safety | 3b |
 
-`experiment.start` takes `{ channel, challengerVersionId, kind: "version" | "model" | "policy", samplePct, minRuns, minLabeled }`. Publishing to production on a `controlled` or `full` set starts one on its own unless `skipExperiment` is set. `experiment.promote` moves the pointer to the challenger when the promotion rule in [effectiveness-loop.md](effectiveness-loop.md) holds; otherwise `409 gate_not_met`.
+`experiment.start` takes `{ channel, challengerVersionId, kind: "version" | "model" | "policy", samplePct, minRuns, minLabeled }`. A publish or promote to production on a `controlled` or `full` set starts one on its own unless `skipExperiment` is set, with the defaults in the pointer rule above. `experiment.promote` moves the pointer to the challenger when the promotion rule in [effectiveness-loop.md](effectiveness-loop.md) holds; otherwise `409 gate_not_met`.
 
 ### Datasets, evals and jobs
 
@@ -176,6 +217,7 @@ Goals carry `qualityTarget` (a `QualityTarget`) and `businessKpi`. See [effectiv
 | POST | `/datasets` | `dataset.create` | `sets:write` | editor | normal | 3 |
 | POST | `/datasets/{id}/cases` | `dataset.import` | `sets:write` | editor | normal | 3 |
 | GET | `/datasets/{id}/cases` | `dataset.cases` | `sets:read` | viewer | read | 3 |
+| POST | `/datasets/{id}/snapshots` | `dataset.snapshot` | `sets:write` | editor | normal | 3 |
 | GET | `/datasets/{id}/export` | `dataset.export` | `sets:read` | editor | read | 3 |
 | GET | `/datasets/{id}/features` | `dataset.features` | `sets:read` | editor | read | 3b |
 | POST | `/evals` | `eval.run` | `evals:run` | editor | normal | 3 |
@@ -186,7 +228,8 @@ Goals carry `qualityTarget` (a `QualityTarget`) and `businessKpi`. See [effectiv
 - `dataset.import` takes JSONL, one case per line: `{ state, expected, tags? }`. The server assigns each case's split from a hash of its `state_hash`; imports never set it.
 - `dataset.cases` and `dataset.export` never return test-split cases. `dataset.export` is a job and its result is a download link; the export is audited.
 - `dataset.features` takes `?version=N` and returns per-question probabilities, noul values and normalized scores joined with labels, for the drafting and calibration splits only.
-- `eval.run` takes `{ setRef, version, datasetId, snapshotId?, model?, repeats? }` and returns `202 { jobId, evalRunId }`. `version` may be `draft`. Evals use the eval limiter bucket (security.md).
+- `dataset.snapshot` freezes the dataset's current case ids into `dataset_snapshots` and returns `{ snapshotId, snapshotHash, caseCount }`. It returns no cases.
+- `eval.run` takes `{ setRef, version, datasetId, snapshotId?, model?, repeats? }` and returns `202 { jobId, evalRunId }`. `version` may be `draft`. Without `snapshotId` it snapshots the dataset's current cases first. Evals use the eval limiter bucket (security.md).
 - `eval.get` returns aggregate metrics only for the test split.
 - `set.compare` is the playground diff: `{ from, to, states[] }` or `{ from, to, datasetId }`. It is a job.
 - `job.get` returns the job to the user and tokens that started it, and to session members of the org.
@@ -199,10 +242,14 @@ Goals carry `qualityTarget` (a `QualityTarget`) and `businessKpi`. See [effectiv
 | POST | `/review/{id}/assign` | `review.assign` | `review:write` | reviewer | normal | 3 |
 | POST | `/review/{id}/resolve` | `review.resolve` | `review:write` | reviewer | normal | 3 |
 | POST | `/review/{id}/dismiss` | `review.dismiss` | `review:write` | reviewer | normal | 3 |
+| POST | `/review/{id}/confirm` | `review.confirm` | *session only* | reviewer | normal | 3 |
 | POST | `/feedback` | `feedback.report` | `feedback:write` | reviewer | normal | 3 |
 
-- `review.list` takes `?kind=action|label` and shows why each item was picked.
-- `review.resolve` takes `{ resolution, addToDataset? }` and writes a reviewer row to `run_feedback`. When an agent token resolves an item, the label is stored with `label_source` `agent` and does not count toward gates until a human confirms it.
+- `review.list` takes `?kind=action|label` and `?status=`, and shows why each item was picked. Items waiting for a person show status `pending_confirmation`.
+- `review.resolve` takes `{ resolution, addToDataset? }`. From a console session or an app token, it resolves the item and writes a `reviewer` row to `run_feedback` (an `audit` row when the item carries a `sample_rate`). From an agent token, agents propose and people approve:
+  - Kind `label`: the row is stored with source `agent` and counts toward nothing (gates, health, evals, promotion) until a person confirms it.
+  - Kind `action`: the policy sent this decision to a person, so the agent's resolution is stored as a proposal on the item, and the item moves to status `pending_confirmation`. Nothing the resolution would trigger runs, and no feedback row counts, until a person confirms it.
+- `review.confirm` is session only. It takes `{ resolution? }`: without it the agent's resolution stands, with it the person's replaces it. It sets `run_feedback.confirmed_by_user_id` and `confirmed_at`, resolves a `pending_confirmation` item as if the person had resolved it, and emits `review.resolved`.
 - `feedback.report` is described in [api.md](api.md). The FeedbackReport contract is in [effectiveness-loop.md](effectiveness-loop.md).
 
 ### Health, tuning and proposals (Phase 3b)
@@ -217,14 +264,16 @@ Goals carry `qualityTarget` (a `QualityTarget`) and `businessKpi`. See [effectiv
 | POST | `/proposals/{id}/reject` | `proposal.reject` | `sets:write` | editor | normal | 3b |
 
 - `health.list` returns every set, worst first.
-- `policy.suggest` is a job. It replays stored answers with zero System One calls. With `apply: true` it writes the suggested thresholds to the draft, and then needs `sets:write`.
-- `proposal.accept` creates a draft only. Nothing publishes on its own.
+- `policy.suggest` is a job. It replays stored answers with zero System One calls. With `apply: true` it writes the suggested thresholds to the draft through `draft.update`, so it then needs `sets:write` and `If-Match`; the job fails with `412 precondition_failed` if the draft changed after the request.
+- `proposal.accept` is the only operation that turns a proposal into draft changes. It applies the proposal's `patch` to the set's draft through `draft.update`, so it requires `If-Match` with the current draft ETag, and it records the draft version it wrote in `proposals.draft_version_id`. Nothing publishes on its own. `label_more` and `demote` have no patch; accepting returns the operation to call.
 
 ### Definition Studio
 
 | Method | Path | Operation | Scope | Min role | Risk | Phase |
 |---|---|---|---|---|---|---|
+| GET | `/studio/sessions` | `studio.list` | `sets:read` | viewer | read | 3 |
 | POST | `/studio/sessions` | `studio.create` | `sets:write` | editor | normal | 3 |
+| GET | `/studio/sessions/{id}` | `studio.get` | `sets:read` | viewer | read | 3 |
 | POST | `/studio/sessions/{id}/examples` | `studio.add_examples` | `sets:write` | editor | normal | 3 |
 | POST | `/studio/sessions/{id}/draft-definition` | `studio.draft_definition` | `sets:write` | editor | normal | 3 |
 | POST | `/studio/sessions/{id}/decompose` | `studio.decompose` | `sets:write` | editor | normal | 3 |
@@ -233,11 +282,12 @@ Goals carry `qualityTarget` (a `QualityTarget`) and `businessKpi`. See [effectiv
 | POST | `/studio/sessions/{id}/promote` | `studio.promote` | `sets:write` | editor | normal | 3 |
 | POST | `/sets/{ref}/improve` | `set.improve` | `evals:run` | editor | normal | 3b |
 
+- `studio.list` takes `?goalId=&setId=&status=`. `studio.get` returns the session's status, intent, definition, fit test and its drafting and calibration examples (never the test split), so a session can be resumed from the API.
 - `studio.add_examples` takes JSONL with labels and reasons. The server assigns splits.
 - `studio.draft_definition` and `studio.decompose` call `llm-client` with the drafting split only.
 - `studio.calibrate` is a job on the calibration split. Per-case results come back only with `includeCases: true`, and those cases are then marked burned.
 - `studio.request_labels` creates label review items (kind `label`, reason `studio`) for humans.
-- `studio.promote` checks the test split and returns only pass or fail and aggregate metrics. On a pass it writes the set's draft (creating the set when the session has none). Publishing and the shadow rollout then go through `set.publish` and `rollout.change`.
+- `studio.promote` checks the test split and returns only pass or fail and aggregate metrics. On a pass it writes the set's draft through `draft.update`, so it requires `If-Match` when the session belongs to an existing set, or it creates the set when the session has none. Publishing and the shadow rollout then go through `set.publish` and `rollout.change`.
 - `set.improve` is a job. Its result is a proposal with a draft diff and metric deltas. It never publishes.
 
 ### Models
@@ -250,17 +300,17 @@ Goals carry `qualityTarget` (a `QualityTarget`) and `businessKpi`. See [effectiv
 | POST | `/sets/{ref}/try-model` | `set.try_model` | `evals:run` | editor | normal | 3b |
 
 - `model.list` returns the models this org can select, each with its `ModelProfile` ([system-one-models.md](system-one-models.md)). Unreviewed models are left out; preview models appear only when the org sets `allowPreviewModels`.
-- `set.try_model` takes `{ model }` and is a job. It clones production into a draft that changes only the model, evals both on the same dataset snapshot, runs the threshold suggester and opens a `model_upgrade` proposal.
+- `set.try_model` takes `{ model }` and is a job. It builds a candidate spec inside the job (the production spec with only the model changed), evals production and the candidate on the same dataset snapshot, runs the threshold suggester on the candidate's answers and opens a `model_upgrade` proposal whose `patch` holds the new model and the re-tuned thresholds. It never writes the set's draft. Only `proposal.accept` does, through `draft.update` with `If-Match`.
 
 ### Apps and integration
 
 | Method | Path | Operation | Scope | Min role | Risk | Phase |
 |---|---|---|---|---|---|---|
-| GET | `/apps` | `app.list` | `sets:read` | viewer | read | 3 |
-| POST | `/apps` | `app.create` | `apps:write` | admin | normal | 3 |
-| PATCH | `/apps/{id}` | `app.update` | `apps:write` | admin | normal | 3 |
-| POST | `/apps/{id}/tokens` | `app_token.create` | `apps:write` | admin | high* | 3 |
-| DELETE | `/apps/{id}/tokens/{tokenId}` | `app_token.revoke` | `apps:write` | admin | safety | 3 |
+| GET | `/apps` | `app.list` | `sets:read` | viewer | read | 2 |
+| POST | `/apps` | `app.create` | `apps:write` | admin | normal | 2 |
+| PATCH | `/apps/{id}` | `app.update` | `apps:write` | admin | normal | 2 |
+| POST | `/apps/{id}/tokens` | `app_token.create` | `apps:write` | admin | high* | 2 |
+| DELETE | `/apps/{id}/tokens/{tokenId}` | `app_token.revoke` | `apps:write` | admin | safety | 2 |
 | GET | `/apps/{id}/opportunities` | `opportunity.list` | `sets:read` | viewer | read | 4b |
 | POST | `/apps/{id}/opportunities` | `opportunity.create` | `apps:write` | editor | normal | 4b |
 | PATCH | `/apps/{id}/opportunities/{oid}` | `opportunity.update` | `apps:write` | editor | normal | 4b |
@@ -269,8 +319,10 @@ Goals carry `qualityTarget` (a `QualityTarget`) and `businessKpi`. See [effectiv
 | DELETE | `/apps/{id}/bindings/{bid}` | `binding.remove` | `apps:write` | editor | normal | 4b |
 | GET | `/sets/{ref}/codegen` | `set.codegen` | `sets:read` | viewer | read | 4b |
 
-- `app_token.create` shows the secret once. Revoking ships with creating, in Phase 3.
-- `set.codegen` takes `?lang=&channel=&version=&appId=`, where `lang` is `ts` or `py` (`py` stays behind ADR-009). With `appId` it also records a binding, which checks `apps:write`. See [deploy-and-codegen.md](deploy-and-codegen.md).
+- `app.create` and `app.update` need the admin role, like the console's apps settings page, so `sysone init` needs an admin ceiling ([deploy-and-codegen.md](deploy-and-codegen.md), section 8).
+- `app_token.create` takes `{ prefix: "sk_live_" | "sk_test_" | "pk_live_", channel, scopes, setIds?, origins?, rpmLimit?, expiresAt? }` (`origins` for `pk_live_` only) and shows the secret once. Revoking ships with creating, in Phase 2.
+- `set.codegen` takes `?lang=&channel=&version=&appId=&target=`, where `lang` is `ts` or `py` (`py` stays behind ADR-009) and `target` is `managed_typed` (default) or `standalone`. With `appId` it also records a binding, which checks `apps:write`. See [deploy-and-codegen.md](deploy-and-codegen.md).
+- `target=standalone` returns the full spec as code, so `can()` raises the call: console sessions and agent tokens only (never app tokens), the editor role, and an audit row even though the operation is read-only. It returns `404 not_found` until the ADR-009 Standalone section is accepted.
 
 ### Reports, audit and events
 
@@ -280,34 +332,51 @@ Goals carry `qualityTarget` (a `QualityTarget`) and `businessKpi`. See [effectiv
 | GET | `/alerts` | `alert.list` | `reports:read` | viewer | read | 3 |
 | GET | `/audit` | `audit.list` | `audit:read` | admin | read | 3 |
 | GET | `/events` | `event.list` | `events:read` | viewer | read | 3 |
+| GET | `/webhooks` | `webhook.list` | `admin:write` | admin | read | 5 |
+| POST | `/webhooks` | `webhook.create` | `admin:write` | admin | normal | 5 |
+| DELETE | `/webhooks/{id}` | `webhook.delete` | `admin:write` | admin | normal | 5 |
 
-`report.get` takes `?format=json` or `csv`. Report names are the reports in [savings-model.md](savings-model.md), including `model-upgrades` (Phase 3b). The event feed is in [events.md](events.md).
+- `report.get` takes `?format=json`, `csv` or `pdf`. Report names are the reports in [savings-model.md](savings-model.md), including `model-upgrades` (Phase 3b). A CSV or PDF comes back as a download.
+- `audit.list` takes `?action=&actorUserId=&actorTokenId=&from=&to=` and `?format=json` or `csv`. A CSV export is itself audited.
+- The event feed is in [events.md](events.md). `webhook.create` takes `{ url, types }` and writes `webhook_endpoints`; deliveries follow the org webhook rules in [events.md](events.md).
 
 ### Identity, tokens and admin
 
 | Method | Path | Operation | Scope | Min role | Risk | Phase |
 |---|---|---|---|---|---|---|
 | GET | `/me` | `actor.get` | any | viewer | read | 2 |
+| GET | `/me/portfolio` | `portfolio.get` | *session only* | admin (per org) | read | 3 |
+| POST | `/orgs` | `org.create` | *session only* | none | normal | 2 |
+| GET | `/approvals` | `approval.list` | any | viewer | read | 2 |
 | GET | `/approvals/{id}` | `approval.get` | any | viewer | read | 2 |
+| POST | `/approvals/{id}/decide` | `approval.decide` | *session only* | the requested operation's role | normal | 2 |
 | GET | `/agent-tokens` | `agent_token.list` | `admin:write` | viewer | read | 2 |
 | POST | `/agent-tokens` | `agent_token.create` | `admin:write` | viewer | high* | 2 |
 | DELETE | `/agent-tokens/{id}` | `agent_token.revoke` | `admin:write` | viewer | safety | 2 |
-| GET | `/members` | `member.list` | `admin:write` | admin | read | 3 |
-| POST | `/invitations` | `member.invite` | `admin:write` | admin | high | 3 |
-| PATCH | `/members/{userId}` | `member.role_change` | `admin:write` | admin | high | 3 |
-| DELETE | `/members/{userId}` | `member.remove` | `admin:write` | admin | high | 3 |
-| POST | `/keys/rotate` | `key.rotate` | `admin:write` | admin | high | 3 |
-| DELETE | `/keys` | `key.revoke` | `admin:write` | admin | high | 3 |
-| GET | `/settings` | `settings.get` | `sets:read` | viewer | read | 3 |
-| PATCH | `/settings` | `settings.update` | `admin:write` | admin | high* | 3 |
-| GET | `/price-book` | `price_book.get` | `reports:read` | viewer | read | 3 |
-| PUT | `/price-book` | `price_book.update` | `admin:write` | admin | normal | 3 |
+| GET | `/members` | `member.list` | `admin:write` | admin | read | 2 |
+| POST | `/invitations` | `member.invite` | `admin:write` | admin | high | 2 |
+| PATCH | `/members/{userId}` | `member.role_change` | `admin:write` | admin | high | 2 |
+| DELETE | `/members/{userId}` | `member.remove` | `admin:write` | admin | high | 2 |
+| GET | `/keys` | `key.get` | `admin:write` | admin | read | 2 |
+| POST | `/keys/rotate` | `key.rotate` | `admin:write` | admin | high | 2 |
+| DELETE | `/keys` | `key.revoke` | `admin:write` | admin | high | 2 |
+| GET | `/settings` | `settings.get` | `sets:read` | viewer | read | 2 |
+| PATCH | `/settings` | `settings.update` | `admin:write` | admin | high* | 2 |
+| GET | `/price-book` | `price_book.get` | `reports:read` | viewer | read | 2 |
+| PUT | `/price-book` | `price_book.update` | `admin:write` | admin | normal | 2 |
+| GET | `/plugins` | `plugin.list` | `sets:read` | viewer | read | 5 |
 | GET | `/plugins/{id}` | `plugin.get` | `sets:read` | viewer | read | 5 |
 | PATCH | `/plugins/{id}` | `plugin.update` | `admin:write` | admin | normal | 5 |
 | DELETE | `/org` | `org.delete` | `admin:write` | owner | high | 3 |
 
 - `actor.get` returns the org, user, token id, client, effective role, scopes, set allowlist, expiry and the org's `agentApprovals` setting, so an agent knows what it can do before it tries. `sysone status` calls it.
+- `portfolio.get` backs `/me/portfolio` ([savings-model.md](savings-model.md)): savings and usage for each org where the user is owner or admin, read with that org's own tenant context.
+- `org.create` takes `{ slug, name }` and makes the caller the owner. Any signed-in user may call it.
+- `approval.list` returns pending approvals: a token sees its own requests, and a session member sees the ones their role can decide. It feeds the Approvals inbox and its count badge.
 - `approval.get` returns an approval to the token that requested it and to session members with the required role.
+- `approval.decide` takes `{ decision: "approved" | "rejected", note? }`. It is session only, so no token can approve. Rules are in [Approvals](#approvals).
+- `key.get` returns the key's status, `key_last4`, fingerprint, key mode, the model names it can reach and `rotated_at`. It never returns the key.
+- `key.rotate` also saves the org's first key. It validates the key with `GET /v1/models`, stores the reachable model names and never echoes the key.
 - Agent tokens: any member manages their own tokens; managing another user's tokens needs admin. A token can always revoke itself without `admin:write` (`sysone logout`). Minting rules are in [security.md](security.md).
 - Invitations and removals count as member role changes.
 - Changing a member to or from owner needs the owner role.
@@ -319,8 +388,22 @@ Goals carry `qualityTarget` (a `QualityTarget`) and `businessKpi`. See [effectiv
 | GET | `/platform/models` | `platform_model.list` | platform admin | superadmin | read | 3 |
 | POST | `/platform/models` | `platform_model.create` | platform admin | superadmin | normal | 3 |
 | PATCH | `/platform/models/{id}` | `platform_model.update` | platform admin | superadmin | normal | 3 |
+| GET | `/platform/price-book` | `platform_price_book.get` | platform admin | superadmin | read | 2 |
+| PUT | `/platform/price-book` | `platform_price_book.update` | platform admin | superadmin | normal | 2 |
+| GET | `/platform/settings` | `platform_settings.get` | platform admin | superadmin | read | 2 |
+| PATCH | `/platform/settings` | `platform_settings.update` | platform admin | superadmin | normal | 2 |
+| GET | `/platform/orgs` | `platform_org.list` | platform admin | superadmin | read | 2 |
+| POST | `/platform/orgs/{id}/suspend` | `platform_org.suspend` | platform admin | superadmin | normal | 2 |
+| PUT | `/platform/orgs/{id}/entitlements` | `platform_org.set_entitlement` | platform admin | superadmin | normal | 2 |
+| GET | `/platform/reports/{name}` | `platform_report.get` | platform admin | superadmin | read | 3 |
 
-These need `platform_role = 'superadmin'` with MFA and are audited. Org tokens get 404.
+These are session only (`actors: ["user"]`): they need a console session with `platform_role = 'superadmin'` and MFA, and every call that changes something is audited. Org tokens, app tokens and agent tokens get 404. They are still operations, so the platform console calls the registry like the tenant console does.
+
+- `platform_price_book.update` writes the platform default rows of `price_books` (`org_id` null), keyed by exact versioned model id. Alias rows are rejected with `400 invalid_request` ([system-one-models.md](system-one-models.md), Pricing).
+- `platform_settings.update` changes the platform `settings` keys: `modelBudgets` (`{ [modelId]: rpm }`, the global limiter budget per model), `defaultComparator`, `defaultModel` and `alertThresholds`.
+- `platform_org.suspend` takes `{ suspended: boolean, reason }`. Suspending blocks the org's runs within 30 seconds ([security.md](security.md)).
+- `platform_org.set_entitlement` takes `{ key, value, reason }` and writes `entitlement_overrides`.
+- `platform_report.get` returns the reports in [savings-model.md](savings-model.md) across all orgs, with an org column.
 
 ### Auth (device flow)
 
@@ -329,7 +412,7 @@ These need `platform_role = 'superadmin'` with MFA and are audited. Org tokens g
 | POST | `/auth/device/code` | none | none | none | normal | 2 |
 | POST | `/auth/device/token` | none | none | none | normal | 2 |
 
-The device flow (RFC 8628) runs before any tenant context exists, so these are plain route handlers, not operations, and the parity test skips the `/auth/` prefix. The person approves the device code in a console session, picking the org, scopes and role ceiling; that step is `agent_token.create`. See [security.md](security.md).
+The device flow (RFC 8628) runs before any tenant context exists, so these are plain route handlers, not operations, and the parity test skips the `/auth/` prefix. It also skips the two public documents, `GET /.well-known/jwks.json` and `GET /openapi.json`, which have no tenant context either. The person approves the device code in a console session, picking the org, scopes and role ceiling; that step is `agent_token.create`. See [security.md](security.md).
 
 ## Safe retries and previews
 
@@ -345,7 +428,7 @@ The device flow (RFC 8628) runs before any tenant context exists, so these are p
 
 - The draft ETag is its `spec_hash`. `GET /sets/{ref}/draft` returns `ETag: "<spec_hash>"`.
 - `PUT /sets/{ref}/draft` and `POST /sets/{ref}/publish` require `If-Match`. Missing: `428 precondition_required`. Mismatch: `412 precondition_failed` with `currentEtag`.
-- Publishing a draft whose `spec_hash` equals the version already on the target channel returns that version and creates nothing.
+- Publishing a draft whose `spec_hash` equals the version already on the target channel returns that version and creates nothing, unless the call carries `interfaceBump`.
 
 ### Dry runs
 
@@ -378,8 +461,9 @@ When an agent calls a high-risk operation, the API answers `202`:
 ```
 
 - The request is stored in `approval_requests` with the input (including the `If-Match` value it was sent with), its `input_hash`, the requesting token and user, and the reason (the input's `reason` or `changelog`). It emits `approval.requested`.
+- **People are told.** On `approval.requested`, SysOne emails every member whose role can decide, plus the token's own user, with the operation, the reason and the console URL. The console shows a count badge on the Approvals inbox (`approval.list`). If the request is still pending after 24 hours, the email is sent once more.
 - `GET /api/v1/approvals/{id}` returns `{ id, opId, status, reason, requestedBy, expiresAt, decidedBy?, decidedAt?, result? }`. Status is `pending`, `approved`, `rejected`, `expired` or `executed`. After execution, `result` holds the operation's response.
-- Only a person in a console session with the role the operation needs can decide. The approver may be the token's own user; what matters is that a person decides. No token can approve.
+- Only a person in a console session with the role the operation needs can decide, through the session-only operation `approval.decide`. The approver may be the token's own user; what matters is that a person decides. No token can approve.
 - On approval, the stored input runs unchanged: the `input_hash` is checked, and if the draft changed since the request, the stored `If-Match` fails with `412` and nothing publishes. The audit row records the agent token as actor and the approval id. The decision emits `approval.decided`.
 - Requests expire after 7 days (`approval.decided` with status `expired`).
 - `sysone` exits with code 3 on a pending approval. MCP tools return the pending approval and its URL.
@@ -391,13 +475,16 @@ These are enforced by the server, not the UI. The loop they protect is in [effec
 
 - **The test split never appears in any response.** That covers `dataset.cases`, `dataset.export`, `dataset.features`, eval details and Studio examples. Evals and Studio promotion return aggregate metrics for it only.
 - **Calibration views burn cases.** Per-case calibration results are returned only on request, and those cases are then marked burned.
-- **Agent labels need a human.** Labels written through an agent token are stored with `label_source` `agent`. They do not count toward promotion, eval gates or rollout gates until a human confirms them.
+- **Agent labels need a human.** Labels written through an agent token are stored with `label_source` `agent`. They do not count toward promotion, eval gates or rollout gates until a person confirms them with `review.confirm`, which no token can call.
 
 ## Tests this surface needs
 
 QA / Evals owns these. Details in [testing.md](testing.md).
 
-- Parity test: every operation has a route and an OpenAPI path; every curated MCP tool maps to an operation.
+- Parity test: every operation has a route and an OpenAPI path; every curated MCP tool and CLI command maps to an operation that is not session only.
+- A token calling a session-only operation gets `403 insufficient_scope`.
+- An agent resolving a kind `action` review item leaves it `pending_confirmation`; nothing runs until a person calls `review.confirm`.
+- A production publish on a `controlled` set (Phase 3b) leaves the pointer on the champion and returns `experimentId`.
 - A replayed publish with the same `Idempotency-Key` creates no version.
 - A replayed run creates no second `runId`, action or usage event.
 - An `If-Match` mismatch returns `412` with `currentEtag`.

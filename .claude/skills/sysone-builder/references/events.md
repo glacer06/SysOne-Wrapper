@@ -42,7 +42,8 @@ EventEnvelope = {
 | `job.completed` | any job | job | `{ kind, status, error? }` |
 | `review.created` | run pipeline, audit sampler, `studio.request_labels` | review_item | `{ setId, runId, decisionId, kind, reason, band, dueAt }` |
 | `review.sla_breached` | review SLA job | review_item | `{ setId, dueAt, assigneeId }` |
-| `alert.raised` | health, limiter and quota jobs | set or org | `{ kind, severity, message, metrics }` where `kind` is `band_drift`, `precision_below_target`, `no_truth_source`, `rate_headroom` or `quota` |
+| `review.resolved` | `review.resolve`, `review.dismiss`, `review.confirm` | review_item | `{ setId, runId, externalRef, decisionId, kind, status, resolution: { value, execute }, resolvedByUserId?, resolvedByTokenId? }` where `status` is `resolved` or `dismissed`, and `resolution` is null when dismissed |
+| `alert.raised` | gate evaluator (`precision_below_target`, `band_drift`, `no_truth_source`), limiter (`rate_headroom`) and quota (`quota`) jobs | set or org | `{ kind, severity, message, metrics }` where `kind` is `band_drift`, `precision_below_target`, `no_truth_source`, `rate_headroom` or `quota` |
 | `model.available` | model registry sync | model | `{ modelId, family, status, releaseDate, pinnedSetsInFamily }` when a model reaches `preview` or `stable` |
 | `model.alias_moved` | `RunSink` observation or alias probe | model | `{ alias, fromResolvedId, toResolvedId, affectedSetIds }` |
 | `model.deprecated` | model registry | model | `{ modelId, status, retireAt, pinnedSetIds }` |
@@ -54,6 +55,8 @@ EventEnvelope = {
 | `key.invalid` | `system-one-client` on a 401, nightly key check | key | `{ keyLast4, reason }` |
 | `interface.breaking_published` | `set.publish` with a major bump on a set with consumers | set | `{ channel, version, fromMajor, toMajor, reason, bindingIds }` |
 | `binding.created` | `binding.create`, `set.codegen` with `appId` | binding | `{ appId, setId, channel, target, interfaceMajor }` |
+
+`review.resolved` is emitted once, when an item reaches a final status. An agent token's resolution of an action item waits in `pending_confirmation`, so the event fires only when a person confirms it with `review.confirm` ([management-api.md](management-api.md)). `externalRef` is the run's `options.externalRef`, or null, so a host app can match the result to its own record. `resolution.execute` is true when the server dispatched the decision's policy handler (idempotent by `runId:decisionId`). When it is false, the host app acts on `resolution.value` itself.
 
 Model events are written once into each org that can use the model (its key's `models` list, or the platform key in platform mode). `alert.raised` is also shown in the console and sent by email ([savings-model.md](savings-model.md)).
 
@@ -77,6 +80,7 @@ GET /api/v1/events?after=<cursor>&types=set.published,rollout.auto_demoted&limit
 - Response: `{ events: EventEnvelope[], cursor, gap }`. `cursor` is the id of the last returned event, or the input cursor when there is nothing new. `gap` is true when the cursor is older than the 30-day window, so some events are gone; read the audit log to fill it.
 - The feed returns only events older than 5 seconds. Event rows are written at the end of short transactions, so a transaction that commits late cannot slip behind a cursor that has already passed its id.
 - A token with a set allowlist sees only events about those sets, plus approval events for its own requests.
+- An `sk_` app token may hold `events:read`. It then sees only `review.created`, `review.sla_breached` and `review.resolved` for runs made with that app's tokens. This is how a host app learns how a review ended before org webhooks ship. It can also poll `GET /api/v1/runs/{id}` with `runs:read` ([deploy-and-codegen.md](deploy-and-codegen.md)).
 - `sysone events tail` and the MCP tool `list_events` use this feed, because CLI and MCP agents have no public URL to receive webhooks ([headless-and-agents.md](headless-and-agents.md)).
 
 ## Org webhooks (Phase 5)

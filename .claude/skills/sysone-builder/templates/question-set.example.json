@@ -67,7 +67,7 @@
         },
         "category": {
           "type": "choice",
-          "instructions": "What kind of message is `email`?",
+          "instructions": "What kind of message is `email`, judged by what the sender wants from the recipient?",
           "criteria": {
             "work_request": "Someone needs work, a decision, or information from the recipient.",
             "scheduling": "Meeting times, invites, or calendar changes.",
@@ -142,7 +142,7 @@
         "type": "composite",
         "gating": true,
         "levelThresholds": { "high": 0.7, "medium": 0.4 },
-        "actions": { "high": { "kind": "auto", "handler": "builtin.slack.notify" }, "medium": { "kind": "review" }, "low": { "kind": "auto" } }
+        "actions": { "high": { "kind": "auto" }, "medium": { "kind": "review" }, "low": { "kind": "auto" } }
       }
     }
   ],

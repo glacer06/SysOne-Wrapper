@@ -45,7 +45,7 @@ First pick the pattern. The pattern advisor ([deploy-and-codegen.md](deploy-and-
 | `composite_scoring` | A `composites` block over the checks |
 | `intent_routing` | A choice plus `routes` |
 | `cascade` | The low band's action is `escalate_to_llm` |
-| `top_choice` | The top-choice preset ([confidence-policy.md](confidence-policy.md)) |
+| `top_choice` | A choice with the top-choice preset ([confidence-policy.md](confidence-policy.md#preset-top-choice-only)): not gating, no thresholds, every band `auto` |
 | `keep_in_code` | No System One question; a check in `spec.checks` or plain app code |
 
 Claude then proposes separate checks, each one:
@@ -113,7 +113,7 @@ Each template is a `QuestionTemplate` (see `templates/plugin.template.ts`): para
 | LLM router | `intent_routing` | Choice over models by task type; low band escalates to the strongest model | The Code, 2026-09-26 |
 | PR auto-merge safety | `composite_scoring` | Nouls: too big to review, touches auth/billing, tests changed, risky migration; composite gate | The Code, 2026-09-26 |
 | Email urgency | `composite_scoring` | 3 weighted checks, above | Every, 2026-09-23 |
-| Agent reasoning-effort controller | `top_choice` | Score: how stuck is the agent; maps to low/medium/high effort | Linas, 2026-09-22 |
+| Agent reasoning-effort controller | `top_choice` | Choice: which reasoning effort the agent's next step needs (low, medium or high), with the top-choice preset because a wrong pick is cheap | Linas, 2026-09-22 |
 | LLM guardrails | `confidence_routing` | Nouls per hazard on input and output; pass, review, block | TypeSafe cookbook |
 | RAG passage filter | `fan_out` | Score per passage for usefulness; code keeps the top ones | TypeSafe cookbook |
 | AI-tell detector | `fan_out` | Parallel Nouls per writing tell ("not X but Y", tricolons, filler words) | Every, 2026-09-23 |

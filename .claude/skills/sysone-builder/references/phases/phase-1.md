@@ -11,11 +11,11 @@
 - [ ] Lints with stable rule ids from [architecture.md](../architecture.md), including the model lints and the model weakness lints
 - [ ] `interfaceOf` and `diffInterface` ([spec-schema.md](../spec-schema.md), section 11)
 - [ ] `authz.ts` role matrix
-- [ ] `system-one-client`: `SdkTransport`, `FixtureTransport`, error mapping per [system-one-api-contract.md](../system-one-api-contract.md), per-surface timeouts and retry budgets, explicit `logLevel` and a scrubbing logger, request id capture, per-org client cache, model list and alias probe helpers (these replace the old drift helper)
+- [ ] `system-one-client`: `SdkTransport`, `FixtureTransport`, error mapping per [system-one-api-contract.md](../system-one-api-contract.md), per-surface timeouts and retry budgets, explicit `logLevel` and a scrubbing logger, request id capture, per-org client cache, model list and alias probe helpers (these replace the old drift helper). `FixtureTransport` also ships as its own subpath export that never imports `@typesafe-ai/sdk`, so `sysone run --local` can use it
 - [ ] `llm-client`: `LlmTransport` port and a fixture transport
 
 ## Integrations
-- [ ] `packages/cli` local mode: `pnpm sysone run --local spec.json state.json` (fixture by default, live with a key). Demo spec: `templates/question-set.example.json` (templates are seeded in Phases 3 and 5).
+- [ ] `packages/cli` local mode: `pnpm sysone run --local spec.json state.json` (fixture transport only; no network, no key). The code lives in `packages/cli/src/local/**`, the only CLI folder that may import `core` and the fixture subpath export of `system-one-client`. It never imports the SDK transport ([architecture.md](../architecture.md#packages-and-boundaries)). Demo spec: the skill's `templates/question-set.example.json`. The seeded question templates in [definition-studio.md](../definition-studio.md) are a different thing and arrive in Phases 3 and 5.
 
 ## Platform / Tenancy
 - [ ] Full Drizzle schema with every table in [data-model.md](../data-model.md), with `org_id` and RLS on every tenant table (migration 0001), including the platform tables `system_one_models` (seeded from `packages/core/src/models/catalog.ts`) and `model_alias_observations`
@@ -42,3 +42,6 @@
 - `pnpm smoke` passes when `TYPESAFE_API_KEY` is set.
 - Preflight limits come from the profile: a fake 16k profile blocks a 20k state.
 - An unknown answer type is stored raw and never throws.
+- `templates/question-set.example.json` lints with zero errors against the `jev-1.13.0` seed profile.
+- `pnpm sysone run --local` runs the demo spec with no network access and no `TYPESAFE_API_KEY` set.
+- The boundary lint rejects a deliberate import of the SDK transport from `packages/cli/src/local/**`.

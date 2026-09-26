@@ -19,6 +19,12 @@ Thresholds  = { high: number, medium: number }   // choice/score: applied to `co
 BandActions = { high: ActionRef, medium: ActionRef, low: ActionRef }
 ActionRef   = { kind: "auto" | "review" | "fallback" | "escalate_to_llm", handler?: string, config?: unknown }
               // for kind "fallback", config is a FallbackConfig (spec-schema.md)
+              // for kind "escalate_to_llm", config is an EscalationConfig
+EscalationConfig = {
+  model?: string,            // default: the set's comparator model (spec.savings.comparatorModel, else the org default)
+  instructions?: string,     // appended to the question's instructions
+  maxOutputTokens?: number,  // default 256
+}
 ```
 
 - `gating: true` means the decision counts toward the run's band.
@@ -80,11 +86,18 @@ Only the band feeds `runBand`. A confidently non-urgent email has a low level an
 | `auto` | The answer is applied. Plugin action handlers run after commit. |
 | `review` | A review item of kind `action` is created. Nothing else happens until a human resolves it. |
 | `fallback` | Run the configured `FallbackConfig`: a value, another set, or a no-op. |
-| `escalate_to_llm` | Hand off to a reasoning model through `llm-client`. Counts toward "escalations" in the savings ledger. |
+| `escalate_to_llm` | Core calls a reasoning model through `ports.llm` during the run (see [Escalation](#escalation)). Counts toward "escalations" in the savings ledger. |
 
-Most to least conservative: `review > fallback > escalate_to_llm > auto`. `overallAction` is the most conservative `effectiveAction` among relevant decisions. With no relevant decision, it is `fallback`.
+Most to least conservative: `review > fallback > escalate_to_llm > auto`. `overallAction` is the most conservative `effectiveAction` among relevant decisions with `gating: true` (composites included). With no relevant gating decision, it is the most conservative among all relevant decisions. With no relevant decision, it is `fallback`.
 
 A review item of kind `action` is created exactly when a decision's `effectiveAction` is `review`. The configured fallback runs only when the policy action itself is `fallback` and the rollout stage lets policy actions through. When the rollout stage forces `fallback`, it means "keep your existing path" and nothing runs.
+
+### Escalation
+
+- Core owns `escalate_to_llm` from Phase 1. It is not a plugin action.
+- For each decision whose `effectiveAction` is `escalate_to_llm`, core calls `ports.llm` synchronously in run step 10 ([architecture.md](architecture.md#run-data-flow)), inside the surface latency budget. The call uses the decision's `EscalationConfig`.
+- `Decision.value` stays the System One model's answer. The LLM result goes only in `Decision.escalation` (`{ model, value, costUsd, status }`, [savings-model.md](savings-model.md)), and its spend goes in `escalationCostUsd`.
+- When `ports.llm` is missing, or the call fails or times out, core sets `escalation.status` to `failed`, `effectiveAction` to `review` and adds the warning `escalation_failed`. The review item is then created like any other `review` decision.
 
 ## Effective action by rollout stage (normative)
 
@@ -95,13 +108,14 @@ This table is the only definition. [architecture.md](architecture.md) and [savin
 | `inactive` | any | any | none: the channel returns `409 set_not_live` | No |
 | `shadow` | any | any | `fallback` | No |
 | `controlled` | high | any | the policy action | Yes |
-| `controlled` | medium or low, decision is gating | any | `review` | No (a review item is created) |
+| `controlled` | medium or low, decision is gating | any | `review` | Yes (a review item is created) |
 | `controlled` | medium or low, decision is not gating | any | `fallback` | No |
 | `full` | any | any | the policy action | Yes |
 | `paused` | any | any | `fallback` | No |
 
-- "Executes" means `auto` handlers dispatch, `escalate_to_llm` calls the LLM, `review` creates its item and a configured fallback runs.
+- "Executes" is `Decision.executed`, which core computes at route time. It is `true` when `effectiveAction` is `review` (the item is created). It is also `true` when `effectiveAction` equals the policy action on a row marked Yes and the action is `auto` (dispatch is enqueued, or no handler is configured), `escalate_to_llm` (the LLM is called) or `fallback` (the configured `FallbackConfig` runs). It is `false` for a forced `fallback`, for `auto` with a side-effect handler on staging without `dispatchActionsOnStaging`, and on the challenger arm. It means dispatched or created, never that a handler succeeded.
 - Irrelevant decisions are `fallback` in every stage and are excluded as described above.
+- A failed escalation changes `effectiveAction` from `escalate_to_llm` to `review` ([Escalation](#escalation)).
 - `slug@draft` runs behave as `shadow`.
 - **Staging channel:** effective actions are computed the same way, but side-effect handlers do not dispatch unless the set sets `dispatchActionsOnStaging`. Staging books cost, not savings.
 
@@ -186,13 +200,18 @@ Gates compare the 95% Wilson lower bound, not the point estimate. The high-risk 
 ## Calibration targets (evals)
 
 - Targets come from the goal's `QualityTarget` above.
-- Coverage: the share of cases routed `auto`. Report it next to precision; raising a threshold trades coverage for precision.
+- Coverage: the share of relevant gating decisions whose policy `action` is `auto` (not `effectiveAction`), so it can be measured in `shadow` (section 2 of [effectiveness-loop.md](effectiveness-loop.md#2-definitions)). Report it next to precision; raising a threshold trades coverage for precision.
 - Expected calibration error (ECE) and a reliability table per question.
 - Evals are required when publishing to a production pointer in `controlled` or `full`. The regression gate scores the champion and the candidate on the same dataset snapshot ([testing.md](testing.md)).
 
 ## Labeling and truth
 
-Truth comes from three sources: app feedback, a random audit sample per band in every rollout stage, and reviewers. Precision (from any source) drives gates and auto-demote. Agreement is the reviewer-only subset. Targeted picks (near a threshold, challenger disagreements) feed datasets and the Studio, never gate metrics. Agent labels count only after a human confirms them. The labeling policy and the threshold suggester are in [effectiveness-loop.md](effectiveness-loop.md).
+Truth comes from three sources: app feedback, a random audit sample per band in every rollout stage, and reviewers. Definitions are in [effectiveness-loop.md](effectiveness-loop.md#2-definitions) section 2.
+
+- **Precision:** the weighted share of labeled decisions in a band that match, over every counted row: app feedback, audit samples (weighted by `1 / sample_rate`), and reviewer resolutions. Its 95 percent Wilson lower bound drives gates and auto-demote.
+- **Agreement:** the same measure restricted to human reviewer rows (`audit` and `reviewer`), a subset of precision. Shown in the Human agreement report. Gates do not use it.
+
+Targeted picks (near a threshold, challenger disagreements) feed datasets and the Studio, never gate metrics. Agent labels count only after a human confirms them. The labeling policy and the threshold suggester are in [effectiveness-loop.md](effectiveness-loop.md).
 
 ## Question design rules that affect confidence
 

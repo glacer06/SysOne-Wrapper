@@ -26,7 +26,7 @@ RunRequest = {
   source: RunSource,                       // set by the adapter from the auth mode, never read from the body
   options: {
     includeProbabilities?: boolean,        // shapes the response only; runs always store full answers
-    dryRun?: boolean,                      // compile and preflight only: no System One call, no run row, no usage
+    dryRun?: boolean,                      // compile and preflight only: returns RunDryRunResult (below)
     externalRef?: string,                  // the app's own id, used to match feedback later
     metadata?: { tokensBefore?: number, tokensAfter?: number },   // for context_pruned savings
   },
@@ -55,6 +55,34 @@ SysOne-Interface: 2
   "idempotencyKey": "01J9Z3...", "interfaceMajor": 2 }
 ```
 
+### Dry run response
+
+`options.dryRun` stops after preflight. There is no run row and no `runId`, so the response is not a `RunResult`:
+
+```ts
+RunDryRunResult = {
+  dryRun: true,
+  setId: string, versionId: string, version: number | "draft",
+  model: string,                           // the spec's model, as requested
+  profileId: string,                       // the ModelProfile preflight used; for a moving name,
+                                           // the profile of its last observed versioned model
+  stages: Array<{
+    id: string,
+    skipped: boolean,                      // its `when` was false on input and checks
+    batches: Array<{ request: SystemOneRequest, estTokens: number }>,   // one per request after splitting
+  }>,
+  limits: { requestTokens: number, statePlusLongestQuestionTokens: number },   // from the profile
+  warnings: string[],                      // preflight warnings, dry_run_answers_unknown
+}
+
+SystemOneRequest = { state: unknown, model: string, questions: Record<QuestionId, SystemOneQuestion> }
+                                           // the API request body (system-one-api-contract.md)
+```
+
+- The run response is `RunResult | RunDryRunResult`, discriminated by `dryRun`. `RunResult` has no `dryRun` key, so clients test `r.dryRun === true`, and the route's zod output is a `z.union` of the two.
+- `request` is the payload after redaction, exactly as it would be sent. A dry run makes no System One call, writes no run row, records no usage and takes no limiter tokens.
+- A spec stage whose `when` reads answers from an earlier spec stage cannot be decided without a call. It is compiled as if its `when` held, merged `answers` are left out of its state and its estimate, and the response carries the warning `dry_run_answers_unknown`.
+
 ## 2. Condition
 
 One safe grammar for stage `when`, `relevantWhen`, routes and checks. Conditions are data: no functions, no expressions.
@@ -75,8 +103,8 @@ Condition =
   | { input: StatePath, gte?: number, lte?: number }
 ```
 
-- `q` with `eq`, `neq` or `in` reads the decision value: the option key for a choice, the score for a score, `true`, `false` or `null` for a noul. `band` reads the decision's band.
-- `q` with `gte` or `lte` reads the numeric answer: `noul` for a noul, `score` for a score. It is invalid on a choice.
+- `q` with `eq`, `neq` or `in` reads the decision value: the option key for a choice, and `true`, `false` or `null` for a noul. For a score it compares `round_half_up(score)` (`Math.floor(score + 0.5)`), the nearest 0-based level index, so `{ "q": "urgency", "eq": 2 }` matches a score of 1.6 but not 1.4. Truth matching and `FeedbackReport.observed` use the same level index ([effectiveness-loop.md](effectiveness-loop.md)). `band` reads the decision's band.
+- `q` with `gte` or `lte` reads the numeric answer: `noul` for a noul, the raw `score` for a score. It is invalid on a choice.
 - `composite` reads the composite's 0 to 1 value. `check` is true when that check held.
 - `input` reads the validated input before redaction. The input form is how Studio code checks are expressed.
 - Conditions read the model's answer before rollout or fallback change anything, so the same state routes the same way in every rollout stage.
@@ -158,20 +186,55 @@ Routes are checked in order and the first match wins. With no match, the route i
 "defaultRoute": "normal"
 ```
 
-## 7. FallbackConfig
+## 7. FallbackConfig and EscalationConfig
+
+`ActionRef.config` ([confidence-policy.md](confidence-policy.md)) is a `FallbackConfig` when `kind` is `fallback` and an `EscalationConfig` when `kind` is `escalate_to_llm`.
 
 ```ts
 FallbackConfig = { kind: "value", value: Value } | { kind: "set", setRef: string } | { kind: "noop" }
 ```
 
 - `value`: the decision's `value` becomes the configured value. `answers` keeps the raw answer.
-- `set`: run another set on the same input and channel as a linked run, with its own cost and usage. A fallback set cannot itself use a set fallback (lint `fallback.set_invalid`).
+- `set`: run another set on the same input as a linked run (below). A fallback set cannot itself use a set fallback (lint `fallback.set_invalid`).
 - `noop`: nothing runs; the caller keeps its existing path. This is the default when `config` is omitted.
 
 The configured fallback runs only when the policy action is `fallback` and the rollout stage lets policy actions through ([confidence-policy.md](confidence-policy.md)).
 
 ```json
 "low": { "kind": "fallback", "config": { "kind": "value", "value": "none_of_these" } }
+```
+
+**Set fallbacks.** A set fallback runs inside `runQuestionSet`, before the parent run is persisted, through a port:
+
+```ts
+LinkedRunPort = (setRef: string, state: unknown,
+                 opts: { channel: "production" | "staging", parentRunId: string, signal: AbortSignal })
+              => Promise<RunResult>
+// RunPorts.linkedRun?: LinkedRunPort (architecture.md)
+```
+
+- It gets the caller's original state, which the linked set validates and redacts under its own spec, and the caller's channel, so the linked set's own pointer and rollout stage on that channel apply. `signal` carries the parent's remaining latency budget.
+- The parent waits for it: the linked run finishes before the parent's `RunResult` returns.
+- The linked run is persisted as its own run with its own cost and usage, and `runs.parent_run_id` points to the parent run ([data-model.md](data-model.md)). The parent's decision gets `fallbackRunId` ([savings-model.md](savings-model.md)). The decision's `value` does not change; the caller reads the linked result with `GET /api/v1/runs/{fallbackRunId}`.
+- If the linked run fails (an error status, `409 set_not_live`, or the budget runs out), or `ports.linkedRun` is missing, the decision keeps its value, `fallbackRunId` points to the failed run when one was written, and the parent run gets the warning `fallback_set_failed`.
+
+```ts
+EscalationConfig = {
+  model?: string,              // exact comparator model id with a price_books row; default
+                               // spec.savings.comparatorModel, else the org's default comparator
+  instructions?: Structured,   // added after the question's own instructions
+  maxOutputTokens?: number,    // default 256
+}
+```
+
+- The model must resolve to an exact id with a `price_books` row. The lint `escalation.model_unpriced` is an error ([architecture.md](architecture.md)).
+- The LLM gets the question's instructions and criteria, its options or levels, the same redacted state the System One call got, and `instructions`. It must return one value of the question's type: an option key for a choice, `true` or `false` for a noul, or a 0-based level index for a score. `llm-client` validates the reply against that type.
+- Core calls `ports.llm` in run step 10, inside the latency budget. When it runs and what a failed call does are in [confidence-policy.md](confidence-policy.md#escalation): a failure sets `effectiveAction` to `review` with the warning `escalation_failed`.
+- The result lands on `Decision.escalation` ([savings-model.md](savings-model.md)): `{ model, value, costUsd, status: "ok" | "failed", error?: string }`. `Decision.value` keeps the System One answer and `answers` keeps the raw answer, so precision and agreement keep measuring the System One model. Callers act on `decisions[id].escalation.value` when `effectiveAction` is `escalate_to_llm`.
+- Escalation is for question decisions only. The spec schema rejects `escalate_to_llm` in a composite policy, because a composite has no answer type for the LLM to return.
+
+```json
+"low": { "kind": "escalate_to_llm", "config": { "model": "claude-haiku-4-5", "maxOutputTokens": 64 } }
 ```
 
 ## 8. Handler refs
@@ -202,20 +265,31 @@ questionTypes: Record<QuestionTypeId, QuestionTypeModule>   // packages/core/src
 |---|---|---|---|
 | `noul` | `true`, `false` or `null` (low band) | `noul` | `boolean` |
 | `choice` | option key | `probabilities[term.option]` | `options` |
-| `score` | `score` | `score / (levels - 1)` | `scale` |
+| `score` | raw `score`, for example 1.05 | `score / (levels - 1)` | `scale` |
 
-`SystemOneAnswer` is a zod discriminated union on `type`, built from [system-one-api-contract.md](system-one-api-contract.md). Every variant uses `passthrough`, so new fields survive, and runs store the raw answer JSON.
+`SystemOneAnswer` is built from [system-one-api-contract.md](system-one-api-contract.md). Every variant uses `passthrough`, so new fields survive, and runs store the raw answer JSON.
 
 ```ts
-SystemOneAnswer =
-  | { type: "noul", noul: number }
-  | { type: "choice", choice: string, probabilities: Record<string, number>, confidence: number }
-  | { type: "score", score: number, legend: Record<string, Structured>,
-      probabilities: Record<string, number>, confidence: number }
+NoulAnswer    = { type: "noul", noul: number }
+ChoiceAnswer  = { type: "choice", choice: string, probabilities: Record<string, number>, confidence: number }
+ScoreAnswer   = { type: "score", score: number, legend: Record<string, Structured>,
+                  probabilities: Record<string, number>, confidence: number }
+UnknownAnswer = { type: string }        // a type no module knows; every other field is kept as sent
+
+SystemOneAnswer = NoulAnswer | ChoiceAnswer | ScoreAnswer | UnknownAnswer
 
 SystemOneResponse = { model: string, answers: Record<QuestionId, SystemOneAnswer>,
                       usage: { input_tokens: number, output_tokens: number } }
 ```
+
+A plain discriminated union would reject a new `type`, so the schema is a union with a fallthrough branch:
+
+```ts
+const unknownAnswer = z.object({ type: z.string().refine((t) => !Object.hasOwn(questionTypes, t)) }).passthrough();
+const systemOneAnswer = z.union([z.discriminatedUnion("type", [noul, choice, score]), unknownAnswer]);
+```
+
+The `refine` matters: without it, a known type that fails its own variant would pass as unknown. With it, that answer is still a parse error, and only a new type falls through.
 
 **Unknown answer type.** The API answers in the type that was asked, so this should never happen. If an answer arrives with a type no module knows, it is stored raw, gets band `low`, `effectiveAction: fallback` and warning `unknown_answer_type`, and nothing throws.
 
@@ -231,6 +305,8 @@ CompositeTerm = { q: QuestionId, weight: number, option?: string }   // option r
 - A term whose question is irrelevant or was not asked is left out and the remaining weights are renormalized. If no term is left, the composite is irrelevant too.
 - **Level** (magnitude): `levelThresholds` on the value. It picks the action.
 - **Band** (certainty): the minimum band of its question terms; check terms count as `high`. Only band feeds `runBand`.
+- **Under the rollout table.** In the normative table in [confidence-policy.md](confidence-policy.md), a composite's Band column is its certainty band, and its level picks the policy action. So in `controlled`, a gating composite with a high level and a medium band goes to `review`.
+- **No policy.** `policy` is optional. A composite with no policy produces a decision with no `level`, `action: auto`, `effectiveAction: auto` (`fallback` in `shadow`, `paused` and `slug@draft` runs) and `executed: false`, and it counts as not gating. It never feeds `runBand` or `overallAction`, even in a run with no gating decision. Only routes use it.
 
 ```json
 { "id": "follow_up", "kind": "weighted",
@@ -275,7 +351,7 @@ diffInterface(a: SetInterface, b: SetInterface): { breaking: string[], additive:
 
 ## 13. Strict spec schema
 
-The spec zod schema is strict: unknown keys fail validation. Free-form values stay open: `instructions`, `criteria`, `meta`, `input.schema`, adapter and handler `config`. Errors use the error envelope's `details` shape ([api.md](api.md)). A `rollout` key names the operation to use instead:
+The spec zod schema is strict: unknown keys fail validation. Free-form values stay open: `instructions`, `criteria`, `meta`, `input.schema`, adapter `config`, and the handler `config` on an `auto` action. The `config` on a `fallback` or `escalate_to_llm` action is typed (section 7). Errors use the error envelope's `details` shape ([api.md](api.md)). A `rollout` key names the operation to use instead:
 
 ```json
 { "path": "/rollout", "rule": "spec.unknown_key", "severity": "error",

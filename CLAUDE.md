@@ -14,9 +14,9 @@ Phase 0 part one (skill and plan) is done. The monorepo scaffold and contracts c
 pnpm dev                 # console on localhost
 pnpm turbo lint typecheck test build
 pnpm db:migrate          # drizzle-kit migrations
-pnpm fixtures:record     # re-record System One fixtures (needs TYPESAFE_API_KEY)
-pnpm smoke               # live System One smoke test (needs TYPESAFE_API_KEY)
-pnpm eval --org <slug> --set <slug> --version <n> --dataset <name> [--model <id>] [--repeats <k>]
+pnpm fixtures:record [--model <id>]   # re-record System One fixtures (needs TYPESAFE_API_KEY)
+pnpm smoke [--model <id>]             # live System One smoke test (needs TYPESAFE_API_KEY)
+pnpm eval --org <slug> --set <slug> --version <n> --dataset <name> [--snapshot <id>] [--model <id>] [--repeats <k>]
 pnpm sysone run --local spec.json state.json   # local fixture mode of @sysone/cli
 pnpm sysone <command> --json   # the same CLI customers install from npm; see references/headless-and-agents.md
 ```
@@ -44,5 +44,5 @@ Customer tools (`sysone` CLI, MCP server) read `SYSONE_TOKEN` and `SYSONE_BASE_U
 
 - No em dashes to separate thoughts. Use a period or a comma.
 - No emojis.
-- Skip AI filler: leverage, utilize, delve, seamless, robust, comprehensive, cutting-edge, streamline, furthermore, moreover.
+- Skip AI filler: leverage, utilize, delve, seamless, robust, comprehensive, cutting-edge, streamline, empower, unlock, furthermore, moreover.
 - Plain words, short sentences mixed with longer ones, concrete examples.

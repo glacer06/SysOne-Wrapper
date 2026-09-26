@@ -16,14 +16,30 @@ RunResult = {
   interfaceHash: string,
   channel: "production" | "staging" | "pinned" | "draft",
   rollout: "inactive" | "shadow" | "controlled" | "full" | "paused",
-                                                   // resolved from the channel pointer, never from the spec
+                                                   // resolved from the channel pointer, never from the spec;
+                                                   // "shadow" for slug@draft runs, and the caller channel's
+                                                   // stage for pinned runs (slug@7)
   experiment?: { id: string, arm: "champion" | "challenger" },
   status: "ok" | "error" | "rate_limited" | "quota_exceeded",
   modelRequested: string,
-  modelResolved: string,                           // the versioned ID that answered; prices use it
-  typesafeRequestId: string | null,                // from the x-typesafe-request-id header
+  modelResolved: string | null,                    // the first call's versioned ID; null only when no call was
+                                                   // made (every spec stage skipped)
+  typesafeRequestId: string | null,                // the first call's x-typesafe-request-id header
+  stages: Array<{                                  // one entry per spec stage, in spec order
+    id: string,
+    skipped: boolean,                              // its `when` was false on input and checks
+    calls: Array<{                                 // one per System One request; preflight batch splits add calls
+      modelResolved: string,                       // prices use it, per call
+      typesafeRequestId: string | null,
+      inputTokens: number,
+      outputTokens: number,
+      latencyMs: number,
+    }>,
+  }>,
+  checks: Record<string, boolean>,                 // spec.checks results by check id, evaluated before any call
   answers: Record<QuestionId, SystemOneAnswer>,    // raw typed answers. Runs always store probabilities;
-                                                   // options.includeProbabilities only shapes the response
+                                                   // options.includeProbabilities only shapes the response.
+                                                   // A question in a skipped spec stage has no entry
   decisions: Record<DecisionId, Decision>,
   runBand: Band,
   overallAction: Action,                           // the most conservative effectiveAction among relevant decisions,
@@ -31,16 +47,19 @@ RunResult = {
   route: string | null,
   cost: RunCost,
   reviewItemIds?: string[],                        // review items of kind "action" this run created
-  warnings: string[],                              // for example "unknown_answer_type", "model_unpriced"
+  warnings: string[],                              // for example "unknown_answer_type", "model_unpriced",
+                                                   // "model_resolved_mixed"
 }
 
 Decision = {
   kind: "question" | "composite",
   value: string | number | boolean | null,         // choice: option key; score: score; noul: true or false,
-                                                   // null in the noul low band; composite: its 0..1 value
+                                                   // null in the noul low band; composite: its 0..1 value;
+                                                   // null for a skipped question or a composite with no term left
   band: Band,                                      // certainty; for a composite, the minimum band of its question terms
   level?: "high" | "medium" | "low",               // composites only: magnitude from levelThresholds; picks the action
-  relevant: boolean,                               // false when relevantWhen failed or the spec stage was skipped
+  relevant: boolean,                               // false when relevantWhen failed, the spec stage was skipped,
+                                                   // or a composite has no term left
   action: Action,                                  // what the policy says
   effectiveAction: Action,                         // what the rollout stage allows; callers act on this
   executed: boolean,                               // whether it ran: handlers, the LLM call, the review item, the fallback
@@ -49,7 +68,8 @@ Decision = {
 RunCost = {
   systemOneInputTokens: number,
   systemOneOutputTokens: number,
-  systemOneCostUsd: number | null,                 // null when the resolved model has no price row (BYO key mode)
+  systemOneCostUsd: number | null,                 // sum over all calls; null when any call's model has no
+                                                   // price row (BYO key mode). *Usd = micro / 1e6 (Money math)
   counterfactualInputTokens: number,
   counterfactualOutputTokens: number,
   counterfactualLlmCostUsd: number,
@@ -71,8 +91,13 @@ SavingsKind = "decision" | "escalation_avoided" | "context_pruned"
 ```
 
 - **Effective action.** `effectiveAction` is how the rollout stage shows up on the wire. The rules are the normative table in [confidence-policy.md](confidence-policy.md#effective-action-by-rollout-stage-normative); this file does not restate them. Callers branch on `effectiveAction`, never on `action`.
-- **Decisions.** Questions and composites share one map keyed by `DecisionId`. There is no separate composites map. Irrelevant decisions carry `relevant: false` and `effectiveAction: fallback`, and they do not lower `runBand` or `overallAction`.
-- **Money on the wire.** USD fields are numbers derived from the integer micro-USD columns. Never do money math on them; use the stored integers.
+- **Decisions.** Questions and composites share one map keyed by `DecisionId`. There is no separate composites map. Irrelevant decisions carry `relevant: false` and `effectiveAction: fallback`, and they do not lower `runBand` or `overallAction`. Every decision has a `band` and an `action`, including those that were never answered:
+  - **Skipped question** (its spec stage did not run): no `answers` entry; decision `{ kind: "question", value: null, band: "low", relevant: false, action: "fallback", effectiveAction: "fallback", executed: false }`.
+  - **Answered but irrelevant** (`relevantWhen` false): `value`, `band` and `action` are computed normally; `relevant: false`, `effectiveAction: "fallback"` and `executed: false`.
+  - **Composite with no term left:** `{ kind: "composite", value: null, band: "low", relevant: false, action: "fallback", effectiveAction: "fallback", executed: false }`, with `level` omitted.
+- **Several calls per run.** Each spec stage that runs makes one System One call, and a preflight batch split adds one call per batch. `stages[].calls` records every call; `runs.stages` stores it. The top-level `modelResolved` and `typesafeRequestId` come from the first call. When the calls' `modelResolved` differ (an alias moved mid-run), the run carries warning `model_resolved_mixed`. `cost.systemOneInputTokens` and `cost.systemOneOutputTokens` are the sums over all calls.
+- **Checks.** `checks` holds each check's result, so policy replay can re-evaluate `relevantWhen` and routes that read checks after `state_retention_days` purges the state; answers are kept for `answers_retention_days`. Conditions with `input` leaves cannot be re-evaluated after the purge ([effectiveness-loop.md](effectiveness-loop.md)).
+- **Money on the wire.** USD fields are numbers derived from the integer micro-USD columns. Never do money math on them; use the stored integers ([Money math](#money-math)).
 - **Failed runs.** A failed call returns the error envelope with its `runId` ([api.md](api.md)). `GET /api/v1/runs/{id}` for that run returns this envelope with the failing `status`.
 - **Typed clients.** Generated clients narrow `decisions[q].value` to the question's type (a union of option keys, a number, or `boolean | null`) and `route` to the set's route outputs ([deploy-and-codegen.md](deploy-and-codegen.md)).
 
@@ -81,7 +106,7 @@ SavingsKind = "decision" | "escalation_avoided" | "context_pruned"
 Prices are data, not code. They live in `price_books` ([data-model.md](data-model.md)), keyed by exact model id.
 
 - System One rows use versioned registry ids, such as `jev-1.13.0`. Alias rows are rejected, because they would misprice runs after the alias moves.
-- Runs are priced by `model_resolved`. Unpriced models are handled as in [system-one-models.md](system-one-models.md#8-pricing): BYO runs succeed with a null cost and warning `model_unpriced`, and platform-key runs are refused.
+- Runs are priced by `model_resolved`, one call at a time: each call in `stages[].calls` uses the row for its own `modelResolved` ([Money math](#money-math)). Unpriced models are handled as in [system-one-models.md](system-one-models.md#8-pricing): BYO runs succeed with a null cost and warning `model_unpriced`, and platform-key runs are refused.
 - Comparator rows use the provider's exact model id.
 - Platform defaults have `org_id` null. An org row for the same model overrides the default for that org.
 
@@ -94,7 +119,35 @@ Seed rows:
 | `claude-fable-5-1` | Fable 5.1 | 10.00 | 50.00 | Every newsletter, 2026-09-23 |
 | Google's exact id, confirm before seeding | Gemini 3.7 Flash | 0.75 | 3.75 | Every newsletter, 2026-09-23 |
 
+The table shows USD per million tokens for reading. `price_books` stores each price times 1e6 as integer micro-USD per million tokens (`input_per_mtok_micro_usd`, `output_per_mtok_micro_usd`): `jev-1.13.0` input is 42,000, and Haiku 4.5 is 1,000,000 in and 5,000,000 out.
+
 The platform admin can update defaults. Each org picks a default comparator (Haiku 4.5 unless changed), and each set can override it with `spec.savings.comparatorModel`. The example spec's `claude-haiku-4-5` resolves to the Haiku row. Confirm comparator prices against the vendors' pricing pages before the first customer report.
+
+## Money math
+
+`PriceBook` returns integer micro-USD per million tokens (`inputPerMtokMicroUsd`, `outputPerMtokMicroUsd`; [architecture.md](architecture.md)). Below, `price.inPerMtokMicro` and `price.outPerMtokMicro` name those two values. Core does all money math in integer micro-USD:
+
+```
+round_half_up(x)       = floor(x + 0.5)
+                         // in integers: floor((a + 500000) / 1000000) for a / 1e6, with floor division
+
+call_cost_micro        = round_half_up(inputTokens  * price.inPerMtokMicro  / 1e6)
+                       + round_half_up(outputTokens * price.outPerMtokMicro / 1e6)
+                         // per call, with the price row of that call's modelResolved
+
+system_one_cost_micro  = sum of call_cost_micro over every System One call in stages[].calls
+escalation_cost_micro  = sum of call_cost_micro over every escalate_to_llm call, priced by the LLM model that answered
+
+counterfactual_micro   = round_half_up((cf_input_tokens  * comparator.inPerMtokMicro
+                                     + cf_output_tokens * comparator.outPerMtokMicro) / 1e6)
+
+savings_micro          = counterfactual_micro - system_one_cost_micro - escalation_cost_micro   // decision kind
+```
+
+- Multiply before dividing, so each term is rounded once. At current prices and model limits the products stay far below 2^53, so JavaScript numbers hold them exactly.
+- `system_one_cost_micro` is null when any call's model has no price row (BYO key mode, warning `model_unpriced`).
+- `RunCost` `*Usd` fields are `micro / 1e6`, produced only when the envelope is built. Rollups and reports sum the stored integers, never the USD fields.
+- Worked example: one call of 318 input tokens and 0 output tokens on `jev-1.13.0` costs `round_half_up(318 * 42000 / 1e6) = round_half_up(13.356) = 13` micro-USD. Two counted questions with `cf_input_tokens` 318 and `cf_output_tokens` 120 against Haiku 4.5 give `counterfactual_micro = round_half_up((318 * 1000000 + 120 * 5000000) / 1e6) = 918`, so `savings_micro = 918 - 13 - 0 = 905` and `savingsUsd` is 0.000905. Rounding to whole micro-USD changes the cost of a run this small by up to about 4 percent, which is why the rule is fixed here.
 
 ## The three kinds of savings
 
@@ -118,15 +171,15 @@ cf_input_tokens  = sum over q in counted of (state_tokens(stage(q)) + q_tokens(q
 
 cf_output_tokens = n * est_output_tokens                  // spec.savings.estOutputTokensPerQuestion, default 60
 
-counterfactual   = (cf_input_tokens  * comparator.in
-                 +  cf_output_tokens * comparator.out) / 1e6
-savings          = counterfactual - system_one_cost - escalation_cost
+counterfactual_micro = round_half_up((cf_input_tokens  * comparator.inPerMtokMicro
+                                    + cf_output_tokens * comparator.outPerMtokMicro) / 1e6)
+savings_micro        = counterfactual_micro - system_one_cost_micro - escalation_cost_micro
 ```
 
-- When `n` is 0, the counterfactual is 0 and savings equal minus the run's cost.
+- When `n` is 0, `counterfactual_micro` is 0 and `savings_micro` equals minus the run's cost.
 - `cf_input_tokens` and `cf_output_tokens` are stored on the run. `per_question` sums per-question stage state plus question tokens, so question text is counted once and later-stage state is not counted again.
-- `system_one_cost` is the whole run's System One cost, including questions that did not count.
-- `escalation_cost` is the actual spend on any `escalate_to_llm` calls in the run. Savings can go negative, and the ledger shows it.
+- `system_one_cost_micro` is the whole run's System One cost over every call ([Money math](#money-math)), including questions that did not count.
+- `escalation_cost_micro` is the actual spend on any `escalate_to_llm` calls in the run. Savings can go negative, and the ledger shows it.
 
 The default is `one_call`, the conservative case. Orgs can switch to `per_question` if that is how they ran it before. Every report states which `counterfactualMode` was used.
 
@@ -136,12 +189,12 @@ A set with `escalate_to_llm` on its low band only calls the LLM when the System 
 
 ```
 llm_calls_avoided = 1 if no question escalated else 0
-savings           = llm_calls_avoided * avg_escalation_cost - system_one_cost
+savings_micro     = llm_calls_avoided * avg_escalation_cost_micro - system_one_cost_micro
 ```
 
-There is no `escalation_cost` term here. The baseline is "always call the LLM", and a run that escalated already scores `llm_calls_avoided = 0`, so subtracting its escalation cost again would double count it.
+There is no `escalation_cost_micro` term here. The baseline is "always call the LLM", and a run that escalated already scores `llm_calls_avoided = 0`, so subtracting its escalation cost again would double count it.
 
-`avg_escalation_cost` is measured from the org's actual escalations when available, else estimated with the comparator.
+`avg_escalation_cost_micro` is the mean `call_cost_micro` of the org's actual escalations, rounded half up, when available. Otherwise it is estimated with the comparator in the same way as `counterfactual_micro`.
 
 ### 3. Context pruned
 
@@ -149,7 +202,8 @@ A context pruner set (template from The Code's compaction example) scores items 
 
 ```
 context_tokens_pruned = tokens_before - tokens_after
-savings               = context_tokens_pruned * downstream_model.in / 1e6 - system_one_cost - escalation_cost
+savings_micro         = round_half_up(context_tokens_pruned * downstream_model.inPerMtokMicro / 1e6)
+                      - system_one_cost_micro - escalation_cost_micro
 ```
 
 The caller reports `tokensBefore` and `tokensAfter` in `options.metadata` ([spec-schema.md](spec-schema.md)), or the set computes them from state when items carry token counts.
@@ -166,15 +220,15 @@ The caller reports `tokensBefore` and `tokensAfter` in `options.metadata` ([spec
 Gross savings reward looser thresholds, because more decisions go `auto` whether or not they are right. The quality-adjusted value subtracts the expected cost of wrong auto decisions and the cost of human review. It is computed in rollups and set health, never per run.
 
 ```
-net = savings_on_auto
-    - auto_count   * (1 - precision_lower) * errorCostUsd
-    - review_items * reviewCostUsd
+net_micro = savings_on_auto_micro
+          - round_half_up(auto_count * (1 - precision_lower) * error_cost_micro)
+          - review_items * review_cost_micro
 ```
 
-- `savings_on_auto` is the gross savings for the period. `auto_count` is the number of relevant decisions whose `effectiveAction` was `auto`.
+- `savings_on_auto_micro` is the gross savings for the period, summed from the stored integers. `auto_count` is the number of relevant decisions whose `effectiveAction` was `auto`.
 - `precision_lower` is the 95 percent Wilson lower bound of auto-decision precision over the trailing 7 days, the same window the gates use ([effectiveness-loop.md](effectiveness-loop.md)). With few labels the bound is wide and `net` drops, so labeling more raises the reported value only when the decisions are right.
 - `review_items` counts review items of kind `action`. Label items are left out, so measuring a set never lowers its value.
-- `errorCostUsd` and `reviewCostUsd` come from `question_sets.value_settings`. `reviewCostUsd` defaults to the org's `reviewerHourlyRateUsd` setting times the median minutes per item in the review queue. `errorCostUsd` has no default; until an editor sets it, the error term is 0 and reports say so.
+- `errorCostUsd` and `reviewCostUsd` come from `question_sets.value_settings`, and `error_cost_micro` and `review_cost_micro` are those values times 1e6, rounded half up. `reviewCostUsd` defaults to the org's `reviewerHourlyRateUsd` setting times the median minutes per item in the review queue. `errorCostUsd` has no default; until an editor sets it, the error term is 0 and reports say so.
 - The threshold suggester and experiment decisions show net value next to precision and coverage. The precision target stays a hard floor: a threshold or challenger whose precision lower bound misses the target is never suggested or promoted, whatever its net value.
 
 ## Rollups (`usage_daily`)

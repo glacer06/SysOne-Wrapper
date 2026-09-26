@@ -1,6 +1,6 @@
 # Phase 3b: Effectiveness loop
 
-**Owners:** Quality / Learning (lead), Platform (operations and routes), Console UI (screens), Integrations (MCP tools and CLI commands). **Needs:** Phase 3. Runs in parallel with Phase 4 and Phase 4b.
+**Owners:** Quality / Learning (lead), Platform (operations and routes), Console UI (screens), Integrations (MCP tools and CLI commands), Billing / Savings (quality-adjusted value in rollups and reports). **Needs:** Phase 3. Runs in parallel with Phase 4 and Phase 4b.
 
 The loop, its contracts and its rules are in [effectiveness-loop.md](../effectiveness-loop.md). Decision record: [ADR-010](../../../../../docs/adr/010-rollout-pointers-and-effectiveness-loop.md). Lanes: Quality / Learning writes the pure logic in `packages/core/src/learning` and the jobs in `apps/console/src/jobs/learning`; Platform adds each operation and route ([management-api.md](../management-api.md)); Console UI builds the screens on those operations; Integrations adds the CLI commands and MCP tools ([headless-and-agents.md](../headless-and-agents.md)).
 
@@ -34,7 +34,7 @@ The loop, its contracts and its rules are in [effectiveness-loop.md](../effectiv
 - [ ] MCP `try_model`; `sysone upgrade list` and `sysone upgrade try`
 
 ## Studio improve mode
-- [ ] Improve mode in the Definition Studio ([definition-studio.md](../definition-studio.md)) and the `set.improve` operation (`POST /api/v1/sets/{ref}/improve`, a job): typed edits from the drafting split, scored on calibration, confirmed on test, output as a draft with a diff and metric deltas; `sysone improve` and MCP `improve_set` ([effectiveness-loop.md](../effectiveness-loop.md))
+- [ ] Improve mode in the Definition Studio ([definition-studio.md](../definition-studio.md)) and the `set.improve` operation (`POST /api/v1/sets/{ref}/improve`, a job): typed edits from the drafting split, scored on calibration, confirmed on test, output as a proposal (`question_fix`, `add_none_option`, `split_question` or `narrow_state`) with a draft diff and metric deltas; accepting it writes the draft, and nothing publishes on its own. Also `sysone improve` and MCP `improve_set` ([effectiveness-loop.md](../effectiveness-loop.md))
 
 ## Evals and data
 - [ ] Eval repeats (`--repeats`) and a stability metric per question
@@ -43,7 +43,7 @@ The loop, its contracts and its rules are in [effectiveness-loop.md](../effectiv
 - [ ] Dataset features endpoint `GET /api/v1/datasets/{id}/features` (`dataset.features`), drafting and calibration splits only
 
 ## Value
-- [ ] Quality-adjusted value in rollups and set health, shown next to gross savings in the Savings and ROI report ([savings-model.md](../savings-model.md))
+- [ ] Quality-adjusted value in rollups and set health, shown next to gross savings in the Savings and ROI report ([savings-model.md](../savings-model.md)) (Billing / Savings, with Quality / Learning for precision inputs)
 
 ## Exit gate
 - On a seeded set with 500 labeled fixture runs, an agent using only MCP tools gets a threshold suggestion, applies it to a draft, runs a challenger, and promotes it after admin approval.

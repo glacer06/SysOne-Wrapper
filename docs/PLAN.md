@@ -132,7 +132,7 @@ Later phases follow the same pattern: load the skill, open the phase file, stay 
 - ADR-002 (auth library) decided.
 - ADRs 007 to 010 accepted.
 - Default `agentApprovals` setting reviewed with the Security reviewer.
-- Stripe, Linear (team SysOne, key SYS), and Sentry connectors authorized in claude.ai so agents can use them.
+- Stripe, Linear (project SysOne, `P-NSI-36`, in the NSIMS team), and Sentry connectors authorized in claude.ai so agents can use them.
 - DPA lists TypeSafe (and Anthropic, if Studio drafting is on) as subprocessors.
 - TypeSafe rate limits confirmed for the expected load. The published 1,200 RPM and 250k tokens/sec limits are shared across every tenant on the platform key, and TypeSafe says they are adjusting dynamically.
 

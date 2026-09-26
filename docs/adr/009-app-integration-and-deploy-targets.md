@@ -88,7 +88,7 @@ The TypeScript output, `sysone/generated/<slug>.ts`, contains:
 - one decision type per question: a choice becomes a union of its option keys, a score becomes `number`, and a noul becomes `boolean | null` (null is the low band)
 - a `Route` union built from the route outputs
 - `run<Slug>(client, state)`, returning a typed `RunResult` through `@sysone/client`'s generic `run<T>()`
-- a `switch (effectiveAction)` stub where app code owns the side effects
+- an `on<Slug>Action(result, handlers)` dispatcher that switches on `overallAction` and calls one app-supplied handler per action, so the file stays read-only and the app owns every side effect
 - a header naming the slug, channel, version, interface major and hash, generator version, and "do not edit"
 
 It holds no questions, thresholds or keys.
@@ -130,7 +130,7 @@ Surfaces: `GET /api/v1/sets/{ref}/codegen?lang=ts|py&channel=&version=&appId=` (
 
 ### 9. Specs as code and golden rule 10
 
-- Customer repo layout: `sysone.config.json`, `sysone/sets/<slug>.json` and `sysone/datasets/<slug>/<name>.jsonl` (drafting and calibration cases only). Commands: `sysone spec pull`, `push`, `diff` and `validate`. Versions record `source` and `source_ref`.
+- Customer repo layout: `sysone.config.json`, `sysone/sets/<slug>.json` and `sysone/datasets/<slug>/<name>.jsonl` (drafting and calibration cases only). Commands: `sysone spec pull`, `push` (`--create` for a set that does not exist yet), `diff` and `validate`, and `sysone datasets push`, which imports the dataset files; the server assigns each case's split. Versions record `source` and `source_ref`.
 - The spec file is the one reviewable place TypeSafe recommends. SysOne serves it live, so publishing still needs no app redeploy.
 - Golden rule 10 gains a clause, not a reversal: questions and thresholds live in the spec, and generated code derives from the spec into one read-only file that is regenerated, never hand-edited.
 
@@ -156,6 +156,6 @@ Surfaces: `GET /api/v1/sets/{ref}/codegen?lang=ts|py&channel=&version=&appId=` (
 ## Rollout
 
 - **Phase 0 part two:** `SetInterface`, `Opportunity` and `DeployTarget` freeze with the other contracts, along with the manifest and `RunResult` interface fields. The core of this ADR is accepted in the same step. The Python target and the Standalone target sections stay proposed.
-- **Phase 3:** `sysone spec pull`, `push`, `diff` and `validate`.
+- **Phase 3:** `sysone spec pull`, `push`, `diff` and `validate`, and `sysone datasets push`.
 - **Phase 4b:** in order: app profile fields and opportunities, the pattern advisor, Studio prefill, TypeScript codegen and its surfaces, app bindings, the `interface.breaking` lint and `SysOne-Interface` enforcement, then `sysone init`, `.sysone/lock.json` and `sysone check`. Last, and only after their sections are accepted: the Python client and codegen target, then the standalone export and `POST /api/v1/runs/ingest`.
 - **Reversal:** codegen output is read-only and regenerated, so a bad generator version is fixed by releasing a new one and running `sysone codegen` again. Bindings can be removed without touching the set. If the standalone target is rejected, the managed targets are unaffected.

@@ -40,6 +40,8 @@ ModelProfile = {
   } | null,                            // null only while unreviewed
   inputModalities: string[],           // ["text"]
   weaknesses: string[],                // ids from section 10
+  supersedes: string[],                // model or family ids this model can replace (section 11);
+                                       // set by the platform admin at review; [] for none
   docsUrl: string,
   jaggednessUrl: string | null,
   lastReviewed: string,                // date a human checked the row against the docs
@@ -105,9 +107,16 @@ A model name is pinned only when the registry marks it `kind: "versioned"`. Alia
 
 The jobs are listed in [architecture.md](architecture.md) (background jobs). Publishing on an `unreviewed` model is always blocked.
 
+When a model reaches `stable`, or `preview` for orgs with `allowPreviewModels`, the model-upgrade candidates job (Phase 3b) finds the sets it could replace. A live set is a candidate when both hold:
+
+- It is pinned to an older model in the same family, or to a model whose id or family is in the new model's `supersedes`.
+- The new model's `questionTypes` include every question type the set uses.
+
+A candidate found only through `supersedes` is marked cross-family. Without `supersedes`, a new family never shows up as an upgrade for existing sets. Section 11 covers what happens next.
+
 ## 7. Limits as data
 
-- Preflight, lints and default limiter budgets read the profile, never constants. Signatures are `preflight(spec, state, profile)` and `lint(spec, profile)`.
+- Preflight, lints and default limiter budgets read the profile, never constants. Signatures are `preflight(spec, state, profile)` and `lint(spec, profile, publishCtx?)`. `publishCtx` carries the channel rollout stage, the current interface, consumers and the models the org key can reach ([architecture.md](architecture.md), Lints). Lints that need it are skipped when it is absent; publish and promote always pass it.
 - For a moving name they use the profile of its last observed resolved model. In the playground, a row with null limits falls back to the observed target's limits, or to the smallest limits among stable profiles when there is no target.
 - Default limiter budgets are a per-model setting, about 83 percent of the published `rpm` (about 1,000 requests per minute for `jev-1.13.0`). Limiter keys include the model. Evals use a separate bucket ([security.md](security.md)).
 - API-wide rules stay constants in [system-one-api-contract.md](system-one-api-contract.md): at most 255 options per choice, 2 to 10 score levels, and the question type union.
@@ -155,8 +164,8 @@ Phase 3b. Details, gates and the experiment rules are in [effectiveness-loop.md]
 
 | Step | What happens | Headless |
 |---|---|---|
-| Detect | A model reaches `stable`, or `preview` for an org with `allowPreviewModels`. Event `model.available`. The org's Model upgrades page lists sets pinned to older models in the same family. | `GET /api/v1/model-upgrades` (`model.upgrades`), `sysone upgrade list`, MCP `get_report` |
-| Try | `POST /api/v1/sets/{ref}/try-model` with `{ model }` (`set.try_model`, a job). It clones production into a draft that changes only `model`, evals both on the same dataset snapshot, re-runs the threshold suggester and opens a `model_upgrade` proposal with the metric deltas. `?dryRun=true` works. | `sysone upgrade try <slug> --model <id>`, MCP `try_model` |
+| Detect | A model reaches `stable`, or `preview` for an org with `allowPreviewModels`. Event `model.available`, whose `candidateSetIds` lists the org's candidate sets ([events.md](events.md)). The candidates job (section 6) lists live sets pinned to an older model in the same family, or to a model or family in the new model's `supersedes`, and only when the new model's `questionTypes` cover the set's question types. The org's Model upgrades page and the `model-upgrades` report show them, with cross-family candidates marked. | `GET /api/v1/model-upgrades` (`model.upgrades`), `sysone upgrade list`, MCP `get_report` |
+| Try | `POST /api/v1/sets/{ref}/try-model` with `{ model }` (`set.try_model`, a job). It builds a candidate spec inside the job (the production spec with only `model` changed; the set's draft is not touched), evals both on the same dataset snapshot, re-runs the threshold suggester and opens a `model_upgrade` proposal with the metric deltas. `?dryRun=true` works. | `sysone upgrade try <slug> --model <id>`, MCP `try_model` |
 | Promote | Accepting the proposal creates a draft only. Publishing it to a production channel in `controlled` or `full` runs an experiment of kind `model`. Promotion needs an approval for agents. | `sysone proposals accept`, `sysone experiments promote`, MCP `decide_proposal`, `decide_experiment` |
 | Deprecate | The platform admin sets `deprecated` and `retireAt`. The Model upgrades page lists sets still pinned to it. After `retireAt` the row is `retired` and `model.deprecated` is an error. | `PATCH /api/v1/platform/models/{id}` |
 
@@ -165,30 +174,46 @@ The end-to-end agent version of this flow is in [headless-and-agents.md](headles
 ## 12. Recipe: add a new System One model
 
 1. Read the model's entry on `docs.typesafe.ai/models.md` and its jaggedness page, if it has one.
-2. Review the row the registry sync inserted as `unreviewed`, or create one (platform Models page or `POST /api/v1/platform/models`). Fill `family`, `kind`, `releaseDate`, `limits`, `questionTypes`, `inputModalities`, `weaknesses`, `docsUrl`, `jaggednessUrl` and `lastReviewed`. For an alias, fill `kind: "alias"` and let detection set `aliasTarget`.
+2. Review the row the registry sync inserted as `unreviewed`, or create one (platform Models page or `POST /api/v1/platform/models`). Fill `family`, `kind`, `releaseDate`, `limits`, `questionTypes`, `inputModalities`, `weaknesses`, `supersedes`, `docsUrl`, `jaggednessUrl` and `lastReviewed`. For an alias, fill `kind: "alias"` and let detection set `aliasTarget`. For the first model of a new family, list the models or families it replaces in `supersedes`, or existing sets never see it as an upgrade (section 6).
 3. Add a platform `price_books` row keyed by the exact versioned ID.
 4. Record fixtures for the new ID: `pnpm fixtures:record --model <id>` ([testing.md](testing.md)).
 5. Run `pnpm smoke --model <id>`.
 6. Set the status to `preview` or `stable`.
 7. Update the seed table below and `packages/core/src/models/catalog.ts`.
+8. Decide whether new sets should start on it. If so, move the platform `defaultModel` to the new versioned ID (section 14). Existing sets move only through the upgrade flow (section 11).
 
 If the model adds a question type, stop: that needs an ADR, a `QuestionTypeModule` and a renderer (section 9).
 
 ## 13. Seed table
 
-| Id | Family | Kind | Status | Limits | Question types | Input | Weaknesses |
-|---|---|---|---|---|---|---|---|
-| `jev-1.13.0` | `jev` | versioned | stable | requestTokens 64,000; statePlusLongestQuestionTokens 32,000; rpm 1,200; tokensPerSec 250,000 | noul, choice, score | text only | all ids in section 10 |
-| `jev-latest` | `jev` | alias | stable | from target | from target | from target | from target |
-| `jev-preview` | `jev` | alias | preview | from target | from target | from target | from target |
+| Id | Family | Kind | Status | aliasTarget | Limits | Question types | Input | Weaknesses |
+|---|---|---|---|---|---|---|---|---|
+| `jev-1.13.0` | `jev` | versioned | stable | null | requestTokens 64,000; statePlusLongestQuestionTokens 32,000; rpm 1,200; tokensPerSec 250,000 | noul, choice, score | `["text"]` | all ids in section 10 |
+| `jev-latest` | `jev` | alias | stable | `jev-1.13.0` | copy of `jev-1.13.0` | copy of `jev-1.13.0` | copy of `jev-1.13.0` | copy of `jev-1.13.0` |
+| `jev-preview` | `jev` | alias | preview | `jev-1.13.0` | copy of `jev-1.13.0` | copy of `jev-1.13.0` | copy of `jev-1.13.0` | copy of `jev-1.13.0` |
 
-- `jev-latest` and `jev-preview` both have last observed target `jev-1.13.0`. TypeSafe says `jev-preview` moves ahead of `jev-latest` when a preview build exists, and none exists today.
-- `jev-1.13.0`: `docsUrl` `https://docs.typesafe.ai/models.md`, `jaggednessUrl` `https://docs.typesafe.ai/model-jaggedness/jev-1.13.md`. `releaseDate` stays null until the platform admin confirms it, because `GET /v1/models` reports dates for the aliases only.
+- All three rows: `supersedes` `[]`, `retireAt` null, `docsUrl` `https://docs.typesafe.ai/models.md`, `lastReviewed` `2026-09-26`.
+- `jev-1.13.0`: `jaggednessUrl` `https://docs.typesafe.ai/model-jaggedness/jev-1.13.md`. `releaseDate` stays null until the platform admin confirms it, because `GET /v1/models` reports dates for the aliases only.
+- Alias seed rows copy `jev-1.13.0`'s `limits`, `questionTypes`, `inputModalities` and `weaknesses`, so each is a valid `stable` or `preview` row with non-null limits. They have `aliasTarget` `jev-1.13.0`, `releaseDate` null and `jaggednessUrl` null.
+- `ModelCatalog` never uses an alias row's limits or weaknesses for a moving name. It uses the profile of the observed target (section 3). The copied values only keep the alias row valid.
+- TypeSafe says `jev-preview` moves ahead of `jev-latest` when a preview build exists, and none exists today.
 - English is the strongest language. Test other languages on the org's own content before routing on them.
 - TypeSafe says rate limits adjust dynamically and can change without notice. Treat `rpm` and `tokensPerSec` as the published values at `lastReviewed`.
 - Price row: `jev-1.13.0`, $0.042 per million input tokens, output free ([system-one-api-contract.md](system-one-api-contract.md)).
 
-## 14. Gateways
+## 14. Default model
+
+Jev is the default because of a setting, not because code names it. No template, Studio path or operation hardcodes a model ID.
+
+- **Platform default.** The platform setting `defaultModel` names the model new sets start on. Seed value: `jev-1.13.0`. It changes through `platform_settings.update` ([management-api.md](management-api.md), Platform), which rejects a value that is not a `stable` versioned row.
+- **Org override.** `organizations.settings.defaultModel` ([data-model.md](data-model.md)) changes through `settings.update`. It must be a `stable` versioned ID that the org's key can reach (section 3, Reachability); anything else is rejected with `400 invalid_request`. When the override is later no longer `stable` or reachable, the platform default applies.
+- **Who uses it.** `set.create` without `fromVersion` (a blank set or `fromTemplate`), `studio.create` (the session's target model) and template builds. `set.create` with `fromVersion` keeps that version's model.
+- **Templates never set `model`.** A `QuestionTemplate` builds a `Partial<QuestionSetSpec>` without `model`, and the operation that applies it fills the default ([definition-studio.md](definition-studio.md), `templates/plugin.template.ts`).
+- **Written once.** The default is copied into the new draft's `spec.model` when the set or Studio session is created. Changing the platform or org default never changes existing sets, drafts or versions. They move through the draft or the upgrade flow (section 11).
+- **Listing.** `model.list` marks the model that is the default for the calling org with `isDefault: true`, so the console picker, `sysone models list` and MCP `list_models` preselect it.
+- **Why a versioned ID.** TypeSafe's SDKs default to `jev-latest`, but a moving name cannot serve `controlled` or `full` (section 4). A pinned default lets a new set move past shadow without a model change. When TypeSafe ships a newer stable model, the platform admin moves `defaultModel` after the review in section 12.
+
+## 15. Gateways
 
 - TypeSafe's Python SDK usage page (`docs.typesafe.ai/sdk/python/usage.md`) documents two gateways. Each uses its own API key, base URL and model ID, and must follow the TypeSafe OpenAPI spec.
 

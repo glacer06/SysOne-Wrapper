@@ -29,30 +29,44 @@ Every console capability is one operation in `apps/console/src/server/operations
 
 ```ts
 OperationDef<I, O> = {
-  id: string,                // noun.verb, identical to the audit action: "set.publish", "rollout.change"
-  summary: string,
-  input: ZodType<I>,
+  id: string,                 // noun.verb, identical to the audit action: "set.publish", "rollout.change"
+  summary: string,            // one line; becomes the OpenAPI summary, CLI help and MCP tool description
+  input: ZodType<I>,          // path params, query and body merged into one object
   output: ZodType<O>,
-  scope: Scope,
-  minRole: Role,
-  risk: "normal" | "high",
-  towardSafety: boolean,     // pause, rollback, demote: never gated
+  scope: Scope | "any" | ((input: I) => Scope),
+                              // a function when the channel decides: release:staging or release:production;
+                              // "any": any authenticated actor in the org, no particular scope (job.get, actor.get, approval.get)
+  minRole: Role | "superadmin", // the floor; can() raises it for protected sets, entering full and skipExperiment;
+                              // "superadmin": users.platform_role, not an org role (platform_* operations)
+  actors: Array<"user" | "agent" | "apiKey" | "system">, // who may call it; ["user"] means session only
+  risk: "normal" | "high"
+      | ((ctx: TenantContext, input: I,
+          resource: { protected: boolean, productionStage: RolloutStage | null }) => "normal" | "high"),
+                              // a function for the conditional high* rows of the catalog
+  towardSafety: boolean,      // only ever makes things safer (pause, rollback, demote, stop, revoke): never gated
   readOnly: boolean,
   destructive: boolean,
-  async: boolean,            // true: returns 202 { jobId }
+  async: boolean,             // true: returns 202 { jobId }
   http: { method: "GET" | "POST" | "PUT" | "PATCH" | "DELETE", path: string },
-  mcp?: { tool: string },    // only for curated MCP tools
+  mcp?: { tool: string },     // only for curated MCP tools
+  emits: EventType[],         // events it writes (events.md); [] for read-only operations
+  preview?: (ctx: TenantContext, input: I) => Promise<DryRunResult>, // only on operations that accept ?dryRun=true
   handler: (ctx: TenantContext, input: I) => Promise<O>,
 }
 ```
 
-`runOperation(id, ctx, input, { idempotencyKey?, ifMatch?, dryRun? })` runs the same steps for every caller: resolve the actor, check scope and role with `can()`, apply the approval gate, look up the idempotency key, check `If-Match`, run the handler inside `withTenant`, write the audit row and the event, and store the idempotent response.
+This is the same shape as [management-api.md](../../.claude/skills/sysone-builder/references/management-api.md), which carries the catalog and the `DryRunResult` type. `actors` defaults to `["user", "agent"]`.
+
+`runOperation(id, ctx, input, { idempotencyKey?, ifMatch?, dryRun? })` runs the same steps for every caller: resolve the actor, validate the input, check actor, scope and role with `can()`, apply the approval gate, look up the idempotency key, check `If-Match`, run the handler inside `withTenant`, write the audit row and the events in `emits`, and store the idempotent response. With `dryRun`, it stops before the handler, runs `preview` and writes nothing.
+
+The approval-gate step of `runOperation` (step 4 in management-api.md) calls `risk` when it is a function; the `high*` conditions in the catalog are implemented there.
 
 - Server Actions and `/api/v1` route handlers are thin adapters over `runOperation`. Console UI code calls operations, never repositories.
 - `@sysone/cli` and the MCP server call `/api/v1` over HTTP. Neither touches the database or a TypeSafe key.
 - `openapi.json` is generated from the registry and served at `GET /api/v1/openapi.json`. MSW mocks come from the same file.
-- A CI parity test fails when an operation has no route or no OpenAPI path, or when a curated MCP tool maps to no operation.
-- Console-only exceptions: Stripe checkout and portal, approval decisions, and platform admin impersonation.
+- A CI parity test fails when an operation has no route or no OpenAPI path, or when a curated MCP tool or CLI command maps to no operation or to a session-only operation.
+- No operation at all: Stripe checkout and the billing portal (Stripe hosts them), and platform admin impersonation.
+- Session-only operations (`actors: ["user"]`), such as `approval.decide` and the platform admin operations, have routes and OpenAPI paths, but no token can call them.
 
 The MCP server exposes a curated set of tools that wrap operations, not one tool per operation. Tool input schemas are the operation zod schemas converted to JSON Schema, and `readOnlyHint` and `destructiveHint` come from the registry. Member, key and token admin stay in the API and the CLI.
 
@@ -88,16 +102,17 @@ and stores a row in `approval_requests (org_id, op_id, input jsonb, input_hash, 
 High-risk operations:
 
 - publish or promote on production for a protected set, or for a set whose production stage is `controlled` or `full`
-- rollout moves toward `full`, or out of `paused`
+- rollout moves into `controlled` or `full` from a lower stage, or out of `paused` (`inactive` to `shadow` is normal, because nothing executes in shadow)
 - skipping champion/challenger
 - experiment promotion
-- key rotation or revocation
-- creating tokens with write scopes
-- member role changes
+- TypeSafe key rotation or revocation
+- creating tokens (app or agent) with write scopes
+- member role changes, including invitations and removals
 - PII or retention changes
+- lowering `agentApprovals`
 - org deletion
 
-Moves toward safety (pause, rollback, demote) are never gated, even on production for a protected set, so an agent can always make things safer without waiting for a human. That is why rollback is not on the list above.
+Moves toward safety (pause, rollback, demote, experiment stop and token revocation) are never gated, even on production for a protected set, so an agent can always make things safer without waiting for a human. That is why rollback is not on the list above.
 
 Per-org setting `agentApprovals`:
 
@@ -107,7 +122,7 @@ Per-org setting `agentApprovals`:
 | `production_only` | Only release and rollout operations that touch the production channel are gated, plus the always-gated list. |
 | `off` | Only the always-gated list is gated. |
 
-Always gated, whatever the setting: key rotation or revocation, member role changes, PII and retention changes, org deletion, and creating `admin:write` tokens.
+Always gated, whatever the setting: TypeSafe key rotation or revocation, member role changes, PII and retention changes, org deletion, creating `admin:write` tokens, and lowering `agentApprovals` itself. Without that last item, an agent with `admin:write` could switch the gate off.
 
 ### 4. Safe retries, concurrency, previews and jobs
 
@@ -139,7 +154,7 @@ New codes: `403 insufficient_scope` (the resource is in the caller's org but the
 
 - `audit_log` gains `actor_type (user|agent|app|system)`, `client (console|api|cli|mcp|extension|job)` and `approval_id`.
 - Versions and release events record both the user and the token (`created_by_user_id`, `created_by_token_id`, `actor_user_id`, `actor_token_id`), so an agent publish has a defined author.
-- Every operation that changes state names the event it emits. Events are written to the `events` table in the same transaction as the audit row and read through `GET /api/v1/events` (scope `events:read`), which the CLI and MCP server poll because they have no public URL.
+- Every operation that changes state names the events it emits in `emits`. Events are written to the `events` table in the same transaction as the audit row and read through `GET /api/v1/events` (scope `events:read`), which the CLI and MCP server poll because they have no public URL.
 
 ## Options considered
 
@@ -158,7 +173,7 @@ New codes: `403 insufficient_scope` (the resource is in the caller's org but the
 - Console work pays a small tax: define the operation (schemas, scope, role, risk, route) before building the screen. A console feature is not done until its route and OpenAPI path exist and the parity test passes.
 - The approvals UI and inbox are required in Phase 3, before any agent can publish to production.
 - Ownership: Platform / Tenancy owns the registry, services and routes. Console UI calls operations. Integrations owns `@sysone/cli` and the MCP server.
-- Tests QA must add: the parity test; a replayed publish creates no version; a replayed run creates no second `runId`, action or usage event; an `If-Match` mismatch returns 412; an agent publish to a protected set stays pending until approved; moves toward safety are never gated; `insufficient_scope` in the caller's org and 404 across orgs; demoting the user removes the token's permission on the next request.
+- Tests QA must add: the parity test; a replayed publish creates no version; a replayed run creates no second `runId`, action or usage event; an `If-Match` mismatch returns 412; an agent publish to a protected set stays pending until approved; `inactive` to `shadow` is not gated and `shadow` to `controlled` is; lowering `agentApprovals` stays pending even when the setting is `off`; moves toward safety are never gated; `insufficient_scope` in the caller's org and 404 across orgs; demoting the user removes the token's permission on the next request.
 - Docs that carry the detail: [management-api.md](../../.claude/skills/sysone-builder/references/management-api.md) (registry, catalog, safe retries), [headless-and-agents.md](../../.claude/skills/sysone-builder/references/headless-and-agents.md) (CLI, MCP, profiles), [events.md](../../.claude/skills/sysone-builder/references/events.md), [api.md](../../.claude/skills/sysone-builder/references/api.md) (auth modes and error table), [security.md](../../.claude/skills/sysone-builder/references/security.md) (agent tokens and approvals), [conventions.md](../../.claude/skills/sysone-builder/references/conventions.md), [data-model.md](../../.claude/skills/sysone-builder/references/data-model.md) and [testing.md](../../.claude/skills/sysone-builder/references/testing.md).
 
 ## Rollout

@@ -19,7 +19,8 @@ Six steps take an app from "no System One code" to a live, typed call site. Each
 
 - Step 4 follows [definition-studio.md](definition-studio.md). A Studio session started from an opportunity stores its `opportunity_id`, and the opportunity prefills the intent sentence, the state fields and seed examples.
 - When the set exists, link it with `opportunity.update` (`setId`, `status: "built"`). The Studio does this when a session that started from an opportunity is promoted.
-- Step 6 goes through the normal gates and approvals. An agent's production publish or promotion on a protected or live set waits for a human ([management-api.md](management-api.md#approvals)).
+- Step 1 creates an app and an app token, which need the admin role, so `sysone init` needs an admin ceiling (section 8).
+- Step 6 goes through the normal gates and approvals. An agent's production publish or promotion on a protected or live set waits for a human ([management-api.md](management-api.md#approvals)). Section 8, Go live, lists the production steps: promote, a production token, production codegen, a CI token and the rollout.
 - The end-to-end agent version of this flow is flow (b) in [headless-and-agents.md](headless-and-agents.md).
 
 ## 2. Apps and opportunities
@@ -103,15 +104,17 @@ Build order: `managed`, then `managed_typed`, then `standalone`. Every binding r
 
 App code depends on a set's interface: its input schema, question ids and types, choice option keys, score level counts, composite ids and route outputs. `SetInterface`, `interfaceOf(spec)` and `diffInterface(a, b)` are defined in [spec-schema.md](spec-schema.md), section 11.
 
-**Versions.** Every published version stores `interface_hash` (hash of the canonical `SetInterface` JSON) and `interface_major`. The first published version of a set has major 1. An additive change keeps the major and changes the hash. Only an explicit bump raises the major.
+**Versions.** Every published version stores `interface_hash` (hash of the canonical `SetInterface` JSON) and `interface_major`. The first published version of a set has major 1. Without a bump, a new version takes the set's current major (the highest it has published), and an additive change only changes the hash. Only an explicit bump raises the major. The major belongs to the version, and published versions are immutable, so a version keeps its major when it is promoted.
 
-**The `interface.breaking` lint.** At publish, core diffs the new interface against the interface the target channel serves. The lint is an error when all three hold:
+**The `interface.breaking` lint.** At publish, core diffs the new interface against the interface each checked channel serves. The checked channels are the target channel, plus production when the target is staging, because a staging version is meant to be promoted. The lint is an error when, for one checked channel, all three hold:
 
 - the set has consumers on that channel: app bindings that are not removed, or apps with runs on that channel in the last 30 days;
-- `diffInterface` reports a breaking change: a removed or renamed question or option, a changed type or level count, a removed route output, or a narrower input schema;
-- the major is unchanged.
+- `diffInterface` against that channel's interface reports a breaking change: a removed or renamed question or option, a changed type or level count, a removed route output, or a narrower input schema;
+- the new version's major equals the major that channel serves.
 
-The editor clears it by bumping the major with a written reason: the publish input carries `interfaceBump: { reason }`. The reason is audited on the release event, and the publish emits `interface.breaking_published` with the affected binding ids ([events.md](events.md)). Additive changes never block. A publish dry run shows the change in `interfaceChange` ([management-api.md](management-api.md#dry-runs)).
+The editor clears it by bumping the major with a written reason: the publish input carries `interfaceBump: { reason }`, and the new version gets the set's highest major plus one. A publish with a bump is never a no-op, even when the spec is unchanged. The reason is audited on the release event, and the publish emits `interface.breaking_published` with the affected binding ids ([events.md](events.md)). Additive changes never block. A publish dry run shows the change in `interfaceChange` ([management-api.md](management-api.md#dry-runs)). The lint's inputs are the `PublishCtx` fields in [architecture.md](architecture.md) (Lints).
+
+**Promote.** `channel.promote` runs the same lint against production, using the promoted version's stored major, and takes no bump. If it fails (production gained consumers after the staging publish), publish to staging again with `interfaceBump`, then promote.
 
 **Runtime check.** Clients may send `SysOne-Interface: <major>`. When the channel's version has a different major, the run returns `409 interface_mismatch`, and the message names the live major ([api.md](api.md)). The server never falls back to an older version in the same major, because that would break rollback and caching. Generated clients always send the header.
 
@@ -207,8 +210,8 @@ Needs the ADR-009 Python section accepted first. `sysone/generated/<slug_with_un
 
 | Surface | Details |
 |---|---|
-| `GET /api/v1/sets/{ref}/codegen?lang=ts\|py&channel=&version=&appId=` | Operation `set.codegen`, scope `sets:read`. Defaults: `lang=ts`, `channel=production`, the version that channel serves. Returns `{ files, lock, bindingId? }`, where `lock` is the lock entry in section 8. With `appId` it also records a binding and needs `apps:write`. A channel with no published version returns `404 not_found`. |
-| `sysone codegen <slug> --lang ts\|py [--app <id>]` | Calls the endpoint, writes the files and `.sysone/lock.json`, and records a binding. Channel and version map to the query parameters. Generate for the channel the app's token is bound to. |
+| `GET /api/v1/sets/{ref}/codegen?lang=ts\|py&channel=&version=&appId=&target=` | Operation `set.codegen`, scope `sets:read`. Defaults: `lang=ts`, `channel=production`, the version that channel serves, `target=managed_typed`. Returns `{ files, lock, bindingId? }`, where `lock` is the lock entry in section 8. With `appId` it also records a binding and needs `apps:write`. A channel with no published version returns `404 not_found`. `target=standalone` is section 9. |
+| `sysone codegen <slug> --lang ts\|py [--channel <c>] [--version <n>] [--target standalone] [--app <id>]` | Calls the endpoint, writes the files and `.sysone/lock.json`, and records a binding. Channel and version map to the query parameters. Generate for the channel the app's token is bound to. |
 | MCP `generate_client` | Returns the files and the lock entry. The coding agent writes them into the repo. |
 | Console "Use in your app" tab | Shows the generated file for the app's language, a copy and download button, the plain HTTP snippet, and a "Use in app" action that records a binding |
 
@@ -287,16 +290,28 @@ jobs:
 
 1. Uses the chosen profile, or `SYSONE_TOKEN` and `SYSONE_BASE_URL`.
 2. Creates the app through `app.create`, with `language` and `framework` read from `package.json` or `pyproject.toml` and `repo_url` from the git remote.
-3. Creates an `sk_test_` app token with scope `run`, bound to the `staging` channel, through `app_token.create`, and prints the secret once. It never writes the secret to a tracked file. The developer stores it in the app's secret store as `SYSONE_APP_TOKEN`. A token with a write scope (`feedback:write`, `runs:write`) needs an approval when an agent creates it.
+3. Creates an `sk_test_` app token with scopes `run` and `feedback:write`, bound to the `staging` channel, through `app_token.create`, and prints the secret once. It never writes the secret to a tracked file. The developer stores it in the app's secret store as `SYSONE_APP_TOKEN`. `feedback:write` is there so the recipes in section 10 can report outcomes from the first day. On an `sk_test_` staging token it is not a gated write scope, so an agent needs no approval for this step ([management-api.md](management-api.md), Catalog). Any other write scope (`runs:write`, or `feedback:write` on a live token) needs one.
 4. Writes `sysone.config.json` ([headless-and-agents.md](headless-and-agents.md), Specs as code), including `"app": "<appId>"` so later `sysone codegen` calls record bindings without `--app`.
 5. Adds `@sysone/client` to the app's dependencies.
-6. With `--set <slug>`, runs `sysone codegen` and writes one typed call site from the matching recipe (section 10) into a new file it names in its output. It never edits existing files.
+6. With `--set <slug>`, runs `sysone codegen <slug> --channel staging` and writes one typed call site from the matching recipe (section 10) into a new file it names in its output. It never edits existing files.
+
+`app.create` and `app_token.create` need the admin role, so `sysone init` needs a token with `apps:write` and an admin ceiling. An agent with a lower ceiling gets `403 insufficient_scope` at step 2. Then a person with the admin role runs `sysone init`, or creates the app and its token in the console and the agent runs `sysone init --app <appId>`, which skips steps 2 and 3.
+
+### Go live
+
+The `sk_test_` token from `sysone init` runs only on staging. These steps move an app to production. Each is an operation, so a person or an agent can run them headlessly.
+
+1. **Promote.** `sysone promote <slug>` (`channel.promote`) points production at the version staging serves. The first promote creates the production pointer at `inactive`, so production runs return `409 set_not_live` until step 5. Promote first, because codegen for a channel with no version returns `404 not_found`.
+2. **Production app token.** `sysone apps tokens create <appId> --prefix sk_live_ --channel production --scopes run,feedback:write` (`app_token.create`) creates an `sk_live_` token and prints it once. Store it as `SYSONE_APP_TOKEN` in the production secret store. `feedback:write` on a live token is a write scope, so an agent needs an approval.
+3. **Production codegen.** `sysone codegen <slug> --channel production` (`set.codegen` with the app id from `sysone.config.json`) writes the generated file and the lock for production and records a production binding. Without that binding, `interface.breaking` sees no production consumer until the app's first production runs. Commit and deploy.
+4. **CI token.** `sysone tokens create --name ci --scopes sets:read` (`agent_token.create`) mints the token that `sysone check` uses in CI. Store it as `SYSONE_TOKEN`. `sets:read` is not a write scope, so it needs no approval. It expires within 90 days, so rotate it.
+5. **Roll out.** `sysone rollout set <slug> --channel production --stage shadow --reason "..."`, then `controlled` and `full` as the gates allow ([confidence-policy.md](confidence-policy.md)). In `shadow` every `effectiveAction` is `fallback`, so the deployed app keeps its existing path while SysOne measures. Moves into `controlled` or `full` need an approval for an agent.
 
 ## 9. Standalone export (behind ADR-009, last in Phase 4b)
 
 Needs the ADR-009 Standalone section accepted first. It is built last in Phase 4b.
 
-The export is `set.codegen` with `target=standalone` (`sysone codegen <slug> --target standalone`). Because it contains the full spec, it is limited to console sessions and agent tokens, needs the editor role, and is audited. App tokens cannot request it.
+The export is `set.codegen` with `target=standalone` (`sysone codegen <slug> --target standalone`). Because it contains the full spec, it is limited to console sessions and agent tokens, needs the editor role, and is audited even though the operation is read-only. App tokens cannot request it. Until the ADR-009 Standalone section is accepted, `target=standalone` returns `404 not_found` ([management-api.md](management-api.md), Apps and integration).
 
 Per set it writes:
 
@@ -398,6 +413,10 @@ curl -sS -X POST "$SYSONE_BASE_URL/api/v1/feedback" \
 ```
 
 Branch on `overallAction`: act on `route` only when it is `auto`; keep the existing path on `fallback`; do not act on `review` or `escalate_to_llm`.
+
+### Review outcomes
+
+When `overallAction` is `review`, a person decides in the review queue. The app learns the outcome in one of two ways. It can poll `GET /api/v1/runs/{id}` (`run.get`, scope `runs:read`), which lists the run's review items with their status and resolution. Or it can read `review.resolved` from the event feed (`event.list`, scope `events:read`), which an `sk_` token sees only for its own app's runs ([events.md](events.md)). Add the scope to the app token that needs it. Org webhooks replace polling in Phase 5.
 
 ### Python httpx (until `client-py` exists)
 

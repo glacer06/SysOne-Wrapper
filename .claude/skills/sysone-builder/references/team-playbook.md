@@ -13,7 +13,7 @@ This is how a team of Claude agents (and humans) builds SysOne in parallel witho
 | **Console UI** | `apps/console/app/(org)/**` and `app/(platform)/**` UI: org switcher, editor, policy editor, playground, runs, review queue, evals, Definition Studio, dashboards, approvals inbox, settings, platform admin UI. Calls operations, never repositories. | Phase 2 (shell), Phase 3 |
 | **Embed Kit** | `packages/client`, `packages/react`, `apps/example-embed` | Phase 4 (can start against mocks in Phase 3) |
 | **QA / Evals** | `packages/evals`, fixtures, cross-tenant suite, Playwright, k6, CI gates, live smoke job, the parity test, holdout API tests, codegen snapshot tests, contract snapshots | Phase 0 onward |
-| **Integrations** | `packages/cli`, `packages/mcp-server`, `packages/codegen`, `packages/client-py`, `plugins/claude-code` (customer skills and packaging), `examples/*` sample apps. Co-owns `headless-and-agents.md` and `deploy-and-codegen.md` with Docs. | Phase 3 |
+| **Integrations** | `packages/cli`, `packages/mcp-server`, `packages/codegen`, `packages/client-py`, `plugins/claude-code` (customer skills and packaging), `examples/*` sample apps. Co-owns `headless-and-agents.md` and `deploy-and-codegen.md` with Docs. | Phase 1 (local CLI), Phase 3 |
 | **Quality / Learning** | `packages/core/src/learning` (pure: gate evaluator, precision intervals, threshold suggester, label selector, drift stats, stability), `apps/console/src/jobs/learning` (gate evaluator, auto-demote, question rollup, threshold refit, experiment scorer, model-upgrade candidates), `effectiveness-loop.md` | Phase 3 |
 | **Extensions** | `packages/plugin-sdk`, `plugins-builtin`, `apps/extension-chrome` | Phase 5 onward |
 | **Security reviewer** (part-time) | Threat model; reviews every change to keys, authz, tokens, agent tokens, approvals, the device flow, webhooks, embed, extension, codegen output and the standalone export | Phase 2 onward |
@@ -37,6 +37,7 @@ Changing any of these needs an ADR (`templates/adr.md`) approved by the Architec
 Phase 0   Architect alone: skill, plan, scaffold, contracts, ADRs 002 to 010
    |
 Phase 1   Core Engine  ||  Platform (schema, RLS, registry table)  ||  QA (fixtures, cross-tenant harness)
+          ||  Integrations (local CLI)
    |
 Phase 2   Platform (auth, app and agent tokens, approvals, limits)  ||  Billing (Stripe, outbox)  ||  Console shell
    |
@@ -48,7 +49,7 @@ Phase 4   Embed Kit (real API)  ||  QA (bundle scan, E2E)
           ||  Phase 4b  Integrations (integrate and deploy)
           All three start when Phase 3 lands and run in parallel.
    |
-Phase 5   Extensions (plugins, templates, org webhooks)
+Phase 5   Extensions (plugins, templates)  ||  Platform (org event webhooks)  ||  Integrations (GitHub Action)
    |
 Phase 6   Chrome extension   ||   Phase 7  Integrations (MCP HTTP, Claude Code plugin)
 ```
@@ -60,12 +61,13 @@ Phase 6   Chrome extension   ||   Phase 7  Integrations (MCP HTTP, Claude Code p
 - **Tests first** against fixtures or in-memory stores.
 - **Run the gate before pushing:** `pnpm turbo lint typecheck test`.
 - **Update the phase checklist** in the same PR that completes an item.
+- **Track work in Linear**, project SysOne (`P-NSI-36`) in the NSIMS team, one milestone per phase. Put the issue key, for example `NSI-412`, in the PR title and branch name.
 - **A console feature is not done until its operation, route and OpenAPI path exist and the parity test passes.**
 - **Don't guess System One behavior.** Read the live docs or run `pnpm smoke`. Record new fixtures when behavior matters.
 
 ## Handoff protocol
 
-When you need a change in someone else's lane, open an issue or PR comment with:
+When you need a change in someone else's lane, open a Linear issue in the SysOne project, with the receiving role label and the phase milestone, or comment on the PR. Include:
 
 ```
 Handoff: <from role> -> <to role>
@@ -93,4 +95,4 @@ The owner replies with accept, counter-proposal, or ADR needed.
 - **Live docs**: `https://docs.typesafe.ai/llms.txt`.
 - **The builder skill is internal.** The customer Claude Code plugin ships its own `sysone-operator` and `sysone-integrate` skills (Phase 7).
 - **Long sessions** (optional, unverified): The Code (2026-09-26) describes `tamaratran/fast-jev-compaction`, a plugin that uses Jev to prune stale tool calls on `/compact`. It reportedly needs `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` and Claude Code 2.1.274+. Try it on long agent sessions if you want; don't make the team depend on it.
-- **Connectors**: Stripe, Linear, and Sentry MCP servers need authorization in claude.ai before an agent can use them.
+- **Connectors**: Stripe, Linear (project SysOne, `P-NSI-36`, in the NSIMS team) and Sentry MCP servers need authorization in claude.ai before an agent can use them.

@@ -57,7 +57,7 @@ Import boundaries are enforced with `eslint-plugin-boundaries`:
 - `react` never imports `client` server entrypoints, `tenancy`, `db`, or `system-one-client`.
 - `core` imports nothing with side effects.
 - `codegen` imports only `core` contracts.
-- `cli` imports `client` and `codegen` and calls `/api/v1` over HTTP.
+- `cli` imports `client` and `codegen` and calls `/api/v1` over HTTP. Only `packages/cli/src/local/**` may also import `core` and `system-one-client`. That folder backs `sysone run --local` and is loaded through a dynamic import, so the published package keeps `core` and `system-one-client` as optional peer dependencies. A boundary-lint fixture test covers this exception.
 - `mcp-server` calls `/api/v1` over HTTP only.
 - Console pages under `app/(org)` and `app/(platform)` call operations, never repositories.
 
@@ -71,32 +71,52 @@ Scope = "run" | "sets:read" | "sets:write" | "evals:run" | "release:staging" | "
       | "runs:read" | "runs:write" | "review:read" | "review:write" | "feedback:write"
       | "usage:read" | "reports:read" | "audit:read" | "events:read" | "apps:write" | "admin:write";
 
+Client = "console" | "api" | "cli" | "mcp" | "extension" | "job";
+  // one union for TenantContext.client, EventEnvelope.actor.client and audit_log.client
+AgentClient = "cli" | "mcp" | "extension" | "console";                   // agent_tokens.client, a subset of Client
+
+PlanId = string;
+  // ^[a-z][a-z0-9_]{0,31}$, defined in core contracts. packages/billing/src/plans.ts is typed
+  // Record<PlanId, Plan> and checked at startup. The plan ids themselves are chosen in ADR-006.
+
 TenantContext = {
   orgId: string;
-  actor: { type: "user"; userId: string; role: Role }                    // console session
-       | { type: "apiKey"; keyId: string; appId: string; scopes: Scope[]; setIds: string[] | null }
-         // apiKey means host-app tokens only: sk_, pk_ and browser JWTs
+  actor: { type: "user"; userId: string; role: Role;                     // console session
+           platformRole: "superadmin" | null;                            // users.platform_role
+           impersonatorId: string | null }                               // set during platform impersonation
+       | { type: "apiKey"; keyId: string; appId: string;
+           tokenKind: "secret" | "publishable" | "browser";              // sk_, pk_ or a browser JWT
+           mode: "live" | "test";                                         // slug@draft needs test (sk_test_)
+           channel: "production" | "staging";                             // the token's bound channel
+           scopes: Scope[]; setIds: string[] | null;
+           origin: string | null }                                        // checked Origin; pk_ and browser only
+         // apiKey means host-app tokens only. A browser JWT carries the keyId, mode and channel
+         // of the sk_ token that minted it, and is run-only.
        | { type: "agent"; tokenId: string; userId: string; role: Role; scopes: Scope[];
-           setIds: string[] | null; client: "cli" | "mcp" | "extension" | "console" }
+           setIds: string[] | null; client: AgentClient }
          // sa_live_ agent token; role = min(role_ceiling, current membership role), per request
        | { type: "system" };                                              // jobs, auto-demote
-  plan: PlanId;                                                           // a key of packages/billing/src/plans.ts
+  client: Client;          // the surface of this request: "console" for Server Actions, "api" for app tokens
+                           // and cookie calls to /api/v1, the token's client for agent tokens, "job" for system
+  plan: PlanId;
   requestId: string;
 };
 
 RolloutStage = "inactive" | "shadow" | "controlled" | "full" | "paused";
 Channel = "production" | "staging" | "pinned" | "draft";   // pointers exist for production and staging only
 
-interface RunPorts {
-  systemOne: SystemOneTransport; // (req, { apiKey, signal, timeoutMs, retry }) => SystemOneResponse
+interface RunPorts {              // signatures in "Ports" below
+  systemOne: SystemOneTransport; // one System One request
   models: ModelCatalog;          // id -> ModelProfile; resolves a moving name to its last observed versioned model
-  keys: KeyResolver;             // (ctx) => { apiKey, mode: "byo" | "platform" }
-  limiter: RateLimiter;          // (ctx, model, estTokens) => { ok: true } | { ok: false, retryAfterMs, reason }
-  quota: QuotaGuard;             // (ctx, estTokens) => ok | QuotaExceeded
+  keys: KeyResolver;             // the org's TypeSafe key and key mode
+  limiter: RateLimiter;          // per-org, per-key and global limiters, keyed by model
+  quota: QuotaGuard;             // plan quota and the agent token's daily spend cap
   runs: RunSink;                 // persist run, review items, label items, usage events in one transaction
   actions: ActionRegistry;       // plugin action handlers
   prices: PriceBook;             // System One and comparator prices by exact model id;
                                  // System One runs are priced by model_resolved
+  clock: () => number;           // epoch ms; latencyMs and timestamps come from here, never Date.now()
+  newId: () => string;           // uuidv7 for runId; tests inject a fixed sequence
   llm?: LlmTransport;            // escalate_to_llm
   redactor?: Redactor;
 }
@@ -110,7 +130,150 @@ runQuestionSet(
 ): Promise<RunResult>
 ```
 
-`ConfidencePolicy` is defined in [confidence-policy.md](confidence-policy.md) and `RunResult` in [savings-model.md](savings-model.md). Store interfaces (`VersionStore`, `RunStore`, `ReviewStore`, `AuditStore`) have in-memory implementations in `core` for tests.
+`ConfidencePolicy` is defined in [confidence-policy.md](confidence-policy.md), `RunResult` in [savings-model.md](savings-model.md), and `RunRequest` and `SystemOneRequest` in [spec-schema.md](spec-schema.md). Core has no clock, id source or randomness of its own. Time and ids come from `RunPorts`, and every function that samples (label selection, challenger sampling) takes `rand: () => number`, so tests are deterministic.
+
+### Ports
+
+Ports and store interfaces are TypeScript interfaces, not zod schemas. Their payloads are zod types in `packages/core/src/contracts`, so fixtures and mocks validate against them. Each has an in-memory or fixture implementation for tests: the stores and most ports in `core`, `FixtureTransport` in `system-one-client` and the fixture `LlmTransport` in `llm-client`.
+
+```ts
+SystemOneQuestion = {                     // one entry of SystemOneRequest.questions
+  type: QuestionTypeId,
+  instructions: Structured,
+  criteria?: Structured | Record<string, Structured | null> | Structured[],
+}
+
+SystemOneTransport = {
+  call(req: SystemOneRequest, opts: {
+    apiKey: string, signal: AbortSignal, timeoutMs: number,
+    retry: { maxRetries: number, maxRetryAfterMs: number },   // configures the SDK's retries
+  }): Promise<{ response: SystemOneResponse, requestId: string | null }>,
+}                                          // throws a mapped system_one_* error (system-one-api-contract.md)
+
+ModelCatalog = {
+  get(id: string): Promise<ModelProfile | null>,
+  effective(name: string): Promise<{ profile: ModelProfile | null, pinned: boolean, resolvedId: string | null }>,
+    // pinned only for kind "versioned"; for a moving name, the profile of its last observed resolved model
+}
+
+KeyResolver = (ctx: TenantContext) => Promise<{ apiKey: string, mode: "byo" | "platform" }>
+
+RateLimiter = (ctx: TenantContext, model: string, estTokens: number, bucket: "run" | "eval")
+  => Promise<{ ok: true } | { ok: false, retryAfterMs: number, reason: "org" | "key" | "global" | "eval" }>
+
+QuotaGuard = (ctx: TenantContext, model: string, estTokens: number)
+  => Promise<{ ok: true } | { ok: false, code: "quota_exceeded" | "token_budget_exceeded" }>
+
+RunSink = {
+  persist(ctx: TenantContext, record: {
+    result: RunResult,
+    request: RunRequest,                  // externalRef, source, metadata
+    state: unknown | null,                // as stored: redacted per pii_mode, null for hash-only sets
+    stateHash: string,
+    stages: Array<{ id: string, skipped: boolean, inputTokens: number, outputTokens: number,
+                    latencyMs: number, typesafeRequestId: string | null }>,
+  }): Promise<{ reviewItemIds: string[], labelItemIds: string[] }>,
+}
+  // One transaction: the run row, action review items, label items, usage events and the
+  // model_alias_observations update. The implementation picks label items itself by calling
+  // core/learning selectForLabeling with its day counters and an injected rand.
+
+ActionRegistry = {
+  isEnabled(orgId: string, handlerId: string): Promise<boolean>,
+  enqueue(job: { runId: string, decisionId: DecisionId, handlerId: string, config: unknown }): Promise<void>,
+    // idempotent by runId:decisionId; dispatched after commit
+}
+
+PriceBook = {
+  get(orgId: string, modelId: string):
+    Promise<{ inputPerMtokMicroUsd: number, outputPerMtokMicroUsd: number } | null>,
+}                                          // org row first, then the platform default; exact model id only
+
+LlmTransport = {
+  complete(req: { model: string, system: string, prompt: string, maxOutputTokens: number, signal: AbortSignal }):
+    Promise<{ text: string, model: string, inputTokens: number, outputTokens: number }>,
+}
+
+PiiMode = "off" | "redact_logs" | "redact_logs_and_input"
+Redactor = (state: unknown, paths: string[], piiMode: PiiMode) => unknown   // pure; returns a redacted copy
+```
+
+### Store interfaces
+
+Store methods take the `TenantContext` and run inside `withTenant`, in the caller's transaction. `packages/db` implements them with repositories. `Page<T> = { data: T[], nextCursor: string | null }`, and `PageReq = { limit: number, cursor: string | null }`. Row types (`VersionRecord`, `Pointer`, `RunRecord`, `ReviewItem`, `AuditRow`, `Approval`) are the zod shapes of the tables in [data-model.md](data-model.md).
+
+```ts
+VersionStore = {
+  getDraft(ctx, setId): Promise<{ versionId: string, spec: QuestionSetSpec, etag: string }>,
+  putDraft(ctx, setId, spec: QuestionSetSpec, ifMatch: string): Promise<{ etag: string }>,   // 412 on mismatch
+  getVersion(ctx, setId, n: number): Promise<VersionRecord | null>,
+  getVersionById(ctx, versionId): Promise<VersionRecord | null>,
+  getByChannel(ctx, setId, channel: "production" | "staging"): Promise<{ pointer: Pointer, version: VersionRecord } | null>,
+  listVersions(ctx, setId, page: PageReq): Promise<Page<VersionRecord>>,
+  publish(ctx, input: { setId, ifMatch: string, changelog: string, interfaceMajor: number,
+                        interfaceHash: string, source: string, sourceRef: string | null }): Promise<VersionRecord>,
+    // freezes the draft into N+1 and opens a new draft; moves no pointer
+  movePointer(ctx, input: { setId, channel, toVersionId: string, kind: ReleaseKind, reason: string | null }): Promise<Pointer>,
+    // creates the pointer at "inactive" when none exists; writes release_events
+  setRolloutStage(ctx, input: { setId, channel, to: RolloutStage, kind: "rollout_change" | "auto_demote",
+                                reason: string }): Promise<Pointer>,
+  setActiveExperiment(ctx, input: { setId, channel, experimentId: string | null }): Promise<Pointer>,
+}
+
+RunStore = {
+  get(ctx, runId): Promise<RunRecord | null>,
+  list(ctx, filter: { setId?, version?, channel?, source?, status?, band?, action?, from?, to? }, page: PageReq):
+    Promise<Page<RunRecord>>,
+  findByExternalRef(ctx, externalRef: string, setId?: string): Promise<RunRecord | null>,   // feedback matching
+}                                          // runs are written only by RunSink
+
+ReviewStore = {
+  list(ctx, filter: { setId?, kind?, status?, assigneeId? }, page: PageReq): Promise<Page<ReviewItem>>,
+  get(ctx, id): Promise<ReviewItem | null>,
+  assign(ctx, id, userId: string): Promise<void>,
+  resolve(ctx, id, input: { resolution: unknown, addToDataset: boolean, pendingConfirmation: boolean }): Promise<void>,
+  confirm(ctx, id, input: { resolution?: unknown }): Promise<void>,   // sets confirmed_by_user_id and confirmed_at
+  dismiss(ctx, id, reason: string): Promise<void>,
+  addFeedback(ctx, rows: FeedbackReport[]): Promise<Array<{ status: "created" | "duplicate", feedbackId: string }>>,
+    // run_feedback rows; idempotent per item key
+}
+
+AuditStore = {
+  append(ctx, row: { action: string, targetType: string, targetId: string, diff: unknown,
+                     approvalId: string | null }): Promise<void>,   // actor, client and role come from ctx
+  list(ctx, filter: { action?, actorUserId?, actorTokenId?, from?, to? }, page: PageReq): Promise<Page<AuditRow>>,
+}                                          // append-only: no update or delete method exists
+
+ApprovalStore = {
+  findReusable(ctx, input: { tokenId: string, opId: string, inputHash: string }): Promise<Approval | null>,
+    // pending, or approved or executed in the last 24 hours
+  create(ctx, input: { opId: string, input: unknown, inputHash: string, ifMatch: string | null,
+                       reason: string, expiresAt: string }): Promise<Approval>,
+  get(ctx, id): Promise<Approval | null>,
+  listPending(ctx, filter: { tokenId?: string, decidableByRole?: Role }, page: PageReq): Promise<Page<Approval>>,
+  decide(ctx, id, decision: "approved" | "rejected"): Promise<Approval>,
+  recordResult(ctx, id, result: { ok: true, response: unknown } | { ok: false, error: unknown }): Promise<void>,
+    // sets status "executed" and stores the response, or the error when the re-check stopped it
+  expireDue(now: number): Promise<number>,   // system job
+}
+
+EventStore = {
+  append(ctx, events: Array<{ type: EventType, subject: { type: string, id: string }, data: unknown }>): Promise<void>,
+  list(ctx, q: { after: string | null, types?: EventType[], limit: number }):
+    Promise<{ events: EventEnvelope[], cursor: string | null, gap: boolean }>,   // only events older than 5 s
+  prune(before: number): Promise<number>,
+}
+
+IdempotencyStore = {
+  lookup(ctx, actorKey: string, key: string):
+    Promise<{ opId: string, requestHash: string, status: number, response: unknown } | null>,
+  save(ctx, actorKey: string, key: string, entry: { opId: string, requestHash: string,
+                                                    status: number, response: unknown }): Promise<void>,
+  prune(before: number): Promise<number>,
+}
+```
+
+`ReleaseKind` is the `release_events.kind` union in [data-model.md](data-model.md). Operations in [management-api.md](management-api.md) compose these stores; for example `set.publish` calls `VersionStore.publish`, then `movePointer` or `setActiveExperiment` under the pointer rule in [Managed live](#managed-live).
 
 The other frozen contracts live next to the feature they serve:
 
@@ -119,7 +282,7 @@ The other frozen contracts live next to the feature they serve:
 | `OperationDef` | [management-api.md](management-api.md) |
 | Error envelope v2 | [api.md](api.md) |
 | `ModelProfile` | [system-one-models.md](system-one-models.md) |
-| `RunRequest`, `Condition`, `Check`, `FallbackConfig`, `QuestionTypeModule`, `SystemOneAnswer`, `SetInterface` | [spec-schema.md](spec-schema.md) |
+| `RunRequest`, `RunDryRunResult`, `SystemOneRequest`, `Condition`, `Check`, `FallbackConfig`, `QuestionTypeModule`, `SystemOneAnswer`, `SystemOneResponse`, `SetInterface` | [spec-schema.md](spec-schema.md) |
 | `Opportunity`, `DeployTarget` | [deploy-and-codegen.md](deploy-and-codegen.md) |
 | `FeedbackReport`, `QualityTarget`, `SetHealth`, `ThresholdProposal` | [effectiveness-loop.md](effectiveness-loop.md) |
 | `EventEnvelope` | [events.md](events.md) |
@@ -194,10 +357,10 @@ Additive fields and new question types do not bump `schemaVersion`. A breaking c
 8. **Compile and call:** for each stage whose `when` holds, compile each question through its `QuestionTypeModule` and call `ports.systemOne` with the org's resolved key, a per-call timeout, a retry budget and an `AbortSignal` (see latency budgets below). Merge answers so later stages can read `answers.<qid>` in state (shape in [spec-schema.md](spec-schema.md)).
 9. **Route:** the confidence router turns each answer into a value and band through its question type module, evaluates `relevantWhen`, computes composites (level and band) and routes (first match wins, then `defaultRoute`), and applies the rollout stage to get each `effectiveAction`. The rules are the normative table in [confidence-policy.md](confidence-policy.md#effective-action-by-rollout-stage-normative). Do not restate them elsewhere.
 10. **Escalate, cost and savings:** decisions whose `effectiveAction` is `escalate_to_llm` call `ports.llm` first, so the run records the actual escalation cost. Then compute `system_one_cost_usd` from the price book by `model_resolved`, the counterfactual and savings (see [savings-model.md](savings-model.md)).
-11. **Persist:** in one transaction, write the run, review items for decisions whose `effectiveAction` is `review` (kind `action`), label items chosen by the labeling policy (kind `label`; they never block the caller or change `effectiveAction`), and usage events with the resolved model. `RunSink` also records `model_requested` to `model_resolved` in `model_alias_observations` and emits `model.alias_moved` on a new pair.
+11. **Persist:** in one transaction, write the run, review items for decisions whose `effectiveAction` is `review` (kind `action`), label items chosen by the labeling policy (kind `label`; they never block the caller or change `effectiveAction`), and usage events with the resolved model. The `RunSink` implementation picks label items by calling `selectForLabeling` from `core/learning` with its day counters and an injected `rand` ([effectiveness-loop.md](effectiveness-loop.md)). `RunSink` also records `model_requested` to `model_resolved` in `model_alias_observations` and emits `model.alias_moved` on a new pair.
 12. **Act:** after commit, dispatch handlers for decisions whose `effectiveAction` is `auto`. Actions are idempotent by `runId:decisionId`. Staging runs never dispatch side-effect handlers unless the set sets `dispatchActionsOnStaging`.
-13. **Challenger:** if an experiment is active, the challenger runs on a sampled share of runs after the champion responds. It is stored with its arm, books experiment cost and no savings, and never affects `effectiveAction` (see [effectiveness-loop.md](effectiveness-loop.md)).
-14. **Return** the standard `RunResult` envelope.
+13. **Return** the standard `RunResult` envelope.
+14. **Challenger (not part of `runQuestionSet`):** the console run service owns it. After the champion's `RunResult` returns, and only when the pointer has an active experiment, it calls `sampleChallenger(experiment, rand: () => number): boolean` from `core/learning`. On `true` it calls `runQuestionSet` again, off the latency path, with the challenger's spec and `resolved.experiment = { id, arm: "challenger" }`. That run is stored with its arm, books experiment cost and no savings, dispatches no actions, creates no action review items and never affects the champion's `effectiveAction` ([effectiveness-loop.md](effectiveness-loop.md)). The champion's own run was resolved in step 1 with `arm: "champion"`.
 
 ### Latency budgets
 
@@ -212,9 +375,11 @@ The SDK's timeout is per attempt (10,000 ms by default) with no total retry budg
 
 ## Managed live
 
-- One mutable **draft** per set. Its ETag is its `spec_hash`. Publishing takes `If-Match`, validates, runs lints (including `interface.breaking`), freezes the draft into version N+1, moves the chosen channel pointer, and opens a new draft cloned from N+1. Publishing a spec identical to the version already on that channel is a no-op that returns that version.
+- One mutable **draft** per set. Its ETag is its `spec_hash`. Every write goes through `draft.update` with `If-Match`. Try-model and improve mode never write it; they return proposals, and `proposal.accept` applies them through `draft.update`. Publishing takes `If-Match`, validates, runs lints (including `interface.breaking`), freezes the draft into version N+1, and opens a new draft cloned from N+1. Publishing a spec identical to the version already on that channel is a no-op that returns that version, unless the call carries `interfaceBump`.
+- **Publish pointer rule.** If the target is production at `controlled` or `full` and `skipExperiment` is absent, the pointer does not move; the new version becomes the challenger of an auto-started experiment (default `samplePct` 0.1, `minRuns` 500, `minLabeled` = the goal's `minLabeledHigh`), and the response includes `experimentId`. Otherwise the pointer moves. Experiments ship in Phase 3b; until then the pointer always moves.
+- **Promote** points production at the version staging serves, with the same lints and gates as a production publish. It creates the production pointer at `inactive` when none exists. On a live production pointer it starts an experiment under the same rule. It takes no `interfaceBump`: the interface major belongs to the version, and published versions are immutable ([deploy-and-codegen.md](deploy-and-codegen.md), section 5).
 - **Evals** are required when the production pointer is `controlled` or `full`. Otherwise they are optional per set.
-- **Channels:** `release_pointers(set_id, channel)` with `production` and `staging`. Each pointer holds the version, the rollout stage and the active experiment. Rollback and promotion move a pointer. All are audited and written to `release_events`.
+- **Channels:** `release_pointers(set_id, channel)` with `production` and `staging`. Each pointer holds the version, the rollout stage and the active experiment. Rollback, promotion and experiment promotion move a pointer. All are audited and written to `release_events`.
 - **Rollout** lives on the pointer and changes only through the `rollout.change` operation, which evaluates the gates in [confidence-policy.md](confidence-policy.md).
 - **Pinning:** callers can pin `slug@7`. Versioned lookups are immutable.
 - Challenger sampling replaces canary; see [effectiveness-loop.md](effectiveness-loop.md).
@@ -229,7 +394,34 @@ The SDK's timeout is per attempt (10,000 ms by default) with no total retry budg
 
 ## Lints (packages/core/src/lints)
 
-Run in the editor live and again at publish. Errors block publish; warnings don't. Lints are pure and read the target model's profile: `lint(spec, profile, publishCtx?)`, where the optional publish context carries the channel's rollout stage, its current interface, whether the set has consumers and the models the org key can reach. Each lint returns `{ rule, severity, path, message }`, where `path` is a JSON Pointer into the spec. `draft/validate` and `422 spec_invalid` return the same shape in the error envelope's `details` ([api.md](api.md)).
+Run in the editor live and again at publish. Errors block publish; warnings don't. Lints are pure and read the target model's profile. Each lint returns `{ rule, severity, path, message }`, where `path` is a JSON Pointer into the spec. `draft/validate` and `422 spec_invalid` return the same shape in the error envelope's `details` ([api.md](api.md)).
+
+```ts
+lint(spec: QuestionSetSpec, profile: ModelProfile | null, publishCtx?: PublishCtx): LintResult[]
+  // profile is null when the model is not in the registry (model.unknown)
+LintResult = { rule: string, severity: "error" | "warning", path: string, message: string }
+
+PublishCtx = {
+  channel: "production" | "staging",       // the target channel
+  rolloutStage: RolloutStage,              // the target's stage; "inactive" when it has no pointer yet
+  served: Array<{                          // channels to check for interface.breaking: the target,
+    channel: "production" | "staging",     // plus production when the target is staging;
+    interface: SetInterface,               // one entry per channel that has a pointer
+    interfaceMajor: number,
+    hasConsumers: boolean,                 // live bindings, or app runs on that channel in the last 30 days
+  }>,
+  newMajor: number,                        // publish: the set's highest major, plus one with interfaceBump;
+                                           // promote: the promoted version's stored major
+  reachableModels: string[],               // org_typesafe_keys.models
+  allowPreviewModels: boolean,
+  enabledHandlers: string[],               // action handlers installed and enabled for the org
+  fallbackSets: Record<string, { usesSetFallback: boolean }>,   // sets this spec names as fallbacks;
+                                                                 // a missing key means no such set
+  hashOnly: boolean,                       // the set stores hashes only
+}
+```
+
+The operation builds `PublishCtx` from the stores; core never reads them. The editor may pass one for the channel it previews. Lints that need a `PublishCtx` field are skipped when it is absent: `action.handler_unknown`, `fallback.set_invalid`, `model.not_available_to_org`, `model.alias_past_shadow`, `interface.breaking` and `privacy.hash_only_with_review`. Publish and promote always pass it, so they always run.
 
 | Rule id | Check | Level |
 |---|---|---|
@@ -256,7 +448,7 @@ Run in the editor live and again at publish. Errors block publish; warnings don'
 | `model.deprecated` | The model is deprecated (error after its `retireAt`) | warning |
 | `model.question_type_unsupported` | A question type is not in the profile's `questionTypes` | error |
 | `model.alias_past_shadow` | A moving model would serve a channel in `controlled` or `full` | error |
-| `interface.breaking` | The set has consumers, the interface has a breaking change and the major is unchanged (see [deploy-and-codegen.md](deploy-and-codegen.md)) | error |
+| `interface.breaking` | For an entry in `served` with consumers, `diffInterface` reports a breaking change and `newMajor` equals that entry's major (see [deploy-and-codegen.md](deploy-and-codegen.md), section 5) | error |
 | `privacy.hash_only_with_review` | The org stores hashes only and the set has review actions, which reviewers cannot see | warning |
 
 `model.alias_past_shadow` replaces the old "alias with thresholds that differ from defaults" lint. Lints re-run whenever a set's model changes.
@@ -272,7 +464,7 @@ These warnings fire only when the target model's profile lists the weakness id. 
 | `weakness.inverted_noul` | `inverted_noul` | A noul whose true criterion is worded as a negative, or a double negative | Word the true criterion positively |
 | `weakness.generation` | `generation` | Instructions that ask for a value with no candidate list | A choice over candidates |
 | `weakness.large_unreferenced_state` | `large_irrelevant_state` | Large top-level state fields that no backtick path references | Filter state in code or the adapter |
-| `weakness.threshold_copied` | `structural_invariants` | Identical thresholds copied from a noul policy to a choice policy | Tune each question on its own labels |
+| `weakness.threshold_copied` | `structural_invariants` | A choice or score policy whose `thresholds.high` equals a noul policy's `noul.trueAt` and whose `thresholds.medium` equals that policy's `noul.trueAt - noul.reviewMargin`, in the same set | Tune each question on its own labels |
 
 ## Embed kit
 
@@ -295,4 +487,4 @@ These warnings fire only when the target model's profile lists the weakness id. 
 - Experiment scorer (Phase 3b).
 - Model-upgrade candidates, when a model becomes stable (Phase 3b).
 - Pruning: events after 30 days, idempotency keys after 24 hours, finished jobs.
-- Approval expiry.
+- Approvals: one reminder email after 24 hours pending, and expiry after 7 days ([management-api.md](management-api.md#approvals)).

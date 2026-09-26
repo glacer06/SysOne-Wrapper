@@ -1,7 +1,7 @@
 # ADR-001: Stack and tenancy model
 
 - **Status:** accepted
-- **Amended by:** ADR-008 (package and identifier renames), ADR-009 (customer SDK languages)
+- **Amended by:** ADR-008 and ADR-009 (proposed; take effect when accepted in Phase 0 part two)
 - **Date:** 2026-09-26
 - **Owner:** Architect / Lead
 - **Contract impact:** establishes the initial contracts

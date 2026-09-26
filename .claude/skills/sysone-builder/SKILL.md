@@ -39,9 +39,9 @@ This skill is the rulebook for the agent team building it. This skill is interna
 | **Opportunity** | A proposed decision point in an app where System One fits. |
 | **Deploy target** | `managed`, `managed_typed`, or `standalone`. See `references/deploy-and-codegen.md`. |
 | **Set interface** | Input schema, question ids and types, choice options, score levels, composites, route outputs. Versioned by `interfaceMajor`. |
-| **Precision** | Share of labeled decisions in a band that match the truth from any source: reviewer, app feedback, audit sample. Gates use it. |
-| **Agreement** | The reviewer-only subset of precision. |
-| **Coverage** | Share of decisions whose effective action is `auto`. |
+| **Precision** | The weighted share of labeled decisions in a band that match, over every counted row: app feedback, audit samples (weighted by `1 / sample_rate`), and reviewer resolutions. Gates use its 95 percent lower bound. Canonical definition: `references/effectiveness-loop.md` section 2. |
+| **Agreement** | The same measure restricted to human reviewer rows (`audit` and `reviewer`), a subset of precision. Shown in the Human agreement report. Gates do not use it. |
+| **Coverage** | Share of relevant gating decisions whose policy `action` is `auto` (not `effectiveAction`), so it can be measured in shadow. |
 | **Proposal** | A suggested change, such as new thresholds or a model upgrade, that becomes a draft when accepted. |
 | **Experiment** | A champion/challenger comparison across versions, models or policies. |
 | **Event** | A structured record agents can read from the event feed. See `references/events.md`. |

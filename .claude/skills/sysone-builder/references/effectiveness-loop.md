@@ -2,7 +2,7 @@
 
 Owner: Quality / Learning. It owns the pure logic in `packages/core/src/learning` and the jobs in `apps/console/src/jobs/learning`. Platform / Tenancy owns the operations, routes and tables, Console UI owns the screens, and Integrations owns the CLI commands and MCP tools. Decision record: [ADR-010](../../../../docs/adr/010-rollout-pointers-and-effectiveness-loop.md).
 
-Phases: truth sources, the labeling policy, quality targets, the gate evaluator and auto-demote ship in **Phase 3**, because rollout stages ship there. Everything else ships in **Phase 3b, Effectiveness loop** ([phases/phase-3b.md](phases/phase-3b.md)), which runs in parallel with Phase 4 and Phase 4b. Each section below names its phase.
+Phases: truth sources, the labeling policy, quality targets, the gate evaluator, auto-demote, and the dataset splits and snapshots that the regression gate needs ship in **Phase 3**, because rollout stages ship there. Everything else ships in **Phase 3b, Effectiveness loop** ([phases/phase-3b.md](phases/phase-3b.md)), which runs in parallel with Phase 4 and Phase 4b. Each section below names its phase.
 
 System One models are not fine-tuned per tenant. TypeSafe: "Jev is not fine-tuned or LoRA-adapted with customer data... You shape its answers to your domain through the request rather than through per-account weights" (`docs.typesafe.ai/models.md`). So this loop improves the request: instructions, criteria, state shaping, thresholds, stages and composites. Do not plan a fine-tuning feature.
 
@@ -39,10 +39,10 @@ Every step has a console screen, an operation ([management-api.md](management-ap
 
 - **Truth:** the observed correct value for one decision, or for the run's route, from one truth source.
 - **Truth sources:** `app` (app feedback), `audit` (a random label item resolved by a reviewer), `reviewer` (an action review item resolved by a reviewer), `agent` (a label written by an agent or an LLM judge). All of them land in `run_feedback` ([data-model.md](data-model.md)).
-- **Counted row:** an `app`, `audit` or `reviewer` row, or an `agent` row a person has confirmed. A confirmed `agent` row counts as the source it stands in for: `audit` when it resolved an item with a `sample_rate`, otherwise `reviewer`. Unconfirmed `agent` rows count toward nothing.
-- **Match:** the decision's value equals the truth. A choice matches on the option key, a noul on `true` or `false`, a score and a composite on the level. A noul in the low band has value `null` and never matches.
-- **Precision** (per band): the weighted share of labeled decisions in that band that match. It uses the unbiased sources only: `app` rows and `audit` rows, each audit row weighted by `1 / sample_rate`. Reports show the point estimate and the 95 percent Wilson lower bound. Gates, auto-demote and set health use the lower bound.
-- **Agreement** (per band): precision measured on reviewer-written rows only (`audit` and `reviewer`). It is the reviewer subset, shown in the Human agreement report. Gates do not use it, because action items are picked by band and policy.
+- **Counted row:** an `app`, `audit` or `reviewer` row, or an `agent` row a person has confirmed. A confirmed `agent` row counts as the source it stands in for: `audit` when it resolved an item with a `sample_rate`, otherwise `reviewer`. Unconfirmed `agent` rows count toward nothing. A row written by resolving a targeted label item (reason `near_threshold` or `challenger_diff`, no `sample_rate`) is not a counted row: it feeds datasets and the Studio only (section 4).
+- **Match:** the decision's value equals the truth. A choice matches on the option key and a noul on `true` or `false`. A score matches on `round_half_up(score)`, the nearest 0-based level index, so `FeedbackReport.observed` for a score is that level index. A composite matches on its level. A noul in the low band has value `null` and never matches.
+- **Precision** (per band): the weighted share of labeled decisions in that band that match, over every counted row (`app`, `audit` weighted by `1 / sample_rate`, and `reviewer`). Reports show the point estimate and the 95 percent Wilson lower bound. Gates, auto-demote and set health use the lower bound. Reviewer rows carry weight 1 and do not bias a band's estimate: review routing is decided per question and band, so when a band's action is `review`, every decision in that band is reviewed. In such a fully reviewed band every row has weight 1, including rows the audit also picked, because the band is a census, not a sample. The `1 / sample_rate` weight applies only in bands whose action is not `review`. A decision is never counted twice.
+- **Agreement** (per band): the same measure restricted to reviewer-written rows (`audit` and `reviewer`), a subset of precision. The Human agreement report shows it ([savings-model.md](savings-model.md)). Gates use precision, not agreement.
 - **Coverage:** the share of relevant gating decisions whose policy `action` is `auto`. It uses the policy action, not `effectiveAction`, so it can be measured in `shadow` and predicts what `full` will do.
 - **Review load:** action review items created per day, and the share of runs that create one.
 - **labeled_n:** the number of labeled relevant decisions, per band and per question, counting each decision once. When a decision has several counted rows, an `audit` or `reviewer` row wins over an `app` row, and the latest row wins within a source.
@@ -53,13 +53,14 @@ Every step has a console screen, an operation ([management-api.md](management-ap
 FeedbackReport = {
   runId?: string, externalRef?: string,                  // exactly one of the two
   target: { decisionId: DecisionId } | { route: true },  // one decision, or the run's route
-  observed: unknown,                                     // option key, boolean, level or route output
-  source: "app" | "reviewer" | "audit" | "agent",
+  observed: unknown,                                     // option key, boolean, score level index,
+                                                         // composite level or route output
   observedAt: string,                                    // ISO 8601
   idempotencyKey: string,
 }
 ```
 
+- **The server sets the source.** `FeedbackReport` has no `source` field. The server derives `run_feedback.source` from the caller: an `sk_` app token writes `app`, and an agent token writes `agent`, which counts toward nothing until a person confirms it (`confirmed_by_user_id`). A body that sends `source` with any value other than the derived one returns `400 invalid_request`. `reviewer` and `audit` rows are written only by `review.resolve` from a person's session.
 - **App feedback.** `POST /api/v1/feedback` (operation `feedback.report`, scope `feedback:write`) takes 1 to 1,000 items and matches each by `runId` or by `externalRef` (`RunRequest.options.externalRef`, stored as `runs.external_ref`). Each item is idempotent on its own key. Details in [api.md](api.md#feedback). `sk_` app tokens and agent tokens can send it; `pk_` and browser tokens never can. Surfaces: `client.reportFeedback()` in `@sysone/client` (Phase 4), `sysone feedback send <file.jsonl>` and the MCP tool `report_feedback`.
 - **Send outcomes for every run you can observe, not only the wrong ones.** Feedback sent only on disagreement makes precision look worse than it is.
 - **Audit sample.** Label items picked at random per band by the labeling policy (section 4). A reviewer resolves them, which writes an `audit` row carrying the item's `review_item_id`, so the weight `1 / sample_rate` can be applied.
@@ -72,7 +73,7 @@ Example body:
 ```json
 { "items": [
   { "externalRef": "ticket_48213", "target": { "decisionId": "department" }, "observed": "billing",
-    "source": "app", "observedAt": "2026-09-26T14:02:00Z", "idempotencyKey": "fb_48213_department" }
+    "observedAt": "2026-09-26T14:02:00Z", "idempotencyKey": "fb_48213_department" }
 ] }
 ```
 
@@ -224,6 +225,7 @@ Champion/challenger replaces the old "canary (later)" idea. It compares versions
 
 - **Start.** Publishing to a production channel whose stage is `controlled` or `full` starts an experiment on its own, unless the call sets `skipExperiment` with a written reason (admin role; an agent also needs an approval). `experiment.start` starts one by hand. At most one experiment runs per set and channel, held in `release_pointers.active_experiment_id`.
 - **Kinds.** `version` (a new spec), `model` (only the model changed, from try-model) and `policy` (only thresholds changed).
+- **Size.** `samplePct` (column `sample_pct`) is a share of runs from 0 to 1. The default is 0.1, also for experiments that start on their own at publish. A `samplePct` above 0.25 makes `experiment.start` high risk for agents, so it needs an approval. Challenger cost counts against the org quota, and challenger calls show in the Rate headroom report ([savings-model.md](savings-model.md)). The agent token's daily spend cap does not cover it, because the cost comes from traffic, not from the token.
 - **Dual run.** On `sample_pct` of runs, after the champion has responded (off the caller's latency path), the challenger runs on the same state. Its run row has `arm = 'challenger'`, books experiment cost and no savings (`savingsSuppressed: "experiment"`), dispatches no actions, creates no action review items and never affects `effectiveAction`. The champion's run in the pair has `arm = 'champion'` and behaves normally.
 - **Policy experiments need no dual run.** The scorer replays the champion's stored answers under the challenger's policy, at no System One cost.
 - **Disagreements** (the challenger's value or band differs from the champion's) create label items with reason `challenger_diff`, within the targeted share of the labeling budget.
@@ -279,9 +281,9 @@ TypeSafe's consistency cookbook repeated the same 8 choice questions 15 times, w
 ## 13. Data for learning
 
 - **Retention split** ([security.md](security.md)): `state_retention_days` (default 30) nulls state; `answers_retention_days` (default 180) nulls answers and decisions, which carry no raw input.
-- **Learning retention.** Before a run's state is purged, a run that was picked for labeling or received feedback is copied into `dataset_cases` (`source = 'production'`), with state redacted per `pii_mode`, the full answers, `version_id` and `model_resolved`. Dataset cases follow `dataset_retention_days`, which defaults to the state retention; only an admin can raise it, with an audit row. The copy runs in the nightly retention job, owned by Platform / Tenancy.
-- **Fixed splits.** Each dataset case gets its split at insert from a hash of `state_hash`: 40 percent drafting, 40 percent calibration, 20 percent test, the same proportions the Studio uses. The split never changes, and the same state lands in the same split in every dataset, so a copy of a test case cannot leak into drafting.
-- **Snapshots.** `dataset_snapshots` freezes a list of case ids. `eval.run` takes `snapshotId` or snapshots the dataset's current cases. The regression gate and try-model score both sides on the same snapshot.
+- **Learning retention** (Phase 3b). Before a run's state is purged, a run that was picked for labeling or received feedback is copied into `dataset_cases` (`source = 'production'`), with state redacted per `pii_mode`, the full answers, `version_id` and `model_resolved`. Dataset cases follow `dataset_retention_days`, which defaults to the state retention; only an admin can raise it, with an audit row. The copy runs in the nightly retention job, owned by Platform / Tenancy.
+- **Fixed splits** (Phase 3). Each dataset case gets its split at insert from a hash of `state_hash`: 40 percent drafting, 40 percent calibration, 20 percent test, the same proportions the Studio uses. The split never changes, and the same state lands in the same split in every dataset, so a copy of a test case cannot leak into drafting.
+- **Snapshots** (Phase 3). `dataset_snapshots` freezes a list of case ids. `eval.run` takes `snapshotId` or snapshots the dataset's current cases. The regression gate (section 5, Phase 3) and try-model (Phase 3b) score both sides on the same snapshot.
 - **Holdout rules**, enforced by the server ([management-api.md](management-api.md#holdout-rules-at-the-api)):
   - The test split never appears in any response: cases, export, features, eval details and Studio examples. Evals and promotion return aggregate metrics for it only.
   - Per-case calibration results are returned only on request, and those cases are then marked burned. Burned cases stop counting toward calibration scores and are used as drafting data.
@@ -306,7 +308,7 @@ All jobs live in `apps/console/src/jobs/learning` and call pure logic in `packag
 | Experiment scorer | Hourly while an experiment runs | 3b | `experiments.result`; stops an experiment that cannot win | `experiment.decided` when it stops one |
 | Model-upgrade candidates | When a model becomes `stable`, or `preview` for opted-in orgs | 3b | Model upgrades report rows | none (`model.available` comes from the registry sync) |
 
-The learning retention copy runs in the retention job, and the registry sync and contract watch run under Platform / Tenancy ([architecture.md](architecture.md), background jobs).
+The learning retention copy runs in the retention job, and the registry sync, alias probe and contract watch run under Platform / Tenancy from Phase 1 ([architecture.md](architecture.md), background jobs).
 
 ## Tests this loop needs
 
@@ -316,6 +318,8 @@ QA / Evals owns these, with Quality / Learning. Details in [testing.md](testing.
 - Audit weights: a seeded run stream with a known precision gives the same estimate at any audit rate, within its interval.
 - The suggester never proposes a threshold whose lower bound misses the target, and returns `insufficientData` below the label minimum.
 - Unconfirmed agent labels change no gate, health or eval metric.
+- An agent token posting feedback stores an `agent` row that counts toward nothing, and a body `source` of `reviewer` or `audit` returns `400 invalid_request`.
+- A reviewer row from a targeted label item changes no gate or health precision.
 - No endpoint returns a test-split case.
 - A challenger never changes `effectiveAction`, dispatches no action and books no savings.
 - Phase 3b exit gate: on a seeded set with 500 labeled fixture runs, an agent using only MCP tools gets a threshold suggestion, applies it to a draft, runs a challenger, and promotes it after admin approval.

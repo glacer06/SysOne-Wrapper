@@ -31,9 +31,16 @@ Table-driven, 100% branch coverage required.
 - **Band edges** for every type: exactly at `high`, just below, exactly at `medium`, just below, per-option overrides, noul at `trueAt`, `falseAt`, inside each margin, and 0.5.
 - **Effective action:** one test row per row of the normative stage x band x action table in [confidence-policy.md](confidence-policy.md), on the production channel and on staging (no side-effect dispatch unless `dispatchActionsOnStaging`).
 - **Relevance:** a decision whose `relevantWhen` fails is `relevant: false`, creates no review item, runs no action, does not lower `runBand` or `overallAction`, and is left out of calibration metrics and savings.
+- **Skipped and empty decisions:** a question in a skipped spec stage has no `answers` entry and gives `{ value: null, band: low, relevant: false, action: fallback, effectiveAction: fallback, executed: false }`. A composite with no term left gives the same with `kind: composite` and no `level` ([savings-model.md](savings-model.md)).
 - **Composites:** the level picks the action; the band is the minimum band of the question terms (check terms count as `high`); only the band feeds `runBand` ([spec-schema.md](spec-schema.md)).
 - **Conservative ordering:** `overallAction` follows `review` > `fallback` > `escalate_to_llm` > `auto`.
 - **Unknown answer type:** stored raw, band `low`, `effectiveAction: fallback`, warning `unknown_answer_type`, and nothing throws.
+
+## Cost and savings tests
+
+- Money math follows [savings-model.md](savings-model.md#money-math): integer micro-USD and one `round_half_up` per term. Test vector: 318 input tokens on `jev-1.13.0` (42,000 micro-USD per Mtok) cost 13 micro-USD.
+- A run with two System One calls prices each call by its own `modelResolved` and sums the results. When the calls resolve to different models, the run carries warning `model_resolved_mixed`, and the top-level `modelResolved` is the first call's.
+- Every `*Usd` field in `RunCost` equals its stored micro-USD integer divided by 1e6.
 
 ## Model registry tests
 
@@ -83,6 +90,7 @@ The surface is in [management-api.md](management-api.md).
 - An `If-Match` mismatch on `PUT /draft` or publish returns `412 precondition_failed` with the current ETag.
 - An agent publish to a protected set returns `202` with a pending approval and stays pending until a human approves it; the stored input then runs unchanged.
 - Moves toward safety (rollback, pause, demote, experiment stop, token revoke) are never gated.
+- `rollout.change` risk: `inactive` to `shadow` is normal; `shadow` to `controlled` and any move out of `paused` need an approval. Lowering `agentApprovals` needs an approval even when the setting is `off`.
 - A token without the scope gets `403 insufficient_scope` in its own org and `404` for a resource in another org.
 - Holdout: per-case calibration results come back only with `includeCases: true`, and those cases are then burned; agent labels do not count toward gates until a human confirms them.
 
@@ -90,6 +98,7 @@ The surface is in [management-api.md](management-api.md).
 
 - Re-routing stored answers under a candidate policy makes zero System One calls (the transport's call count stays 0).
 - On fixtures, replay under a policy gives the same decisions, bands and effective actions as a live run with that policy.
+- Replay reads the stored `checks` and never re-runs checks, so a run whose state was purged replays the same relevance, as long as no condition reads `input`.
 - `suggestThresholds` returns `insufficientData` below the label minimum, and otherwise the loosest threshold whose 95 percent Wilson lower bound meets the target ([effectiveness-loop.md](effectiveness-loop.md)).
 
 ## Codegen tests
@@ -128,7 +137,7 @@ Metrics:
 Gates ([confidence-policy.md](confidence-policy.md), quality targets):
 
 - High-band precision lower bound at or above `highPrecision` in the goal's `QualityTarget`. Below the label minimum the gate returns `insufficient_data`.
-- Regression gate: the champion and the candidate are scored on the same snapshot. The candidate's high-band precision lower bound is not below the champion's, its coverage is not below the champion's minus the set's margin, and its review load is not above the champion's plus the set's margin.
+- Regression gate: the champion and the candidate are scored on the same snapshot. The candidate's high-band precision lower bound is not below the champion's, its coverage is not below the champion's minus `gate_margins.coverageDrop`, and its review load is not above the champion's plus `gate_margins.reviewLoadRise` (defaults 0.02 and 0.10; [data-model.md](data-model.md)).
 - Evals are required when publishing to a production pointer in `controlled` or `full`.
 
 ## Load (k6)
