@@ -28,8 +28,9 @@ import {
   VersionId,
 } from "./common.js";
 import { GateResult } from "./errors.js";
-// stores.ts imports this file, so these are read lazily to keep the import cycle safe.
-import { ReviewItemKind, ReviewItemReason, VersionSource } from "./stores.js";
+// stores.ts imports this file at runtime, so only types come back the other way. The enums below
+// repeat stores.ts values, and the checks at the end of this file keep them equal.
+import type { ReviewItemKind, ReviewItemReason, VersionSource } from "./stores.js";
 
 // ---------------------------------------------------------------------------
 // Catalog
@@ -114,6 +115,13 @@ const Metrics = JsonObject;
 /** A version as a run or eval names it: a number, or the mutable draft. */
 const VersionRef = z.union([z.number().int().positive(), z.literal("draft")]);
 
+/** review_items.kind. */
+const EventReviewKind = z.enum(["action", "label"]);
+/** review_items.reason. */
+const EventReviewReason = z.enum(["action", "audit", "near_threshold", "challenger_diff", "studio"]);
+/** question_set_versions.source. */
+const EventVersionSource = z.enum(["console", "api", "cli", "mcp", "studio", "upgrade", "proposal"]);
+
 /** Job kinds (management-api.md, Jobs). */
 export const JobKind = z.enum(["eval", "compare", "calibrate", "improve", "try_model", "policy_suggest", "export"]);
 export type JobKind = z.infer<typeof JobKind>;
@@ -135,8 +143,7 @@ export const SetPublishedData = z.object({
   interfaceMajor: z.number().int().nonnegative(),
   interfaceHash: z.string().min(1),
   changelog: z.string(),
-  /** question_set_versions.source. */
-  source: z.lazy(() => VersionSource),
+  source: EventVersionSource,
 });
 
 export const ReleaseRolledBackData = z.object({
@@ -198,8 +205,8 @@ export const ReviewCreatedData = z.object({
   /** Null for Studio label items, which have no run. */
   runId: RunId.nullable(),
   decisionId: DecisionId,
-  kind: z.lazy(() => ReviewItemKind),
-  reason: z.lazy(() => ReviewItemReason),
+  kind: EventReviewKind,
+  reason: EventReviewReason,
   band: Band,
   dueAt: IsoTimestamp.nullable(),
 });
@@ -223,7 +230,7 @@ export const ReviewResolvedData = z.object({
   /** The run's options.externalRef, or null. */
   externalRef: z.string().nullable(),
   decisionId: DecisionId,
-  kind: z.lazy(() => ReviewItemKind),
+  kind: EventReviewKind,
   status: z.enum(["resolved", "dismissed"]),
   /** Null when dismissed. */
   resolution: ReviewResolution.nullable(),
@@ -455,3 +462,10 @@ export type TypedEventEnvelope<T extends EventType = EventType> = T extends Even
 export function parseEventData<T extends EventType>(type: T, data: unknown): EventData<T> {
   return EVENT_DATA[type].parse(data) as EventData<T>;
 }
+
+// Compile-time checks: the local enums equal their stores.ts counterparts.
+type _AssertTrue<T extends true> = T;
+type _Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;
+type _ReviewKindMatches = _AssertTrue<_Same<z.infer<typeof EventReviewKind>, ReviewItemKind>>;
+type _ReviewReasonMatches = _AssertTrue<_Same<z.infer<typeof EventReviewReason>, ReviewItemReason>>;
+type _VersionSourceMatches = _AssertTrue<_Same<z.infer<typeof EventVersionSource>, VersionSource>>;
