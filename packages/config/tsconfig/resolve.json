@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "display": "Import resolution map for ESLint boundary rules only. Not used to compile code.",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "customConditions": ["@sysone/source"],
+    "allowJs": true,
+    "noEmit": true,
+    "paths": {
+      "@sysone/core/contracts": ["../../core/src/contracts/index.ts"],
+      "@sysone/client/server": ["../../client/src/server/index.ts"],
+      "@sysone/*": ["../../*/src/index.ts", "../../*/src/index.tsx"]
+    }
+  },
+  "files": []
+}
