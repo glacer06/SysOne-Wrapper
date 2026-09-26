@@ -19,7 +19,7 @@
 ## Fixtures
 
 - Stored in `packages/system-one-client/fixtures/*.json` as `{ request, response, openapiVersion }`, keyed by a hash of the request. The request includes `model`, so the same questions on two models are two fixtures.
-- `pnpm fixtures:record [--model <id>]` (needs `TYPESAFE_API_KEY`) re-records, scrubs headers and IDs, and records TypeSafe's `openapi.json` `info.version` with each fixture.
+- `pnpm fixtures:record [--model <id>] [--provider typesafe|openrouter]` (needs `TYPESAFE_API_KEY`, or `OPENROUTER_API_KEY` for `--provider openrouter`) re-records, scrubs headers and IDs, and records TypeSafe's `openapi.json` `info.version` with each fixture. Fixtures are stored per provider (ADR-011). The documented OpenRouter example is committed as `packages/core/src/contracts/__fixtures__/openrouter-systemone-response.json`.
 - The fixture contract test validates every fixture's response against the `passthrough` zod answer schemas, so new fields pass and a changed shape fails. It also fails when the live `openapi.json` version is newer than the fixtures' version, until they are re-recorded. PR CI reads that version from the committed contract snapshot, so it needs no network.
 - Minimum set: one of each question type, a multi-stage run, a choice with a "none" option chosen, a noul near 0.5, a response whose `model` differs from the requested alias (`jev-latest` answered by `jev-1.13.0`), and 401, 422, 429, 529 errors.
 - Every row of the errors table in [system-one-api-contract.md](system-one-api-contract.md) has a unit test with a synthetic response, including 400, 403, 404, 408, `APIUserAbortError` and a timeout.
@@ -111,7 +111,7 @@ The surface is in [management-api.md](management-api.md).
 ## Live smoke (`pnpm smoke`)
 
 - Skipped when `TYPESAFE_API_KEY` is missing.
-- Smoke list: `jev-preview`, `jev-latest`, each pinned version in use by any set, and every registry model with status `preview` or `stable`. `pnpm smoke --model <id>` runs one model.
+- Smoke list: `jev-preview`, `jev-latest`, each pinned version in use by any set, and every registry model with status `preview` or `stable`. `pnpm smoke --model <id>` runs one model. `pnpm smoke --provider openrouter` runs the list through OpenRouter's route rows when `OPENROUTER_API_KEY` is set.
 - Per model: one call per question type in the profile's `questionTypes`, and one two-stage run.
 - Asserts response shape, `usage.input_tokens > 0`, a versioned ID in the response `model`, and total cost under $0.001 per model.
 

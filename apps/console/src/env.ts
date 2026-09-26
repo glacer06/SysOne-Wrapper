@@ -5,8 +5,11 @@ import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
 
 export const serverEnvShape = {
-  // TypeSafe API key for smoke tests and fixture recording. Org keys live in the key vault.
+  // TypeSafe API key for platform key mode, smoke tests and fixture recording. Org keys live in the key vault.
   TYPESAFE_API_KEY: z.string().min(1).optional(),
+  // OpenRouter API key for the OpenRouter route to System One models (ADR-011). Same uses, other provider.
+  // There is no base URL variable: provider base URLs are constants in core.
+  OPENROUTER_API_KEY: z.string().min(1).optional(),
   // Postgres connection string. The app role must not bypass RLS.
   DATABASE_URL: z.url(),
   // Session signing secret for the auth library (ADR-002).
@@ -33,11 +36,11 @@ export const env = createEnv({
   experimental__runtimeEnv: {},
   createFinalSchema: (shape) =>
     z.object(shape).superRefine((value, ctx) => {
-      if (value.SYSTEM_ONE_TRANSPORT === "sdk" && !value.TYPESAFE_API_KEY) {
+      if (value.SYSTEM_ONE_TRANSPORT === "sdk" && !value.TYPESAFE_API_KEY && !value.OPENROUTER_API_KEY) {
         ctx.addIssue({
           code: "custom",
           path: ["TYPESAFE_API_KEY"],
-          message: "TYPESAFE_API_KEY is required when SYSTEM_ONE_TRANSPORT is sdk",
+          message: "TYPESAFE_API_KEY or OPENROUTER_API_KEY is required when SYSTEM_ONE_TRANSPORT is sdk",
         });
       }
     }),

@@ -60,7 +60,7 @@ FeedbackReport = {
 }
 ```
 
-- **The server sets the source.** `FeedbackReport` has no `source` field. The server derives `run_feedback.source` from the caller: an `sk_` app token writes `app`, and an agent token writes `agent`, which counts toward nothing until a person confirms it (`confirmed_by_user_id`). A body that sends `source` with any value other than the derived one returns `400 invalid_request`. `reviewer` and `audit` rows are written only by `review.resolve` from a person's session.
+- **The server sets the source.** `FeedbackReport` has no `source` field. The server derives `run_feedback.source` from the caller: an `sk_` app token writes `app`, and an agent token writes `agent`, which counts toward nothing until a person confirms it (`confirmed_by_user_id`). `FeedbackReport` is a strict schema, so a body that sends a `source` key at all, whatever its value, returns `400 invalid_request`. `reviewer` and `audit` rows are written only by `review.resolve` from a person's session.
 - **App feedback.** `POST /api/v1/feedback` (operation `feedback.report`, scope `feedback:write`) takes 1 to 1,000 items and matches each by `runId` or by `externalRef` (`RunRequest.options.externalRef`, stored as `runs.external_ref`). Each item is idempotent on its own key. Details in [api.md](api.md#feedback). `sk_` app tokens and agent tokens can send it; `pk_` and browser tokens never can. Surfaces: `client.reportFeedback()` in `@sysone/client` (Phase 4), `sysone feedback send <file.jsonl>` and the MCP tool `report_feedback`.
 - **Send outcomes for every run you can observe, not only the wrong ones.** Feedback sent only on disagreement makes precision look worse than it is.
 - **Audit sample.** Label items picked at random per band by the labeling policy (section 4). A reviewer resolves them, which writes an `audit` row carrying the item's `review_item_id`, so the weight `1 / sample_rate` can be applied.
@@ -318,7 +318,7 @@ QA / Evals owns these, with Quality / Learning. Details in [testing.md](testing.
 - Audit weights: a seeded run stream with a known precision gives the same estimate at any audit rate, within its interval.
 - The suggester never proposes a threshold whose lower bound misses the target, and returns `insufficientData` below the label minimum.
 - Unconfirmed agent labels change no gate, health or eval metric.
-- An agent token posting feedback stores an `agent` row that counts toward nothing, and a body `source` of `reviewer` or `audit` returns `400 invalid_request`.
+- An agent token posting feedback stores an `agent` row that counts toward nothing, and a body with any `source` key (even `app` or `agent`) returns `400 invalid_request`.
 - A reviewer row from a targeted label item changes no gate or health precision.
 - No endpoint returns a test-split case.
 - A challenger never changes `effectiveAction`, dispatches no action and books no savings.

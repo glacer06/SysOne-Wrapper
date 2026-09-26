@@ -1,6 +1,6 @@
 # System One API contract (what the wrapper relies on)
 
-Verified against docs.typesafe.ai and `https://api.typesafe.ai/openapi.json` (info.version 0.2.0) on 2026-09-26, with JS SDK `@typesafe-ai/sdk` 0.6.x. The live docs win if anything here drifts. Re-check `https://docs.typesafe.ai/api.md`, `/models.md` and `openapi.json` before changing anything in `packages/system-one-client`. Facts that differ per model (limits, question types, status, weaknesses, prices) are in [system-one-models.md](system-one-models.md).
+Verified against docs.typesafe.ai and `https://api.typesafe.ai/openapi.json` (info.version 0.2.0) on 2026-09-26, with JS SDK `@typesafe-ai/sdk` 0.6.x. The OpenRouter route ([Routes](#routes)) was verified against OpenRouter's docs (`openrouter.ai/docs/guides/community/typesafe-sdk.md`, `.../jev.md`, the System One API reference) and its Models API on 2026-09-26. The live docs win if anything here drifts. Re-check `https://docs.typesafe.ai/api.md`, `/models.md` and `openapi.json` before changing anything in `packages/system-one-client`. Facts that differ per model (limits, question types, status, weaknesses, prices) are in [system-one-models.md](system-one-models.md).
 
 ## Endpoint
 
@@ -11,6 +11,7 @@ Content-Type: application/json
 ```
 
 - This one endpoint serves every System One model. The request's `model` field picks the model.
+- OpenRouter serves the same request and response shapes at `POST https://openrouter.ai/api/v1/systemone`. See [Routes](#routes).
 - `GET https://api.typesafe.ai/v1/models` lists names the key can send. See [system-one-models.md](system-one-models.md) for what it returns and what it does not.
 
 ## Request
@@ -53,6 +54,7 @@ A Noul near 0.5 means "equally likely yes or no", not "medium intensity".
 
 - **Answers always come back in the type asked.** SysOne still parses them with `passthrough` schemas and handles an unknown type without throwing ([spec-schema.md](spec-schema.md), section 9).
 - **`model` is the versioned ID that answered**, even when the request sent an alias. Store it as `model_resolved` on the run. It prices the run and feeds alias detection ([system-one-models.md](system-one-models.md)).
+- **OpenRouter adds fields.** Responses through OpenRouter also carry `id` (a generation id such as `gen-dec-...`), `provider` (`"TypeSafe"`) and `usage.cost` (USD for that request), and `model` is an OpenRouter id. The SDK passes them through and `SystemOneResponse` types them as optional ([Routes](#routes)).
 - **Request ID.** The SDK exposes the `x-typesafe-request-id` response header: `client.systemOne(...).withResponse()` returns `{ data, response, requestId }` in JS, and `result.request_id` in Python. Store it as `runs.typesafe_request_id`, include it in error logs, and show it on run detail for TypeSafe support tickets.
 
 ## Execution semantics
@@ -97,6 +99,15 @@ SysOne reserves headroom: the global budget is a per-model setting (about 1,000 
 | none | `APIConnectionError`, `APITimeoutError` | `system_one_unavailable` | After SDK retries |
 | none | `APIUserAbortError` | `client_aborted` | Internal only, never returned. A run whose budget ran out reports `system_one_unavailable`. |
 
+On the OpenRouter route the same status mapping applies, plus these statuses OpenRouter documents. Its error body is `{ "error": { "code": 402, "message": "..." } }`, not TypeSafe's, so the mapping reads the HTTP status only, never the body. Confirm the SDK class for each status when the OpenRouter fixtures are first recorded in Phase 1.
+
+| Status | SysOne code | Notes |
+|---|---|---|
+| 402 | `system_one_auth` | Insufficient OpenRouter credits. Not retryable; notify org admins with the credits reason, and keep the key `active` |
+| 413 | `system_one_invalid_request` | Payload too large: preflight let through a request over the route's limits, so it is a preflight bug |
+| 502, 503, 524 | `system_one_unavailable` | Provider or edge failure, after SDK retries |
+| 529 | `system_one_overloaded` | After SDK retries |
+
 - All SDK errors extend `TypeSafeError`, and every HTTP error extends `APIError`. `packages/system-one-client` maps them to the codes above at the edge and never passes raw provider messages through.
 - The HTTP status SysOne returns for each code is in [api.md](api.md).
 - **Retries belong to the SDK.** Do not wrap it in a second retry loop.
@@ -108,7 +119,7 @@ import { TypeSafeClient, choice, score, noul } from "@typesafe-ai/sdk";
 
 const client = new TypeSafeClient({
   apiKey: orgKey,                        // from tenancy.KeyResolver, never the process env
-  baseURL: "https://api.typesafe.ai",
+  baseURL: SYSTEM_ONE_PROVIDER_BASE_URLS[provider],   // https://api.typesafe.ai or https://openrouter.ai/api
   defaultModel: spec.model,
   logLevel: "warn",
   logger: scrubbingLogger,               // drops bodies and key material
@@ -148,8 +159,8 @@ SDK defaults, quoted from the `RetryPolicy` and `TypeSafeClientConfig` reference
 - Config precedence: explicit option, then env (`TYPESAFE_API_KEY`, `TYPESAFE_BASE_URL`, `TYPESAFE_DEFAULT_MODEL`, `TYPESAFE_LOG_LEVEL`), then SDK default (`https://api.typesafe.ai`, `jev-latest`, `warn`).
 - Node 20+. ESM, CJS, and types included. `dangerouslyAllowBrowser` stays false: only `system-one-client` imports the SDK, and it runs server-side.
 - Error classes: `AuthenticationError`, `BadRequestError`, `PermissionDeniedError`, `NotFoundError`, `UnprocessableEntityError`, `RateLimitError`, `InternalServerError` (all extend `APIError`), plus `APIConnectionError`, `APITimeoutError` and `APIUserAbortError`. All extend `TypeSafeError`.
-- Multi-tenant: construct one client per org key (cache by key fingerprint). Never rely on the process env key for tenant traffic.
-- `client.models.list()` returns `ModelCard[]` (`name`, `description`, `release_date`). The registry sync uses it.
+- Multi-tenant: construct one client per org key and provider (cache by provider plus key fingerprint). Never rely on the process env key for tenant traffic.
+- `client.models.list()` returns `ModelCard[]` (`name`, `description`, `release_date`). The registry sync uses it for TypeSafe keys only; it fails against OpenRouter ([Routes](#routes)).
 - SDK upgrades go through a Renovate PR that re-records fixtures and passes `pnpm smoke` ([conventions.md](conventions.md)).
 
 ## Python SDK usage
@@ -198,12 +209,31 @@ system_one_cost_usd = input_tokens * price.in + output_tokens * price.out
 
 TypeSafe does not train Jev on customer requests or responses. ZDR is available for enterprise. See `https://docs.typesafe.ai/legal.md`. Orgs sending sensitive data should use `redactPaths` and confirm their TypeSafe terms first.
 
-## Transports and gateways
+## Routes
 
-- SysOne calls TypeSafe directly, server-side, through `SystemOneTransport`: the SDK transport in production, and the fixture transport in tests (`SYSTEM_ONE_TRANSPORT=fixture`).
-- OpenRouter and Vercel AI Gateway are confirmed in `docs.typesafe.ai/sdk/python/usage.md`. Each uses its own base URL, key and model ID (values in [system-one-models.md](system-one-models.md), gateways) and must follow the TypeSafe OpenAPI spec.
-- Cloudflare Workers AI is still unconfirmed.
-- Gateways are out of scope for v1.
+SysOne calls System One server-side through `SystemOneTransport`: the SDK transport in production, and the fixture transport in tests (`SYSTEM_ONE_TRANSPORT=fixture`). ADR-011 (proposed) adds a second provider on the same SDK transport. The run's provider comes from `RunSettings.systemOneProvider` ([architecture.md](architecture.md#system-one-providers-and-transports)).
+
+| | TypeSafe direct (`typesafe`) | OpenRouter (`openrouter`) |
+|---|---|---|
+| Endpoint | `POST https://api.typesafe.ai/v1/systemone` | `POST https://openrouter.ai/api/v1/systemone` |
+| SDK `baseURL` | `https://api.typesafe.ai` | `https://openrouter.ai/api` (the SDK appends `/v1/systemone`) |
+| Key | TypeSafe API key | OpenRouter API key. No TypeSafe account needed |
+| Billing | TypeSafe account | OpenRouter credits |
+| Model ids sent | registry ids: `jev-1.13.0`, `jev-latest` | OpenRouter ids from the route row: `typesafe/jev-1.13`, `~typesafe/jev-latest` |
+| Response `model` | TypeSafe versioned id, `jev-1.13.0` | OpenRouter id with a build date, `typesafe/jev-1.13-20260917` |
+| Extra response fields | none | `id`, `provider` (`"TypeSafe"`), `usage.cost` in USD |
+| Request id | `x-typesafe-request-id` header | response `id` when the header is absent |
+| Context | 64,000 tokens per request, 32,000 for state plus the longest question (jev-1.13.0) | 32,000 tokens for state plus all questions (OpenRouter's listing) |
+| Price (Jev 1.13) | $0.042 per million input tokens, output free | $0.042 per million input tokens, $0 output (OpenRouter's listing); `usage.cost` is the actual charge |
+| Model listing | `GET /v1/models`, `client.models.list()` | OpenRouter's Models API, `GET https://openrouter.ai/api/v1/models` (entries `typesafe/*` and `~typesafe/*`). `client.models.list()` does not work here |
+
+- **Id mapping.** OpenRouter maps bare TypeSafe ids itself: `jev-1.13` becomes `typesafe/jev-1.13`, `jev-latest` becomes `~typesafe/jev-latest`, and an id that already has an author prefix is used as is. SysOne does not rely on that. It sends the id from the route row (`ModelRoute.providerModelId`), because OpenRouter has no `typesafe/jev-1.13.0`. `toOpenRouterModelId` and `fromOpenRouterModelId` in core mirror OpenRouter's rule for defaults and display. `registryIdForResolved` maps a response `model` back to a registry id through the route rows, for pricing and pinning ([system-one-models.md](system-one-models.md), section 15).
+- **Pinning.** OpenRouter's `typesafe/jev-1.13` answered with the dated build `typesafe/jev-1.13-20260917`, so it can move to a newer build under the same name. Its route row is not pinned, and a set on OpenRouter stays in `inactive` or `shadow` until a dated id is confirmed as a request id (ADR-011, open question).
+- **Context difference.** The same model has tighter limits on OpenRouter. Preflight uses the effective limits: the profile's, tightened by the route row.
+- **Cost.** `usage.cost` is the provider's actual charge for the request. It wins over the price book ([savings-model.md](savings-model.md)).
+- **Not used: OpenRouter's Decisions API** (`POST https://openrouter.ai/api/alpha/decisions`). It is alpha and has its own request shape, so SysOne does not build on it. The System One API is the only OpenRouter surface SysOne calls.
+- **Not a System One endpoint: `typesafe/jev-router`.** OpenRouter lists a free, OpenAI-compatible chat model (launched 2026-09-25) that uses Jev to pick an LLM and a reasoning effort per request, with a 1M token context and multimodal input. It is an LLM router. ADR-011 proposes it as an optional `llm-client` escalation route, never a `SystemOneTransport` route.
+- **Other gateways.** OpenRouter was confirmed on 2026-09-25 by its own System One API docs. Vercel AI Gateway, mentioned in `docs.typesafe.ai/sdk/python/usage.md`, and Cloudflare Workers AI are still unverified and out of scope.
 
 ## Watch
 

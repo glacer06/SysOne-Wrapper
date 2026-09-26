@@ -1,7 +1,7 @@
 # ADR-001: Stack and tenancy model
 
 - **Status:** accepted
-- **Amended by:** ADR-008 and ADR-009 (proposed; take effect when accepted in Phase 0 part two)
+- **Amended by:** ADR-002 (auth library, accepted 2026-09-26), ADR-008 (model registry and neutral naming, accepted 2026-09-26) and ADR-009 (app integration and deploy targets, accepted 2026-09-26; its Python and Standalone sections stay proposed). ADR-011 (OpenRouter route) is proposed and would add a second provider for System One calls.
 - **Date:** 2026-09-26
 - **Owner:** Architect / Lead
 - **Contract impact:** establishes the initial contracts
@@ -18,7 +18,7 @@ SysOne is a multi-tenant SaaS that wraps TypeSafe's System One models, starting 
 | Repo | pnpm workspaces + turborepo |
 | Web | Next.js App Router (console, public API, webhooks) |
 | Database | Postgres (Neon or Supabase), Drizzle ORM, Row Level Security on every tenant table |
-| Auth | Auth.js v5 with a Drizzle adapter, plus our own `organizations` and `memberships` tables. See open question below. |
+| Auth | Better Auth with the organization, admin and two-factor plugins and its Drizzle adapter, mapped onto our `organizations`, `memberships` and `invitations` tables (amended by ADR-002). |
 | Cache and rate limits | Redis (Upstash) |
 | Background jobs | Inngest or an equivalent serverless job runner (decided in ADR-005) |
 | Billing | Stripe Billing with usage meters |
@@ -41,7 +41,10 @@ SysOne is a multi-tenant SaaS that wraps TypeSafe's System One models, starting 
 
 ## Open question for ADR-002
 
-The plan Nick approved names Auth.js. The design review recommends Better Auth because its organization and admin plugins cover invites, active org, roles, and impersonation out of the box. ADR-002 decides before Phase 2 starts. Whichever wins, it must support many orgs per user, invites, five roles, and audited impersonation.
+**Resolved** by ADR-002 on 2026-09-26.
+
+
+The plan Nick approved first named Auth.js. The design review recommended Better Auth because its organization and admin plugins cover invites, active org, roles, and impersonation out of the box. Resolved by ADR-002, accepted 2026-09-26: Nick chose Better Auth. It must still support many orgs per user, invites, five roles, and audited impersonation, as ADR-002 sets out.
 
 ## Consequences
 

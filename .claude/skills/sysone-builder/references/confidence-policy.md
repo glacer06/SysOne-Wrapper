@@ -17,12 +17,15 @@ ConfidencePolicy =
 
 Thresholds  = { high: number, medium: number }   // choice/score: applied to `confidence`
 BandActions = { high: ActionRef, medium: ActionRef, low: ActionRef }
-ActionRef   = { kind: "auto" | "review" | "fallback" | "escalate_to_llm", handler?: string, config?: unknown }
-              // for kind "fallback", config is a FallbackConfig (spec-schema.md)
-              // for kind "escalate_to_llm", config is an EscalationConfig
+ActionRef   = { kind: "auto" | "review" | "fallback" | "escalate_to_llm", handler?: string, config?: ... }
+              // kind "auto": config is free-form handler config (unknown)
+              // kind "review": no config; a review `config` fails the strict schema as an unknown key
+              // kind "fallback": config is a FallbackConfig (spec-schema.md)
+              // kind "escalate_to_llm": config is an EscalationConfig
 EscalationConfig = {
-  model?: string,            // default: the set's comparator model (spec.savings.comparatorModel, else the org default)
-  instructions?: string,     // appended to the question's instructions
+  model?: string,            // exact model id with a price_books row (lint escalation.model_unpriced);
+                             // default: the set's comparator model (spec.savings.comparatorModel, else the org default)
+  instructions?: Structured, // a string, JSON object or JSON array, appended after the question's own instructions
   maxOutputTokens?: number,  // default 256
 }
 ```

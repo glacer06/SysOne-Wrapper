@@ -1,14 +1,14 @@
 # ADR-002: Auth library
 
-- **Status:** proposed
+- **Status:** accepted (decided by Nick, 2026-09-26): Better Auth with the organization, admin and two-factor plugins
 - **Date:** 2026-09-26
 - **Owner:** Architect / Lead
-- **Decider:** Nick. Until he decides, Auth.js v5 stays the approved default from ADR-001.
+- **Decider:** Nick, 2026-09-26. Amends ADR-001's Auth row.
 - **Contract impact:** none. `TenantContext`, `Role` and the operation catalog do not change. The choice decides which tables back `users`, `sessions`, `accounts` and `verification_tokens`, and how `organizations`, `memberships` and `invitations` are written.
 
 ## Context
 
-ADR-001 names Auth.js v5 and leaves the library open ([ADR-001, open question](001-stack.md#open-question-for-adr-002)). Phase 2 (P2-01) cannot start until this is decided. The library must give us:
+ADR-001 first named Auth.js v5 and left the library open ([ADR-001, open question](001-stack.md#open-question-for-adr-002)). Phase 2 (P2-01) cannot start until this is decided. The library must give us:
 
 - many orgs per user, one active org per request, and `/[orgSlug]` routing
 - invites as 7-day token links
@@ -27,16 +27,14 @@ Facts checked on 2026-09-26:
 
 ## Decision
 
-**Recommendation: Better Auth**, with the organization, admin and two-factor plugins. Reasons:
+**Better Auth**, with the organization, admin and two-factor plugins. Nick decided this on 2026-09-26. Reasons:
 
 1. It ships org membership, active org, invites, impersonation and TOTP MFA. On Auth.js we would write each of these ourselves and the Security reviewer would review each one.
 2. It is the actively developed line from the people who now maintain Auth.js. Auth.js is in maintenance, and v5 never left beta.
 3. All data stays in our Postgres through the Drizzle adapter. Clerk cannot offer that.
 4. An SSO plugin (`@better-auth/sso`, OIDC and SAML) is there when a plan needs it.
 
-**Until Nick decides, Auth.js v5 remains the approved default.** Phase 2 prep can go ahead on either, because of the rules below.
-
-Rules under either library:
+Rules for the integration. They also keep a later switch cheap:
 
 - **One wrapper.** Only `packages/tenancy` imports the auth library. It exports `resolveSession(request) -> TenantContext | null`. Everything else sees `TenantContext` only, so a switch touches tenancy and the auth route and nothing else.
 - **Operations own every change.** The library's built-in endpoints that create orgs or change members, invitations or roles are disabled (`disabledPaths` in Better Auth). Those changes go through operations that call the library's server API, so audit rows and approvals always apply.
@@ -51,22 +49,22 @@ Rules under either library:
 
 | Option | Pros | Cons |
 |---|---|---|
-| Auth.js v5 + our own org tables (approved default) | Nick approved it. Small, familiar surface. Full control of the org model. Drizzle adapter. | v5 is still beta and the project is in maintenance. We build org switching, invites, impersonation, MFA and SSO ourselves, and each needs its own security review. |
-| Better Auth with organization, admin and two-factor plugins (recommended) | Orgs, invites, active org, roles, impersonation and MFA built in. Drizzle adapter, data in our DB. Hooks and `disabledPaths` let operations own every change. In active development. | Younger library. Plugin APIs shift between minors, so we pin the minor and review every generated migration. Its tables have to be mapped onto our names and RLS. |
+| Auth.js v5 + our own org tables (the earlier default in ADR-001, not chosen) | Nick approved it. Small, familiar surface. Full control of the org model. Drizzle adapter. | v5 is still beta and the project is in maintenance. We build org switching, invites, impersonation, MFA and SSO ourselves, and each needs its own security review. |
+| Better Auth with organization, admin and two-factor plugins (chosen) | Orgs, invites, active org, roles, impersonation and MFA built in. Drizzle adapter, data in our DB. Hooks and `disabledPaths` let operations own every change. In active development. | Younger library. Plugin APIs shift between minors, so we pin the minor and review every generated migration. Its tables have to be mapped onto our names and RLS. |
 | Clerk Organizations | Fastest to ship. Orgs, invites, roles, impersonation, MFA and SSO are hosted. | Users and orgs live in Clerk. We would mirror them into `memberships` by webhook for RLS and foreign keys, and the mirror can lag behind a removal. Pricing grows with active users. Vendor lock-in and a new subprocessor in the DPA. |
 
 ## Consequences
 
-- **Better Auth:** P2-01 becomes plugin configuration, the tenancy wrapper, the operation handlers and the table mapping. The Security reviewer reviews the plugin config, `disabledPaths` and the `app.user_id` policy instead of hand-written flows.
-- **Auth.js:** P2-01 also carries invites, active org, impersonation and TOTP MFA as our code, each with tests. SSO becomes its own project later.
-- **Either way:**
+- P2-01 becomes plugin configuration, the tenancy wrapper, the operation handlers and the table mapping. The Security reviewer reviews the plugin config, `disabledPaths` and the `app.user_id` policy instead of hand-written flows.
+- We pin the Better Auth minor version and review every generated migration, because plugin APIs shift between minors.
+- Also:
   - The cross-tenant suite covers `memberships` and `invitations` under both RLS policies.
   - A test proves each disabled library endpoint returns 404.
   - The Phase 2 Playwright gates (three-org switch, one test per role) run against the chosen library.
-- **Docs to update once decided:** ADR-001 (Auth row and open question), data-model.md (identity tables and the `app.user_id` policy), phase-2.md (P2-01 wording), PLAN.md open items, and the skill's glossary and architecture map if table names change.
+- **Docs updated on 2026-09-26:** ADR-001 (Auth row and open question), data-model.md (identity tables), phase-2.md (P2-01 wording), PLAN.md, SKILL.md, architecture.md, security.md, team-playbook.md, CLAUDE.md and the Linear backlog now name Better Auth.
 
 ## Rollout
 
-- Nick picks an option. This ADR moves to accepted with that option before Phase 2 starts.
+- Nick chose Better Auth on 2026-09-26, before Phase 2 starts.
 - Phase 2: the library lands behind `resolveSession` in `packages/tenancy`, with the identity migrations and their RLS policies in the same PR.
 - Reversal: only tenancy, the auth route and the identity migrations know the library. Switching later means migrating `users` and `accounts` and writing a new wrapper. Sessions can be dropped, which forces everyone to sign in again. Org, membership and invitation rows keep their shape.

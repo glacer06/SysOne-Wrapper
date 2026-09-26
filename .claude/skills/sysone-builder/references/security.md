@@ -2,14 +2,20 @@
 
 ## TypeSafe keys
 
-- **BYO key per org:** stored in `org_typesafe_keys` with envelope encryption. Each org has a random 256-bit data key (DEK) that encrypts the TypeSafe key with AES-256-GCM. The DEK is wrapped by a KMS key (AWS or GCP KMS in production, `SYSONE_KEK` env in dev).
+This section covers every System One key: TypeSafe keys, and OpenRouter keys once ADR-011 (proposed) is accepted. The heading keeps its name so existing links still work.
+
+
+- **BYO key per org and provider:** stored in `org_system_one_keys` with envelope encryption, one row per `(org_id, provider)`. `provider` is `typesafe` (a TypeSafe key) or `openrouter` (an OpenRouter key, ADR-011, proposed). Each org has a random 256-bit data key (DEK) that encrypts the key with AES-256-GCM. The DEK is wrapped by a KMS key (AWS or GCP KMS in production, `SYSONE_KEK` env in dev).
+- **Keys never cross providers.** `KeyResolver(ctx, provider)` returns only the key stored for that provider, and `system-one-client` sends it only to that provider's base URL. A TypeSafe key is never sent to OpenRouter, and an OpenRouter key never to TypeSafe. The base URL comes from a constant in core, never from env, so the SDK's `TYPESAFE_BASE_URL` fallback cannot redirect a key.
 - **Decryption** happens only in `tenancy.KeyResolver`. Plaintext is cached in memory for at most 5 minutes, never logged, never returned. The UI shows `key_last4` and a fingerprint only.
-- **Saving a key** validates it with `GET /v1/models` first and stores the model names the key can send in `org_typesafe_keys.models text[]`. The list is refreshed on save, on rotation and nightly ([system-one-models.md](system-one-models.md)).
-- **Platform key mode** uses the platform's TypeSafe key. Usage is metered to the org's Stripe subscription and capped by plan.
+- **Saving a key** validates it per provider and stores the registry ids the key can reach in `org_system_one_keys.models text[]`. The list is refreshed on save, on rotation and nightly ([system-one-models.md](system-one-models.md)).
+  - `typesafe`: `GET /v1/models` with the key.
+  - `openrouter`: OpenRouter's Models API lists `typesafe/*` models for anyone, so it does not prove the key works. Validation sends one one-noul request with a tiny state on the cheapest reachable route and checks for a 200. A 401 rejects the key, and a 402 (no credits) saves it with a warning. The SDK's `models.list()` is not used, because it fails against OpenRouter.
+- **Platform key mode** uses the platform's key for the run's provider: `TYPESAFE_API_KEY` or `OPENROUTER_API_KEY`. Usage is metered to the org's Stripe subscription and capped by plan.
 - KEK rotation re-wraps DEKs in a background job. Rotating an org key is audited.
-- A 401 from TypeSafe marks the org's key `invalid`, notifies org admins and emits `key.invalid` ([events.md](events.md)).
-- **SysOne never exports a stored TypeSafe key.** Standalone generated code reads the customer's own key from their server env ([deploy-and-codegen.md](deploy-and-codegen.md)).
-- **SDK client construction:** every TypeSafe SDK client is built with an explicit `baseURL`, `defaultModel`, `logLevel: 'warn'` and a scrubbing `logger`. The SDK reads `TYPESAFE_LOG_LEVEL` when `logLevel` is not set, and its `debug` level logs request bodies unredacted. Setting it explicitly means that env var can never write tenant state to logs.
+- A 401 from the provider marks the org's key for that provider `invalid`, notifies org admins and emits `key.invalid` ([events.md](events.md)). A 402 from OpenRouter (no credits) notifies org admins but leaves the key `active`.
+- **SysOne never exports a stored key.** Standalone generated code reads the customer's own key from their server env ([deploy-and-codegen.md](deploy-and-codegen.md)).
+- **SDK client construction:** every TypeSafe SDK client, on either provider, is built with an explicit `baseURL`, `defaultModel`, `logLevel: 'warn'` and a scrubbing `logger`. The SDK reads `TYPESAFE_LOG_LEVEL` when `logLevel` is not set, and its `debug` level logs request bodies unredacted. Setting it explicitly means that env var can never write tenant state to logs.
 
 ## App tokens
 
@@ -68,7 +74,7 @@ High-risk operations called by an agent return `202 { approval: { id, status: "p
 - rollout moves into `controlled` or `full` from a lower stage, or out of `paused`
 - skipping champion/challenger
 - experiment promotion
-- TypeSafe key rotation or revocation
+- System One key (TypeSafe or OpenRouter) rotation or revocation
 - creating tokens (app or agent) with write scopes
 - member role changes, including invitations and removals
 - PII or retention changes
@@ -149,11 +155,11 @@ System One models do not treat state as hostile by default. TypeSafe says so for
 
 - CSRF: Server Actions and `/api/v1` route handlers are thin adapters over operations. A request with an `Authorization` header is authenticated by the token alone; bearer-token routes never read cookies. A cookie-authenticated `/api/v1` mutation must also pass an `Origin` check against the console origin, on top of SameSite cookies.
 - Strict CSP on the console.
-- Stripe webhook signatures verified. Our outbound webhooks (plugin actions and org events) are signed with HMAC using secrets in `org_webhook_secrets`, which are encrypted like TypeSafe keys.
+- Stripe webhook signatures verified. Our outbound webhooks (plugin actions and org events) are signed with HMAC using secrets in `org_webhook_secrets`, which are encrypted like System One keys.
 - zod validation and size caps on every input.
 
 ## Extensions
 
-- **Chrome extension:** no TypeSafe key, ever. It signs in with the device flow and holds an agent token with client `extension` and scopes `run`, `sets:read`, `review:read` and `review:write`, kept in `chrome.storage.session`. It sends nothing until the user clicks, and shows the state for preview and redaction first. Permissions: `activeTab` and `storage`. Autonomous clicks follow the rule in "State is untrusted".
-- **MCP server and CLI:** agent tokens only. Never an `sk_` app token, never a TypeSafe key.
-- **Generated code:** generated browser code never contains `sk_` tokens or TypeSafe keys. The CI bundle scan covers codegen output as well as the embed kit.
+- **Chrome extension:** no TypeSafe or OpenRouter key, ever. It signs in with the device flow and holds an agent token with client `extension` and scopes `run`, `sets:read`, `review:read` and `review:write`, kept in `chrome.storage.session`. It sends nothing until the user clicks, and shows the state for preview and redaction first. Permissions: `activeTab` and `storage`. Autonomous clicks follow the rule in "State is untrusted".
+- **MCP server and CLI:** agent tokens only. Never an `sk_` app token, never a TypeSafe or OpenRouter key.
+- **Generated code:** generated browser code never contains `sk_` tokens, TypeSafe keys or OpenRouter keys. The CI bundle scan covers codegen output as well as the embed kit.

@@ -44,8 +44,8 @@ EventEnvelope = {
 | `review.sla_breached` | review SLA job | review_item | `{ setId, dueAt, assigneeId }` |
 | `review.resolved` | `review.resolve`, `review.dismiss`, `review.confirm` | review_item | `{ setId, runId, externalRef, decisionId, kind, status, resolution: { value, execute }, resolvedByUserId?, resolvedByTokenId? }` where `status` is `resolved` or `dismissed`, and `resolution` is null when dismissed |
 | `alert.raised` | gate evaluator (`precision_below_target`, `band_drift`, `no_truth_source`), limiter (`rate_headroom`) and quota (`quota`) jobs | set or org | `{ kind, severity, message, metrics }` where `kind` is `band_drift`, `precision_below_target`, `no_truth_source`, `rate_headroom` or `quota` |
-| `model.available` | model registry sync | model | `{ modelId, family, status, releaseDate, pinnedSetsInFamily }` when a model reaches `preview` or `stable` |
-| `model.alias_moved` | `RunSink` observation or alias probe | model | `{ alias, fromResolvedId, toResolvedId, affectedSetIds }` |
+| `model.available` | model registry sync | model | `{ modelId, family, status, releaseDate, candidateSetIds, crossFamilySetIds }` when a model reaches `preview` or `stable`. `candidateSetIds` are the org's live sets pinned to an older model in the same family, or to a model or family in the new model's `supersedes`, whose question types the new model covers. `crossFamilySetIds` is the subset found only through `supersedes`, and it must be a subset of `candidateSetIds` |
+| `model.alias_moved` | `RunSink` observation or alias probe | model | `{ provider?, alias, fromResolvedId, toResolvedId, affectedSetIds }`. `provider` is `typesafe` or `openrouter` (ADR-011); absent means `typesafe`. On OpenRouter the ids are OpenRouter ids such as `typesafe/jev-1.13-20260917` |
 | `model.deprecated` | model registry | model | `{ modelId, status, retireAt, pinnedSetIds }` |
 | `proposal.created` | proposal producers | proposal | `{ setId, kind, metricsDelta }` |
 | `experiment.started` | `experiment.start`, or a publish to a live set | experiment | `{ setId, channel, kind, championVersionId, challengerVersionId, samplePct }` |

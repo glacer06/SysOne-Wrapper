@@ -20,6 +20,62 @@ export const SYSTEM_ONE_LIMITS = {
 } as const;
 
 // ---------------------------------------------------------------------------
+// Providers (ADR-011)
+
+/**
+ * Who serves a System One call. `typesafe` is TypeSafe's own API. `openrouter` is OpenRouter's
+ * System One API, which implements TypeSafe's request and response shapes, so the same SDK calls
+ * it with a different base URL and an OpenRouter key.
+ */
+export const SystemOneProvider = z.enum(["typesafe", "openrouter"]);
+export type SystemOneProvider = z.infer<typeof SystemOneProvider>;
+
+/**
+ * The SDK `baseURL` per provider. system-one-client always passes it explicitly, so the SDK's own
+ * `TYPESAFE_BASE_URL` fallback can never send an org key somewhere else.
+ */
+export const SYSTEM_ONE_PROVIDER_BASE_URLS = {
+  typesafe: "https://api.typesafe.ai",
+  openrouter: "https://openrouter.ai/api",
+} as const satisfies Record<SystemOneProvider, string>;
+
+const OPENROUTER_NAMESPACE = "typesafe/";
+const OPENROUTER_ALIAS_NAMESPACE = "~typesafe/";
+
+/**
+ * The model id OpenRouter routes a TypeSafe id to, following OpenRouter's documented mapping:
+ * `jev-1.13` becomes `typesafe/jev-1.13`, an alias such as `jev-latest` becomes
+ * `~typesafe/jev-latest`, and an id that already has an author prefix is used as is. `kind` comes
+ * from the registry row, or null when the name has none. Route rows (ModelRoute) hold the id we
+ * actually send; this is the default when a row is missing and the seed's cross-check.
+ */
+export function toOpenRouterModelId(id: string, kind: "versioned" | "alias" | null): string {
+  if (id.includes("/")) return id;
+  return `${kind === "alias" ? OPENROUTER_ALIAS_NAMESPACE : OPENROUTER_NAMESPACE}${id}`;
+}
+
+/**
+ * The TypeSafe-style name inside an OpenRouter id: `typesafe/jev-1.13-20260917` becomes
+ * `jev-1.13-20260917` and `~typesafe/jev-latest` becomes `jev-latest`. Ids of other authors are
+ * returned unchanged. For display and logs; mapping to a registry id uses the route rows
+ * (registryIdForResolved in models.ts), because OpenRouter's dated ids are not TypeSafe ids.
+ */
+export function fromOpenRouterModelId(id: string): string {
+  if (id.startsWith(OPENROUTER_ALIAS_NAMESPACE)) return id.slice(OPENROUTER_ALIAS_NAMESPACE.length);
+  if (id.startsWith(OPENROUTER_NAMESPACE)) return id.slice(OPENROUTER_NAMESPACE.length);
+  return id;
+}
+
+/** The id to send for a model on a provider when no route row says otherwise. */
+export function defaultProviderModelId(
+  provider: SystemOneProvider,
+  id: string,
+  kind: "versioned" | "alias" | null,
+): string {
+  return provider === "openrouter" ? toOpenRouterModelId(id, kind) : id;
+}
+
+// ---------------------------------------------------------------------------
 // Request
 
 /** One entry of `SystemOneRequest.questions`: the API question body a QuestionTypeModule compiles. */
@@ -96,12 +152,25 @@ export function isKnownAnswer(answer: SystemOneAnswer): answer is KnownAnswer {
 export const SystemOneUsage = z.looseObject({
   input_tokens: TokenCount,
   output_tokens: TokenCount,
+  /**
+   * USD the provider charged for this request. OpenRouter sends it; TypeSafe direct does not
+   * today. When present it is the call's actual cost and the price book is the fallback
+   * (savings-model.md, ADR-011).
+   */
+  cost: z.number().nonnegative().optional(),
 });
 export type SystemOneUsage = z.infer<typeof SystemOneUsage>;
 
 export const SystemOneResponse = z.looseObject({
-  /** The versioned id that answered, even when the request sent an alias. Stored as model_resolved. */
+  /** OpenRouter's generation id (`gen-dec-...`). The request id when no x-typesafe-request-id header came back. */
+  id: z.string().min(1).optional(),
+  /**
+   * The id that answered, even when the request sent an alias. Stored as model_resolved. TypeSafe
+   * sends its versioned id; OpenRouter sends its own id, for example `typesafe/jev-1.13-20260917`.
+   */
   model: z.string().min(1),
+  /** The upstream provider name OpenRouter reports, for example "TypeSafe". Not a SystemOneProvider. */
+  provider: z.string().min(1).optional(),
   answers: z.record(z.string(), SystemOneAnswer),
   usage: SystemOneUsage,
 });

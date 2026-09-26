@@ -47,10 +47,13 @@ describe("port payloads", () => {
     expect(QuotaResult.safeParse({ ok: false, code: "rate_limited" }).success).toBe(false);
   });
 
-  it("ResolvedKey needs a key and a byo or platform mode", () => {
-    expect(ResolvedKey.safeParse({ apiKey: "ts_x", mode: "byo" }).success).toBe(true);
-    expect(ResolvedKey.safeParse({ apiKey: "", mode: "byo" }).success).toBe(false);
-    expect(ResolvedKey.safeParse({ apiKey: "ts_x", mode: "shared" }).success).toBe(false);
+  it("ResolvedKey needs a key, a byo or platform mode and a provider", () => {
+    expect(ResolvedKey.safeParse({ apiKey: "ts_x", mode: "byo", provider: "typesafe" }).success).toBe(true);
+    expect(ResolvedKey.safeParse({ apiKey: "sk-or-x", mode: "byo", provider: "openrouter" }).success).toBe(true);
+    expect(ResolvedKey.safeParse({ apiKey: "", mode: "byo", provider: "typesafe" }).success).toBe(false);
+    expect(ResolvedKey.safeParse({ apiKey: "ts_x", mode: "shared", provider: "typesafe" }).success).toBe(false);
+    expect(ResolvedKey.safeParse({ apiKey: "ts_x", mode: "byo" }).success).toBe(false);
+    expect(ResolvedKey.safeParse({ apiKey: "ts_x", mode: "byo", provider: "vercel" }).success).toBe(false);
   });
 
   it("ModelPrice is integer micro-USD per million tokens", () => {
@@ -60,7 +63,10 @@ describe("port payloads", () => {
   });
 
   it("EffectiveModel allows an unknown model", () => {
-    expect(EffectiveModel.safeParse({ profile: null, pinned: false, resolvedId: null }).success).toBe(true);
+    const unknown = { profile: null, pinned: false, resolvedId: null, provider: "openrouter", providerModelId: null, limits: null };
+    expect(EffectiveModel.safeParse(unknown).success).toBe(true);
+    const { provider: _provider, ...withoutProvider } = unknown;
+    expect(EffectiveModel.safeParse(withoutProvider).success).toBe(false);
   });
 
   it("ActionJob and the LLM payloads are strict", () => {
@@ -81,9 +87,12 @@ describe("port payloads", () => {
       stateHash: "sha256:ab12",
       stages: [{ id: "triage", skipped: false, inputTokens: 318, outputTokens: 0, latencyMs: 412, typesafeRequestId: "req_01J9Z3QK4T" }],
       keyMode: "byo",
+      provider: "typesafe",
       parentRunId: null,
     };
     expect(RunSinkRecord.safeParse(record).success).toBe(true);
+    expect(RunSinkRecord.safeParse({ ...record, provider: "openrouter" }).success).toBe(true);
+    expect(RunSinkRecord.safeParse({ ...record, provider: "vercel" }).success).toBe(false);
     expect(RunSinkRecord.safeParse({ ...record, stateHash: "" }).success).toBe(false);
     expect(RunSinkRecord.safeParse({ ...record, parentRunId: sampleResult.versionId }).success).toBe(true);
     const { keyMode: _keyMode, ...withoutKeyMode } = record;
@@ -97,6 +106,7 @@ describe("port payloads", () => {
       state: null,
       stateHash: "sha256:ab12",
       keyMode: "platform",
+      provider: "typesafe",
       parentRunId: null,
     };
     const row = { id: "triage", skipped: false, inputTokens: 318, outputTokens: 0, latencyMs: 412, typesafeRequestId: null };
@@ -121,6 +131,7 @@ describe("port payloads", () => {
       piiMode: "redact_logs",
       defaultComparatorModel: "claude-haiku-4-5",
       avgEscalationCostMicroUsd: null,
+      systemOneProvider: "openrouter",
     },
   };
 
@@ -134,6 +145,8 @@ describe("port payloads", () => {
     }
     expect(ResolvedRun.safeParse({ ...resolved, settings: { ...resolved.settings, storageMode: "none" } }).success).toBe(false);
     expect(ResolvedRun.safeParse({ ...resolved, settings: { ...resolved.settings, avgEscalationCostMicroUsd: 0.5 } }).success).toBe(false);
+    const { systemOneProvider: _provider, ...settingsWithoutProvider } = resolved.settings;
+    expect(ResolvedRun.safeParse({ ...resolved, settings: settingsWithoutProvider }).success).toBe(false);
   });
 });
 
@@ -174,7 +187,9 @@ describe("in-memory ports satisfy the interfaces", () => {
     const priceBook: PriceBook = { get: (_orgId, modelId) => Promise.resolve(prices[modelId] ?? null) };
     const models: ModelCatalog = {
       get: () => Promise.resolve(null),
-      effective: () => Promise.resolve({ profile: null, pinned: false, resolvedId: null }),
+      effective: (_name, provider) =>
+        Promise.resolve({ profile: null, pinned: false, resolvedId: null, provider, providerModelId: null, limits: null }),
+      routes: () => Promise.resolve([]),
     };
     const llm: LlmTransport = {
       complete: (req) => Promise.resolve({ text: "billing", model: req.model, inputTokens: 90, outputTokens: 4 }),
@@ -185,7 +200,7 @@ describe("in-memory ports satisfy the interfaces", () => {
     const ports: RunPorts = {
       systemOne: { call: () => Promise.reject(new Error("no live calls in unit tests")) },
       models,
-      keys: () => Promise.resolve({ apiKey: "ts_test", mode: "byo" }),
+      keys: (_ctx, provider) => Promise.resolve({ apiKey: "ts_test", mode: "byo", provider }),
       limiter: () => Promise.resolve({ ok: true }),
       quota: () => Promise.resolve({ ok: true }),
       runs: { persist: () => Promise.resolve({ reviewItemIds: [], labelItemIds: [] }) },

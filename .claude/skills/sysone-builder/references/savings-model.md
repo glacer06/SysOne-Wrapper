@@ -21,15 +21,20 @@ RunResult = {
                                                    // stage for pinned runs (slug@7)
   experiment?: { id: string, arm: "champion" | "challenger" },
   status: "ok" | "error" | "rate_limited" | "quota_exceeded",
+  error?: { code: ErrorCode, message: string },    // present exactly when status is not "ok"; code is an
+                                                   // api.md code, stored as runs.error_code
   modelRequested: string,
-  modelResolved: string | null,                    // the first call's versioned ID; null only when no call was
-                                                   // made (every spec stage skipped)
+  modelResolved: string | null,                    // the first call's response `model`; null only when no call
+                                                   // was made (every spec stage skipped). TypeSafe sends a
+                                                   // versioned id, OpenRouter its own id (ADR-011)
   typesafeRequestId: string | null,                // the first call's x-typesafe-request-id header
   stages: Array<{                                  // one entry per spec stage, in spec order
     id: string,
     skipped: boolean,                              // its `when` was false on input and checks
     calls: Array<{                                 // one per System One request; preflight batch splits add calls
-      modelResolved: string,                       // prices use it, per call
+      modelResolved: string,                       // the response `model`; prices use it, per call
+      provider?: "typesafe" | "openrouter",        // who served the call; absent means typesafe (ADR-011)
+      providerCostUsd?: number,                    // the provider's usage.cost in whole micro-USD, when sent
       typesafeRequestId: string | null,
       inputTokens: number,
       outputTokens: number,
@@ -63,13 +68,20 @@ Decision = {
   action: Action,                                  // what the policy says
   effectiveAction: Action,                         // what the rollout stage allows; callers act on this
   executed: boolean,                               // whether it ran: handlers, the LLM call, the review item, the fallback
+  escalation?: { model: string, value: Value, costUsd: number, status: "ok" | "failed", error?: string },
+                                                   // the escalate_to_llm result; value above keeps the System One answer
+  fallbackRunId?: string,                          // set only for a `set` fallback that wrote a linked run row
+                                                   // (spec-schema.md section 7): that run, or the failed run when
+                                                   // it failed after its row was written. value never changes;
+                                                   // read the linked result with GET /api/v1/runs/{fallbackRunId}
 }
 
 RunCost = {
   systemOneInputTokens: number,
   systemOneOutputTokens: number,
-  systemOneCostUsd: number | null,                 // sum over all calls; null when any call's model has no
-                                                   // price row (BYO key mode). *Usd = micro / 1e6 (Money math)
+  systemOneCostUsd: number | null,                 // sum over all calls: provider-reported cost when present,
+                                                   // else the price book; null when a call has neither (BYO
+                                                   // key mode). *Usd = micro / 1e6 (Money math)
   counterfactualInputTokens: number,
   counterfactualOutputTokens: number,
   counterfactualLlmCostUsd: number,
@@ -98,7 +110,7 @@ SavingsKind = "decision" | "escalation_avoided" | "context_pruned"
 - **Several calls per run.** Each spec stage that runs makes one System One call, and a preflight batch split adds one call per batch. `stages[].calls` records every call; `runs.stages` stores it. The top-level `modelResolved` and `typesafeRequestId` come from the first call. When the calls' `modelResolved` differ (an alias moved mid-run), the run carries warning `model_resolved_mixed`. `cost.systemOneInputTokens` and `cost.systemOneOutputTokens` are the sums over all calls.
 - **Checks.** `checks` holds each check's result, so policy replay can re-evaluate `relevantWhen` and routes that read checks after `state_retention_days` purges the state; answers are kept for `answers_retention_days`. Conditions with `input` leaves cannot be re-evaluated after the purge ([effectiveness-loop.md](effectiveness-loop.md)).
 - **Money on the wire.** USD fields are numbers derived from the integer micro-USD columns. Never do money math on them; use the stored integers ([Money math](#money-math)).
-- **Failed runs.** A failed call returns the error envelope with its `runId` ([api.md](api.md)). `GET /api/v1/runs/{id}` for that run returns this envelope with the failing `status`.
+- **Failed runs.** A failed call returns the error envelope with its `runId` ([api.md](api.md)). `GET /api/v1/runs/{id}` for that run returns this envelope with the failing `status` and `error: { code, message }`, where `code` is the code the error envelope carried. An ok run has no `error`.
 - **Typed clients.** Generated clients narrow `decisions[q].value` to the question's type (a union of option keys, a number, or `boolean | null`) and `route` to the set's route outputs ([deploy-and-codegen.md](deploy-and-codegen.md)).
 
 ## Price book
@@ -106,7 +118,8 @@ SavingsKind = "decision" | "escalation_avoided" | "context_pruned"
 Prices are data, not code. They live in `price_books` ([data-model.md](data-model.md)), keyed by exact model id.
 
 - System One rows use versioned registry ids, such as `jev-1.13.0`. Alias rows are rejected, because they would misprice runs after the alias moves.
-- Runs are priced by `model_resolved`, one call at a time: each call in `stages[].calls` uses the row for its own `modelResolved` ([Money math](#money-math)). Unpriced models are handled as in [system-one-models.md](system-one-models.md#8-pricing): BYO runs succeed with a null cost and warning `model_unpriced`, and platform-key runs are refused.
+- **Provider-reported cost wins.** When a call's response carries `usage.cost` (OpenRouter does, TypeSafe direct does not today), that amount, rounded to whole micro-USD (`reportedCostMicroUsd` in core), is the call's actual cost and is stored as `providerCostUsd`. The price book is the fallback for calls without it (ADR-011).
+- Runs are priced by `model_resolved`, one call at a time. An OpenRouter `model_resolved` such as `typesafe/jev-1.13-20260917` is mapped to its registry id through the route rows (`registryIdForResolved`) before the lookup, and a row for the call's provider wins over a provider-independent row: each call in `stages[].calls` uses the row for its own `modelResolved` ([Money math](#money-math)). Unpriced models are handled as in [system-one-models.md](system-one-models.md#8-pricing): BYO runs succeed with a null cost and warning `model_unpriced`, and platform-key runs are refused.
 - Comparator rows use the provider's exact model id.
 - Platform defaults have `org_id` null. An org row for the same model overrides the default for that org.
 
@@ -131,9 +144,12 @@ The platform admin can update defaults. Each org picks a default comparator (Hai
 round_half_up(x)       = floor(x + 0.5)
                          // in integers: floor((a + 500000) / 1000000) for a / 1e6, with floor division
 
-call_cost_micro        = round_half_up(inputTokens  * price.inPerMtokMicro  / 1e6)
+call_cost_micro        = reported_cost_micro, when the call's response carried usage.cost
+                         // round_half_up(usage.cost * 1e6), the provider's actual charge
+                       else
+                         round_half_up(inputTokens  * price.inPerMtokMicro  / 1e6)
                        + round_half_up(outputTokens * price.outPerMtokMicro / 1e6)
-                         // per call, with the price row of that call's modelResolved
+                         // per call, with the price row of that call's modelResolved and provider
 
 system_one_cost_micro  = sum of call_cost_micro over every System One call in stages[].calls
 escalation_cost_micro  = sum of call_cost_micro over every escalate_to_llm call, priced by the LLM model that answered
@@ -145,7 +161,8 @@ savings_micro          = counterfactual_micro - system_one_cost_micro - escalati
 ```
 
 - Multiply before dividing, so each term is rounded once. At current prices and model limits the products stay far below 2^53, so JavaScript numbers hold them exactly.
-- `system_one_cost_micro` is null when any call's model has no price row (BYO key mode, warning `model_unpriced`).
+- `system_one_cost_micro` is null when any call has neither a provider-reported cost nor a price row (BYO key mode, warning `model_unpriced`).
+- Escalations through OpenRouter chat models, including `typesafe/jev-router` (ADR-011, proposed), are LLM spend: they add to `escalation_cost_micro`, priced by the provider's reported cost when present, else the price book row of the model that answered. When jev-router picks a cheaper LLM than the comparator, that difference is an LLM routing saving. It is reported next to `escalationCostUsd` as LLM spend, never as System One spend or System One savings, because no System One call made it.
 - `RunCost` `*Usd` fields are `micro / 1e6`, produced only when the envelope is built. Rollups and reports sum the stored integers, never the USD fields.
 - Worked example: one call of 318 input tokens and 0 output tokens on `jev-1.13.0` costs `round_half_up(318 * 42000 / 1e6) = round_half_up(13.356) = 13` micro-USD. Two counted questions with `cf_input_tokens` 318 and `cf_output_tokens` 120 against Haiku 4.5 give `counterfactual_micro = round_half_up((318 * 1000000 + 120 * 5000000) / 1e6) = 918`, so `savings_micro = 918 - 13 - 0 = 905` and `savingsUsd` is 0.000905. Rounding to whole micro-USD changes the cost of a run this small by up to about 4 percent, which is why the rule is fixed here.
 
@@ -233,7 +250,7 @@ net_micro = savings_on_auto_micro
 
 ## Rollups (`usage_daily`)
 
-Keyed by `org_id, day, project_id, set_id, app_id, version_id, model_resolved, key_mode, source, savings_kind`.
+Keyed by `org_id, day, project_id, set_id, app_id, version_id, model_resolved, system_one_provider, key_mode, source, savings_kind`.
 
 Columns:
 
@@ -256,7 +273,7 @@ Each report is available in the org console, as CSV, as a PDF monthly summary, a
 
 | Report | Name | What it answers |
 |---|---|---|
-| Usage and cost | `usage-and-cost` | Runs, tokens, and System One spend by project, set, app, model and day |
+| Usage and cost | `usage-and-cost` | Runs, tokens, and System One spend by project, set, app, model, provider and day, with provider-reported cost and price book cost apart |
 | Savings and ROI | `savings-and-roi` | Gross and quality-adjusted savings side by side, by kind, versus the subscription price; ROI multiple; would-be savings from suppressed runs shown apart; "unverified" where labels are short |
 | Effectiveness | `effectiveness` | `SetHealth` for every set, worst first ([effectiveness-loop.md](effectiveness-loop.md)) |
 | Band distribution | `band-distribution` | Share of high, medium, low per set over time; drift in the mix |

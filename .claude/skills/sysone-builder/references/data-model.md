@@ -29,8 +29,8 @@ The app connects as a role without `BYPASSRLS`. Platform admin queries run throu
 Actor columns named `*_user_id` and `*_token_id` come in pairs. A person acting in the console fills only the user column. An agent token fills both: the token and the user it belongs to ([security.md](security.md)). A single actor column is allowed only where no token can act: `approval_requests.decided_by_user_id`, `run_feedback.confirmed_by_user_id`, `dataset_cases.label_confirmed_by`, and the platform admin columns (`entitlement_overrides.set_by`, `audit_log.impersonator_id`).
 
 ### Identity and tenancy
-- `users`, `sessions`, `accounts`, `verification_tokens`: from the auth library's Drizzle adapter. Add `platform_role` (`null` or `superadmin`).
-- `organizations`: `id, slug (unique), name, status (active|suspended|deleted), key_mode (byo|platform), state_retention_days (default 30), answers_retention_days (default 180), dataset_retention_days (null = the state retention), pii_mode (off|redact_logs|redact_logs_and_input), settings jsonb, created_at`.
+- `users`, `sessions`, `accounts`, `verification_tokens`: from Better Auth's Drizzle adapter (ADR-002). Add `platform_role` (`null` or `superadmin`). The organization plugin's tables map onto `organizations`, `memberships` and `invitations`, which also get a second RLS policy on `app.user_id` for pre-org lookups (ADR-002).
+- `organizations`: `id, slug (unique), name, status (active|suspended|deleted), key_mode (byo|platform), default_system_one_provider (typesafe|openrouter, default typesafe), state_retention_days (default 30), answers_retention_days (default 180), dataset_retention_days (null = the state retention), pii_mode (off|redact_logs|redact_logs_and_input), settings jsonb, created_at`.
   - Retention rules and the learning retention copy are in [security.md](security.md). Only an admin can raise `dataset_retention_days`, and the change is audited.
   - `settings` keys: `agentApprovals` (`required` (default), `production_only` or `off`; [security.md](security.md)), `allowPreviewModels` (bool, default false; [system-one-models.md](system-one-models.md)), `reviewerHourlyRateUsd` (number, used for the default review cost in [savings-model.md](savings-model.md)).
 - `memberships`: `org_id, user_id, role (owner|admin|editor|reviewer|viewer)`, unique `(org_id, user_id)`.
@@ -38,9 +38,9 @@ Actor columns named `*_user_id` and `*_token_id` come in pairs. A person acting 
 - `device_codes`: auth table for the device flow (RFC 8628). `device_code_hash, user_code, client (cli|mcp|extension), requested_scopes text[], org_id null, user_id null, status (pending|approved|denied|used), expires_at (10 minutes), created_at`. Like `sessions`, it has no tenant RLS: only the `/api/v1/auth/device/*` route handlers read it. `org_id` and `user_id` stay null until a person approves the code in a console session, which mints an agent token.
 
 ### Keys and agent tokens
-- `org_typesafe_keys`: `org_id, provider ('typesafe'), ciphertext, iv, auth_tag, wrapped_dek, kek_id, key_last4, fingerprint, status (active|invalid|revoked), models text[], created_by_user_id, created_by_token_id, rotated_at`. `models` holds the names the key can send, refreshed on save, on rotation and nightly ([system-one-models.md](system-one-models.md)).
+- `org_system_one_keys` (ADR-011 renames it from `org_typesafe_keys` before the first migration ships): `org_id, provider (typesafe|openrouter), ciphertext, iv, auth_tag, wrapped_dek, kek_id, key_last4, fingerprint, status (active|invalid|revoked), models text[], created_by_user_id, created_by_token_id, rotated_at`. Unique `(org_id, provider)`, so an org holds at most one key per provider. `models` holds the registry ids the key can reach on that provider, refreshed on save, on rotation and nightly ([system-one-models.md](system-one-models.md)). Validation differs by provider ([security.md](security.md)).
 - `agent_tokens`: `org_id, user_id, name, client (cli|mcp|extension|console), prefix ('sa_live_'), hash (sha256 + pepper), scopes text[], role_ceiling, set_ids uuid[] (null = all), daily_spend_cap_micro_usd null, expires_at (at most 90 days), revoked_at, last_used_at, created_at`. Each token belongs to one user in one org. Effective role and minting rules are in [security.md](security.md).
-- `org_webhook_secrets`: `org_id, ciphertext, iv, auth_tag, wrapped_dek, kek_id, created_at, rotated_at`. Envelope-encrypted like `org_typesafe_keys`. Signs org event webhooks and plugin action webhooks ([events.md](events.md)).
+- `org_webhook_secrets`: `org_id, ciphertext, iv, auth_tag, wrapped_dek, kek_id, created_at, rotated_at`. Envelope-encrypted like `org_system_one_keys`. Signs org event webhooks and plugin action webhooks ([events.md](events.md)).
 
 ### Apps and integration
 - `apps`: `org_id, name, description, language (ts|py|other), framework text null, repo_url text null, allowed_origins text[]`.
@@ -51,10 +51,11 @@ Actor columns named `*_user_id` and `*_token_id` come in pairs. A person acting 
 ### Decision domain
 - `projects`: `org_id, name, slug`.
 - `goals`: `org_id, project_id, title, description, quality_target jsonb (QualityTarget), business_kpi text null, owner_id, archived_at`. `QualityTarget` and its tier defaults are in [confidence-policy.md](confidence-policy.md#quality-targets).
-- `question_sets`: `org_id, project_id, goal_id, slug (unique per org), name, description, protected bool, labeling jsonb (LabelingPolicy), dispatch_actions_on_staging bool (default false), value_settings jsonb ({ errorCostUsd, reviewCostUsd }), gate_margins jsonb (default { coverageDrop: 0.02, reviewLoadRise: 0.10 }), storage_mode (full|redacted|hash_only, default full), user_generated bool (default false), result_cache_ttl_seconds int null, draft_version_id, archived_at, created_by_user_id, created_by_token_id`.
+- `question_sets`: `org_id, project_id, goal_id, slug (unique per org), name, description, protected bool, labeling jsonb (LabelingPolicy), dispatch_actions_on_staging bool (default false), value_settings jsonb ({ errorCostUsd, reviewCostUsd }), gate_margins jsonb (default { coverageDrop: 0.02, reviewLoadRise: 0.10 }), storage_mode (full|redacted|hash_only, default full), user_generated bool (default false), result_cache_ttl_seconds int null, system_one_provider (typesafe|openrouter) null, draft_version_id, archived_at, created_by_user_id, created_by_token_id`.
   - There is no rollout column. The rollout stage lives on `release_pointers`.
   - `labeling` is the labeling policy and `gate_margins` holds the regression and experiment margins ([effectiveness-loop.md](effectiveness-loop.md)). `value_settings` feeds the quality-adjusted value ([savings-model.md](savings-model.md)).
   - `storage_mode` is the per-set storage mode in [security.md](security.md#pii-and-data-handling): `full` keeps state, `redacted` keeps redacted state, `hash_only` keeps only `runs.state_hash`. `user_generated` marks sets whose input comes from untrusted users; such sets need adversarial cases for the shadow to controlled gate ([security.md](security.md#state-is-untrusted)). `result_cache_ttl_seconds` null means the result cache is off; a value turns it on, for pinned models only ([architecture.md](architecture.md#caching)).
+  - `system_one_provider` null means the org's `default_system_one_provider` (ADR-011, proposed). The resolved value reaches core as `RunSettings.systemOneProvider`. Until ADR-011 is accepted, `set.update` does not expose it.
   - All of these settings and `dispatch_actions_on_staging` change through `set.update` (`name, protected, labeling, dispatchActionsOnStaging, valueSettings, gateMargins, storageMode, userGenerated, resultCacheTtlSeconds`), never through the spec. Changing `storage_mode` to a less private mode (`hash_only` to `redacted` or `full`, or `redacted` to `full`) is a PII change, so it is high risk for agents.
 - `question_set_versions`: `org_id, set_id, version int (unique with set_id), status (draft|published|archived), spec jsonb, spec_hash, interface_hash, interface_major int, model, changelog, source (console|api|cli|mcp|studio|upgrade|proposal), source_ref text null (commit SHA), created_by_user_id, created_by_token_id, published_by_user_id, published_by_token_id, published_at, eval_run_id`.
   - A trigger rejects updates once `status = 'published'`. A partial unique index allows one draft per set.
@@ -70,13 +71,16 @@ Actor columns named `*_user_id` and `*_token_id` come in pairs. A person acting 
 
 #### `runs` (partitioned by month)
 
-`id (uuidv7), org_id, project_id, set_id, version_id, channel, rollout, experiment_id null, arm (champion|challenger) null, source (console|playground|api|embed|extension|mcp|eval|cli|ingest), app_id, actor_user_id, actor_token_id, key_mode, model_requested, model_resolved, typesafe_request_id, interface_major, external_ref null, state jsonb null, state_hash, stages jsonb, answers jsonb, decisions jsonb, run_band, overall_action, route, warnings jsonb, input_tokens, output_tokens, system_one_cost_micro_usd null, system_one_calls, cf_input_tokens, cf_output_tokens, counterfactual_micro_usd, counterfactual_mode, comparator_model, savings_micro_usd, savings_kind, savings_suppressed null, escalation_cost_micro_usd, llm_calls_made, llm_calls_avoided, context_tokens_pruned, latency_ms, status (ok|error|rate_limited|quota_exceeded), error_code, created_at`.
+`id (uuidv7), org_id, project_id, set_id, version_id, channel, rollout, experiment_id null, arm (champion|challenger) null, source (console|playground|api|embed|extension|mcp|eval|cli|ingest), app_id, actor_user_id, actor_token_id, key_mode, system_one_provider (typesafe|openrouter), parent_run_id uuid null, model_requested, model_resolved, typesafe_request_id, interface_major, external_ref null, state jsonb null, state_hash, stages jsonb, checks jsonb, answers jsonb, decisions jsonb, run_band, overall_action, route, warnings jsonb, input_tokens, output_tokens, system_one_cost_micro_usd null, system_one_calls, cf_input_tokens, cf_output_tokens, counterfactual_micro_usd, counterfactual_mode, comparator_model, savings_micro_usd, savings_kind, savings_suppressed null, escalation_cost_micro_usd, llm_calls_made, llm_calls_avoided, context_tokens_pruned, latency_ms, status (ok|error|rate_limited|quota_exceeded), error_code, created_at`.
 
 - Indexes: `(org_id, set_id, created_at desc)`, `(org_id, source, created_at)`, `(org_id, external_ref)`, `(org_id, experiment_id)`.
 - `rollout` is the rollout stage read from the channel pointer at run time. It is a record of what applied, not a setting.
 - `answers` always holds the full `SystemOneAnswer` JSON, including probabilities. `includeProbabilities` only shapes the response. Policy replay and set health depend on this.
 - `input_tokens` and `output_tokens` are System One tokens. LLM escalation spend is in `escalation_cost_micro_usd`.
-- `system_one_cost_micro_usd` is null when the resolved model has no price row in BYO key mode (warning `model_unpriced`).
+- `system_one_cost_micro_usd` sums each call's provider-reported `usage.cost` when present, else its price book cost. It is null when a call has neither, which happens in BYO key mode (warning `model_unpriced`).
+- `system_one_provider` comes from `RunSinkRecord.provider`. `model_resolved` stores the response `model` as sent, so OpenRouter runs hold ids such as `typesafe/jev-1.13-20260917`.
+- `parent_run_id` is set on a linked run that a `set` fallback started ([spec-schema.md](spec-schema.md) section 7). The parent's decision carries the linked run's id as `fallbackRunId`.
+- `stages` stores `result.stages` (each stage with its calls). `RunSinkRecord.stages` holds per-stage totals only for `usage_events`.
 - Standalone exports write rows with `source = 'ingest'` through `POST /api/v1/runs/ingest` ([api.md](api.md)).
 
 **RunResult to runs columns.** Every field of `RunResult` ([savings-model.md](savings-model.md)) maps to one column, or is derived from one. USD fields are stored as micro-USD integers.
@@ -92,9 +96,12 @@ Actor columns named `*_user_id` and `*_token_id` come in pairs. A person acting 
 | `channel` | `channel` |
 | `rollout` | `rollout` |
 | `experiment.id`, `experiment.arm` | `experiment_id`, `arm` |
-| `status` | `status` (error details in `error_code`) |
+| `status` | `status` |
+| `error.code` | `error_code` (null when `status` is `ok`; `error.message` is not stored) |
 | `modelRequested`, `modelResolved` | `model_requested`, `model_resolved` |
 | `typesafeRequestId` | `typesafe_request_id` |
+| `stages` | `stages` (calls include `provider` and `providerCostUsd`) |
+| `checks` | `checks` |
 | `answers` | `answers` |
 | `decisions` | `decisions` |
 | `runBand` | `run_band` |
@@ -124,8 +131,9 @@ Actor columns named `*_user_id` and `*_token_id` come in pairs. A person acting 
   - `decision_id` null means the report is about the run's route.
   - Every truth source writes here: `POST /api/v1/feedback`, audit label items and reviewer resolutions. Resolving a review item writes an `audit` row when the item carries a `sample_rate`, otherwise a `reviewer` row, or an `agent` row when an agent token resolved it.
   - `agent` rows count toward gates and health only once `confirmed_by_user_id` is set by a person.
-- `review_items`: `org_id, run_id (null for Studio items), studio_example_id null, set_id, decision_id, kind (action|label), reason (action|audit|near_threshold|challenger_diff|studio), sample_rate null, band, suggested jsonb, status (open|resolved|dismissed), assignee_id, resolution jsonb, resolved_by_user_id, resolved_by_token_id, resolved_at, due_at, add_to_dataset bool`.
+- `review_items`: `org_id, run_id (null for Studio items), studio_example_id null, set_id, decision_id, kind (action|label), reason (action|audit|near_threshold|challenger_diff|studio), sample_rate null, band, suggested jsonb, status (open|pending_confirmation|resolved|dismissed), assignee_id, resolution jsonb, resolved_by_user_id, resolved_by_token_id, resolved_at, due_at, add_to_dataset bool`.
   - `kind = 'action'` is created exactly when a decision's `effectiveAction` is `review`. `kind = 'label'` comes from the labeling policy or the Studio. Label items never block the caller or change `effectiveAction`.
+  - `pending_confirmation` means an agent token resolved the item and a person must confirm it (`ReviewStore.confirm`). It stays out of gates and health until confirmed.
   - `sample_rate` is set when the labeling policy's random audit picked the decision, including on an action item it reused. Resolving an item with a `sample_rate` writes an `audit` row, and metrics weight it by `1 / sample_rate`.
 
 #### Datasets and evals
@@ -149,9 +157,10 @@ Actor columns named `*_user_id` and `*_token_id` come in pairs. A person acting 
 ### Billing and usage
 - `billing_accounts`: `org_id (unique), stripe_customer_id, stripe_subscription_id, plan, status, current_period_start, current_period_end, cancel_at, grace_until`.
 - `entitlement_overrides`: `org_id, key, value, reason, set_by`. Platform admin only.
-- `usage_events` (outbox): `org_id, run_id, kind (system_one_input_tokens|run), model (resolved), quantity, key_mode, reported_to_stripe_at`. Written in the same transaction as the run. The model lets platform-key billing price each model at its own rate.
+- `usage_events` (outbox): `org_id, run_id, kind (system_one_input_tokens|run), model (resolved), provider (typesafe|openrouter), quantity, key_mode, reported_to_stripe_at`. Written in the same transaction as the run. The model lets platform-key billing price each model at its own rate.
 - `usage_daily`: rollup, see [savings-model.md](savings-model.md).
-- `price_books`: `org_id (null = platform default), model, display_name, input_per_mtok_micro_usd, output_per_mtok_micro_usd, updated_by_user_id, updated_by_token_id, updated_at`. Unique `(org_id, model)` with `nulls not distinct`, so each model has one platform row and at most one override per org.
+- `price_books`: `org_id (null = platform default), model, provider (typesafe|openrouter) null, display_name, input_per_mtok_micro_usd, output_per_mtok_micro_usd, updated_by_user_id, updated_by_token_id, updated_at`. Unique `(org_id, model, provider)` with `nulls not distinct`, so each model has one platform row per provider value and at most one override per org and provider.
+  - `provider` null means the price holds on every provider. A row for the run's provider wins over the null row (ADR-011). Provider-reported `usage.cost` wins over both.
   - Hybrid table, the one exception to tenancy rule 1. Read policy: `using (org_id is null or org_id = current_setting('app.org_id', true)::uuid)`. Write policy: `with check (org_id = current_setting('app.org_id', true)::uuid)`. Platform rows (`org_id` null) are written only through the audited platform admin path.
   - The `PriceBook` port runs inside `withTenant`, so it sees the platform rows and the caller's own overrides, and an org row wins over the platform row for the same model.
   - The cross-tenant suite checks that org A cannot read or write org B's override, and that both orgs read the platform rows.
@@ -162,7 +171,7 @@ Plans live in code (`packages/billing/src/plans.ts`, typed). The database holds 
 
 ### Admin, jobs and events
 - `audit_log` (append-only; the app role has no UPDATE or DELETE grant): `id, org_id (null for platform events), actor_type (user|agent|app|system), client (console|api|cli|mcp|extension|job), actor_user_id, actor_token_id, actor_role (the effective role when the action ran), approval_id, impersonator_id, action, target_type, target_id, diff jsonb, ip, user_agent, created_at`. `action` is the operation id ([management-api.md](management-api.md)).
-- `approval_requests`: `org_id, op_id, input jsonb, input_hash, requested_by_token_id, requested_by_user_id, reason, status (pending|approved|rejected|expired|executed), decided_by_user_id, decided_at, expires_at, result jsonb`. Rules in [management-api.md](management-api.md#approvals).
+- `approval_requests`: `org_id, op_id, input jsonb, input_hash, if_match text null, requested_by_token_id, requested_by_user_id, reason, status (pending|approved|rejected|expired|executed), decided_by_user_id, decided_at, expires_at, result jsonb, created_at`. `if_match` is the `If-Match` value the agent sent, re-checked when the approved request runs. Rules in [management-api.md](management-api.md#approvals).
 - `idempotency_keys`: `org_id, actor_key, key, op_id, request_hash, response_status, response jsonb, created_at`. Unique `(org_id, actor_key, key)`. Pruned after 24 hours.
 - `jobs`: `org_id, kind, status (queued|running|succeeded|failed), input, result, error, created_by_user_id, created_by_token_id, created_at, finished_at`.
 - `events`: the event feed, see [events.md](events.md). Pruned after 30 days.
@@ -174,7 +183,8 @@ Plans live in code (`packages/billing/src/plans.ts`, typed). The database holds 
 These have no tenant RLS policy. The app role can read them; only the audited platform admin path writes them. `price_books` is not listed here: it holds platform rows and org rows, with the hybrid policy under [Billing and usage](#billing-and-usage).
 
 - `system_one_models`: one row per `ModelProfile` ([system-one-models.md](system-one-models.md)). Every write is audited.
-- `model_alias_observations`: `alias, resolved_id, first_seen, last_seen` ([system-one-models.md](system-one-models.md)).
+- `system_one_model_routes`: one row per `ModelRoute` (ADR-011): `model_id, provider, provider_model_id, pinned, resolved_ids text[], limits jsonb, docs_url, last_reviewed`. Primary key `(model_id, provider)`. There are no `typesafe` rows; TypeSafe is the identity route. Every write is audited.
+- `model_alias_observations`: `provider, alias, resolved_id, first_seen, last_seen` ([system-one-models.md](system-one-models.md)). Unique `(provider, alias, resolved_id)`.
 - `settings`: platform key/value: the global RPM budget per model, the default comparator, alert thresholds.
 - `stripe_webhook_events`: `event_id (pk), type, processed_at`.
 

@@ -318,11 +318,12 @@ Per set it writes:
 - **One constants file**, `typesafe/<slug>.questions.ts` or `.py`, with every question, instruction, criterion, threshold, weight and route, and a pinned model. This is the single reviewable constants file TypeSafe recommends. It is generated from the spec, read-only, and regenerated, never hand-edited (golden rule 10).
 - **A band and route helper** with those constants inlined. It is golden-tested against `packages/core` on the router table: the router test inputs must give the same bands, effective actions and routes ([testing.md](testing.md), Codegen tests).
 - **A call wrapper** over `@typesafe-ai/sdk` (TypeScript) or `typesafe-sdk` (Python, imported as `typesafe_sdk`). It reads the customer's own server-side key from `TYPESAFE_API_KEY`.
+- **Provider** (ADR-011, proposed). The export may target OpenRouter instead of TypeSafe: `--provider openrouter` writes the wrapper with an explicit `baseURL: "https://openrouter.ai/api"` (`base_url` in Python), reads the customer's key from `OPENROUTER_API_KEY`, and uses the model id from the set's OpenRouter route row (for example `typesafe/jev-1.13`). Everything else is the same SDK and the same constants file. The route must be pinned, like any exported model, so until an OpenRouter route row is pinned the export refuses `--provider openrouter` (see [system-one-models.md](system-one-models.md), section 15).
 
 Rules:
 
 - The model must be pinned. The export refuses a moving model.
-- SysOne never exports an org's stored TypeSafe key. Standalone code reads the customer's own env key.
+- SysOne never exports an org's stored TypeSafe or OpenRouter key. Standalone code reads the customer's own env key.
 - Optional ingest: `POST /api/v1/runs/ingest` with an `sk_` token holding `runs:write` sends `{ setRef, version, model, answers, usage, latencyMs, stateHash, state? }`, where `state` is already redacted ([api.md](api.md)). Ingested runs have `runs.source = "ingest"` and keep the ledger, review and calibration working.
 - What standalone gives up: live edits, rollout enforcement and the kill switch, and review items unless ingest is on. Record the binding with target `standalone` so the set page still shows the consumer.
 

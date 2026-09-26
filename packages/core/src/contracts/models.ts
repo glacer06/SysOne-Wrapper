@@ -1,5 +1,6 @@
 // The System One model registry contract: one ModelProfile per row of `system_one_models`.
 // Sources: references/system-one-models.md (sections 3 to 5, 10 and 13), ADR-008 section 1 and 2.
+// ModelRoute (one row of `system_one_model_routes`, per model and provider) is from ADR-011.
 //
 // Model facts are data. Limits, question types and weaknesses come from these rows, never from
 // constants in code. Prices are not part of a profile: they live in `price_books`, keyed by the
@@ -8,6 +9,7 @@
 import { z } from "zod";
 
 import { QuestionTypeId } from "./question-types.js";
+import { SystemOneProvider, defaultProviderModelId } from "./system-one.js";
 
 const IsoDate = z.iso.date();
 
@@ -170,4 +172,145 @@ export function classifyModelName(
     if (p.id === name) return isPinnedProfile(p) ? "pinned" : "moving";
   }
   return "moving";
+}
+
+// ---------------------------------------------------------------------------
+// Routes: the same model through another provider (ADR-011)
+
+const NullablePositiveInt = PositiveInt.nullable();
+
+/**
+ * A provider's own limits for a model. Null means the provider publishes none, and the profile's
+ * value applies. OpenRouter lists Jev with a 32,000 token context for state plus questions.
+ */
+export const RouteLimits = z
+  .strictObject({
+    requestTokens: NullablePositiveInt,
+    statePlusLongestQuestionTokens: NullablePositiveInt,
+    rpm: NullablePositiveInt,
+    tokensPerSec: NullablePositiveInt,
+  })
+  .refine(
+    (l) =>
+      l.requestTokens === null ||
+      l.statePlusLongestQuestionTokens === null ||
+      l.statePlusLongestQuestionTokens <= l.requestTokens,
+    { path: ["statePlusLongestQuestionTokens"], message: "must not exceed requestTokens" },
+  );
+export type RouteLimits = z.infer<typeof RouteLimits>;
+
+/**
+ * One row of `system_one_model_routes`: how one registry model is reached through one provider.
+ * `typesafe` is the identity route and needs no row. For any other provider, a missing row means
+ * the model is not reachable there.
+ */
+export const ModelRoute = z
+  .strictObject({
+    /** The registry id (ModelProfile.id), for example "jev-1.13.0". */
+    modelId: z.string().min(1),
+    provider: SystemOneProvider,
+    /** The id we send, for example "typesafe/jev-1.13" or "~typesafe/jev-latest". */
+    providerModelId: z.string().min(1),
+    /**
+     * True only when providerModelId names exactly one build, so a set on this route may pass
+     * shadow. It also needs the profile to be versioned. OpenRouter's "typesafe/jev-1.13" answers
+     * with dated builds, so its seed row is false until a dated id is confirmed as a request id.
+     */
+    pinned: z.boolean(),
+    /**
+     * Response `model` values accepted as this registry model, for example
+     * "typesafe/jev-1.13-20260917". A response outside this list on a pinned route is drift.
+     */
+    resolvedIds: z.array(z.string().min(1)),
+    limits: RouteLimits,
+    /** The provider's model page. */
+    docsUrl: z.url(),
+    /** YYYY-MM-DD: the date a human checked the row against the provider's docs. */
+    lastReviewed: IsoDate,
+  })
+  .refine((r) => r.provider !== "typesafe", {
+    path: ["provider"],
+    message: "typesafe is the identity route and has no row",
+  })
+  .refine((r) => new Set(r.resolvedIds).size === r.resolvedIds.length, {
+    path: ["resolvedIds"],
+    message: "must not repeat an id",
+  });
+export type ModelRoute = z.infer<typeof ModelRoute>;
+export type ModelRouteInput = z.input<typeof ModelRoute>;
+
+/** What a call on one provider uses: the id to send, whether it is pinned, and the limits. */
+export interface EffectiveRoute {
+  provider: SystemOneProvider;
+  providerModelId: string;
+  pinned: boolean;
+  /** Null only when the profile is unreviewed. Preflight reads these, never profile.limits. */
+  limits: ModelLimits | null;
+}
+
+function tighter(profileValue: number, routeValue: number | null): number {
+  return routeValue === null ? profileValue : Math.min(profileValue, routeValue);
+}
+
+/** The profile's limits, each tightened by the route's value when the route sets one. */
+export function effectiveLimits(profile: ModelLimits | null, route: RouteLimits | null): ModelLimits | null {
+  if (profile === null) return null;
+  if (route === null) return profile;
+  return {
+    requestTokens: tighter(profile.requestTokens, route.requestTokens),
+    statePlusLongestQuestionTokens: Math.min(
+      tighter(profile.statePlusLongestQuestionTokens, route.statePlusLongestQuestionTokens),
+      tighter(profile.requestTokens, route.requestTokens),
+    ),
+    rpm: tighter(profile.rpm, route.rpm),
+    tokensPerSec: tighter(profile.tokensPerSec, route.tokensPerSec),
+  };
+}
+
+/**
+ * Resolve how a profile is called on a provider. Null when the provider is not typesafe and no
+ * route row exists, which the caller reports as model_unavailable.
+ */
+export function resolveRoute(
+  profile: Pick<ModelProfile, "id" | "kind" | "limits">,
+  provider: SystemOneProvider,
+  routes: Iterable<ModelRoute>,
+): EffectiveRoute | null {
+  if (provider === "typesafe") {
+    return {
+      provider,
+      providerModelId: defaultProviderModelId(provider, profile.id, profile.kind),
+      pinned: isPinnedProfile(profile),
+      limits: profile.limits,
+    };
+  }
+  for (const r of routes) {
+    if (r.modelId === profile.id && r.provider === provider) {
+      return {
+        provider,
+        providerModelId: r.providerModelId,
+        pinned: isPinnedProfile(profile) && r.pinned,
+        limits: effectiveLimits(profile.limits, r.limits),
+      };
+    }
+  }
+  return null;
+}
+
+/**
+ * Map a response `model` back to a registry id. TypeSafe answers with registry ids, so they pass
+ * through. For another provider, the route whose resolvedIds (or providerModelId) holds the value
+ * wins; null when no route knows it, which the run records as a `model_resolved_unmapped` warning.
+ */
+export function registryIdForResolved(
+  provider: SystemOneProvider,
+  responseModel: string,
+  routes: Iterable<ModelRoute>,
+): string | null {
+  if (provider === "typesafe") return responseModel;
+  for (const r of routes) {
+    if (r.provider !== provider) continue;
+    if (r.resolvedIds.includes(responseModel) || r.providerModelId === responseModel) return r.modelId;
+  }
+  return null;
 }

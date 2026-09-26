@@ -52,7 +52,7 @@ OperationDef<I, O> = {
 
 ### runOperation
 
-`runOperation(id, ctx, input, { idempotencyKey?, ifMatch?, dryRun? })` runs the same steps for every caller, in this order:
+`runOperation(id, ctx, input, { idempotencyKey?, ifMatch?, dryRun?, interfaceMajor?, runSource? })` runs the same steps for every caller, in this order. `interfaceMajor` is the `SysOne-Interface` header value, and `runSource` is the `RunRequest.source` the adapter sets from the auth mode and surface for `set.run`; neither is ever read from the body. `ctx` is typed by `OperationContextFor<Id>`: a `TenantContext`, or for `org.create` and the `platform_*` rows an `OrgLessContext` as well ([architecture.md](architecture.md)).
 
 1. **Resolve the actor** into `TenantContext`: console session, app token or agent token. For an agent token, role = min(`role_ceiling`, current membership role), read on every request.
 2. **Validate input** with `op.input`. Failure: `400 invalid_request` with `details[]` (JSON Pointers into the body).
@@ -64,6 +64,8 @@ OperationDef<I, O> = {
 8. **Audit row** with `actor_type`, `client`, `actor_token_id` and `approval_id` (security.md).
 9. **Event rows** for each type in `op.emits`, in the same transaction.
 10. **Store the idempotent response** in the same transaction.
+
+`runOperation` returns a tagged result, `{ kind: "ok", output }`, `{ kind: "dryRun", preview }` or `{ kind: "approval", accepted }`, or throws an `OperationError`. Only the route adapter maps it to HTTP: `ok` is the operation's success status, `dryRun` is 200 with the preview, and `approval` is 202 with the approval. `OperationError` carries `code`, `details`, `gates`, `requiredScope`, `currentEtag` and `runId`, and `toEnvelope()` builds the api.md error envelope from them.
 
 After commit: cache epoch bumps, action dispatch and job enqueue. With `dryRun`, steps 1 to 6 run (step 4 only reports whether approval would be needed), then `op.preview` runs and nothing is written: no audit, event, idempotency or approval row.
 
@@ -80,6 +82,7 @@ An approved request runs through `runOperation` with the stored input, the store
 
 - `openapi.json` is generated from the registry and the zod contracts, committed as `packages/core/openapi.json`, and served at `GET /api/v1/openapi.json`. Each path's `operationId` is the operation id, and the extensions `x-sysone-scope`, `x-sysone-min-role`, `x-sysone-risk` and `x-sysone-actors` carry the registry metadata. MSW mocks, CLI help and MCP tool schemas come from the same file.
 - The parity test runs on every PR ([testing.md](testing.md), Headless API tests). It fails when an operation has no route or no OpenAPI path, when a curated MCP tool or a CLI command maps to no operation or to a session-only operation, or when code under `app/(org)/**` or `app/(platform)/**` imports a repository. The run surface is in the registry too (`set.run` and the rest of [Runs and usage](#runs-and-usage)), so the MCP tool `run_set` and `sysone run` map to `set.run`.
+- The catalog test in core (`operations.test.ts`) transcribes every row of the Catalog tables below, risk included, with no overrides, and checks that every `high*` row has an entry in `HIGH_RISK_CONDITIONS`. `set.update` and `experiment.start` are `high*` rows like publish, promote, rollout change, token creation and settings.
 
 ## Conventions for every route
 
@@ -106,6 +109,8 @@ A row whose Scope column says *session only* has `actors: ["user"]`: no token ca
 - `rollout.change`: a move into `controlled` or `full` from a lower stage, or any move out of `paused`. Moves into `paused`, and moves from `full` or `controlled` down to `controlled` or `shadow`, are never gated. `inactive` to `shadow` is normal, because nothing executes in shadow.
 - `app_token.create` and `agent_token.create`: the new token has a write scope. One exception: `feedback:write` on an `sk_test_` app token bound to `staging` does not count, so `sysone init` needs no approval ([deploy-and-codegen.md](deploy-and-codegen.md)). An `admin:write` agent token is always gated.
 - `settings.update`: the change touches PII mode, retention, or lowers `agentApprovals`.
+- `set.update`: the change moves `storageMode` to a less private mode, `hash_only` to `redacted` or `full`, or `redacted` to `full` ([data-model.md](data-model.md)). Every other `set.update` is normal.
+- `experiment.start`: `samplePct` above 0.25 ([effectiveness-loop.md](effectiveness-loop.md)).
 
 The org setting `agentApprovals` narrows which of these are gated; see [security.md](security.md).
 
@@ -123,7 +128,7 @@ The run surface in [api.md](api.md) is registered like every other operation.
 | POST | `/tokens/browser` | `browser_token.create` | `run` | none (`sk_` only) | normal | 2 |
 | POST | `/runs/ingest` | `run.ingest` | `runs:write` | viewer | normal | 4b |
 
-- `set.run` takes a `RunRequest` ([spec-schema.md](spec-schema.md)) and returns `RunResult`, or `RunDryRunResult` when `options.dryRun` is set. Actors: sessions, agent tokens and app tokens. `Idempotency-Key` is accepted but not required. The run's own `options.dryRun` is its preview; the generic `?dryRun=true` does not apply. MCP tool `run_set`, CLI `sysone run`. The console playground calls it too.
+- `set.run` takes a `RunRequest` ([spec-schema.md](spec-schema.md)) and returns `RunResult`, or `RunDryRunResult` when `options.dryRun` is set. Actors: sessions, agent tokens and app tokens. `Idempotency-Key` is accepted but not required. The run's own `options.dryRun` is its preview; the generic `?dryRun=true` does not apply. MCP tool `run_set`, CLI `sysone run`. The console playground calls it too. It emits `review.created` for action review items and `model.alias_moved` when `RunSink` sees a new `model_requested` to `model_resolved` pair.
 - `set.manifest` returns the manifest in [api.md](api.md): no instructions, criteria or thresholds. The embed kit and codegen read it.
 - `run.list` backs the console runs explorer. Filters: `set`, `version`, `channel`, `source`, `status`, `band` (run band), `action` (overall action), `from` and `to`, plus `limit` and `cursor`. It returns run summaries without state.
 - `run.get` returns the run envelope with its per-stage payloads and answers, plus the run's review items with their status and resolution, so a host app can poll how a review ended. State is omitted unless the set's storage mode kept it.
@@ -151,7 +156,7 @@ Goals carry `qualityTarget` (a `QualityTarget`) and `businessKpi`. See [effectiv
 | GET | `/sets` | `set.list` | `sets:read` | viewer | read | 3 |
 | POST | `/sets` | `set.create` | `sets:write` | editor | normal | 3 |
 | GET | `/sets/{ref}` | `set.get` | `sets:read` | viewer | read | 3 |
-| PATCH | `/sets/{ref}` | `set.update` | `sets:write` | editor | normal | 3 |
+| PATCH | `/sets/{ref}` | `set.update` | `sets:write` | editor | high* | 3 |
 | POST | `/sets/{ref}/archive` | `set.archive` | `sets:write` | editor | normal | 3 |
 | GET | `/sets/{ref}/draft` | `draft.get` | `sets:read` | viewer | read | 3 |
 | PUT | `/sets/{ref}/draft` | `draft.update` | `sets:write` | editor | normal | 3 |
@@ -160,7 +165,7 @@ Goals carry `qualityTarget` (a `QualityTarget`) and `businessKpi`. See [effectiv
 - `template.list` returns `{ id, name, pattern, parameters }` for each seeded template ([definition-studio.md](definition-studio.md)), so an agent can find a `fromTemplate` id.
 - `set.create` takes `{ slug, name, goalId, fromTemplate?, fromVersion? }`. `fromTemplate` is a template id ([definition-studio.md](definition-studio.md)). `fromVersion` is `slug@n` of another set in the org. The new set has a draft and no published version.
 - `set.get` returns the set row, each channel pointer with its version, rollout stage and active experiment, and the live interface major.
-- `set.update` changes `name`, `protected` (admin only), `labeling`, `dispatchActionsOnStaging`, `valueSettings` and `gateMargins` (`{ coverageDrop, reviewLoadRise }`, used by the regression gate and experiment promotion in [effectiveness-loop.md](effectiveness-loop.md)).
+- `set.update` changes `name`, `protected` (admin only), `labeling`, `dispatchActionsOnStaging`, `valueSettings`, `gateMargins` (`{ coverageDrop, reviewLoadRise }`, used by the regression gate and experiment promotion in [effectiveness-loop.md](effectiveness-loop.md)), `storageMode`, `userGenerated` and `resultCacheTtlSeconds` (null turns the result cache off). A move to a less private `storageMode` is high risk for agents (see the `high*` conditions).
 - `set.archive` is `destructive`.
 - `draft.get` returns the spec with `ETag: "<spec_hash>"`. `draft.update` replaces the whole spec, requires `If-Match`, and returns the new ETag. The body is a strict `QuestionSetSpec` ([spec-schema.md](spec-schema.md)); a `rollout` key fails with a message naming `rollout.change`.
 - `draft.validate` takes an optional spec in the body (default: the stored draft) and returns `{ errors[], warnings[] }`. Each item has the `details` shape from api.md: `{ path, rule, severity, message }`. It writes nothing, so an agent can iterate on a local file.
@@ -202,7 +207,7 @@ Goals carry `qualityTarget` (a `QualityTarget`) and `businessKpi`. See [effectiv
 
 | Method | Path | Operation | Scope | Min role | Risk | Phase |
 |---|---|---|---|---|---|---|
-| POST | `/sets/{ref}/experiments` | `experiment.start` | `release:<channel>` | editor | normal | 3b |
+| POST | `/sets/{ref}/experiments` | `experiment.start` | `release:<channel>` | editor | high* | 3b |
 | GET | `/experiments/{id}` | `experiment.get` | `sets:read` | viewer | read | 3b |
 | POST | `/experiments/{id}/promote` | `experiment.promote` | `release:<channel>` | editor | high | 3b |
 | POST | `/experiments/{id}/stop` | `experiment.stop` | `release:<channel>` | editor | safety | 3b |
@@ -375,8 +380,9 @@ Goals carry `qualityTarget` (a `QualityTarget`) and `businessKpi`. See [effectiv
 - `approval.list` returns pending approvals: a token sees its own requests, and a session member sees the ones their role can decide. It feeds the Approvals inbox and its count badge.
 - `approval.get` returns an approval to the token that requested it and to session members with the required role.
 - `approval.decide` takes `{ decision: "approved" | "rejected", note? }`. It is session only, so no token can approve. Rules are in [Approvals](#approvals).
-- `key.get` returns the key's status, `key_last4`, fingerprint, key mode, the model names it can reach and `rotated_at`. It never returns the key.
-- `key.rotate` also saves the org's first key. It validates the key with `GET /v1/models`, stores the reachable model names and never echoes the key.
+- Keys are per provider (ADR-011, proposed): `typesafe` or `openrouter`. `key.get`, `key.rotate` and `key.revoke` take a `provider` (query parameter on GET and DELETE, body field on rotate), default `typesafe`, so existing callers keep working.
+- `key.get` returns, per provider, the key's status, `key_last4`, fingerprint, key mode, the model names it can reach and `rotated_at`. It never returns the key.
+- `key.rotate` also saves the org's first key for a provider. It validates the key and stores the reachable model names, and never echoes the key. A TypeSafe key is validated with `GET /v1/models`. An OpenRouter key is validated with OpenRouter's Models API plus one one-noul request on the cheapest reachable route, because the SDK's `models.list()` does not work against OpenRouter ([system-one-api-contract.md](system-one-api-contract.md)).
 - Agent tokens: any member manages their own tokens; managing another user's tokens needs admin. A token can always revoke itself without `admin:write` (`sysone logout`). Minting rules are in [security.md](security.md).
 - Invitations and removals count as member role changes.
 - Changing a member to or from owner needs the owner role.

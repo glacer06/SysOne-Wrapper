@@ -1,6 +1,6 @@
 # ADR-007: Headless parity (operation registry, agent tokens, approvals)
 
-- **Status:** proposed
+- **Status:** accepted (decided by Nick, 2026-09-26)
 - **Date:** 2026-09-26
 - **Owner:** Architect / Lead
 - **Contract impact:** `TenantContext` actor union (new `agent` actor, `Role` and `Scope` unions), `OperationDef`, error envelope v2, new scopes, new tables `agent_tokens`, `approval_requests`, `idempotency_keys`, `jobs` and `events`, new `audit_log` columns. `openapi.json` is generated from the operation registry.
@@ -97,7 +97,7 @@ Approval is not an error. When an agent calls a high-risk operation, the API ans
 { "approval": { "id": "apr_01J...", "status": "pending", "url": "https://console.example.com/approvals/apr_01J...", "expiresAt": "2026-10-03T12:00:00Z" } }
 ```
 
-and stores a row in `approval_requests (org_id, op_id, input jsonb, input_hash, requested_by_token_id, requested_by_user_id, reason, status pending|approved|rejected|expired|executed, decided_by_user_id, decided_at, expires_at, result)`. Only a human in a console session with the required role can approve. The stored input then runs unchanged (the `input_hash` is checked), and the result is written back to the row. Requests expire after 7 days. The CLI exits with code 3 and the MCP tool returns the pending approval and its URL.
+and stores a row in `approval_requests (org_id, op_id, input jsonb, input_hash, if_match null, requested_by_token_id, requested_by_user_id, reason, status pending|approved|rejected|expired|executed, decided_by_user_id, decided_at, expires_at, result, created_at)`. `if_match` keeps the `If-Match` value the agent sent, so the approved run is checked against the same version. Only a human in a console session with the required role can approve. The stored input then runs unchanged (the `input_hash` is checked), and the result is written back to the row. Requests expire after 7 days. The CLI exits with code 3 and the MCP tool returns the pending approval and its URL.
 
 High-risk operations:
 

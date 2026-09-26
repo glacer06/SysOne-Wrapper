@@ -144,8 +144,6 @@ describe("catalog matches management-api.md", () => {
   const roleOf = (r: string) =>
     r.startsWith("none") ? "none" : r === "admin (per org)" ? "admin" : r === "the requested operation's role" ? "requested_operation" : r;
 
-  // Deliberate differences from the table, each explained in operations.ts.
-  const riskOverrides: Record<string, string> = { "set.update": "high*", "experiment.start": "high*" };
 
   it("has one entry per operation row", () => {
     expect(docRows.length).toBe(OPERATION_CATALOG.length);
@@ -159,7 +157,7 @@ describe("catalog matches management-api.md", () => {
       phase,
       scope: scopeOf(scope ?? ""),
       minRole: roleOf(minRole ?? ""),
-      risk: riskOverrides[id ?? ""] ?? risk,
+      risk,
       readOnly: risk === "read",
     }));
     expect(OPERATION_CATALOG).toEqual(fromDoc);

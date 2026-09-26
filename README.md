@@ -28,4 +28,4 @@ SysOne is that layer.
 
 ## Status
 
-Planning and the builder skill are done, including the headless, model registry, deploy and effectiveness-loop plans (ADRs 007 to 010). The scaffold (Phase 0 part two) is next.
+Phase 0 is done: the builder skill, the plan, the monorepo scaffold and the frozen zod contracts, with a green gate. ADRs 002 to 010 are accepted. ADR-011, which adds OpenRouter as a second route to System One models, is proposed. Phase 1 (core engine and data layer) is next.

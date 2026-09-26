@@ -20,7 +20,7 @@ import {
 } from "./common.js";
 import { Check, CompositePolicy, ConfidencePolicy, Condition } from "./policy.js";
 import { QuestionDef, QuestionTypeId } from "./question-types.js";
-import { SystemOneRequest } from "./system-one.js";
+import { SystemOneProvider, SystemOneRequest } from "./system-one.js";
 
 // ---------------------------------------------------------------------------
 // Spec parts
@@ -360,7 +360,10 @@ export const RunDryRunResult = z.strictObject({
   model: z.string().min(1),
   /** The ModelProfile preflight used; for a moving name, the profile of its last observed versioned model. */
   profileId: z.string().min(1),
+  /** The provider the run would call (RunSettings.systemOneProvider). Batch requests carry its model id. */
+  provider: SystemOneProvider,
   stages: z.array(DryRunStage),
+  /** The effective limits on that provider: the profile's, tightened by the route's (ADR-011). */
   limits: z.strictObject({ requestTokens: TokenCount, statePlusLongestQuestionTokens: TokenCount }),
   /** Preflight warnings, and dry_run_answers_unknown. */
   warnings: z.array(z.string()),

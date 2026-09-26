@@ -30,6 +30,7 @@ import {
   VersionId,
 } from "./common.js";
 import { GateResult } from "./errors.js";
+import { SystemOneProvider } from "./system-one.js";
 // stores.ts imports this file at runtime, so only types come back the other way. The enums below
 // repeat stores.ts values, and the checks at the end of this file keep them equal.
 import type { ReviewItemKind, ReviewItemReason, VersionSource } from "./stores.js";
@@ -275,6 +276,12 @@ export const ModelAvailableData = z.object({
 });
 
 export const ModelAliasMovedData = z.object({
+  /**
+   * Which provider's alias moved (ADR-011): OpenRouter's `~typesafe/jev-latest` can point at a
+   * different build than TypeSafe's `jev-latest`. Absent on events from before ADR-011, which were
+   * typesafe. For an OpenRouter route the ids are OpenRouter ids.
+   */
+  provider: SystemOneProvider.optional(),
   alias: z.string().min(1),
   /** Null the first time an alias target is observed. */
   fromResolvedId: z.string().min(1).nullable(),

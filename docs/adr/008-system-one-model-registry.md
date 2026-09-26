@@ -1,6 +1,7 @@
 # ADR-008: System One model registry and neutral naming
 
-- **Status:** proposed
+- **Status:** accepted (decided by Nick, 2026-09-26)
+- **Amended by:** ADR-011 (proposed): a second provider route through OpenRouter, provider-aware routes and keys. Until ADR-011 is accepted, this ADR's section 8 stands.
 - **Date:** 2026-09-26
 - **Owner:** Architect / Lead
 - **Contract impact:** `ModelProfile`, a `ModelCatalog` port in `RunPorts`, `QuestionTypeModule`, preflight and lint signatures that take a profile, renamed `RunResult` cost fields, `system_one_*` error codes, renamed tables and columns, new tables `system_one_models` and `model_alias_observations`, `org_typesafe_keys.models`, and the package rename to `packages/system-one-client`.
@@ -41,12 +42,14 @@ ModelProfile = {
   limits: { requestTokens: number, statePlusLongestQuestionTokens: number, rpm: number, tokensPerSec: number } | null,
   inputModalities: string[],           // ["text"]
   weaknesses: string[],                // ids such as "counting", "date_comparison", "inverted_noul"
+  supersedes: string[],                // model or family ids this model can replace; [] for none
   docsUrl: string,
   jaggednessUrl: string | null,
   lastReviewed: string,
 }
 ```
 
+- `supersedes` is required. The platform admin sets it at review. Without it a new family never shows up as an upgrade candidate for sets on an older family. The migration that adds the column backfills `[]` on rows written before it, and the zod schema does not default it.
 - Platform table `system_one_models` holds the profiles. It has no `org_id`. Only the platform admin writes to it, and every write is audited.
 - `model_alias_observations (alias, resolved_id, first_seen, last_seen)` records which versioned model each alias has served.
 - `org_typesafe_keys.models text[]` records the names each org key can send. It is refreshed when the key is saved or rotated, and nightly.
@@ -135,6 +138,8 @@ Code, schemas, columns, error codes and env vars say `systemOne` or `system_one`
 The prefix is `systemOne`, not `model`, because the envelope already carries LLM fields (`counterfactualLlmCostUsd`, `escalationCostUsd`, `comparatorModel`), and "model cost" would be ambiguous next to them.
 
 ### 8. Gateways stay out of v1
+
+ADR-011 (proposed) revisits this section: OpenRouter confirmed a System One endpoint on 2026-09-25, and ADR-011 adds it as a second provider through the same SDK transport, as the last sentence below anticipates.
 
 TypeSafe's Python SDK usage page documents OpenRouter and Vercel AI Gateway, each with its own base URL, key and model ID. Cloudflare Workers AI is not documented. SysOne calls TypeSafe server-side, so gateways are out of scope for v1. If one is added later, it is configuration on the existing SDK transport (base URL, key, provider model ID), not a new transport, and the registry maps each canonical model ID to the provider's ID so pinning, pricing and upgrades treat them as one model.
 

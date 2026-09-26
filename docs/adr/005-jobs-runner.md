@@ -1,6 +1,6 @@
 # ADR-005: Background jobs runner
 
-- **Status:** proposed
+- **Status:** accepted (decided by Nick, 2026-09-26)
 - **Date:** 2026-09-26
 - **Owner:** Platform / Tenancy
 - **Contract impact:** none. The `jobs` table and `GET /api/v1/jobs/{id}` stay the public job status ([management-api.md](../../.claude/skills/sysone-builder/references/management-api.md#jobs)). Two env vars, `INNGEST_EVENT_KEY` and `INNGEST_SIGNING_KEY`, are added when the runner lands in Phase 2.

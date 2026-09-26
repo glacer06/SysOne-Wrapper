@@ -1,6 +1,6 @@
 # ADR-003: Key vault with envelope encryption
 
-- **Status:** proposed
+- **Status:** accepted (decided by Nick, 2026-09-26)
 - **Date:** 2026-09-26
 - **Owner:** Platform / Tenancy, reviewed by the Security reviewer
 - **Contract impact:** the `KeyResolver` port keeps its signature. One additive error code, `503 key_vault_unavailable` (retryable), goes into api.md and the error contract. The format of `SYSONE_KEK` is fixed here. The envelope columns already in data-model.md (`ciphertext, iv, auth_tag, wrapped_dek, kek_id`) do not change.
@@ -17,7 +17,7 @@ The platform key (`TYPESAFE_API_KEY`, platform key mode) is an env secret on the
 
 ## Decision
 
-1. **One DEK per stored secret.** Each row of `org_typesafe_keys` and `org_webhook_secrets`, and later `plugin_configs`, gets its own random 256-bit DEK. That meets security.md's per-org DEK, and rotating one secret never touches another.
+1. **One DEK per stored secret.** Each row of `org_typesafe_keys` (renamed `org_system_one_keys` by ADR-011, proposed, with one row per org and provider) and `org_webhook_secrets`, and later `plugin_configs`, gets its own random 256-bit DEK. That meets security.md's per-org DEK, and rotating one secret never touches another.
 2. **AES-256-GCM** through Node `crypto`, with a random 96-bit IV per encryption and a 128-bit tag. The additional authenticated data is `sysone:v1:<table>:<org_id>:<row_id>`. A ciphertext moved to another org or another row fails to decrypt instead of returning the wrong secret.
 3. **Production KEK: AWS KMS**, one symmetric key per environment. `GenerateDataKey` creates each DEK and `Decrypt` unwraps it, both with encryption context `{ orgId, table }`, so CloudTrail logs every unwrap with its org. The console reaches AWS through Vercel OIDC federation and an IAM role limited to `GenerateDataKey`, `Encrypt` and `Decrypt` on that one key. No static cloud credentials sit in env.
 4. **`SYSONE_KEK` names the KEK.**

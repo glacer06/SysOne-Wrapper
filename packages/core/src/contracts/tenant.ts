@@ -22,6 +22,8 @@ import {
   UserId,
 } from "./common.js";
 import { SetInterface } from "./spec.js";
+import { ModelRoute } from "./models.js";
+import { SystemOneProvider } from "./system-one.js";
 
 // ---------------------------------------------------------------------------
 // Actors
@@ -172,8 +174,16 @@ export const PublishCtx = z.strictObject({
    * promote: the promoted version's stored major.
    */
   newMajor: z.number().int().nonnegative(),
-  /** org_typesafe_keys.models. */
+  /** The provider the set's runs use (RunSettings.systemOneProvider, ADR-011). */
+  systemOneProvider: SystemOneProvider,
+  /** org_system_one_keys.models for that provider, as registry ids. */
   reachableModels: z.array(z.string()),
+  /**
+   * Route rows for that provider (empty for typesafe). model.alias_past_shadow and
+   * model.not_available_to_org call resolveRoute with them, so a route that is not pinned counts
+   * as moving.
+   */
+  modelRoutes: z.array(ModelRoute),
   /**
    * Exact model ids with a price_books row the org can read (its own rows plus the platform rows).
    * Lint `escalation.model_unpriced` checks EscalationConfig.model against it.

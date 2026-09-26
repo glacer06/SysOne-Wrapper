@@ -3,10 +3,14 @@
 **Owners:** Platform / Tenancy, Billing / Savings, Console UI (shell), Security reviewer. **Needs:** Phase 1 schema.
 
 ## Platform / Tenancy
-- [ ] Auth per ADR-002: orgs, memberships, invites (7-day token links), five roles, active org
+- [ ] Auth with Better Auth per ADR-002 (organization, admin and two-factor plugins, behind `resolveSession` in `packages/tenancy`, built-in member and org endpoints disabled): orgs, memberships, invites (7-day token links), five roles, active org
 - [ ] Org switcher and `/[orgSlug]` routing
-- [ ] BYO key vault with envelope encryption (KMS in prod), validate on save, rotate, invalid-key handling; validation stores the reachable model names in `org_typesafe_keys.models` ([system-one-models.md](../system-one-models.md))
-- [ ] Platform key mode
+- [ ] BYO key vault with envelope encryption (KMS in prod), validate on save, rotate, invalid-key handling; validation stores the reachable model names in `org_system_one_keys.models` ([system-one-models.md](../system-one-models.md))
+- [ ] Per-provider keys (ADR-011, once accepted): `org_system_one_keys` holds at most one key per `(org_id, provider)`; `key.get`, `key.rotate` and `key.revoke` take `provider`; `KeyResolver(ctx, provider)` never returns a key for another provider ([security.md](../security.md))
+- [ ] Key validation per provider: TypeSafe with `GET /v1/models`; OpenRouter with its Models API plus one one-noul call, 401 rejects, 402 saves with a warning
+- [ ] Registry sync per provider: OpenRouter keys list through OpenRouter's Models API (`typesafe/*`, `~typesafe/*`), never `client.models.list()`; unmapped OpenRouter ids alert the platform admin; the `~typesafe/jev-latest` target feeds alias detection ([system-one-models.md](../system-one-models.md), sections 6 and 15)
+- [ ] Provider settings: `organizations.default_system_one_provider` through `settings.update`, and `question_sets.system_one_provider` through `set.update`; the pointer resolver fills `RunSettings.systemOneProvider`. Changing a set's provider re-runs the model lints
+- [ ] Platform key mode, with a platform key per provider (`TYPESAFE_API_KEY`, `OPENROUTER_API_KEY`)
 - [ ] App tokens (`sk_live_`, `sk_test_`, `pk_live_`): create (show once), scope, set allowlist, origins, channel binding (production by default), revoke. The `runs:write` and `feedback:write` scopes are for `sk_` tokens only.
 - [ ] Agent tokens (`sa_live_`): role ceiling, scopes, 90-day maximum expiry, optional daily spend cap, created in settings; effective role is min(ceiling, current membership role), read on every request ([security.md](../security.md))
 - [ ] Device flow: `POST /api/v1/auth/device/code` and `POST /api/v1/auth/device/token` (RFC 8628), approved in a console session
@@ -15,7 +19,7 @@
 - [ ] `agentApprovals` org setting (`required` by default, `production_only`, `off`) with the always-gated list from [security.md](../security.md)
 - [ ] Idempotency middleware on `idempotency_keys` (24 hours, same transaction as the operation)
 - [ ] Browser token minting route `POST /api/v1/tokens/browser` with ES256 (`SYSONE_JWT_SIGNING_KEY`, `kid`) and the JWKS at `/api/v1/.well-known/jwks.json`
-- [ ] `org_webhook_secrets`, encrypted like TypeSafe keys
+- [ ] `org_webhook_secrets`, encrypted like System One keys
 - [ ] Retention settings split: `state_retention_days`, `answers_retention_days`, `dataset_retention_days`
 - [ ] Rate limiters: per org (plan), per token, an eval bucket (25 percent of org RPM by default, lowest priority), and a global budget per model from settings (about 1,000 RPM for `jev-1.13.0`) with per-org fair share. Limiter keys include the model.
 - [ ] Audit writes inside `withTenant` for every mutation, with `actor_type`, `client`, `actor_token_id` and `approval_id`

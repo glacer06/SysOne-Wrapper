@@ -1,6 +1,6 @@
 # ADR-006: Billing model
 
-- **Status:** proposed
+- **Status:** accepted (decided by Nick, 2026-09-26)
 - **Date:** 2026-09-26
 - **Owner:** Billing / Savings
 - **Contract impact:** the `PlanId` values are fixed here; the schema stays `^[a-z][a-z0-9_]{0,31}$`. In data-model.md, `usage_events.kind` changes from `system_one_input_tokens | run` to `run | eval_run | system_one_cost | llm_cost`, and `usage_events` gains a nullable `job_id` and `push_status` (`pending | sent | skipped`). No change to `RunResult`, the error envelope or any operation.

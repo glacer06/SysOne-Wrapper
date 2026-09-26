@@ -110,7 +110,7 @@ Each template is a `QuestionTemplate` (see `templates/plugin.template.ts`): para
 
 | Template | Pattern | Shape | Source |
 |---|---|---|---|
-| LLM router | `intent_routing` | Choice over models by task type; low band escalates to the strongest model | The Code, 2026-09-26 |
+| LLM router | `intent_routing` | Choice over models by task type; low band escalates to the strongest model. See the note below on `typesafe/jev-router` | The Code, 2026-09-26 |
 | PR auto-merge safety | `composite_scoring` | Nouls: too big to review, touches auth/billing, tests changed, risky migration; composite gate | The Code, 2026-09-26 |
 | Email urgency | `composite_scoring` | 3 weighted checks, above | Every, 2026-09-23 |
 | Agent reasoning-effort controller | `top_choice` | Choice: which reasoning effort the agent's next step needs (low, medium or high), with the top-choice preset because a wrong pick is cheap | Linas, 2026-09-22 |
@@ -121,6 +121,8 @@ Each template is a `QuestionTemplate` (see `templates/plugin.template.ts`): para
 | Context pruner | `confidence_routing` | Noul per tool call or message: "does this still matter for the current task"; drop the rest, rewrite nothing | The Code, 2026-09-26 (fast-jev-compaction) |
 | Log-line pager | `confidence_routing` | One Noul per log line ("does this need a human now"), tunable threshold | The Code, 2026-09-26 |
 | UI action picker | `confidence_routing` | Numbered list of clickable elements in state; one Choice picks action and element; high-risk tier by default ([security.md](security.md)) | The Code, 2026-09-26 (browser-use/jev-ultrafast) |
+
+**LLM router and `typesafe/jev-router`.** OpenRouter offers `typesafe/jev-router` (launched 2026-09-25): a free, OpenAI-compatible chat model that uses Jev to pick the LLM and the reasoning effort for each request. When an app only needs "send this prompt to a good enough model", that is the turnkey option, and the Studio says so before it builds the LLM router template. The template earns its place when the org needs what jev-router does not give: its own list of allowed models and a policy over them, confidence bands and gates, a review queue for low-band picks, rollout stages and a kill switch, and a savings ledger that shows what each routing choice cost. ADR-011 (proposed) also lets a set's `escalate_to_llm` target `typesafe/jev-router`, so a low-band decision can fall back to it.
 
 ## Working rules for question writing
 

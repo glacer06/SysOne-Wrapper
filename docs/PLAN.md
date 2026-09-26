@@ -2,7 +2,7 @@
 
 **Owner:** Nick Sims
 **Date:** 2026-09-26
-**Status:** Phase 0 part one complete (builder skill, plan, and ADRs 007 to 010 proposed)
+**Status:** Phase 0 complete. The scaffold and frozen contracts are built with a green gate, and Nick accepted ADRs 002 to 010 on 2026-09-26 (ADR-002 picks Better Auth). ADR-011 (OpenRouter route) is proposed. Phase 1 is next.
 
 ## Why this exists
 
@@ -76,13 +76,15 @@ Full detail is in `.claude/skills/sysone-builder/references/architecture.md`.
 - **One source of truth per set.** `QuestionSetSpec` holds questions, thresholds, composites, routes, and savings settings. Published versions never change. Rollout is not in the spec; it lives on each channel's release pointer.
 - **Three bands, four actions, five rollout stages (inactive, shadow, controlled, full, paused).** Callers act on `effectiveAction`, which already accounts for the rollout stage.
 - **Savings on every run.** Three kinds (decision counterfactual, escalation avoided, context pruned), labeled as estimates with their assumptions shown.
-- **Keys stay on the server.** BYO TypeSafe keys are envelope-encrypted per org. Embeds use app tokens. The extension, the CLI and the MCP server never see a TypeSafe key.
+- **Keys stay on the server.** BYO keys (TypeSafe, and OpenRouter once ADR-011 is accepted) are envelope-encrypted per org and provider. Embeds use app tokens. The extension, the CLI and the MCP server never see a TypeSafe key.
 - **Headless parity (ADR-007):** one operation registry behind console, API, CLI and MCP; agent tokens with role ceilings and human approvals.
 - **Model registry (ADR-008):** model facts are curated data; names in code are neutral (`systemOne`).
 - **Deploy targets and interface versioning (ADR-009).**
 - **Rollout on pointers and the effectiveness loop (ADR-010).**
 
-ADRs are in `docs/adr/`: `007-headless-parity.md`, `008-system-one-model-registry.md`, `009-app-integration-and-deploy-targets.md`, `010-rollout-pointers-and-effectiveness-loop.md`.
+- OpenRouter docs, verified 2026-09-26: `openrouter.ai/docs/guides/community/typesafe-sdk.md`, `/guides/community/jev.md`, the System One API reference (`POST /api/v1/systemone`), and the Models API entries `typesafe/*` and `~typesafe/*`
+
+ADRs are in `docs/adr/`: `002-auth-library.md` to `006-billing-model.md`, `007-headless-parity.md`, `008-system-one-model-registry.md`, `009-app-integration-and-deploy-targets.md`, `010-rollout-pointers-and-effectiveness-loop.md`, and `011-openrouter-route.md` (proposed).
 
 ## Phases
 
@@ -129,20 +131,23 @@ Later phases follow the same pattern: load the skill, open the phase file, stay 
 
 ## Before the first paying customer
 
-- ADR-002 (auth library) decided.
-- ADRs 007 to 010 accepted.
+- ADR-002 (auth library) decided: Better Auth, 2026-09-26. Done.
+- ADRs 003 to 010 accepted, 2026-09-26. Done. The ADR-009 Python and Standalone sections still need their own acceptance.
+- ADR-011 (OpenRouter route) decided.
 - Default `agentApprovals` setting reviewed with the Security reviewer.
 - Stripe, Linear (project SysOne, `P-NSI-36`, in the NSIMS team), and Sentry connectors authorized in claude.ai so agents can use them.
-- DPA lists TypeSafe (and Anthropic, if Studio drafting is on) as subprocessors.
+- DPA lists TypeSafe (and Anthropic, if Studio drafting is on) as subprocessors, plus OpenRouter for any org that uses the OpenRouter route.
 - TypeSafe rate limits confirmed for the expected load. The published 1,200 RPM and 250k tokens/sec limits are shared across every tenant on the platform key, and TypeSafe says they are adjusting dynamically.
 
 ## Open items
 
-- **Gateways:** OpenRouter and Vercel AI Gateway are documented in TypeSafe's Python SDK usage page (`docs.typesafe.ai/sdk/python/usage.md`). Both follow TypeSafe's OpenAPI spec and use their own base URL, key and model ID (`~typesafe/jev-latest`, `typesafe-ai/jev`). Cloudflare Workers AI is still unconfirmed. Out of scope for v1. If added, a gateway is configuration on the existing SDK transport (baseURL, key, provider model ID), and the registry maps canonical to provider model IDs.
+- **OpenRouter route (ADR-011, proposed):** confirmed 2026-09-25. OpenRouter serves TypeSafe's System One API at `POST https://openrouter.ai/api/v1/systemone`, and the official SDK works with `baseURL: "https://openrouter.ai/api"` and an OpenRouter key. This lets Nick run Jev today with an OpenRouter key and no TypeSafe account. Open question: whether OpenRouter accepts a dated id such as `typesafe/jev-1.13-20260917` as a request model, which a set on OpenRouter needs before it can pass shadow.
+- **Other gateways:** Vercel AI Gateway (mentioned in `docs.typesafe.ai/sdk/python/usage.md`) and Cloudflare Workers AI are still unverified. Out of scope. Adding one is another provider value and route rows, through an ADR like ADR-011.
+- **`typesafe/jev-router`:** a free OpenRouter chat model (2026-09-25) that uses Jev to pick an LLM and reasoning effort per request. ADR-011 proposes it as an optional escalation route in `llm-client`, reported as LLM spend.
 - **Hosted GitHub App** that opens PRs in customer repos: needs an ADR and Security reviewer sign-off.
 - **Dev channel and per-environment plugin configs:** not until a customer asks.
 - **ConfidencePolicy.measure** (top_probability, margin): later ADR.
 - **TypeSafe v1 migration guide:** linked by the official skill, returns 404 today; the contract watch job will flag it.
 - **Compaction plugin:** `tamaratran/fast-jev-compaction` reportedly needs `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1`. Optional for long agent sessions, not required.
 - **Comparator prices:** the defaults in the savings ledger come from Every's 2026-09-23 newsletter. Confirm against vendor pricing pages before the first customer report.
-- **Auth library:** Auth.js (approved) versus Better Auth (recommended by design review). Decided in ADR-002.
+- **Auth library:** decided in ADR-002 (accepted 2026-09-26): Better Auth with its organization, admin and two-factor plugins.

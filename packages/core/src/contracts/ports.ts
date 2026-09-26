@@ -1,5 +1,6 @@
 // The run ports: what runQuestionSet needs from the outside world.
-// Source: references/architecture.md (Core contracts, Ports). ADR-008 adds ModelCatalog.
+// Source: references/architecture.md (Core contracts, Ports). ADR-008 adds ModelCatalog. ADR-011
+// adds the System One provider to keys, calls, the catalog and run settings.
 //
 // Ports are TypeScript interfaces, not zod schemas. Their payloads are zod schemas here, so
 // fixtures and mocks validate against them. Each port has an in-memory or fixture implementation
@@ -28,10 +29,10 @@ import {
   VersionId,
 } from "./common.js";
 import { ErrorCode } from "./errors.js";
-import { ModelProfile } from "./models.js";
+import { ModelLimits, ModelProfile, type ModelRoute } from "./models.js";
 import { RunResult } from "./run.js";
 import { QuestionSetSpec, RunRequest, type RunSource } from "./spec.js";
-import { type SystemOneRequest, SystemOneResponse } from "./system-one.js";
+import { SystemOneProvider, type SystemOneRequest, SystemOneResponse } from "./system-one.js";
 import type { TenantContext } from "./tenant.js";
 
 // ---------------------------------------------------------------------------
@@ -107,6 +108,8 @@ export const RetryBudget = z.strictObject({
 export type RetryBudget = z.infer<typeof RetryBudget>;
 
 export interface SystemOneCallOptions {
+  /** Picks the SDK baseURL (SYSTEM_ONE_PROVIDER_BASE_URLS). Must match the key's provider. */
+  provider: SystemOneProvider;
   apiKey: string;
   signal: AbortSignal;
   /** Per attempt. */
@@ -116,7 +119,7 @@ export interface SystemOneCallOptions {
 
 export const SystemOneCallResult = z.strictObject({
   response: SystemOneResponse,
-  /** The x-typesafe-request-id header. */
+  /** The x-typesafe-request-id header, else the response `id` (OpenRouter's generation id). */
   requestId: z.string().nullable(),
 });
 export type SystemOneCallResult = z.infer<typeof SystemOneCallResult>;
@@ -132,29 +135,46 @@ export interface SystemOneTransport {
 export const EffectiveModel = z.strictObject({
   /** For a moving name, the profile of its last observed resolved model. */
   profile: ModelProfile.nullable(),
-  /** True only for a registry row of kind "versioned". */
+  /**
+   * True only for a registry row of kind "versioned" and, on a provider other than typesafe, a
+   * route row with `pinned` (ModelRoute, ADR-011).
+   */
   pinned: z.boolean(),
   resolvedId: z.string().nullable(),
+  provider: SystemOneProvider,
+  /** The id sent on this provider (resolveRoute). Null when the provider has no route for the name. */
+  providerModelId: z.string().min(1).nullable(),
+  /** Profile limits tightened by the route's (effectiveLimits). Preflight reads these. */
+  limits: ModelLimits.nullable(),
 });
 export type EffectiveModel = z.infer<typeof EffectiveModel>;
 
 /** id to ModelProfile. Whether a name is pinned comes from the registry, never a pattern match. */
 export interface ModelCatalog {
   get(id: string): Promise<ModelProfile | null>;
-  effective(name: string): Promise<EffectiveModel>;
+  /** The profile, pinning, id to send and limits for a name on one provider. */
+  effective(name: string, provider: SystemOneProvider): Promise<EffectiveModel>;
+  /** Route rows for a provider, for registryIdForResolved. Empty for typesafe. */
+  routes(provider: SystemOneProvider): Promise<ModelRoute[]>;
 }
 
 // ---------------------------------------------------------------------------
 // KeyResolver
 
-/** The org's TypeSafe key. Only tenancy decrypts it; it never leaves the server. */
+/**
+ * The org's System One key for one provider (org_system_one_keys, ADR-011). Only tenancy decrypts
+ * it; it never leaves the server.
+ */
 export const ResolvedKey = z.strictObject({
   apiKey: z.string().min(1),
   mode: KeyMode,
+  /** Always the provider that was asked for. A TypeSafe key is never sent to OpenRouter or back. */
+  provider: SystemOneProvider,
 });
 export type ResolvedKey = z.infer<typeof ResolvedKey>;
 
-export type KeyResolver = (ctx: TenantContext) => Promise<ResolvedKey>;
+/** Throws a TransportError with system_one_auth when the org has no usable key for the provider. */
+export type KeyResolver = (ctx: TenantContext, provider: SystemOneProvider) => Promise<ResolvedKey>;
 
 // ---------------------------------------------------------------------------
 // RateLimiter and QuotaGuard
@@ -224,6 +244,8 @@ export const RunSinkRecord = z
     stages: z.array(RunSinkStage),
     /** runs.key_mode, from the KeyResolver call the run already made. runs.error_code is result.error?.code. */
     keyMode: KeyMode,
+    /** runs.system_one_provider: the provider every call of this run used (RunSettings.systemOneProvider). */
+    provider: SystemOneProvider,
     /** runs.parent_run_id: set on a linked run started by a `set` fallback (spec-schema.md section 7). */
     parentRunId: RunId.nullable(),
   })
@@ -294,10 +316,12 @@ export type ModelPrice = z.infer<typeof ModelPrice>;
 
 /**
  * System One and comparator prices by exact model id. The org row first, then the platform
- * default. System One runs are priced by model_resolved, one call at a time.
+ * default. System One runs are priced by model_resolved, one call at a time, mapped to a registry
+ * id with registryIdForResolved. A provider-reported `usage.cost` wins over the price book
+ * (ADR-011). With `provider`, a row for that provider wins over a provider-independent row.
  */
 export interface PriceBook {
-  get(orgId: string, modelId: string): Promise<ModelPrice | null>;
+  get(orgId: string, modelId: string, provider?: SystemOneProvider): Promise<ModelPrice | null>;
 }
 
 // ---------------------------------------------------------------------------
@@ -347,7 +371,7 @@ export interface RunPorts {
   systemOne: SystemOneTransport;
   /** id to ModelProfile; resolves a moving name to its last observed versioned model. */
   models: ModelCatalog;
-  /** The org's TypeSafe key and key mode. */
+  /** The org's System One key, key mode and provider. */
   keys: KeyResolver;
   /** Per-org, per-key and global limiters, keyed by model. */
   limiter: RateLimiter;
@@ -442,6 +466,12 @@ export const RunSettings = z.strictObject({
    * Null when the org has none; core then estimates it with the comparator.
    */
   avgEscalationCostMicroUsd: MicroUsd.nullable(),
+  /**
+   * Who serves this run's System One calls: question_sets.system_one_provider when set, else
+   * organizations.default_system_one_provider (ADR-011). Core passes it to KeyResolver,
+   * ModelCatalog.effective and every SystemOneTransport call.
+   */
+  systemOneProvider: SystemOneProvider,
 });
 export type RunSettings = z.infer<typeof RunSettings>;
 

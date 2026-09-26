@@ -1,6 +1,6 @@
 # ADR-004: Cache and Redis
 
-- **Status:** proposed
+- **Status:** accepted (decided by Nick, 2026-09-26)
 - **Date:** 2026-09-26
 - **Owner:** Platform / Tenancy
 - **Contract impact:** none to core schemas or ports. Documents one new `RunResult.warnings` value, `result_cached` (warnings are strings, so the schema does not change). Fixes the Redis key namespace and caps `question_sets.result_cache_ttl_seconds` at 86,400.

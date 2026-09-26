@@ -287,6 +287,7 @@ describe("RunDryRunResult", () => {
     version: "draft",
     model: "jev-latest",
     profileId: "jev-1.13.0",
+    provider: "typesafe",
     stages: [
       {
         id: "triage",

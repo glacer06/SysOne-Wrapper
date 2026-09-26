@@ -18,6 +18,7 @@ describe("console env", () => {
     for (const [key, value] of Object.entries(validEnv)) vi.stubEnv(key, value);
     vi.stubEnv("SYSTEM_ONE_TRANSPORT", "");
     vi.stubEnv("TYPESAFE_API_KEY", "");
+    vi.stubEnv("OPENROUTER_API_KEY", "");
   });
 
   afterEach(() => {
@@ -35,7 +36,14 @@ describe("console env", () => {
     await expect(loadEnv()).rejects.toThrow();
   });
 
-  it("requires TYPESAFE_API_KEY when the sdk transport is selected", async () => {
+  it("accepts an OpenRouter key alone for the sdk transport", async () => {
+    vi.stubEnv("SYSTEM_ONE_TRANSPORT", "sdk");
+    vi.stubEnv("OPENROUTER_API_KEY", "sk-or-test");
+    const env = await loadEnv();
+    expect(env.OPENROUTER_API_KEY).toBe("sk-or-test");
+  });
+
+  it("requires a platform key when the sdk transport is selected", async () => {
     vi.stubEnv("SYSTEM_ONE_TRANSPORT", "sdk");
     await expect(loadEnv()).rejects.toThrow();
     vi.stubEnv("TYPESAFE_API_KEY", "ts_test_key");

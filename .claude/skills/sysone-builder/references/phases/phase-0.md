@@ -10,9 +10,9 @@
 - [x] Templates: example question set, ADR, plugin
 
 ## Part two: scaffold and contracts
-- [ ] pnpm workspace + turborepo with empty packages from [architecture.md](../architecture.md)
-- [ ] `packages/config`: tsconfig (strict), eslint with `eslint-plugin-boundaries` rules, vitest preset
-- [ ] `packages/core/src/contracts`: every contract below as zod, with neutral names per ADR-008. Ports and store interfaces are TypeScript interfaces whose payloads are these zod types. The link after each group is where the shape is defined:
+- [x] pnpm workspace + turborepo with empty packages from [architecture.md](../architecture.md)
+- [x] `packages/config`: tsconfig (strict), eslint with `eslint-plugin-boundaries` rules, vitest preset
+- [x] `packages/core/src/contracts`: every contract below as zod, with neutral names per ADR-008. Ports and store interfaces are TypeScript interfaces whose payloads are these zod types. The link after each group is where the shape is defined:
   - `QuestionSetSpec` (strict, no `rollout`), `TenantContext` (with the agent actor), `Channel`, `RolloutStage`, `PublishCtx`, the ports (`SystemOneTransport`, `ModelCatalog`, `LlmTransport` and the rest) and the store interfaces: [architecture.md](../architecture.md)
   - `ConfidencePolicy` (discriminated union), `BandActions`, `ActionRef`: [confidence-policy.md](../confidence-policy.md)
   - `RunRequest`, `RunDryRunResult`, `SystemOneRequest`, `SystemOneAnswer`, `SystemOneResponse`, `QuestionTypeModule`, `Condition`, `Check`, `FallbackConfig`, `SetInterface`: [spec-schema.md](../spec-schema.md)
@@ -23,17 +23,17 @@
   - `DeployTarget`, `Opportunity`: [deploy-and-codegen.md](../deploy-and-codegen.md)
   - `FeedbackReport`, `QualityTarget`, `SetHealth`, `ThresholdProposal`, `LabelingPolicy`: [effectiveness-loop.md](../effectiveness-loop.md)
   - `EventEnvelope`, `EventType` (the union of the event catalog): [events.md](../events.md)
-- [ ] Operation registry skeleton in `apps/console/src/server/operations`: `OperationDef`, a `runOperation` stub, and one entry for every operation in the [management-api.md](../management-api.md#catalog) catalog, with handlers stubbed.
+- [x] Operation registry skeleton in `apps/console/src/server/operations`: `OperationDef`, a `runOperation` stub, and one entry for every operation in the [management-api.md](../management-api.md#catalog) catalog, with handlers stubbed.
   - An entry gets real zod input and output schemas where management-api.md or a reference it links gives the shape, for example `set.run`, `set.publish`, `eval.run`, `draft.validate`, `job.get` and `version.diff` (its output is [`SpecDiff`](#specdiff)). Where only one side is given, the other side uses the placeholder below.
   - Any input with no given shape is `z.object({}).passthrough()`, and any such output is `z.unknown()`. Mark each one `// shape: Phase <n>, owner Platform / Tenancy`, with `<n>` from the Phase column of its catalog row. This keeps every path in `openapi.json` while the shape is still open.
   - List operations take `limit` and `cursor` and return `{ data, nextCursor }` per the route conventions, even while their items are `z.unknown()`.
-- [ ] OpenAPI generated from zod and the operation registry, committed as `packages/core/openapi.json`
-- [ ] Seed `ModelProfile` data for `jev-1.13.0`, `jev-latest` and `jev-preview` in `packages/core/src/models/catalog.ts` ([system-one-models.md](../system-one-models.md))
-- [ ] `apps/console` placeholder page and `src/env.ts`
-- [ ] `.env.example` with `TYPESAFE_API_KEY`, `DATABASE_URL`, `AUTH_SECRET`, `SYSONE_KEK`, `SYSONE_JWT_SIGNING_KEY`, `SYSTEM_ONE_TRANSPORT`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `REDIS_URL`, `ANTHROPIC_API_KEY`
-- [ ] GitHub Actions CI: `pnpm i`, `pnpm turbo lint typecheck test build`
-- [ ] PR template with contract, tenancy, and security impact sections
-- [ ] ADRs 002 to 010: auth library, key vault, cache, jobs runner, billing model, headless parity, System One model registry and neutral naming, app integration and deploy targets, rollout on pointers and the effectiveness loop. ADRs 007 to 010 are reviewed and accepted here, before the contracts freeze; the ADR-009 Python and Standalone sections stay proposed.
+- [x] OpenAPI generated from zod and the operation registry, committed as `packages/core/openapi.json`
+- [x] Seed `ModelProfile` data for `jev-1.13.0`, `jev-latest` and `jev-preview` in `packages/core/src/models/catalog.ts` ([system-one-models.md](../system-one-models.md))
+- [x] `apps/console` placeholder page and `src/env.ts`
+- [x] `.env.example` with `TYPESAFE_API_KEY`, `DATABASE_URL`, `AUTH_SECRET`, `SYSONE_KEK`, `SYSONE_JWT_SIGNING_KEY`, `SYSTEM_ONE_TRANSPORT`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `REDIS_URL`, `ANTHROPIC_API_KEY` (ADR-011 adds `OPENROUTER_API_KEY`)
+- [x] GitHub Actions CI: `pnpm i`, `pnpm turbo lint typecheck test build`
+- [x] PR template with contract, tenancy, and security impact sections
+- [x] ADRs 002 to 010: auth library, key vault, cache, jobs runner, billing model, headless parity, System One model registry and neutral naming, app integration and deploy targets, rollout on pointers and the effectiveness loop. ADRs 007 to 010 are reviewed and accepted here, before the contracts freeze; the ADR-009 Python and Standalone sections stay proposed. Done 2026-09-26: Nick accepted ADRs 002 to 010 (ADR-002 picks Better Auth). ADR-011 (OpenRouter route) was added after the freeze and stays proposed; its contract additions are optional or provider-typed so the rest of the contracts did not move.
 
 ## SpecDiff
 

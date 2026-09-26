@@ -1,6 +1,6 @@
 # ADR-009: App integration, deploy targets and interface versioning
 
-- **Status:** proposed. The Python target and the Standalone target sections each need separate acceptance before Phase 4b builds them.
+- **Status:** accepted (decided by Nick, 2026-09-26), except the Python target and the Standalone target sections, which stay proposed. Each needs separate acceptance before Phase 4b builds it.
 - **Date:** 2026-09-26
 - **Owner:** Architect / Lead
 - **Contract impact:** `SetInterface`, `Opportunity`, `DeployTarget`, new manifest fields, `RunResult.interfaceMajor` and `interfaceHash`, new tables `app_opportunities` and `app_set_bindings`, new version columns `interface_hash` and `interface_major`, new scope `runs:write`, new `runs.source` value `ingest`.

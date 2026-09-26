@@ -1,6 +1,6 @@
 # ADR-010: Rollout on release pointers and the effectiveness loop
 
-- **Status:** proposed
+- **Status:** accepted (decided by Nick, 2026-09-26)
 - **Date:** 2026-09-26
 - **Owner:** Architect / Lead
 - **Contract impact:** `QuestionSetSpec` loses `rollout`; `release_pointers` gains `rollout_stage` and `active_experiment_id`; rollout stage `draft` is renamed `inactive`; `RunRequest`, `FeedbackReport`, `QualityTarget`, `SetHealth` and `ThresholdProposal`; decisions keyed by `DecisionId` with `kind: "question" | "composite"`; new tables `run_feedback`, `experiments`, `proposals`, `dataset_snapshots`, `question_daily`, `studio_sessions` and `studio_examples`.
@@ -56,11 +56,12 @@ All truth lands in `run_feedback`, from three sources:
     runId?: string, externalRef?: string,          // one of the two
     target: { decisionId: DecisionId } | { route: true },  // one decision, or the run's route
     observed: unknown,
-    source: "app" | "reviewer" | "audit" | "agent",
     observedAt: string,
     idempotencyKey: string,
   }
   ```
+
+  The body has no `source`. The server derives `run_feedback.source` from the caller (`app` for an `sk_` token, `agent` for an agent token), and the strict schema rejects a body that sends `source` at all with `400 invalid_request`.
 
 - **Audit sample.** A random sample per band in every rollout stage, including `full`, creates label items (`review_items.kind = "label"` with its `sample_rate`). Label items never block the caller or change `effectiveAction`.
 - **Reviewer resolutions.** Resolving a review item also writes a `reviewer` row.

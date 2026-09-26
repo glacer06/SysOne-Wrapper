@@ -7,7 +7,13 @@
 // Tests and the table seed read these rows. Runtime code reads profiles through the ModelCatalog
 // port, never from this file. Catalog data may say Jev; code identifiers stay neutral.
 
-import { KNOWN_WEAKNESS_IDS, ModelProfile, type ModelProfileInput } from "../contracts/models.js";
+import {
+  KNOWN_WEAKNESS_IDS,
+  ModelProfile,
+  type ModelProfileInput,
+  ModelRoute,
+  type ModelRouteInput,
+} from "../contracts/models.js";
 import type { ModelPrice } from "../contracts/ports.js";
 
 const DOCS_URL = "https://docs.typesafe.ai/models.md";
@@ -74,6 +80,52 @@ const SEED_INPUT: readonly ModelProfileInput[] = [
 /** Seed ModelProfile rows, parsed at load so a bad edit fails loudly. */
 export const SEED_MODEL_PROFILES: readonly ModelProfile[] = Object.freeze(
   SEED_INPUT.map((row) => ModelProfile.parse(row)),
+);
+
+/**
+ * OpenRouter route rows (`system_one_model_routes`, ADR-011). Facts from OpenRouter's Jev pages and
+ * Models API on 2026-09-26: `typesafe/jev-1.13` and `~typesafe/jev-latest`, a 32,000 token context
+ * for state plus questions, and responses from the dated build `typesafe/jev-1.13-20260917`.
+ * OpenRouter publishes no per-model rpm or tokens-per-second, so those stay null.
+ *
+ * Neither row is pinned. `typesafe/jev-1.13` answers with dated builds, and whether OpenRouter
+ * accepts a dated id as a request model is not confirmed. Sets on OpenRouter stay in inactive or
+ * shadow until it is (ADR-011, open question).
+ */
+const OPENROUTER_LIMITS = {
+  requestTokens: 32_000,
+  statePlusLongestQuestionTokens: 32_000,
+  rpm: null,
+  tokensPerSec: null,
+} as const;
+
+const SEED_ROUTE_INPUT: readonly ModelRouteInput[] = [
+  {
+    modelId: "jev-1.13.0",
+    provider: "openrouter",
+    providerModelId: "typesafe/jev-1.13",
+    pinned: false,
+    resolvedIds: ["typesafe/jev-1.13-20260917"],
+    limits: { ...OPENROUTER_LIMITS },
+    docsUrl: "https://openrouter.ai/typesafe/jev-1.13",
+    lastReviewed: LAST_REVIEWED,
+  },
+  {
+    modelId: "jev-latest",
+    provider: "openrouter",
+    providerModelId: "~typesafe/jev-latest",
+    pinned: false,
+    // An alias: its observed target is tracked in model_alias_observations, not here.
+    resolvedIds: [],
+    limits: { ...OPENROUTER_LIMITS },
+    docsUrl: "https://openrouter.ai/typesafe",
+    lastReviewed: LAST_REVIEWED,
+  },
+];
+
+/** Seed ModelRoute rows, parsed at load so a bad edit fails loudly. */
+export const SEED_MODEL_ROUTES: readonly ModelRoute[] = Object.freeze(
+  SEED_ROUTE_INPUT.map((row) => ModelRoute.parse(row)),
 );
 
 /** Seed value of the platform setting `defaultModel`: a stable versioned id (section 14). */

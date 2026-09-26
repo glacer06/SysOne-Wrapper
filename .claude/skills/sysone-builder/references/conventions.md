@@ -6,7 +6,7 @@
 - No `any`. Use `unknown` and narrow with zod.
 - zod at every boundary: HTTP input, DB JSON columns, System One responses, env, plugin config.
 - Types come from zod (`z.infer`), not the other way around.
-- Node 20+ (the TypeSafe SDK requires it).
+- Node 22.13+ for the dev toolchain (the root `engines` field): vitest 5 needs ^22.12 and ESLint 10 needs ^22.13 within Node 22. Node 20+ stays the runtime floor for code that only runs the TypeSafe SDK, such as a standalone export in a customer app.
 
 ## zod
 
@@ -19,7 +19,7 @@
 
 - DB: `snake_case` tables and columns. TS: `camelCase`. Drizzle maps between them.
 - Question IDs: `^[a-z][a-z0-9_]{0,63}$`.
-- Token prefixes: `sk_live_`, `sk_test_`, `pk_live_` (app tokens), `sa_live_` (agent tokens). TypeSafe keys are never shown beyond `key_last4`.
+- Token prefixes: `sk_live_`, `sk_test_`, `pk_live_` (app tokens), `sa_live_` (agent tokens). TypeSafe and OpenRouter keys are never shown beyond `key_last4`.
 - Audit actions: `noun.verb`, for example `set.publish`, `key.rotate`, `member.role_change`.
 - Operation ids use `noun.verb` and are identical to the audit action they write: `set.publish`, `channel.rollback`, `rollout.change` ([management-api.md](management-api.md)).
 - Scopes use `noun:verb`: `sets:write`, `release:production`.
@@ -45,6 +45,7 @@
 - All env access goes through `apps/console/src/env.ts` (t3-env) and is marked `server-only`.
 - `.env.example` lists every variable. Never commit `.env*` files with values.
 - Core never reads env.
+- Provider base URLs are constants in core (`SYSTEM_ONE_PROVIDER_BASE_URLS`), never env. `system-one-client` passes `baseURL` on every SDK client, so the SDK's own `TYPESAFE_BASE_URL` fallback can never redirect an org key (ADR-011).
 
 ## Errors
 

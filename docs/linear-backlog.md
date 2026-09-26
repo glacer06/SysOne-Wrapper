@@ -2,11 +2,11 @@
 
 This file is the build backlog for SysOne in Nick's Linear workspace **NSIMS**. It lives in the existing **SysOne** project (`P-NSI-36`, https://linear.app/nsims/project/sysone-ef1f69b9fa8c) inside the **NSIMS** team, next to the Embers projects. Issues are `NSI-n`. Nothing in Embers is created, renamed, or moved.
 
-The source of truth is the phase checklists in `.claude/skills/sysone-builder/references/phases/` (phases 0 to 7 plus `phase-3b.md` and `phase-4b.md`), the roles in `.claude/skills/sysone-builder/references/team-playbook.md`, and `docs/PLAN.md`. When a phase file changes, update this file in the same PR. The backlog has 211 issues and 745 points across 10 milestones. Phase 0 part one is done, and the first build is Phase 0 part two.
+The source of truth is the phase checklists in `.claude/skills/sysone-builder/references/phases/` (phases 0 to 7 plus `phase-3b.md` and `phase-4b.md`), the roles in `.claude/skills/sysone-builder/references/team-playbook.md`, and `docs/PLAN.md`. When a phase file changes, update this file in the same PR. The backlog has 211 issues and 745 points across 10 milestones. Phase 0 is done (part two built with a green gate, ADRs 002 to 010 accepted), and Phase 1 is next.
 
 Section 4 holds the same backlog as JSON. Paths in descriptions are repo-relative.
 
-Product decisions that shape this backlog: SysOne is multi-tenant SaaS. Auth.js was approved, but ADR-001 leaves Auth.js versus Better Auth open, and ADR-002 decides it (P0-18). Jev is the default System One model, and every contract is model-agnostic. Everything the UI does, agents can do headlessly through the same operations.
+Product decisions that shape this backlog: SysOne is multi-tenant SaaS. ADR-002 (P0-18) settled the auth library on 2026-09-26: Better Auth with the organization, admin and two-factor plugins. Jev is the default System One model, and every contract is model-agnostic. Everything the UI does, agents can do headlessly through the same operations.
 
 ## 1. Setup notes
 
@@ -144,7 +144,7 @@ The plan and the stack decision are on record.
 Acceptance criteria:
 
 - `docs/PLAN.md` covers why, scope, phases and team kickoff prompts.
-- ADR-001 records the stack and leaves Auth.js versus Better Auth open for ADR-002.
+- ADR-001 records the stack. The auth library it left open is settled by ADR-002: Better Auth.
 
 Refs: `docs/PLAN.md`, `docs/adr/001-stack.md#open-question-for-adr-002`
 
@@ -358,7 +358,7 @@ Record the open infrastructure decisions before the phases that need them.
 
 Acceptance criteria:
 
-- ADR-002 picks the auth library: Auth.js v5 (approved in the plan) or Better Auth (recommended by the design review). The choice supports many orgs per user, invites, five roles and audited impersonation, and is accepted before Phase 2 starts.
+- ADR-002 picks the auth library: Better Auth with the organization, admin and two-factor plugins (accepted by Nick, 2026-09-26). It supports many orgs per user, invites, five roles and audited impersonation.
 - ADR-003 key vault, ADR-004 cache, ADR-005 jobs runner and ADR-006 billing model are written from `templates/adr.md` and saved in `docs/adr/` with a status line.
 
 Refs: `docs/adr/001-stack.md#open-question-for-adr-002`, `.claude/skills/sysone-builder/templates/adr.md`, `.claude/skills/sysone-builder/references/security.md#typesafe-keys`, `.claude/skills/sysone-builder/references/architecture.md#caching`, `.claude/skills/sysone-builder/references/architecture.md#background-jobs`
@@ -3353,7 +3353,7 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       ],
       "estimate": 3,
       "state": "Done",
-      "description": "The plan and the stack decision are on record.\n\nAcceptance criteria:\n- `docs/PLAN.md` covers why, scope, phases and team kickoff prompts.\n- ADR-001 records the stack and leaves Auth.js versus Better Auth open for ADR-002.\n\nRefs:\n- `docs/PLAN.md`\n- `docs/adr/001-stack.md#open-question-for-adr-002`\n\nLocal ID: P0-03 (docs/linear-backlog.md)",
+      "description": "The plan and the stack decision are on record.\n\nAcceptance criteria:\n- `docs/PLAN.md` covers why, scope, phases and team kickoff prompts.\n- ADR-001 records the stack. The auth library it left open is settled by ADR-002: Better Auth.\n\nRefs:\n- `docs/PLAN.md`\n- `docs/adr/001-stack.md#open-question-for-adr-002`\n\nLocal ID: P0-03 (docs/linear-backlog.md)",
       "blockedBy": [],
       "milestone": "Phase 0: Skill, contracts, scaffold",
       "linearId": "NSI-492"
@@ -3626,7 +3626,7 @@ The project, milestones, and labels already exist in NSIMS. Create the issues in
       ],
       "estimate": 5,
       "state": "Todo",
-      "description": "Record the open infrastructure decisions before the phases that need them.\n\nAcceptance criteria:\n- ADR-002 picks the auth library: Auth.js v5 (approved in the plan) or Better Auth (recommended by the design review). The choice supports many orgs per user, invites, five roles and audited impersonation, and is accepted before Phase 2 starts.\n- ADR-003 key vault, ADR-004 cache, ADR-005 jobs runner and ADR-006 billing model are written from `templates/adr.md` and saved in `docs/adr/` with a status line.\n\nRefs:\n- `docs/adr/001-stack.md#open-question-for-adr-002`\n- `.claude/skills/sysone-builder/templates/adr.md`\n- `.claude/skills/sysone-builder/references/security.md#typesafe-keys`\n- `.claude/skills/sysone-builder/references/architecture.md#caching`\n- `.claude/skills/sysone-builder/references/architecture.md#background-jobs`\n\nNote: Split from the phase-0.md ADR item (P0-06, P0-18): ADRs 007 to 010 must be accepted before the contracts freeze, and ADR-002 must be decided before Phase 2 starts.\n\nLocal ID: P0-18 (docs/linear-backlog.md)",
+      "description": "Record the open infrastructure decisions before the phases that need them.\n\nAcceptance criteria:\n- ADR-002 picks the auth library: Better Auth with the organization, admin and two-factor plugins (accepted by Nick, 2026-09-26). It supports many orgs per user, invites, five roles and audited impersonation.\n- ADR-003 key vault, ADR-004 cache, ADR-005 jobs runner and ADR-006 billing model are written from `templates/adr.md` and saved in `docs/adr/` with a status line.\n\nRefs:\n- `docs/adr/001-stack.md#open-question-for-adr-002`\n- `.claude/skills/sysone-builder/templates/adr.md`\n- `.claude/skills/sysone-builder/references/security.md#typesafe-keys`\n- `.claude/skills/sysone-builder/references/architecture.md#caching`\n- `.claude/skills/sysone-builder/references/architecture.md#background-jobs`\n\nNote: Split from the phase-0.md ADR item (P0-06, P0-18): ADRs 007 to 010 must be accepted before the contracts freeze, and ADR-002 must be decided before Phase 2 starts.\n\nLocal ID: P0-18 (docs/linear-backlog.md)",
       "blockedBy": [],
       "milestone": "Phase 0: Skill, contracts, scaffold",
       "linearId": "NSI-517"

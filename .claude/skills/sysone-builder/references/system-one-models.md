@@ -1,6 +1,6 @@
 # System One models
 
-Owner: Platform / Tenancy (the `system_one_models` table, registry sync, alias probe, contract watch, platform Models page). Core Engine owns the `ModelProfile` contract, the `ModelCatalog` port, preflight, lints and the question-type modules. Decision record: [ADR-008](../../../../docs/adr/008-system-one-model-registry.md). Facts checked against `docs.typesafe.ai` and `https://api.typesafe.ai/openapi.json` (info.version 0.2.0) on 2026-09-26. The live docs win.
+Owner: Platform / Tenancy (the `system_one_models` table, registry sync, alias probe, contract watch, platform Models page). Core Engine owns the `ModelProfile` contract, the `ModelCatalog` port, preflight, lints and the question-type modules. Decision records: [ADR-008](../../../../docs/adr/008-system-one-model-registry.md), and [ADR-011](../../../../docs/adr/011-openrouter-route.md) (proposed) for providers and routes (section 15). Facts checked against `docs.typesafe.ai` and `https://api.typesafe.ai/openapi.json` (info.version 0.2.0) on 2026-09-26. The live docs win.
 
 ## 1. Scope
 
@@ -54,12 +54,13 @@ Where it lives:
 |---|---|
 | `packages/core/src/models/catalog.ts` | Seed rows (section 13), used by tests and to seed the table |
 | `system_one_models` | Platform table, one row per `ModelProfile`. No `org_id`. Only the platform admin writes, and every write is audited. |
-| `model_alias_observations (alias, resolved_id, first_seen, last_seen)` | Which versioned model each alias has served |
-| `org_typesafe_keys.models text[]` | Names the org's key can send. Refreshed when the key is saved or rotated, and nightly. |
+| `system_one_model_routes` | One `ModelRoute` per model and provider other than TypeSafe: the id to send, whether it is pinned, the provider's resolved ids and limits (section 15) |
+| `model_alias_observations (provider, alias, resolved_id, first_seen, last_seen)` | Which build each alias has served, per provider |
+| `org_system_one_keys.models text[]` | Registry ids the org's key for that provider can reach. Refreshed when the key is saved or rotated, and nightly. |
 | `price_books` | Prices per exact versioned ID (section 8) |
 
 - Core reads profiles through the `ModelCatalog` port in `RunPorts` ([architecture.md](architecture.md)). For a moving name it returns the profile of the last observed versioned model, so core stays pure.
-- **Reachability.** A name is available to an org when its key lists it, or when it is the observed target of an alias the key lists. The API accepts versioned IDs that are not listed, so this rule keeps `jev-1.13.0` usable for a key that lists only `jev-latest`. At run time a `403` from TypeSafe still maps to `system_one_forbidden`.
+- **Reachability.** Reachability is per provider: a set checks the key for its own provider. A name is available to an org when its key lists it, or when it is the observed target of an alias the key lists. The API accepts versioned IDs that are not listed, so this rule keeps `jev-1.13.0` usable for a key that lists only `jev-latest`. At run time a `403` from TypeSafe still maps to `system_one_forbidden`.
 - `limits` may be null only on an `unreviewed` row. A review cannot move a row to `preview` or `stable` without limits.
 
 ## 4. Pinned or moving
@@ -102,7 +103,7 @@ A model name is pinned only when the registry marks it `kind: "versioned"`. Alia
 |---|---|---|
 | Passive | Every run | `RunSink` compares `model_requested` to `model_resolved` against the last row in `model_alias_observations`. A new pair updates `aliasTarget` and emits `model.alias_moved` ([events.md](events.md)). A changed resolved model is also an auto-demote trigger ([confidence-policy.md](confidence-policy.md)). |
 | Active probe | Nightly | Each alias with no traffic that day gets a one-noul request with a tiny state. The response `model` is recorded like a run. |
-| Listing | Nightly, and when a key is saved or rotated | `GET /v1/models` with each org key. Reachable names go into `org_typesafe_keys.models`. An unseen name is inserted as `unreviewed` with null limits, and the platform admin is alerted. |
+| Listing | Nightly, and when a key is saved or rotated | TypeSafe keys: `GET /v1/models`. OpenRouter keys: OpenRouter's Models API, `GET https://openrouter.ai/api/v1/models`, reading entries `typesafe/*` and `~typesafe/*` and mapping them to registry ids through the route rows (section 15). Reachable ids go into `org_system_one_keys.models`. An unseen name is inserted as `unreviewed` with null limits, and the platform admin is alerted. An OpenRouter id with no route row alerts the platform admin to add one. |
 | Contract watch | Nightly | Diffs `openapi.json`, `llms.txt` and `models.md` against committed snapshots, including the keys of `components.schemas.Question.discriminator.mapping`. A change alerts the platform admin and opens an issue. |
 
 The jobs are listed in [architecture.md](architecture.md) (background jobs). Publishing on an `unreviewed` model is always blocked.
@@ -116,15 +117,16 @@ A candidate found only through `supersedes` is marked cross-family. Without `sup
 
 ## 7. Limits as data
 
-- Preflight, lints and default limiter budgets read the profile, never constants. Signatures are `preflight(spec, state, profile)` and `lint(spec, profile, publishCtx?)`. `publishCtx` carries the channel rollout stage, the current interface, consumers and the models the org key can reach ([architecture.md](architecture.md), Lints). Lints that need it are skipped when it is absent; publish and promote always pass it.
+- Preflight, lints and default limiter budgets read the profile, never constants. On a provider other than TypeSafe they read the effective limits: each profile limit tightened by the route row's value (`effectiveLimits`, section 15). jev-1.13.0 through OpenRouter gets 32,000 tokens per request, not 64,000. Signatures are `preflight(spec, state, profile)` and `lint(spec, profile, publishCtx?)`. `publishCtx` carries the channel rollout stage, the current interface, consumers and the models the org key can reach ([architecture.md](architecture.md), Lints). Lints that need it are skipped when it is absent; publish and promote always pass it.
 - For a moving name they use the profile of its last observed resolved model. In the playground, a row with null limits falls back to the observed target's limits, or to the smallest limits among stable profiles when there is no target.
 - Default limiter budgets are a per-model setting, about 83 percent of the published `rpm` (about 1,000 requests per minute for `jev-1.13.0`). Limiter keys include the model. Evals use a separate bucket ([security.md](security.md)).
 - API-wide rules stay constants in [system-one-api-contract.md](system-one-api-contract.md): at most 255 options per choice, 2 to 10 score levels, and the question type union.
 
 ## 8. Pricing
 
-- Prices live in `price_books`, keyed by the exact versioned ID. Alias rows are rejected, because an alias row would misprice runs after the alias moves.
-- Runs are priced by `model_resolved`: `system_one_cost_usd = input_tokens * price.in + output_tokens * price.out` ([system-one-api-contract.md](system-one-api-contract.md)).
+- Prices live in `price_books`, keyed by the exact versioned ID, with an optional `provider`. Alias rows are rejected, because an alias row would misprice runs after the alias moves. A row for the run's provider wins over a provider-independent row.
+- A provider-reported `usage.cost` (OpenRouter sends one) is the call's actual cost and wins over the price book. The price book is the fallback and the source for estimates such as `avgEscalationCostMicroUsd` ([savings-model.md](savings-model.md)).
+- Runs are priced by `model_resolved`, mapped to a registry id through the route rows on a provider other than TypeSafe: `system_one_cost_usd = input_tokens * price.in + output_tokens * price.out` ([system-one-api-contract.md](system-one-api-contract.md)).
 - Unpriced model: in BYO key mode the run succeeds with cost `null` and warning `model_unpriced`. In platform key mode the run is refused with `422 model_unpriced`, because it cannot be billed.
 - The registry sync alerts the platform admin when a `stable` model has no price row.
 - `usage_events` and `usage_daily` carry the resolved model, so billing, savings and upgrade comparisons split by model ([savings-model.md](savings-model.md)).
@@ -180,7 +182,8 @@ The end-to-end agent version of this flow is in [headless-and-agents.md](headles
 5. Run `pnpm smoke --model <id>`.
 6. Set the status to `preview` or `stable`.
 7. Update the seed table below and `packages/core/src/models/catalog.ts`.
-8. Decide whether new sets should start on it. If so, move the platform `defaultModel` to the new versioned ID (section 14). Existing sets move only through the upgrade flow (section 11).
+8. If OpenRouter serves it, add a `system_one_model_routes` row from OpenRouter's model page and Models API (section 15), record fixtures with `--provider openrouter`, and run `pnpm smoke --model <id> --provider openrouter`.
+9. Decide whether new sets should start on it. If so, move the platform `defaultModel` to the new versioned ID (section 14). Existing sets move only through the upgrade flow (section 11).
 
 If the model adds a question type, stop: that needs an ADR, a `QuestionTypeModule` and a renderer (section 9).
 
@@ -200,6 +203,7 @@ If the model adds a question type, stop: that needs an ADR, a `QuestionTypeModul
 - English is the strongest language. Test other languages on the org's own content before routing on them.
 - TypeSafe says rate limits adjust dynamically and can change without notice. Treat `rpm` and `tokensPerSec` as the published values at `lastReviewed`.
 - Price row: `jev-1.13.0`, $0.042 per million input tokens, output free ([system-one-api-contract.md](system-one-api-contract.md)).
+- Route rows for OpenRouter are in section 15 and `SEED_MODEL_ROUTES` in `catalog.ts`.
 
 ## 14. Default model
 
@@ -213,15 +217,39 @@ Jev is the default because of a setting, not because code names it. No template,
 - **Listing.** `model.list` marks the model that is the default for the calling org with `isDefault: true`, so the console picker, `sysone models list` and MCP `list_models` preselect it.
 - **Why a versioned ID.** TypeSafe's SDKs default to `jev-latest`, but a moving name cannot serve `controlled` or `full` (section 4). A pinned default lets a new set move past shadow without a model change. When TypeSafe ships a newer stable model, the platform admin moves `defaultModel` after the review in section 12.
 
-## 15. Gateways
+## 15. Providers and routes
 
-- TypeSafe's Python SDK usage page (`docs.typesafe.ai/sdk/python/usage.md`) documents two gateways. Each uses its own API key, base URL and model ID, and must follow the TypeSafe OpenAPI spec.
+ADR-011 (proposed) adds a provider dimension. The same registry model can be reached through TypeSafe directly or through OpenRouter, and the two can differ in the id sent, the id that answers, the limits and the price. The API side is in [system-one-api-contract.md](system-one-api-contract.md#routes).
 
-| Gateway | base URL | Model ID in the docs |
-|---|---|---|
-| OpenRouter | `https://openrouter.ai/api` | `~typesafe/jev-latest` |
-| Vercel AI Gateway | `https://ai-gateway.vercel.sh/typesafe` | `typesafe-ai/jev` |
+- **One profile, many routes.** `ModelProfile` stays one row per model. A provider other than TypeSafe gets a `ModelRoute` row per model it serves (`system_one_model_routes`, contract in `packages/core/src/contracts/models.ts`):
 
-- Cloudflare Workers AI is not documented by TypeSafe.
-- Gateways are out of scope for v1, because SysOne calls TypeSafe server-side.
-- If one is added later, it is configuration on the existing SDK transport (base URL, key, provider model ID), not a new transport. The registry then maps each canonical model ID to the provider's ID, so pinning, pricing and upgrades treat them as one model.
+```ts
+ModelRoute = {
+  modelId: string,              // registry id, "jev-1.13.0"
+  provider: "openrouter",       // never "typesafe": TypeSafe is the identity route and has no rows
+  providerModelId: string,      // the id sent: "typesafe/jev-1.13", "~typesafe/jev-latest"
+  pinned: boolean,              // true only when providerModelId names exactly one build
+  resolvedIds: string[],        // response `model` values accepted as this model: "typesafe/jev-1.13-20260917"
+  limits: { requestTokens, statePlusLongestQuestionTokens, rpm, tokensPerSec },   // each number | null
+  docsUrl: string,
+  lastReviewed: string,
+}
+```
+
+- **Missing route.** A model with no route row for a provider is not reachable there: lint `model.not_available_to_org`, and `422 model_unavailable` at run time.
+- **Pure helpers in core.** `resolveRoute(profile, provider, routes)` returns the id to send, whether it is pinned (the profile is versioned and the route row is `pinned`) and the effective limits. `effectiveLimits(profileLimits, routeLimits)` tightens each limit and never loosens one. `registryIdForResolved(provider, responseModel, routes)` maps a response `model` back to a registry id, or null. `toOpenRouterModelId` and `fromOpenRouterModelId` mirror OpenRouter's documented id rule.
+- **Pinning off TypeSafe.** A route is pinned only when its row says so. OpenRouter's `typesafe/jev-1.13` answers with dated builds such as `typesafe/jev-1.13-20260917`, so its seed row is not pinned, and `model.alias_past_shadow` treats a set on it as moving. A response whose `model` is not in the route's `resolvedIds` gets warning `model_resolved_unmapped`, is recorded in `model_alias_observations`, and emits `model.alias_moved` with `provider: "openrouter"`.
+- **OpenRouter alias targets.** OpenRouter's Models API and the `~typesafe/jev-latest` model page show the alias's current target (on 2026-09-26: "Latest model Jev 1.13"). The nightly listing records it next to the passive and probe observations, so an OpenRouter alias move is detected even with no traffic. OpenRouter's `~typesafe/jev-latest` and TypeSafe's `jev-latest` are tracked apart, because they can point at different builds for a while.
+- **Registry sync per provider.** The SDK's `client.models.list()` fails against OpenRouter, because OpenRouter's `GET /api/v1/models` returns its own shape. The sync reads OpenRouter's Models API directly for OpenRouter keys (section 6).
+
+Seed route rows (OpenRouter's Jev pages and Models API, 2026-09-26):
+
+| Model id | Provider | providerModelId | Pinned | resolvedIds | Limits | Docs |
+|---|---|---|---|---|---|---|
+| `jev-1.13.0` | openrouter | `typesafe/jev-1.13` | no | `typesafe/jev-1.13-20260917` | requestTokens 32,000; statePlusLongestQuestionTokens 32,000; rpm and tokensPerSec null | `https://openrouter.ai/typesafe/jev-1.13` |
+| `jev-latest` | openrouter | `~typesafe/jev-latest` | no | none (an alias; targets live in `model_alias_observations`) | same as above | `https://openrouter.ai/typesafe` |
+
+- OpenRouter lists Jev at $0.042 per million input tokens and $0 output, the same as TypeSafe, so no provider-specific price row is seeded. `usage.cost` carries the actual charge.
+- OpenRouter publishes no per-model rpm or tokens per second for Jev, so the route leaves them null and the profile's values apply as a ceiling. OpenRouter's own 429s map to `system_one_rate_limited`.
+- `jev-preview` has no OpenRouter route.
+- **Other gateways.** TypeSafe's Python SDK usage page (`docs.typesafe.ai/sdk/python/usage.md`) also mentions Vercel AI Gateway (`https://ai-gateway.vercel.sh/typesafe`, model `typesafe-ai/jev`). It is not verified against Vercel's own docs and is out of scope, like Cloudflare Workers AI, which neither documents. Adding one later is another `SystemOneProvider` value plus route rows, through an ADR.

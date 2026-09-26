@@ -30,7 +30,7 @@ import {
   VersionId,
 } from "./common.js";
 import { ErrorCode } from "./errors.js";
-import { SystemOneAnswer } from "./system-one.js";
+import { SystemOneAnswer, SystemOneProvider } from "./system-one.js";
 
 // ---------------------------------------------------------------------------
 // Money on the wire
@@ -43,6 +43,14 @@ export function usdFromMicro(micro: MicroUsd): number {
 /** Integer micro-USD from a wire USD amount. Never do money math on the USD value itself. */
 export function microFromUsd(usd: number): MicroUsd {
   return Math.round(usd * 1e6);
+}
+
+/**
+ * A provider-reported `usage.cost` (USD) as integer micro-USD, or null when the provider sent none.
+ * OpenRouter reports sub-micro amounts such as 0.000019992; they round to the nearest micro-USD.
+ */
+export function reportedCostMicroUsd(usage: { cost?: number | undefined }): MicroUsd | null {
+  return usage.cost === undefined ? null : microFromUsd(usage.cost);
 }
 
 function isWholeMicroUsd(usd: number): boolean {
@@ -72,7 +80,10 @@ export type SavingsSuppressed = z.infer<typeof SavingsSuppressed>;
 export const RunCost = z.object({
   systemOneInputTokens: TokenCount,
   systemOneOutputTokens: TokenCount,
-  /** Sum over all calls. Null when any call's model has no price row (BYO key mode). */
+  /**
+   * Sum over all calls: each call's providerCostUsd when present, else its price book cost. Null
+   * when any call has neither (BYO key mode).
+   */
   systemOneCostUsd: UsdAmount.nullable(),
   counterfactualInputTokens: TokenCount,
   counterfactualOutputTokens: TokenCount,
@@ -162,8 +173,15 @@ export type Decision = z.infer<typeof Decision>;
 // Stages and calls
 
 export const RunCall = z.object({
-  /** Prices use it, per call. */
+  /** The response `model` as sent. Prices use it, per call, through registryIdForResolved. */
   modelResolved: z.string().min(1),
+  /** Who served the call (ADR-011). Absent on calls recorded before ADR-011, which were typesafe. */
+  provider: SystemOneProvider.optional(),
+  /**
+   * The provider-reported `usage.cost`, rounded to whole micro-USD. When present it is the call's
+   * actual System One cost and the price book is not read (savings-model.md).
+   */
+  providerCostUsd: UsdAmount.optional(),
   typesafeRequestId: z.string().nullable(),
   inputTokens: TokenCount,
   outputTokens: TokenCount,
