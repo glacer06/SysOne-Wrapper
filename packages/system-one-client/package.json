@@ -1,0 +1,33 @@
+{
+  "name": "@sysone/system-one-client",
+  "version": "0.0.0",
+  "private": true,
+  "description": "SystemOneTransport implementations. The only importer of @typesafe-ai/sdk.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "@sysone/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@sysone/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@sysone/config": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

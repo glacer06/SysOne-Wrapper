@@ -1,0 +1,30 @@
+{
+  "name": "@sysone/client",
+  "version": "0.0.0",
+  "private": true,
+  "description": "@sysone/client: server client, proxy handlers, short-lived browser tokens.",
+  "type": "module",
+  "exports": {
+    ".": {
+      "@sysone/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@sysone/config": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
