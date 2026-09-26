@@ -1,0 +1,415 @@
+// One repository per table (data-model.md). Tenant repositories take a TenantTx and are
+// org-scoped twice: by their own filter and by RLS. The cross-tenant suite
+// (src/cross-tenant.test.ts) is generated from TENANT_REPOSITORY_NAMES and fails when a tenant
+// repository or method has no coverage.
+
+import { and, asc, desc, eq, gte, type InferInsertModel, type InferSelectModel, isNull, or, sql } from "drizzle-orm";
+
+import type { ModelPrice, Page, PageReq, PointerChannel, SystemOneProvider } from "@sysone/core/contracts";
+
+import { type AnyTx, drizzleOf, type TenantTx, type UserTx } from "../internal/drizzle.js";
+import * as s from "../schema/index.js";
+
+import { appendOnlyRepo, clampLimit, globalRepo, type IdTable, pageBy, type RepoOptions, tenantRepo } from "./base.js";
+
+function organizationsRepo(opts: RepoOptions) {
+  type Row = InferSelectModel<typeof s.organizations>;
+  type Insert = Omit<InferInsertModel<typeof s.organizations>, "id">;
+  const t = s.organizations;
+  const scope = (tx: TenantTx) => (opts.orgFilter ? eq(t.id, tx.orgId) : undefined);
+  return {
+    table: "organizations",
+    /** The org of this transaction. */
+    async current(tx: TenantTx): Promise<Row | null> {
+      const rows = await drizzleOf(tx).select().from(t).where(scope(tx)).limit(1);
+      return rows[0] ?? null;
+    },
+    async get(tx: TenantTx, id: string): Promise<Row | null> {
+      const rows = await drizzleOf(tx)
+        .select()
+        .from(t)
+        .where(and(scope(tx), eq(t.id, id)))
+        .limit(1);
+      return rows[0] ?? null;
+    },
+    async list(tx: TenantTx, page: PageReq): Promise<Page<Row>> {
+      return pageBy(
+        (where, limit) =>
+          drizzleOf(tx)
+            .select()
+            .from(t)
+            .where(and(scope(tx), where))
+            .orderBy(asc(t.id))
+            .limit(limit),
+        t.id,
+        page,
+      );
+    },
+    /** Creates the org whose id is this transaction's org (withTenant with the new id). */
+    async create(tx: TenantTx, values: Insert): Promise<Row> {
+      const [row] = await drizzleOf(tx)
+        .insert(t)
+        .values({ ...values, id: tx.orgId })
+        .returning();
+      if (row === undefined) throw new Error("insert into organizations returned no row");
+      return row;
+    },
+    async update(tx: TenantTx, id: string, patch: Partial<Insert>): Promise<Row | null> {
+      const { id: _id, ...set } = patch as Partial<Insert> & { id?: unknown };
+      const rows = await drizzleOf(tx)
+        .update(t)
+        .set(set)
+        .where(and(scope(tx), eq(t.id, id)))
+        .returning();
+      return rows[0] ?? null;
+    },
+  };
+}
+
+function releasePointersRepo(opts: RepoOptions) {
+  type Row = InferSelectModel<typeof s.releasePointers>;
+  type Insert = Omit<InferInsertModel<typeof s.releasePointers>, "orgId">;
+  const t = s.releasePointers;
+  const scope = (tx: TenantTx) => (opts.orgFilter ? eq(t.orgId, tx.orgId) : undefined);
+  return {
+    table: "release_pointers",
+    async get(tx: TenantTx, setId: string, channel: PointerChannel): Promise<Row | null> {
+      const rows = await drizzleOf(tx)
+        .select()
+        .from(t)
+        .where(and(scope(tx), eq(t.setId, setId), eq(t.channel, channel)))
+        .limit(1);
+      return rows[0] ?? null;
+    },
+    async listBySet(tx: TenantTx, setId: string): Promise<Row[]> {
+      return drizzleOf(tx)
+        .select()
+        .from(t)
+        .where(and(scope(tx), eq(t.setId, setId)))
+        .orderBy(asc(t.channel));
+    },
+    async insert(tx: TenantTx, values: Insert): Promise<Row> {
+      const [row] = await drizzleOf(tx)
+        .insert(t)
+        .values({ ...values, orgId: tx.orgId })
+        .returning();
+      if (row === undefined) throw new Error("insert into release_pointers returned no row");
+      return row;
+    },
+    async update(
+      tx: TenantTx,
+      setId: string,
+      channel: PointerChannel,
+      patch: Partial<Pick<Row, "versionId" | "rolloutStage" | "activeExperimentId">>,
+    ): Promise<Row | null> {
+      const rows = await drizzleOf(tx)
+        .update(t)
+        .set({ ...patch, updatedAt: new Date() })
+        .where(and(scope(tx), eq(t.setId, setId), eq(t.channel, channel)))
+        .returning();
+      return rows[0] ?? null;
+    },
+    async delete(tx: TenantTx, setId: string, channel: PointerChannel): Promise<boolean> {
+      const rows = await drizzleOf(tx)
+        .delete(t)
+        .where(and(scope(tx), eq(t.setId, setId), eq(t.channel, channel)))
+        .returning();
+      return rows.length > 0;
+    },
+  };
+}
+
+/** Builds every repository. Exported repositories always use `{ orgFilter: true }`. */
+export function buildRepositories(opts: RepoOptions) {
+  const questionSets = tenantRepo(s.questionSets, opts);
+  const questionSetVersions = tenantRepo(s.questionSetVersions, opts);
+  const runs = tenantRepo(s.runs, opts);
+  const reviewItems = tenantRepo(s.reviewItems, opts);
+  const usageEvents = tenantRepo(s.usageEvents, opts);
+  const memberships = tenantRepo(s.memberships, opts);
+  const orgSystemOneKeys = tenantRepo(s.orgSystemOneKeys, opts);
+  const priceBooks = tenantRepo(s.priceBooks, opts);
+  const idempotencyKeys = tenantRepo(s.idempotencyKeys, opts);
+  const runFeedback = tenantRepo(s.runFeedback, opts);
+  const projects = tenantRepo(s.projects, opts);
+
+  return {
+    organizations: organizationsRepo(opts),
+    memberships: {
+      ...memberships,
+      async getByUser(tx: TenantTx, userId: string) {
+        const [row] = await memberships.findMany(tx, eq(s.memberships.userId, userId), 1);
+        return row ?? null;
+      },
+    },
+    invitations: tenantRepo(s.invitations, opts),
+    orgSystemOneKeys: {
+      ...orgSystemOneKeys,
+      async getByProvider(tx: TenantTx, provider: SystemOneProvider) {
+        const [row] = await orgSystemOneKeys.findMany(tx, eq(s.orgSystemOneKeys.provider, provider), 1);
+        return row ?? null;
+      },
+    },
+    agentTokens: tenantRepo(s.agentTokens, opts),
+    orgWebhookSecrets: tenantRepo(s.orgWebhookSecrets, opts),
+    apps: tenantRepo(s.apps, opts),
+    appTokens: tenantRepo(s.appTokens, opts),
+    appOpportunities: tenantRepo(s.appOpportunities, opts),
+    appSetBindings: tenantRepo(s.appSetBindings, opts),
+    projects: {
+      ...projects,
+      async getBySlug(tx: TenantTx, slug: string) {
+        const [row] = await projects.findMany(tx, eq(s.projects.slug, slug), 1);
+        return row ?? null;
+      },
+    },
+    goals: tenantRepo(s.goals, opts),
+    questionSets: {
+      ...questionSets,
+      async getBySlug(tx: TenantTx, slug: string) {
+        const [row] = await questionSets.findMany(tx, eq(s.questionSets.slug, slug), 1);
+        return row ?? null;
+      },
+    },
+    questionSetVersions: {
+      ...questionSetVersions,
+      async getDraft(tx: TenantTx, setId: string) {
+        const where = and(eq(s.questionSetVersions.setId, setId), eq(s.questionSetVersions.status, "draft"));
+        const [row] = await questionSetVersions.findMany(tx, where, 1);
+        return row ?? null;
+      },
+      async getByNumber(tx: TenantTx, setId: string, version: number) {
+        const where = and(eq(s.questionSetVersions.setId, setId), eq(s.questionSetVersions.version, version));
+        const [row] = await questionSetVersions.findMany(tx, where, 1);
+        return row ?? null;
+      },
+      /** The highest version number of the set, 0 when it has none. */
+      async maxVersion(tx: TenantTx, setId: string): Promise<number> {
+        const rows = await drizzleOf(tx)
+          .select({ max: sql<number | null>`max(${s.questionSetVersions.version})` })
+          .from(s.questionSetVersions)
+          .where(questionSetVersions.scope(tx, eq(s.questionSetVersions.setId, setId)));
+        return Number(rows[0]?.max ?? 0);
+      },
+    },
+    releasePointers: releasePointersRepo(opts),
+    releaseEvents: tenantRepo(s.releaseEvents, opts),
+    experiments: tenantRepo(s.experiments, opts),
+    proposals: tenantRepo(s.proposals, opts),
+    runs: {
+      ...runs,
+      /** Feedback matching: the newest run with this external ref, optionally within one set. */
+      async findByExternalRef(tx: TenantTx, externalRef: string, setId?: string) {
+        const rows = await drizzleOf(tx)
+          .select()
+          .from(s.runs)
+          .where(
+            runs.scope(
+              tx,
+              and(eq(s.runs.externalRef, externalRef), setId === undefined ? undefined : eq(s.runs.setId, setId)),
+            ),
+          )
+          .orderBy(desc(s.runs.createdAt))
+          .limit(1);
+        return rows[0] ?? null;
+      },
+      async listBySet(tx: TenantTx, setId: string, limit?: number) {
+        return drizzleOf(tx)
+          .select()
+          .from(s.runs)
+          .where(runs.scope(tx, eq(s.runs.setId, setId)))
+          .orderBy(desc(s.runs.createdAt))
+          .limit(clampLimit(limit));
+      },
+    },
+    runFeedback: {
+      ...runFeedback,
+      async getByIdempotencyKey(tx: TenantTx, key: string) {
+        const [row] = await runFeedback.findMany(tx, eq(s.runFeedback.idempotencyKey, key), 1);
+        return row ?? null;
+      },
+    },
+    reviewItems: {
+      ...reviewItems,
+      async listByRun(tx: TenantTx, runId: string) {
+        return reviewItems.findMany(tx, eq(s.reviewItems.runId, runId));
+      },
+      /** Label items created for a set since `since`: the labeling policy's day counter. */
+      async countLabelItemsSince(tx: TenantTx, setId: string, since: Date): Promise<number> {
+        const rows = await drizzleOf(tx)
+          .select({ n: sql<number>`count(*)` })
+          .from(s.reviewItems)
+          .where(
+            reviewItems.scope(
+              tx,
+              and(
+                eq(s.reviewItems.setId, setId),
+                eq(s.reviewItems.kind, "label"),
+                gte(s.reviewItems.createdAt, since),
+              ),
+            ),
+          );
+        return Number(rows[0]?.n ?? 0);
+      },
+    },
+    datasets: tenantRepo(s.datasets, opts),
+    datasetCases: tenantRepo(s.datasetCases, opts),
+    datasetSnapshots: appendOnlyRepo(s.datasetSnapshots, opts),
+    evalRuns: tenantRepo(s.evalRuns, opts),
+    evalCaseResults: tenantRepo(s.evalCaseResults, opts),
+    studioSessions: tenantRepo(s.studioSessions, opts),
+    studioExamples: tenantRepo(s.studioExamples, opts),
+    questionDaily: tenantRepo(s.questionDaily, opts),
+    usageDaily: tenantRepo(s.usageDaily, opts),
+    billingAccounts: tenantRepo(s.billingAccounts, opts),
+    entitlementOverrides: tenantRepo(s.entitlementOverrides, opts),
+    usageEvents: {
+      ...usageEvents,
+      async listByRun(tx: TenantTx, runId: string) {
+        return usageEvents.findMany(tx, eq(s.usageEvents.runId, runId));
+      },
+    },
+    priceBooks: {
+      ...priceBooks,
+      /**
+       * The price for an exact model id: the org row wins over the platform row, and a row for
+       * `provider` wins over a provider-independent row (ADR-011). Null when neither exists.
+       */
+      async resolve(tx: TenantTx, model: string, provider?: SystemOneProvider): Promise<ModelPrice | null> {
+        const t = s.priceBooks;
+        const providerMatch = provider === undefined ? isNull(t.provider) : or(eq(t.provider, provider), isNull(t.provider));
+        const orgMatch = opts.orgFilter ? or(isNull(t.orgId), eq(t.orgId, tx.orgId)) : undefined;
+        const rows = await drizzleOf(tx)
+          .select()
+          .from(t)
+          .where(and(eq(t.model, model), providerMatch, orgMatch))
+          .orderBy(sql`${t.orgId} is null`, sql`${t.provider} is null`)
+          .limit(1);
+        const row = rows[0];
+        return row === undefined
+          ? null
+          : { inputPerMtokMicroUsd: row.inputPerMtokMicroUsd, outputPerMtokMicroUsd: row.outputPerMtokMicroUsd };
+      },
+    },
+    auditLog: appendOnlyRepo(s.auditLog, opts),
+    approvalRequests: tenantRepo(s.approvalRequests, opts),
+    idempotencyKeys: {
+      ...idempotencyKeys,
+      async lookup(tx: TenantTx, actorKey: string, key: string) {
+        const where = and(eq(s.idempotencyKeys.actorKey, actorKey), eq(s.idempotencyKeys.key, key));
+        const [row] = await idempotencyKeys.findMany(tx, where, 1);
+        return row ?? null;
+      },
+    },
+    jobs: tenantRepo(s.jobs, opts),
+    events: appendOnlyRepo(s.events, opts),
+    webhookEndpoints: tenantRepo(s.webhookEndpoints, opts),
+    pluginConfigs: tenantRepo(s.pluginConfigs, opts),
+  };
+}
+
+export type Repositories = ReturnType<typeof buildRepositories>;
+export type TenantRepositoryName = keyof Repositories;
+
+/** Auth tables and the pre-org lookups (ADR-002). */
+export const authRepositories = {
+  users: {
+    ...globalRepo(s.users),
+    async getByEmail(tx: AnyTx, email: string) {
+      const rows = await drizzleOf(tx)
+        .select()
+        .from(s.users)
+        .where(sql`lower(${s.users.email}) = lower(${email})`)
+        .limit(1);
+      return rows[0] ?? null;
+    },
+  },
+  sessions: globalRepo(s.sessions),
+  accounts: globalRepo(s.accounts),
+  verificationTokens: globalRepo(s.verificationTokens),
+  twoFactors: globalRepo(s.twoFactors),
+  deviceCodes: globalRepo(s.deviceCodes),
+  /** The signed-in user's memberships across orgs, before any org is picked. */
+  async myMemberships(tx: UserTx) {
+    return drizzleOf(tx)
+      .select()
+      .from(s.memberships)
+      .where(eq(s.memberships.userId, tx.userId))
+      .orderBy(asc(s.memberships.createdAt));
+  },
+  /** Orgs the signed-in user belongs to (org switcher). */
+  async myOrganizations(tx: UserTx) {
+    return drizzleOf(tx).select().from(s.organizations).orderBy(asc(s.organizations.slug));
+  },
+  /** Open invitations addressed to the signed-in user's email. */
+  async myInvitations(tx: UserTx) {
+    return drizzleOf(tx)
+      .select()
+      .from(s.invitations)
+      .where(isNull(s.invitations.acceptedAt))
+      .orderBy(asc(s.invitations.createdAt));
+  },
+};
+
+function readOnly<T extends IdTable>(table: T) {
+  const { get, list, table: name } = globalRepo(table);
+  return { table: name, get, list };
+}
+
+/** Platform tables. The app role reads them; only sysone_platform writes them (except below). */
+export const platformRepositories = {
+  systemOneModels: readOnly(s.systemOneModels),
+  systemOneModelRoutes: {
+    table: "system_one_model_routes",
+    async listByProvider(tx: AnyTx, provider: SystemOneProvider) {
+      return drizzleOf(tx)
+        .select()
+        .from(s.systemOneModelRoutes)
+        .where(eq(s.systemOneModelRoutes.provider, provider))
+        .orderBy(asc(s.systemOneModelRoutes.modelId));
+    },
+    async get(tx: AnyTx, modelId: string, provider: SystemOneProvider) {
+      const rows = await drizzleOf(tx)
+        .select()
+        .from(s.systemOneModelRoutes)
+        .where(and(eq(s.systemOneModelRoutes.modelId, modelId), eq(s.systemOneModelRoutes.provider, provider)))
+        .limit(1);
+      return rows[0] ?? null;
+    },
+  },
+  modelAliasObservations: {
+    ...readOnly(s.modelAliasObservations),
+    /** Upsert one observation and bump last_seen. Returns true when the (provider, alias, resolved) row is new. */
+    async record(tx: AnyTx, provider: SystemOneProvider, alias: string, resolvedId: string, at: Date): Promise<boolean> {
+      const t = s.modelAliasObservations;
+      const rows = await drizzleOf(tx)
+        .insert(t)
+        .values({ provider, alias, resolvedId, firstSeen: at, lastSeen: at })
+        .onConflictDoUpdate({ target: [t.provider, t.alias, t.resolvedId], set: { lastSeen: at } })
+        .returning({ firstSeen: t.firstSeen });
+      return rows[0]?.firstSeen.getTime() === at.getTime();
+    },
+  },
+  settings: {
+    table: "settings",
+    async get(tx: AnyTx, key: string) {
+      const rows = await drizzleOf(tx).select().from(s.settings).where(eq(s.settings.key, key)).limit(1);
+      return rows[0] ?? null;
+    },
+  },
+  stripeWebhookEvents: {
+    table: "stripe_webhook_events",
+    /** True when the event id is new. A duplicate delivery is a no-op. */
+    async insertIfNew(tx: AnyTx, eventId: string, type: string): Promise<boolean> {
+      const rows = await drizzleOf(tx)
+        .insert(s.stripeWebhookEvents)
+        .values({ eventId, type })
+        .onConflictDoNothing()
+        .returning({ eventId: s.stripeWebhookEvents.eventId });
+      return rows.length > 0;
+    },
+  },
+};
+
+/** The repositories the app uses. Always org-filtered. */
+export const repos: Repositories = buildRepositories({ orgFilter: true });

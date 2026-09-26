@@ -12,22 +12,33 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "migrations"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "db:generate": "NODE_OPTIONS=--conditions=@sysone/source drizzle-kit generate",
+    "db:migrate": "tsx --conditions=@sysone/source scripts/migrate.ts",
+    "db:seed": "tsx --conditions=@sysone/source scripts/seed.ts",
+    "rls:sql": "tsx --conditions=@sysone/source scripts/print-security-block.ts"
   },
   "dependencies": {
     "@sysone/core": "workspace:*",
+    "drizzle-orm": "catalog:",
+    "pg": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "catalog:",
     "@sysone/config": "workspace:*",
     "@types/node": "catalog:",
+    "@types/pg": "catalog:",
+    "drizzle-kit": "catalog:",
     "eslint": "catalog:",
+    "tsx": "catalog:",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }

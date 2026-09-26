@@ -8,8 +8,8 @@
 | Contract (fixtures vs zod, OpenAPI snapshot) | Vitest | Every PR |
 | Parity (operations, routes, OpenAPI paths, MCP tools) | Vitest | Every PR |
 | Codegen snapshots | Vitest | Every PR |
-| Tenancy (cross-tenant suite, RLS) | Vitest + Postgres container | Every PR |
-| Integration (API routes, RBAC, audit, cache, idempotency, approvals) | Vitest + Postgres + mocked transport | Every PR |
+| Tenancy (cross-tenant suite, RLS) | Vitest + PGlite (Postgres in WebAssembly, in process, as `sysone_app`) | Every PR |
+| Integration (API routes, RBAC, audit, cache, idempotency, approvals) | Vitest + Postgres (PGlite) + mocked transport | Every PR |
 | E2E (console, embed) | Playwright, fixture transport | Every PR |
 | Live smoke | `pnpm smoke` against every model in the smoke list | Nightly, and before release; needs `TYPESAFE_API_KEY` |
 | Contract watch | Platform job diffing TypeSafe's `openapi.json`, `llms.txt` and `models.md` against committed snapshots | Nightly |
