@@ -53,7 +53,7 @@ examples/             Sample apps that integrate SysOne (Integrations).
 Import boundaries are enforced with `eslint-plugin-boundaries`:
 
 - Only `system-one-client` imports `@typesafe-ai/sdk`.
-- Only `llm-client` imports `@anthropic-ai/sdk`.
+- Only `llm-client` imports `@anthropic-ai/sdk`. Its fixture subpath `@sysone/llm-client/fixture` (`packages/llm-client/src/fixture/**`) never does; the exclusive-externals rule covers it as its own element.
 - Only `db` imports `drizzle-orm`. Raw `db` handles are not exported.
 - Only `tenancy` touches crypto and KMS.
 - `react` never imports `client` server entrypoints, `tenancy`, `db`, or `system-one-client`.
@@ -465,7 +465,7 @@ Two choices decide how a System One call leaves the server. They are separate.
 - Preflight, pinning and pricing read the provider's route (`ModelCatalog.effective(name, provider)`). Changing a set's provider re-runs the model lints, like changing its model.
 - Fixtures are recorded per provider. `pnpm fixtures:record --provider openrouter` and `pnpm smoke --provider openrouter` need `OPENROUTER_API_KEY`.
 
-**LLM routes** (`llm-client`). Escalations, Studio drafting, improve mode and opportunity drafting go through `LlmTransport`. The default route is Anthropic through `@anthropic-ai/sdk`. ADR-011 proposes a second, optional route: OpenRouter's OpenAI-compatible chat endpoint over plain `fetch`, used only for `escalate_to_llm` when an `EscalationConfig.model` names an OpenRouter model id. That includes `typesafe/jev-router`, a free OpenRouter model that uses Jev to pick an LLM and a reasoning effort per request. It is an LLM router, not a System One endpoint, so it never goes through `SystemOneTransport`, and its spend is LLM spend ([savings-model.md](savings-model.md)). Until ADR-011 is accepted, `llm-client` stays Anthropic only.
+**LLM routes** (`llm-client`). Escalations, Studio drafting, improve mode and opportunity drafting go through `LlmTransport`. The default route is Anthropic through `@anthropic-ai/sdk`. ADR-011 proposes a second, optional route: OpenRouter's OpenAI-compatible chat endpoint over plain `fetch`, used only for `escalate_to_llm` when an `EscalationConfig.model` names an OpenRouter model id. That includes `typesafe/jev-router`, a free OpenRouter model that uses Jev to pick an LLM and a reasoning effort per request. It is an LLM router, not a System One endpoint, so it never goes through `SystemOneTransport`, and its spend is LLM spend ([savings-model.md](savings-model.md)). The code is built: `createLlmTransport({ anthropic, openrouter? })` returns a `RoutedLlmTransport` that sends `vendor/model` ids to OpenRouter only when `openrouter.enabled` is true. Until ADR-011 is accepted, deployments leave it off, so an OpenRouter id fails as `llm_unavailable` and the escalation falls back to review. `LlmCompletion` has no cost field yet, so OpenRouter's reported `usage.cost` is not passed through; escalation cost comes from the price book row of the model that answered.
 
 ## Managed live
 

@@ -23,6 +23,7 @@
 - The fixture contract test validates every fixture's response against the `passthrough` zod answer schemas, so new fields pass and a changed shape fails. It also fails when the live `openapi.json` version is newer than the fixtures' version, until they are re-recorded. PR CI reads that version from the committed contract snapshot, so it needs no network.
 - Minimum set: one of each question type, a multi-stage run, a choice with a "none" option chosen, a noul near 0.5, a response whose `model` differs from the requested alias (`jev-latest` answered by `jev-1.13.0`), 401, 422, 429 and 529 errors, and an outage (HTTP 503) per provider for the ADR-012 outage rule (`typesafe/outage-503`, `openrouter/outage-503`).
 - Every row of the errors table in [system-one-api-contract.md](system-one-api-contract.md) has a unit test with a synthetic response, including 400, 403, 404, 408, `APIUserAbortError` and a timeout.
+- LLM fixtures live in `packages/llm-client/fixtures/<route>/*.json` as `{ name, route, request, completion | error }`, keyed by a hash of the `LlmCompletionRequest` (model, system, prompt, maxOutputTokens). `FixtureLlmTransport` (subpath `@sysone/llm-client/fixture`) replays them. The committed set is hand-authored from `buildEscalationRequest`: an Anthropic choice and noul escalation, an Anthropic 529, a `typesafe/jev-router` choice and an OpenRouter 402. Transport tests use canned HTTP bodies; no unit test calls Anthropic or OpenRouter.
 
 ## Router tests
 

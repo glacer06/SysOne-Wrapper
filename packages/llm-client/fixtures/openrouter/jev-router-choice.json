@@ -1,0 +1,16 @@
+{
+  "name": "jev-router-choice",
+  "route": "openrouter",
+  "request": {
+    "model": "typesafe/jev-router",
+    "system": "You answer one classification question about the state below. Reply with exactly one option key from this list: billing, technical, none. Do not explain.",
+    "prompt": "{\"criteria\":{\"billing\":\"Payments\",\"none\":null,\"technical\":\"Bugs\"},\"question\":\"Which team should handle `ticket`?\",\"state\":{\"ticket\":\"The app crashes every time I open the invoices page.\"}}",
+    "maxOutputTokens": 16
+  },
+  "completion": {
+    "text": "technical",
+    "model": "typesafe/jev-router",
+    "inputTokens": 118,
+    "outputTokens": 2
+  }
+}

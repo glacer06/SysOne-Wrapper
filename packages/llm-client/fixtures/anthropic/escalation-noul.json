@@ -1,0 +1,16 @@
+{
+  "name": "escalation-noul",
+  "route": "anthropic",
+  "request": {
+    "model": "claude-haiku-4-5",
+    "system": "You answer one classification question about the state below. Reply with exactly one word: true or false. Do not explain.",
+    "prompt": "{\"question\":\"Does `ticket` ask for a refund?\",\"state\":{\"ticket\":\"Please refund the second charge on my card.\"}}",
+    "maxOutputTokens": 256
+  },
+  "completion": {
+    "text": "true",
+    "model": "claude-haiku-4-5",
+    "inputTokens": 98,
+    "outputTokens": 1
+  }
+}

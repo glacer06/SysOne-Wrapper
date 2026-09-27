@@ -1,0 +1,19 @@
+{
+  "name": "error-402",
+  "route": "openrouter",
+  "request": {
+    "model": "typesafe/jev-router",
+    "system": "You answer one classification question about the state below. Reply with exactly one option key from this list: billing, technical, none. Do not explain.",
+    "prompt": "{\"criteria\":{\"billing\":\"Payments\",\"none\":null,\"technical\":\"Bugs\"},\"question\":\"Which team should handle `ticket`?\",\"state\":{\"ticket\":\"error-402 fixture\"}}",
+    "maxOutputTokens": 16
+  },
+  "error": {
+    "status": 402,
+    "body": {
+      "error": {
+        "code": 402,
+        "message": "Insufficient credits"
+      }
+    }
+  }
+}

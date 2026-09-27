@@ -22,6 +22,9 @@
       "@sysone/system-one-client/fixture": [
         "../../system-one-client/src/fixture/index.ts"
       ],
+      "@sysone/llm-client/fixture": [
+        "../../llm-client/src/fixture/index.ts"
+      ],
       "@sysone/*": [
         "../../*/src/index.ts",
         "../../*/src/index.tsx"
