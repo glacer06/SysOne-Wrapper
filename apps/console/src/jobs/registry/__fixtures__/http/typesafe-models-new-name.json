@@ -1,0 +1,33 @@
+{
+  "note": "Stand-in, hand-authored from openapi.json 0.2.0 (ModelMetadataList) and models.md: no TypeSafe key was available on 2026-09-27. Re-record with TYPESAFE_API_KEY. Adds an unseen foo-2.0.0 for the pinned-classification test.",
+  "request": {
+    "method": "GET",
+    "url": "https://api.typesafe.ai/v1/models"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json",
+      "x-typesafe-request-id": "req_fx_models_new"
+    },
+    "body": {
+      "models": [
+        {
+          "name": "jev-latest",
+          "description": "The most recent stable, official Jev release.",
+          "release_date": "2026-09-17"
+        },
+        {
+          "name": "jev-preview",
+          "description": "The most recent Jev release, whether or not it is an official one.",
+          "release_date": "2026-09-17"
+        },
+        {
+          "name": "foo-2.0.0",
+          "description": "A model SysOne has never seen.",
+          "release_date": "2026-10-01"
+        }
+      ]
+    }
+  }
+}

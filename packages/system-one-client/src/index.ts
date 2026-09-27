@@ -12,4 +12,5 @@ export {
   openRouterSystemOneModelIds,
   probeAlias,
 } from "./models.js";
+export { CONTRACT_SNAPSHOT_DIR, CONTRACT_SOURCES, type ContractSource, loadContractSnapshots } from "./contract.js";
 export * from "./fixture/index.js";
