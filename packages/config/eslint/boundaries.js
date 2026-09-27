@@ -60,6 +60,7 @@ export const elements = [
   { type: "console", pattern: "apps/console" },
   { type: "example-embed", pattern: "apps/example-embed" },
   { type: "docs", pattern: "apps/docs" },
+  { type: "web", pattern: "apps/web" },
   { type: "extension-chrome", pattern: "apps/extension-chrome" },
 ];
 
@@ -124,6 +125,8 @@ export const allowedElementDeps = {
   // itself reads packages/core/openapi.json from disk at build time.
   // The Templates pages are rendered from the template pack.
   docs: ["core", "core-contracts", "core-openapi", "templates"],
+  // The marketing site (ADR-018) is static and holds no secrets. It imports no workspace package yet.
+  web: [],
   "extension-chrome": ["client", "react", "core-contracts"],
 };
 

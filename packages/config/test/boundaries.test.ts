@@ -119,6 +119,9 @@ const cases: Case[] = [
   { name: "docs -> core", file: "apps/docs/test/x.test.ts", code: `import "@bandwise/core";`, violates: false },
   { name: "docs -> core openapi.json", file: "apps/docs/src/x.ts", code: `import "@bandwise/core/openapi.json";`, violates: false },
   { name: "docs -> db", file: "apps/docs/src/x.ts", code: `import "@bandwise/db";`, violates: true },
+  // The marketing site imports no workspace package, and never anything server side.
+  { name: "web -> db", file: "apps/web/src/x.ts", code: `import "@bandwise/db";`, violates: true },
+  { name: "web -> system-one-client", file: "apps/web/src/x.ts", code: `import "@bandwise/system-one-client";`, violates: true },
   { name: "docs -> system-one-client", file: "apps/docs/src/x.ts", code: `import "@bandwise/system-one-client";`, violates: true },
 
   // mcp-server calls /api/v1 over HTTP only.

@@ -1,0 +1,32 @@
+{
+  "name": "@bandwise/web",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Marketing site for www.bandwise.dev (ADR-018). Static, holds no secrets.",
+  "engines": {
+    "node": ">=22.13.0 <23"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3002",
+    "build": "next build",
+    "start": "next start --port 3002",
+    "lint": "eslint .",
+    "typecheck": "next typegen && tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "next": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:"
+  },
+  "devDependencies": {
+    "@bandwise/config": "workspace:*",
+    "@types/node": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
