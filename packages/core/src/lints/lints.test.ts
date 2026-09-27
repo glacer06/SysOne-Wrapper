@@ -293,7 +293,34 @@ const cases: Case[] = [
       return { spec: s };
     },
   },
+  {
+    rule: "outage.auto_not_allowed",
+    build: () => {
+      const s = minimal();
+      (s as { onUnavailable?: unknown }).onUnavailable = "auto";
+      return { spec: s };
+    },
+  },
 ];
+
+describe("outage.auto_not_allowed (ADR-012)", () => {
+  it("passes every allowed outage rule and an omitted one", () => {
+    for (const onUnavailable of [undefined, "fallback", "review", "escalate_to_llm"] as const) {
+      const s = minimal();
+      if (onUnavailable !== undefined) s.onUnavailable = onUnavailable;
+      expect(rules(lint(s, jev))).not.toContain("outage.auto_not_allowed");
+    }
+  });
+
+  it("names auto, and any other unknown value, at /onUnavailable", () => {
+    const auto = minimal();
+    (auto as { onUnavailable?: unknown }).onUnavailable = "auto";
+    expect(lint(auto, jev).find((r) => r.rule === "outage.auto_not_allowed")).toMatchObject({ severity: "error", path: "/onUnavailable", message: expect.stringContaining("cannot be auto") });
+    const other = minimal();
+    (other as { onUnavailable?: unknown }).onUnavailable = "ignore";
+    expect(lint(other, jev).find((r) => r.rule === "outage.auto_not_allowed")?.message).toContain("must be one of");
+  });
+});
 
 describe("each rule fires on a minimal bad spec", () => {
   it.each(cases)("$rule", ({ rule, build }) => {

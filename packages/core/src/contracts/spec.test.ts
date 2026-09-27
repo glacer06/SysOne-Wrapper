@@ -1,7 +1,11 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
+  DEFAULT_ON_UNAVAILABLE,
+  OUTAGE_AUTO_NOT_ALLOWED_MESSAGE,
+  OUTAGE_AUTO_NOT_ALLOWED_RULE,
   LintResult,
+  onUnavailableOf,
   QuestionSetSpec,
   ROLLOUT_KEY_MESSAGE,
   RunDryRunResult,
@@ -77,6 +81,31 @@ describe("QuestionSetSpec", () => {
 
   it("parses a minimal spec", () => {
     expect(parseSpec(minimal).ok).toBe(true);
+  });
+
+  it("accepts each onUnavailable rule; omitted means fallback (ADR-012)", () => {
+    for (const rule of ["fallback", "review", "escalate_to_llm"] as const) {
+      const r = parseSpec({ ...minimal, onUnavailable: rule });
+      expect(r.ok && r.spec.onUnavailable).toBe(rule);
+      if (r.ok) expect(onUnavailableOf(r.spec)).toBe(rule);
+    }
+    const plain = QuestionSetSpec.parse(minimal);
+    expect(plain.onUnavailable).toBeUndefined();
+    expect(onUnavailableOf(plain)).toBe(DEFAULT_ON_UNAVAILABLE);
+    expect(DEFAULT_ON_UNAVAILABLE).toBe("fallback");
+  });
+
+  it("refuses onUnavailable auto with outage.auto_not_allowed, and other values with spec.invalid", () => {
+    expect(failures({ ...minimal, onUnavailable: "auto" })).toEqual([
+      { path: "/onUnavailable", rule: OUTAGE_AUTO_NOT_ALLOWED_RULE, severity: "error", message: OUTAGE_AUTO_NOT_ALLOWED_MESSAGE },
+    ]);
+    expect(failures({ ...minimal, onUnavailable: "ignore" })).toEqual([
+      expect.objectContaining({ path: "/onUnavailable", rule: "spec.invalid" }),
+    ]);
+    // Another failure next to auto keeps its own rule.
+    const both = failures({ ...minimal, onUnavailable: "auto", model: "" });
+    expect(both.map((d) => d.rule).sort()).toEqual([OUTAGE_AUTO_NOT_ALLOWED_RULE, "spec.invalid"]);
+    expect(failures(null)[0]?.rule).toBe("spec.invalid");
   });
 
   it("rejects a rollout key with spec.unknown_key at /rollout", () => {

@@ -15290,6 +15290,15 @@
           "idempotencyKey": {
             "type": "string",
             "minLength": 1
+          },
+          "failureClass": {
+            "type": "string",
+            "enum": [
+              "missing_evidence",
+              "model_error",
+              "code_error",
+              "service"
+            ]
           }
         },
         "required": [
@@ -17595,6 +17604,14 @@
               }
             },
             "additionalProperties": false
+          },
+          "onUnavailable": {
+            "type": "string",
+            "enum": [
+              "fallback",
+              "review",
+              "escalate_to_llm"
+            ]
           }
         },
         "required": [
@@ -18505,6 +18522,14 @@
               }
             },
             "additionalProperties": false
+          },
+          "onUnavailable": {
+            "type": "string",
+            "enum": [
+              "fallback",
+              "review",
+              "escalate_to_llm"
+            ]
           }
         },
         "required": [
@@ -18581,6 +18606,15 @@
           },
           "addToDataset": {
             "type": "boolean"
+          },
+          "failureClass": {
+            "type": "string",
+            "enum": [
+              "missing_evidence",
+              "model_error",
+              "code_error",
+              "service"
+            ]
           }
         },
         "required": [
@@ -19354,7 +19388,8 @@
                       "shadow",
                       "eval",
                       "staging",
-                      "experiment"
+                      "experiment",
+                      "outage"
                     ]
                   },
                   {

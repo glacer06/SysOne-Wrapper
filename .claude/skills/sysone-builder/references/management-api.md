@@ -251,7 +251,7 @@ Goals carry `qualityTarget` (a `QualityTarget`) and `businessKpi`. See [effectiv
 | POST | `/feedback` | `feedback.report` | `feedback:write` | reviewer | normal | 3 |
 
 - `review.list` takes `?kind=action|label` and `?status=`, and shows why each item was picked. Items waiting for a person show status `pending_confirmation`.
-- `review.resolve` takes `{ resolution, addToDataset? }`. From a console session or an app token, it resolves the item and writes a `reviewer` row to `run_feedback` (an `audit` row when the item carries a `sample_rate`). From an agent token, agents propose and people approve:
+- `review.resolve` takes `{ resolution, addToDataset?, failureClass? }` (`failureClass` per ADR-012). From a console session or an app token, it resolves the item and writes a `reviewer` row to `run_feedback` (an `audit` row when the item carries a `sample_rate`). From an agent token, agents propose and people approve:
   - Kind `label`: the row is stored with source `agent` and counts toward nothing (gates, health, evals, promotion) until a person confirms it.
   - Kind `action`: the policy sent this decision to a person, so the agent's resolution is stored as a proposal on the item, and the item moves to status `pending_confirmation`. Nothing the resolution would trigger runs, and no feedback row counts, until a person confirms it.
 - `review.confirm` is session only. It takes `{ resolution? }`: without it the agent's resolution stands, with it the person's replaces it. It sets `run_feedback.confirmed_by_user_id` and `confirmed_at`, resolves a `pending_confirmation` item as if the person had resolved it, and emits `review.resolved`.

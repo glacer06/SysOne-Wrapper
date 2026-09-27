@@ -17,15 +17,24 @@ import type {
   CompositeActionRef,
   EscalationConfig,
   FallbackConfig,
+  QuestionPolicy,
   Thresholds,
 } from "../contracts/policy.js";
 import type { Decision, Level } from "../contracts/run.js";
 import type { Composite, QuestionSetSpec } from "../contracts/spec.js";
+import { onUnavailableOf } from "../contracts/spec.js";
 import type { KnownAnswer, SystemOneAnswer } from "../contracts/system-one.js";
 import type { QuestionTypeId } from "../contracts/question-types.js";
 import { type ConditionContext, type QuestionView, evaluateCondition } from "../conditions/evaluate.js";
 import { compositeTermValue, readAnswer } from "./answers.js";
-import { effectiveAction, isExecuted, isShadowLike, routingStage } from "./effective-action.js";
+import {
+  effectiveAction,
+  isExecuted,
+  isOutageExecuted,
+  isShadowLike,
+  outageEffectiveAction,
+  routingStage,
+} from "./effective-action.js";
 
 export interface RouterInput {
   spec: QuestionSetSpec;
@@ -185,6 +194,70 @@ export function routeAnswers(input: RouterInput): RouterOutput {
 
   const { runBand, overallAction } = summarizeDecisions(decisions, meta);
   return { decisions, meta, views, composites: compositeValues, runBand, overallAction, route, warnings };
+}
+
+export interface OutageRouterInput {
+  spec: QuestionSetSpec;
+  /** Questions in a spec stage that was skipped before the outage. They stay skipped decisions. */
+  skipped: ReadonlySet<string>;
+  rollout: RolloutStage;
+  channel: Channel;
+  arm?: ExperimentArm | undefined;
+}
+
+/** The first escalate_to_llm action in a question policy (low band first), so an outage escalation reuses its config. */
+function escalateRefOf(policy: QuestionPolicy): ActionRef {
+  for (const band of ["low", "medium", "high"] as const) {
+    const ref = policy.actions[band];
+    if (ref.kind === "escalate_to_llm") return ref;
+  }
+  return { kind: "escalate_to_llm" };
+}
+
+/**
+ * Decisions for a run whose System One call was unavailable after retries (ADR-012). Every decision
+ * is band low with value null, so the caller always gets an instruction and never an empty set:
+ * effectiveAction comes from outageEffectiveAction and the set's onUnavailable (never auto).
+ * Relevance is not evaluated, since the answers it reads are missing; every question outside a
+ * skipped stage counts as relevant. Routes do not run, so route is null.
+ */
+export function routeOutage(input: OutageRouterInput): RouterOutput {
+  const { spec } = input;
+  const stage = routingStage(input.rollout, input.channel);
+  const onUnavailable = onUnavailableOf(spec);
+  const decisions: Record<string, Decision> = {};
+  const meta: Record<string, DecisionMeta> = {};
+  const decide = (kind: "question" | "composite", gating: boolean): Decision => {
+    const eff = outageEffectiveAction({ stage, kind, gating, relevant: true, onUnavailable });
+    const executed = isOutageExecuted({ effectiveAction: eff, arm: input.arm });
+    return { kind, value: null, band: "low", relevant: true, action: eff, effectiveAction: eff, executed };
+  };
+
+  for (const s of spec.stages) {
+    for (const [qid, q] of Object.entries(s.questions)) {
+      const policy = spec.policies[qid];
+      const questionPolicy = policy !== undefined && policy.type !== "composite" ? policy : undefined;
+      const gating = questionPolicy?.gating ?? false;
+      const base = { kind: "question" as const, gating, counts: true, questionType: q.type, answer: null };
+      if (input.skipped.has(qid)) {
+        decisions[qid] = emptyDecision("question");
+        meta[qid] = { ...base, actionRef: null };
+        continue;
+      }
+      const d = decide("question", gating);
+      decisions[qid] = d;
+      // Only a gating question escalates, and a gating question has a question policy.
+      meta[qid] = { ...base, actionRef: d.effectiveAction === "escalate_to_llm" ? escalateRefOf(questionPolicy as QuestionPolicy) : null };
+    }
+  }
+  for (const c of spec.composites ?? []) {
+    const gating = c.policy?.gating ?? false;
+    decisions[c.id] = decide("composite", gating);
+    meta[c.id] = { kind: "composite", gating, counts: c.policy !== undefined, actionRef: null, questionType: null, answer: null };
+  }
+
+  const { runBand, overallAction } = summarizeDecisions(decisions, meta);
+  return { decisions, meta, views: {}, composites: {}, runBand, overallAction, route: null, warnings: [] };
 }
 
 function routeComposite(

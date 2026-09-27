@@ -2,7 +2,12 @@
 
 import type { ConfidencePolicy, Thresholds } from "../contracts/policy.js";
 import type { LintResult, QuestionSetSpec } from "../contracts/spec.js";
-import { RESERVED_STATE_KEY } from "../contracts/spec.js";
+import {
+  ON_UNAVAILABLE_ACTIONS,
+  OUTAGE_AUTO_NOT_ALLOWED_MESSAGE,
+  OUTAGE_AUTO_NOT_ALLOWED_RULE,
+  RESERVED_STATE_KEY,
+} from "../contracts/spec.js";
 import type { QuestionDef, QuestionTypeLint } from "../contracts/question-types.js";
 import { conditionQuestionIds } from "../conditions/evaluate.js";
 import { questionTypes } from "../question-types/index.js";
@@ -167,4 +172,16 @@ export function policyLints(spec: QuestionSetSpec): LintResult[] {
     }
   }
   return out;
+}
+
+/**
+ * outage.auto_not_allowed (ADR-012): an outage gives no answer to act on, so the outage rule is
+ * never auto. The strict schema already refuses it; this catches a spec built in code without it.
+ */
+export function outageLints(spec: QuestionSetSpec): LintResult[] {
+  const rule: unknown = (spec as { onUnavailable?: unknown }).onUnavailable;
+  if (rule === undefined || (ON_UNAVAILABLE_ACTIONS as readonly unknown[]).includes(rule)) return [];
+  const message =
+    rule === "auto" ? OUTAGE_AUTO_NOT_ALLOWED_MESSAGE : `onUnavailable must be one of ${ON_UNAVAILABLE_ACTIONS.join(", ")}`;
+  return [finding(OUTAGE_AUTO_NOT_ALLOWED_RULE, "error", "/onUnavailable", message)];
 }

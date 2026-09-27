@@ -19,7 +19,7 @@ import {
   userCtx,
 } from "../test/harness.js";
 import { isRunRefusedError } from "./errors.js";
-import { dryRunQuestionSet, priceCall, runQuestionSet } from "./run.js";
+import { dryRunQuestionSet, isOutageCode, isOutageRun, priceCall, runQuestionSet } from "./run.js";
 
 const ctx = userCtx();
 
@@ -215,13 +215,29 @@ describe("failed runs return the envelope with status and error", () => {
   it.each([
     ["system_one_rate_limited", "system_one_rate_limited"],
     ["system_one_auth", "system_one_auth"],
-    ["client_aborted", "system_one_unavailable"],
-    ["llm_unavailable", "system_one_unavailable"],
-  ] as const)("a transport %s fails the run with %s", async (thrown, code) => {
+  ] as const)("a transport %s fails the run with %s and no decisions", async (thrown, code) => {
     const h = makePorts({ transport: scriptedTransport(() => transportError(thrown)) });
     const result = await runQuestionSet(ctx, runRequest(exampleState()), resolvedRun(exampleSpec()), h.ports, control());
     expect(RunResult.parse(result)).toBeTruthy();
     expect(result).toMatchObject({ status: "error", error: { code }, decisions: {}, runBand: "low", overallAction: "fallback", modelResolved: null });
+    expect(result.warnings).not.toContain("system_one_outage");
+    expect(isOutageRun(result)).toBe(false);
+    expect(h.runs.records).toHaveLength(1);
+  });
+
+  it.each([
+    ["client_aborted", "system_one_unavailable"],
+    ["llm_unavailable", "system_one_unavailable"],
+    ["system_one_unavailable", "system_one_unavailable"],
+    ["system_one_overloaded", "system_one_overloaded"],
+  ] as const)("a transport %s is an outage with %s and decisions from the outage rule", async (thrown, code) => {
+    const h = makePorts({ transport: scriptedTransport(() => transportError(thrown, true)) });
+    const result = await runQuestionSet(ctx, runRequest(exampleState()), resolvedRun(exampleSpec()), h.ports, control());
+    expect(RunResult.parse(result)).toBeTruthy();
+    expect(result).toMatchObject({ status: "error", error: { code }, runBand: "low", overallAction: "fallback", modelResolved: null, route: null });
+    expect(Object.keys(result.decisions).length).toBeGreaterThan(0);
+    expect(isOutageRun(result)).toBe(true);
+    expect(isOutageCode(code)).toBe(true);
     expect(h.runs.records).toHaveLength(1);
   });
 
@@ -425,6 +441,130 @@ describe("OpenRouter route (ADR-011)", () => {
   it("priceCall reads providerCostUsd first", () => {
     expect(priceCall({ inputTokens: 476, outputTokens: 70, providerCostUsd: 0.00002 }, null)).toBe(20);
     expect(priceCall({ inputTokens: 318, outputTokens: 0 }, { inputPerMtokMicroUsd: 42_000, outputPerMtokMicroUsd: 0 })).toBe(13);
+  });
+});
+
+describe("outage rule (ADR-012)", () => {
+  const withRule = (onUnavailable?: QuestionSetSpec["onUnavailable"]): QuestionSetSpec => {
+    const spec = exampleSpec();
+    if (onUnavailable !== undefined) spec.onUnavailable = onUnavailable;
+    return spec;
+  };
+  const down = () => scriptedTransport(() => transportError("system_one_unavailable", true));
+  const gatingIds = (spec: QuestionSetSpec) =>
+    Object.entries(spec.policies).filter(([, p]) => p.gating).map(([id]) => id);
+
+  it.each([
+    [undefined, "fallback"],
+    ["fallback", "fallback"],
+    ["review", "review"],
+  ] as const)("onUnavailable %s: every gating decision is %s, band low, never auto", async (rule, action) => {
+    const spec = withRule(rule);
+    const h = makePorts({ transport: down() });
+    const result = await runQuestionSet(ctx, runRequest(exampleState()), resolvedRun(spec), h.ports, control());
+    expect(RunResult.parse(result)).toBeTruthy();
+    expect(result.status).toBe("error");
+    expect(result.error?.code).toBe("system_one_unavailable");
+    expect(result.warnings).toContain("system_one_outage");
+    for (const id of gatingIds(spec)) {
+      if (result.decisions[id]?.relevant === false) continue;
+      expect(result.decisions[id]).toMatchObject({ band: "low", value: null, effectiveAction: action });
+    }
+    expect(Object.values(result.decisions).some((d) => d.effectiveAction === "auto")).toBe(false);
+    expect(result.overallAction).toBe(action);
+    expect(result.runBand).toBe("low");
+    // Savings are suppressed; outage runs are excluded from calibration.
+    expect(result.cost).toMatchObject({ savingsSuppressed: "outage", savingsUsd: 0, llmCallsAvoided: 0 });
+    expect(isOutageRun(result)).toBe(true);
+    if (action === "review") expect(result.reviewItemIds?.length).toBeGreaterThan(0);
+    else expect(result.reviewItemIds).toBeUndefined();
+  });
+
+  it("shadow never acts on an outage: every decision is fallback", async () => {
+    const h = makePorts({ transport: down() });
+    const result = await runQuestionSet(ctx, runRequest(exampleState()), resolvedRun(withRule("review"), { rollout: "shadow" }), h.ports, control());
+    expect(Object.values(result.decisions).every((d) => d.effectiveAction === "fallback" && !d.executed)).toBe(true);
+    expect(result.cost.savingsSuppressed).toBe("outage");
+  });
+
+  it("an exhausted latency budget is an outage too", async () => {
+    const h = makePorts({ clock: steppingClock(0, 10_000) });
+    const result = await runQuestionSet(ctx, runRequest(exampleState()), resolvedRun(withRule("review")), h.ports, control(8_000));
+    expect(result.error?.code).toBe("system_one_unavailable");
+    expect(result.overallAction).toBe("review");
+  });
+
+  it("a later stage outage keeps earlier answers and skipped stages, and every decision takes the rule", async () => {
+    const transport = scriptedTransport((_req, n) =>
+      n === 1 ? ({ model: "jev-1.13.0", answers: { team: teamAnswer("billing") }, usage: { input_tokens: 100, output_tokens: 5 } } as SystemOneResponse) : transportError("system_one_overloaded", true),
+    );
+    const h = makePorts({ transport });
+    const spec = { ...structuredClone(twoStage), onUnavailable: "review" as const };
+    const result = await runQuestionSet(ctx, runRequest({ ticket: "x" }), resolvedRun(spec), h.ports, control());
+    expect(RunResult.parse(result)).toBeTruthy();
+    expect(result.error?.code).toBe("system_one_overloaded");
+    expect(result.answers["team"]).toBeDefined();
+    expect(result.modelResolved).toBe("jev-1.13.0");
+    expect(result.decisions["team"]).toMatchObject({ value: null, band: "low", effectiveAction: "review" });
+    expect(result.decisions["refund"]).toMatchObject({ effectiveAction: "review" });
+    expect(result.cost.savingsUsd).toBe(0);
+    expect(result.cost.systemOneInputTokens).toBe(100);
+
+    const skipping = makePorts({ transport: scriptedTransport((_req, n) => (n === 1 ? ({ model: "jev-1.13.0", answers: { team: teamAnswer("technical") }, usage: { input_tokens: 100, output_tokens: 5 } } as SystemOneResponse) : transportError("system_one_unavailable"))) });
+    const twoFail = { ...spec, stages: [...spec.stages, { id: "third", questions: { third: { type: "noul" as const, instructions: "Is `ticket` about an invoice at all, in any way?", meta: { label: "Third" } } } }], policies: { ...spec.policies, third: spec.policies["refund"]! } };
+    const r2 = await runQuestionSet(ctx, runRequest({ ticket: "x" }), resolvedRun(twoFail), skipping.ports, control());
+    expect(r2.stages.map((s) => s.skipped)).toEqual([false, true, false]);
+    expect(r2.decisions["refund"]).toMatchObject({ relevant: false, effectiveAction: "fallback" });
+    expect(r2.decisions["third"]).toMatchObject({ effectiveAction: "review" });
+  });
+
+  describe("escalate_to_llm on an outage", () => {
+    const answerLlm = (text: string | Error): LlmTransport & { requests: unknown[] } => {
+      const requests: unknown[] = [];
+      return {
+        requests,
+        async complete(req) {
+          requests.push(req);
+          if (text instanceof Error) throw text;
+          return { text, model: "claude-haiku-4-5", inputTokens: 300, outputTokens: 2 };
+        },
+      };
+    };
+    const single = (): QuestionSetSpec => {
+      const spec = structuredClone(twoStage);
+      spec.stages = [spec.stages[0]!];
+      spec.policies = { team: spec.policies["team"]! };
+      spec.onUnavailable = "escalate_to_llm";
+      return spec;
+    };
+
+    it("goes through ports.llm like a normal escalation and books its cost, not savings", async () => {
+      const port = answerLlm("technical");
+      const h = makePorts({ transport: down(), llm: port });
+      const result = await runQuestionSet(ctx, runRequest({ ticket: "x" }), resolvedRun(single()), h.ports, control());
+      expect(RunResult.parse(result)).toBeTruthy();
+      expect(result.decisions["team"]).toMatchObject({
+        value: null,
+        band: "low",
+        effectiveAction: "escalate_to_llm",
+        executed: true,
+        escalation: { model: "claude-haiku-4-5", value: "technical", status: "ok" },
+      });
+      expect(port.requests).toHaveLength(1);
+      expect(result.cost).toMatchObject({ llmCallsMade: 1, escalationCostUsd: 0.00031, savingsSuppressed: "outage", savingsUsd: 0 });
+      expect(result.overallAction).toBe("escalate_to_llm");
+    });
+
+    it.each([
+      ["no LLM port", undefined],
+      ["an LLM failure", answerLlm(transportError("llm_unavailable"))],
+    ])("falls back to review on %s", async (_name, port) => {
+      const h = makePorts({ transport: down(), ...(port === undefined ? {} : { llm: port }) });
+      const result = await runQuestionSet(ctx, runRequest({ ticket: "x" }), resolvedRun(single()), h.ports, control());
+      expect(result.decisions["team"]).toMatchObject({ effectiveAction: "review", executed: true, escalation: { status: "failed" } });
+      expect(result.warnings).toEqual(expect.arrayContaining(["system_one_outage", "escalation_failed"]));
+      expect(result.reviewItemIds).toHaveLength(1);
+    });
   });
 });
 

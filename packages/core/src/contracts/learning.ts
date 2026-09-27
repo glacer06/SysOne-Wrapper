@@ -26,6 +26,14 @@ const count = z.number().int().nonnegative();
 export const FeedbackSource = z.enum(["app", "reviewer", "audit", "agent"]);
 export type FeedbackSource = z.infer<typeof FeedbackSource>;
 
+/**
+ * Why a decision was wrong (ADR-012, effectiveness-loop.md Failure triage). Set by the resolver of
+ * a feedback report or a review item. Proposals and set health group misses by it.
+ */
+export const FAILURE_CLASSES = ["missing_evidence", "model_error", "code_error", "service"] as const;
+export const FailureClass = z.enum(FAILURE_CLASSES);
+export type FailureClass = z.infer<typeof FailureClass>;
+
 /** One decision, or the run's route. */
 export const FeedbackTarget = z.union([
   z.strictObject({ decisionId: DecisionId }),
@@ -50,6 +58,8 @@ export const FeedbackReport = z
     observed: JsonValue,
     observedAt: IsoTimestamp,
     idempotencyKey: z.string().min(1),
+    /** Optional failure class when the report disputes the decision (ADR-012). */
+    failureClass: FailureClass.optional(),
   })
   .superRefine((f, ctx) => {
     if ((f.runId === undefined) === (f.externalRef === undefined)) {

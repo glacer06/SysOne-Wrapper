@@ -393,6 +393,7 @@ QuestionSetSpec = {
   routes?: Array<{ when: Condition, output: string }>,   // first match wins
   defaultRoute?: string,                                  // used when no route matches
   savings?: { comparatorModel?: string, estOutputTokensPerQuestion?: number, kind?: SavingsKind },
+  onUnavailable?: "fallback" | "review" | "escalate_to_llm",  // outage rule (ADR-012); default fallback, never auto
 }
 
 QuestionDef = {
@@ -531,6 +532,7 @@ The operation builds `PublishCtx` from the stores; core never reads them. The ed
 | `policy.noul_order` | Noul settings break `0 < falseAt < trueAt < 1` or `falseAt + reviewMargin < trueAt - reviewMargin` | error |
 | `policy.per_option_keys` | `perOption` keys are not a subset of the choice's option keys | error |
 | `policy.type_mismatch` | A question has no policy, or its policy type differs from the question type | error |
+| `outage.auto_not_allowed` | `onUnavailable` is `auto` (ADR-012); an outage gives no answer to act on. The strict schema refuses it with the same rule id | error |
 | `policy.all_gating_thresholded` | Every question is gating and thresholded; suggest the top-choice preset where only the best option matters | warning |
 | `stage.same_stage_dependency` | Question depends on another answer in the same stage | error |
 | `stage.needless_second_call` | A stage's `when` reads an earlier answer but its `stateFrom` is `input` only; merge into the earlier stage and use `relevantWhen` | warning |

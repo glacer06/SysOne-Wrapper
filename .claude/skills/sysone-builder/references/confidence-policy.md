@@ -120,6 +120,7 @@ This table is the only definition. [architecture.md](architecture.md) and [savin
 - Irrelevant decisions are `fallback` in every stage and are excluded as described above.
 - A failed escalation changes `effectiveAction` from `escalate_to_llm` to `review` ([Escalation](#escalation)).
 - `slug@draft` runs behave as `shadow`.
+- **Outage:** when System One is unavailable after retries, the outage rows in [Outage behaviour](#outage-behaviour-adr-012-accepted) apply instead (ADR-012).
 - **Staging channel:** effective actions are computed the same way, but side-effect handlers do not dispatch unless the set sets `dispatchActionsOnStaging`. Staging books cost, not savings.
 
 ## Rollout stages (per set, per channel)
@@ -227,10 +228,26 @@ Targeted picks (near a threshold, challenger disagreements) feed datasets and th
 - Word noul true criteria positively.
 - If only the best option matters, use the top-choice preset.
 
-## Outage behaviour (ADR-012, proposed)
+## Outage behaviour (ADR-012, accepted)
 
-A System One outage is a separate case from a low band. Proposed rule, pending ADR-012:
+A System One outage is a separate case from a low band. Nick accepted ADR-012 on 2026-09-27. Core enforces it in `outageEffectiveAction` and `routeOutage`, next to the normative table.
 
-- Each set has `onUnavailable`: `fallback` (default), `review` or `escalate_to_llm`. The run returns a normal `RunResult` with `status: "error"`, `error.code` `system_one_unavailable`, and every gating decision's `effectiveAction` set to `onUnavailable`, so callers always get an instruction.
-- `onUnavailable` never resolves to `auto`.
-- A **liveness alert** fires when a set that normally produces decisions has produced none (or only errors) for its configured window, default 15 minutes at production traffic. "Silence" is treated as an incident, not as a safe state.
+- **Outage rule per set.** `QuestionSetSpec.onUnavailable` is `fallback` (default), `review` or `escalate_to_llm`. It never resolves to `auto`: the schema refuses `auto` with the rule id `outage.auto_not_allowed`, and the lint of the same id catches a spec built in code.
+- **What counts as an outage.** The run fails with `system_one_unavailable` or `system_one_overloaded` after SDK retries. That includes a spent latency budget and a transport error that is not a `TransportError`. Other failures (`system_one_auth`, `system_one_rate_limited`, `rate_limited`, quota) keep the plain error envelope with no decisions.
+- **Always an instruction.** `runQuestionSet` returns a normal `RunResult` with `status: "error"`, `error.code` set, the warning `system_one_outage`, and one decision per question and composite. Each is band `low`, `value: null`, `relevant: true` (relevance is not evaluated, since the answers it reads are missing), and `action` equal to `effectiveAction`. Questions in a spec stage skipped before the outage stay skipped decisions. Routes do not run, so `route` is null. Raw answers from stages that finished before the outage stay in `answers`.
+- **Savings and metrics.** Outage runs book no savings (`savingsSuppressed: "outage"`, `savingsUsd: 0`), record whatever System One calls did finish, and are left out of calibration, precision, coverage and label sampling (`isOutageRun`).
+- **escalate_to_llm on an outage** goes through `ports.llm` like a normal escalation. It reuses the question's own `escalate_to_llm` config when a band has one (low band first), else the set's comparator. If the LLM fails, or no LLM port is wired, the decision becomes `review`. A composite has no answer type to escalate, so the rule gives it `review`.
+
+Outage rows of the effective-action table (the normal table above does not apply, since there is no band):
+
+| Rollout stage | Decision | `effectiveAction` | Executes? |
+|---|---|---|---|
+| `inactive` | any | none: the channel returns `409 set_not_live` before any call | No |
+| `shadow`, `paused`, `slug@draft` | any | `fallback` | No |
+| `controlled` or `full` | gating | `onUnavailable` (`review` for a composite when the rule is `escalate_to_llm`) | Yes for `review` (item created) and `escalate_to_llm` (LLM called); No for `fallback` |
+| `controlled` or `full` | not gating | `fallback` | No |
+| any | irrelevant (skipped stage) | `fallback` | No |
+
+An outage `fallback` runs no `FallbackConfig`: there is no band, so no policy action applies, and the caller keeps its existing path. The challenger arm executes nothing, as in the normal table.
+
+**Liveness alert.** A job raises `alert.raised` with kind `set_silent` when a set that normally produces decisions on a channel has produced none, or only errors, for its window (default 15 minutes at production traffic, configurable per set). Rollout pages and set health show it. Silence is an incident, not a safe state. The job ships in Phase 3 with the other alerts.

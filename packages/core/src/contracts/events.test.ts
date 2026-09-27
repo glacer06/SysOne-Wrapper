@@ -146,6 +146,27 @@ describe("event data", () => {
     expect(() => parseEventData("review.resolved", { ...data, status: "open" })).toThrow();
   });
 
+  it("carries an optional failure class on a review resolution (ADR-012)", () => {
+    const data = {
+      setId: SET,
+      runId: null,
+      externalRef: null,
+      decisionId: "category",
+      kind: "action",
+      status: "resolved",
+      resolution: { value: "billing", execute: false, failureClass: "missing_evidence" },
+    };
+    expect(parseEventData("review.resolved", data)).toEqual(data);
+    const bad = { ...data, resolution: { ...data.resolution, failureClass: "bad_luck" } };
+    expect(() => parseEventData("review.resolved", bad)).toThrow();
+  });
+
+  it("raises the set_silent liveness alert (ADR-012)", () => {
+    const data = { kind: "set_silent", severity: "critical", message: "No decisions on production for 15 minutes.", metrics: { windowMinutes: 15, runs: 0 } };
+    expect(parseEventData("alert.raised", data)).toEqual(data);
+    expect(() => parseEventData("alert.raised", { ...data, kind: "silent" })).toThrow();
+  });
+
   it("types rollout.auto_demoted rules", () => {
     const data = { channel: "production", from: "full", to: "controlled", rule: "band_drift", metrics: { psi: 0.31 } };
     expect(parseEventData("rollout.auto_demoted", data)).toEqual(data);

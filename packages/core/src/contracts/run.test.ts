@@ -115,6 +115,18 @@ describe("RunResult", () => {
     expect(RunResult.safeParse({ ...shadow, cost: { ...shadow.cost, savingsUsd: 0 } }).success).toBe(true);
   });
 
+  it("suppresses savings for an outage run (ADR-012)", () => {
+    const r = sample();
+    const outage = {
+      ...r,
+      status: "error",
+      error: { code: "system_one_unavailable", message: "System One did not answer in time." },
+      cost: { ...r.cost, savingsSuppressed: "outage", savingsUsd: 0 },
+    };
+    expect(RunResult.safeParse(outage).success).toBe(true);
+    expect(RunResult.safeParse({ ...outage, cost: { ...outage.cost, savingsUsd: 0.001 } }).success).toBe(false);
+  });
+
   it("accepts an experiment arm and rejects an unknown one", () => {
     const r = sample();
     const experiment = { id: "01923f40-3333-7aaa-9bbb-000000000001", arm: "challenger" };

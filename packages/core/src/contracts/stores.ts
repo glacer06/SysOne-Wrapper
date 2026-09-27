@@ -46,7 +46,7 @@ import {
   VersionId,
 } from "./common.js";
 import { EventEnvelope, EventType } from "./events.js";
-import { type FeedbackReport, LabelingPolicy } from "./learning.js";
+import { FailureClass, type FeedbackReport, LabelingPolicy } from "./learning.js";
 import { CounterfactualMode, Decision, RunStage, RunStatus, SavingsSuppressed } from "./run.js";
 import { QuestionSetSpec, RunSource } from "./spec.js";
 import { SystemOneAnswer } from "./system-one.js";
@@ -396,6 +396,8 @@ export const ReviewResolveInput = z.strictObject({
   resolution: z.unknown(),
   addToDataset: z.boolean(),
   pendingConfirmation: z.boolean(),
+  /** Why the decision was wrong, when the reviewer set a class (ADR-012). */
+  failureClass: FailureClass.optional(),
 });
 export type ReviewResolveInput = z.infer<typeof ReviewResolveInput>;
 

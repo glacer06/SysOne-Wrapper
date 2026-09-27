@@ -65,6 +65,8 @@ describe("FixtureTransport", () => {
     ["typesafe", "error-429", "system_one_rate_limited", "req_fx_429"],
     ["typesafe", "error-529", "system_one_overloaded", "req_fx_529"],
     ["openrouter", "error-402", "system_one_auth", null],
+    ["typesafe", "outage-503", "system_one_unavailable", "req_fx_503"],
+    ["openrouter", "outage-503", "system_one_unavailable", null],
   ] as const)("%s/%s throws %s", async (provider, name, code, requestId) => {
     const err = await transport.call(named(provider, name).request, opts(provider)).catch((e: unknown) => e);
     expect(isTransportError(err)).toBe(true);
@@ -97,7 +99,7 @@ describe("FixtureTransport", () => {
 
   it("loads the bundled set and rejects a bad fixture file", () => {
     expect(new FixtureTransport(fixtures).size).toBe(fixtures.length);
-    expect(loadFixturesFromDir(`${BUNDLED_FIXTURES_DIR}openrouter`)).toHaveLength(5);
+    expect(loadFixturesFromDir(`${BUNDLED_FIXTURES_DIR}openrouter`)).toHaveLength(6);
     expect(() => loadFixturesFromDir(new URL("../../contract/", import.meta.url).pathname)).toThrow(/invalid fixture/);
   });
 });
@@ -223,5 +225,25 @@ describe("the engine on recorded fixtures", () => {
     expect(result.modelResolved).toBe("typesafe/jev-1.13-20260917");
     expect(result.cost.systemOneCostUsd).toBe(0.000004);
     expect(result.warnings).toEqual([]);
+  });
+
+  it.each(["typesafe", "openrouter"] as const)("an outage fixture on %s returns the set's outage rule, never an empty decision set (ADR-012)", async (provider) => {
+    const spec: QuestionSetSpec = {
+      schemaVersion: 1,
+      model: "jev-1.13.0",
+      input: { schema: { type: "object" } },
+      stages: [{ id: "main", questions: { is_urgent: { type: "noul", instructions: "Does `ticket` convey urgency?", criteria: { true: "Explicitly time-sensitive", false: "No urgency expressed" }, meta: { label: "Urgent" } } } }],
+      policies: { is_urgent: { type: "noul", gating: true, noul: { trueAt: 0.85, falseAt: 0.15, reviewMargin: 0.1 }, actions: { high: { kind: "auto" }, medium: { kind: "review" }, low: { kind: "review" } } } },
+      onUnavailable: "review",
+    };
+    const f = named(provider, "outage-503");
+    const transport = new FixtureTransport(fixtures);
+    const result = await runQuestionSet(ctx, { setRef: "s", state: f.request.state, source: "api", options: {} }, resolved(spec, provider), ports(transport), { signal, budgetMs: 8_000 });
+    expect(RunResult.parse(result)).toBeTruthy();
+    expect(transport.calls[0]).toMatchObject({ fixture: "outage-503", provider });
+    expect(result).toMatchObject({ status: "error", error: { code: "system_one_unavailable" }, runBand: "low", overallAction: "review" });
+    expect(result.decisions["is_urgent"]).toMatchObject({ band: "low", value: null, effectiveAction: "review", executed: true });
+    expect(result.warnings).toContain("system_one_outage");
+    expect(result.cost.savingsSuppressed).toBe("outage");
   });
 });

@@ -27,7 +27,7 @@ import { routingStage } from "./effective-action.js";
 import { RunRefusedError, runErrorMessage } from "./errors.js";
 import { buildEscalationRequest, escalationModel, parseEscalationReply } from "./escalation.js";
 import { type PreflightBatch, preflightStage } from "./preflight.js";
-import { type DecisionMeta, escalationConfigOf, fallbackConfigOf, routeAnswers, summarizeDecisions } from "./router.js";
+import { type DecisionMeta, escalationConfigOf, fallbackConfigOf, routeAnswers, routeOutage, summarizeDecisions } from "./router.js";
 import { evaluateChecks, redactPathsDefault, stageRuns, stageState, whenReadsAnswers } from "./stages.js";
 
 /** Run warnings core adds itself (answer warnings live in answers.ts, preflight ones in preflight.ts). */
@@ -42,7 +42,28 @@ export const RUN_WARNINGS = {
   adapterNotApplied: "input_adapter_not_applied",
   handlerDisabled: "action_handler_disabled",
   dryRunAnswersUnknown: "dry_run_answers_unknown",
+  systemOneOutage: "system_one_outage",
 } as const;
+
+/**
+ * The failure codes the outage rule covers (ADR-012): System One unavailable or overloaded after
+ * SDK retries, including an exhausted latency budget. The run still returns decisions, each with
+ * the set's onUnavailable action.
+ */
+export const OUTAGE_ERROR_CODES: readonly ErrorCode[] = ["system_one_unavailable", "system_one_overloaded"];
+
+/** True when a failed run's code is an outage under ADR-012. */
+export function isOutageCode(code: ErrorCode): boolean {
+  return OUTAGE_ERROR_CODES.includes(code);
+}
+
+/**
+ * True for a run that ended in an outage (warning system_one_outage). Outage runs book no savings
+ * and are left out of calibration, precision and coverage metrics.
+ */
+export function isOutageRun(result: Pick<RunResult, "status" | "warnings">): boolean {
+  return result.status === "error" && result.warnings.includes(RUN_WARNINGS.systemOneOutage);
+}
 
 /** Default spec.savings.estOutputTokensPerQuestion. */
 export const DEFAULT_EST_OUTPUT_TOKENS_PER_QUESTION = 60;
@@ -314,7 +335,11 @@ export async function runQuestionSet(
   if (systemOneCostMicro === null) warn(RUN_WARNINGS.modelUnpriced);
 
   const stage = routingStage(resolved.rollout, resolved.channel);
-  const suppressed = savingsSuppression({ source: req.source, arm: resolved.experiment?.arm, channel: resolved.channel, routingStage: stage });
+  const outage = failure !== null && isOutageCode(failure.code);
+  if (outage) warn(RUN_WARNINGS.systemOneOutage);
+  const suppressed = outage
+    ? "outage"
+    : savingsSuppression({ source: req.source, arm: resolved.experiment?.arm, channel: resolved.channel, routingStage: stage });
   const comparatorModel = spec.savings?.comparatorModel ?? settings.defaultComparatorModel;
   const comparatorPrice = await ports.prices.get(ctx.orgId, comparatorModel);
   const estOut = spec.savings?.estOutputTokensPerQuestion ?? DEFAULT_EST_OUTPUT_TOKENS_PER_QUESTION;
@@ -330,19 +355,27 @@ export async function runQuestionSet(
   let relevantQuestions: CountedQuestion[] = [];
   const pendingActions: Array<{ decisionId: string; handlerId: string; config: unknown }> = [];
 
-  if (failure === null) {
-    // Step 9: route.
-    const routed = routeAnswers({
-      spec,
-      answers,
-      asked,
-      checks: p.checks,
-      input: p.input,
-      rollout: resolved.rollout,
-      channel: resolved.channel,
-      dispatchActionsOnStaging: settings.dispatchActionsOnStaging,
-      arm: resolved.experiment?.arm,
-    });
+  if (failure === null || outage) {
+    // Step 9: route. On an outage every decision takes the set's outage rule (ADR-012).
+    const routed = outage
+      ? routeOutage({
+          spec,
+          skipped: new Set(spec.stages.flatMap((s, i) => ((stages[i] as RunStage).skipped ? Object.keys(s.questions) : []))),
+          rollout: resolved.rollout,
+          channel: resolved.channel,
+          arm: resolved.experiment?.arm,
+        })
+      : routeAnswers({
+          spec,
+          answers,
+          asked,
+          checks: p.checks,
+          input: p.input,
+          rollout: resolved.rollout,
+          channel: resolved.channel,
+          dispatchActionsOnStaging: settings.dispatchActionsOnStaging,
+          arm: resolved.experiment?.arm,
+        });
     for (const w of routed.warnings) warn(w);
     decisions = routed.decisions;
 
@@ -401,9 +434,10 @@ export async function runQuestionSet(
     route = routed.route;
 
     // Savings count relevant questions whose effective action is auto. A shadow run counts what the
-    // policy would have done, so its suppressed would-be savings mean something.
+    // policy would have done, so its suppressed would-be savings mean something. An outage counts
+    // nothing.
     for (const [id, d] of Object.entries(decisions)) {
-      if (d.kind !== "question" || !d.relevant || !asked.has(id)) continue;
+      if (outage || d.kind !== "question" || !d.relevant || !asked.has(id)) continue;
       const q = { stateTokens: stateTokensByQuestion[id] as number, questionTokens: questionTokensById[id] as number };
       relevantQuestions.push(q);
       const acts = suppressed === "shadow" ? d.action : d.effectiveAction;
