@@ -123,6 +123,10 @@ pnpm eval --org <slug> --set <slug> --version <n> --dataset <name> [--snapshot <
 
 This command is internal. Customers use `sysone eval run` ([headless-and-agents.md](headless-and-agents.md)).
 
+- Offline by default: the fixture transport answers from recorded fixtures and gives deterministic synthetic answers for the rest (the report says how many calls were synthetic), and the folder store reads `<org>/sets/<set>/v<n>.json` and `<org>/datasets/<name>.jsonl` under `packages/evals/data` (or `--data`). `--transport sdk`, or `SYSTEM_ONE_TRANSPORT=sdk`, runs live and needs `TYPESAFE_API_KEY` or `OPENROUTER_API_KEY` for `--provider`.
+- A case is `{ id?, state, expected, tags?, split? }`. `expected` maps a decision id to an option key (choice), `true` or `false` (noul), a level index (score) or a level (composite).
+- Evals run on the staging channel in `shadow`, so no action is dispatched. Coverage and review load read the policy `action`.
+
 - Input: a dataset of `{ state, expected }` per question. Without `--snapshot`, the eval takes a new dataset snapshot.
 - `--model` evaluates the version's spec under another model without publishing. The model upgrade flow uses it.
 - `eval_runs` record `model` and `snapshot_id`.

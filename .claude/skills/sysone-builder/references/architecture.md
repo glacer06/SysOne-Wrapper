@@ -578,8 +578,9 @@ These warnings fire only when the target model's profile lists the weakness id. 
 - Meter outbox push to Stripe (every minute).
 - Rollups into `usage_daily` and `question_daily` (nightly).
 - Retention (nightly): state and answers on separate clocks, after the learning retention copy into `dataset_cases` ([security.md](security.md)).
-- Registry sync (nightly): per org key, by provider. TypeSafe keys list `/v1/models`. OpenRouter keys read OpenRouter's Models API (`GET https://openrouter.ai/api/v1/models`, entries `typesafe/*` and `~typesafe/*`), because the SDK's `models.list()` fails there. Store the reachable names; insert unseen names as `unreviewed` and alert the platform admin; probe idle aliases with a one-noul request and read the response `model` ([system-one-models.md](system-one-models.md)).
-- Contract watch (nightly): diff TypeSafe's `openapi.json`, `llms.txt` and `models.md` against committed snapshots; alert and open an issue on a change.
+- Registry sync (nightly): per org key, by provider. TypeSafe keys list `/v1/models`. OpenRouter keys read OpenRouter's Models API (`GET https://openrouter.ai/api/v1/models?output_modalities=decisions`, entries `typesafe/*` and `~typesafe/*`), because the SDK's `models.list()` fails there. Store the reachable names; insert unseen names as `unreviewed` and alert the platform admin; probe idle aliases with a one-noul request and read the response `model` ([system-one-models.md](system-one-models.md)).
+- Contract watch (nightly): diff TypeSafe's `openapi.json`, `llms.txt` and `models.md` against committed snapshots in `packages/system-one-client/contract`; alert and open an issue on a change.
+- The registry sync, alias observation, alias probe and contract watch functions live in `apps/console/src/jobs/registry`, one plain async function each over small ports (ADR-005).
 - Webhook retries.
 - Gate evaluator and auto-demote (hourly, Phase 3).
 - Threshold refit (weekly, Phase 3b).

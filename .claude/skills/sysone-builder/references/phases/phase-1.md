@@ -31,13 +31,18 @@
 - [x] Dev implementations: local KEK vault, in-memory limiter and quota
 
 ## QA
-- [ ] Recorded fixtures (see [testing.md](../testing.md) minimum set), including a response whose `model` differs from the requested alias. Hand-authored stand-ins from the documented shapes are committed in `packages/system-one-client/fixtures/` (no key was available); re-record them once a key is available.
+- [ ] Recorded fixtures (see [testing.md](../testing.md) minimum set), including a response whose `model` differs from the requested alias. Hand-authored stand-ins from the documented shapes are committed in `packages/system-one-client/fixtures/` (no key was available); re-record them once a key is available. `pnpm fixtures:record` is built and tested offline; it needs `TYPESAFE_API_KEY` to run.
 - [ ] OpenRouter fixtures, recorded with `pnpm fixtures:record --provider openrouter` (needs `OPENROUTER_API_KEY`): a noul, choice and score response with `id`, `provider` and `usage.cost`, one through `~typesafe/jev-latest`, and a 402 error. Hand-authored stand-ins from the documented shapes are committed in `packages/system-one-client/fixtures/` (no key was available); re-record them once a key is available.
 - [x] Fixture contract test against zod; each fixture records TypeSafe's `openapi.json` version
-- [ ] Pinned-classification table test (registry `kind` only)
-- [ ] `packages/evals` CLI: `pnpm eval --org <slug> --set <slug> --version <n> --dataset <name> [--model <id>] [--repeats <k>]`
+- [x] Pinned-classification table test (registry `kind` only), on the `typesafe` and `openrouter` routes: `apps/console/src/jobs/registry/pinned-classification.test.ts`
+- [x] `packages/evals` CLI: `pnpm eval --org <slug> --set <slug> --version <n> --dataset <name> [--snapshot <id>] [--model <id>] [--repeats <k>]`. Offline by default on the fixture transport and a folder store (`packages/evals/data`, demo org `demo`, set `ticket-routing`, dataset `tickets`); `--transport sdk` runs live with the provider key. The Postgres eval store lands with the `eval.run` job in Phase 3
 - [x] Cross-tenant suite generator
-- [ ] Live smoke script across the models in the smoke list per [testing.md](../testing.md), with `--provider openrouter` when `OPENROUTER_API_KEY` is set
+- [x] Live smoke script across the models in the smoke list per [testing.md](../testing.md), with `--provider openrouter` when `OPENROUTER_API_KEY` is set (`packages/evals/src/live`). Without the key it prints why it skipped and exits 0. It has not yet run against a live key
+
+## Platform / Tenancy: registry jobs
+
+- [x] Registry sync, alias observation, alias probe and contract watch as plain async functions in `apps/console/src/jobs/registry` (ADR-005: the Inngest wrapper and the Postgres adapter for their ports land with the runner in Phase 2). Tested against recorded HTTP in `__fixtures__/http`, with no network. The TypeSafe `GET /v1/models` and probe recordings are stand-ins until a key is available; the OpenRouter Models API recording is live
+- [x] Contract snapshots for `llms.txt` and `models.md` next to `openapi.json` in `packages/system-one-client/contract` (recorded 2026-09-27)
 
 ## Exit gate
 - A spec runs end to end against fixtures and returns a valid `RunResult` with bands, actions, cost, and savings.
