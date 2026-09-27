@@ -1,0 +1,15 @@
+{
+  "title": "Templates",
+  "pages": [
+    "index",
+    "email-triage",
+    "pr-safety-gate",
+    "log-line-pager",
+    "context-pruner",
+    "wake-gate",
+    "security-finding-triage",
+    "error-triage",
+    "lead-event-scoring",
+    "inbound-email-routing"
+  ]
+}

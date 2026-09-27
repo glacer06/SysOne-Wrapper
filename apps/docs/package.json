@@ -13,7 +13,8 @@
     "start": "next start --port 3001",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "generate:templates": "BANDWISE_WRITE_GENERATED=1 vitest run test/templates.test.ts"
   },
   "dependencies": {
     "fumadocs-core": "catalog:",
@@ -27,6 +28,7 @@
   "devDependencies": {
     "@bandwise/config": "workspace:*",
     "@bandwise/core": "workspace:*",
+    "@bandwise/templates": "workspace:*",
     "@tailwindcss/postcss": "catalog:",
     "@types/mdx": "catalog:",
     "@types/node": "catalog:",

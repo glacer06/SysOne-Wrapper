@@ -41,6 +41,9 @@ packages/
   cli/                Phase 3. @bandwise/cli: management commands over /api/v1, plus
                       `bandwise run --local` fixture mode (headless-and-agents.md).
   codegen/            Phase 4b. PURE. Set interface to generated files (deploy-and-codegen.md).
+  templates/          PURE. The kit's template pack (ADR-019): complete specs with metadata, example states
+                      and a borderline case per question. Depends only on core. Its tests run every
+                      state through `bandwise run --local` and keep the find-decisions skill's copies in sync.
   client-py/          Phase 4b, behind ADR-009. Python client generated from openapi.json.
   plugin-sdk/         Phase 5. definePlugin(), InputAdapter, QuestionTemplate, ActionHandler.
   plugins-builtin/    Phase 5. Built-in adapters, templates, actions.
@@ -48,7 +51,8 @@ packages/
                       (headless-and-agents.md).
   config/             tsconfig, eslint (with boundary rules), vitest presets.
 plugins/
-  claude-code/        Phase 7. Plugin manifest, customer skills, .mcp.json.
+  claude-code/        Phase 7. Plugin manifest, customer skills, .mcp.json. skills/find-decisions ships
+                      now with the kit (ADR-019).
 examples/             Sample apps that integrate Bandwise (Integrations).
 ```
 
@@ -61,6 +65,7 @@ Import boundaries are enforced with `eslint-plugin-boundaries`:
 - `react` never imports `client` server entrypoints, `tenancy`, `db`, or `system-one-client`.
 - `core` imports nothing with side effects.
 - `codegen` imports only `core` contracts.
+- `templates` imports only `core` and is pure. Only its tests may import `cli`, to run templates in local mode. `docs` may import `templates` to render the Templates pages.
 - `cli` imports `client` and `codegen` and calls `/api/v1` over HTTP. Only `packages/cli/src/local/**` may also import `core` and the fixture subpath `@bandwise/system-one-client/fixture`, never the SDK transport. That folder backs `bandwise run --local` and is loaded through a dynamic import, so the published package keeps `core` and `system-one-client` as optional peer dependencies. A boundary-lint fixture test (`packages/cli/src/local/__fixtures__/bad-sdk-import.ts`) covers this exception.
 - `mcp-server` calls `/api/v1` over HTTP only.
 - Console pages under `app/(org)` and `app/(platform)` call operations, never repositories.

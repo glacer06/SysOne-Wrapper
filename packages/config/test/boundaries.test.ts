@@ -88,6 +88,14 @@ const cases: Case[] = [
   { name: "codegen -> core contracts", file: "packages/codegen/src/x.ts", code: `import "@bandwise/core/contracts";`, violates: false },
   { name: "codegen -> core root", file: "packages/codegen/src/x.ts", code: `import "@bandwise/core";`, violates: true },
 
+  // The template pack is pure data over core. Only its tests reach the CLI, to run templates locally.
+  { name: "templates -> core", file: "packages/templates/src/x.ts", code: `import "@bandwise/core";`, violates: false },
+  { name: "templates -> node:fs", file: "packages/templates/src/x.ts", code: `import "node:fs";`, violates: true },
+  { name: "templates -> cli", file: "packages/templates/src/x.ts", code: `import "@bandwise/cli";`, violates: true },
+  { name: "templates test -> cli", file: "packages/templates/src/x.test.ts", code: `import "@bandwise/cli";`, violates: false },
+  { name: "templates -> system-one-client", file: "packages/templates/src/x.ts", code: `import "@bandwise/system-one-client";`, violates: true },
+  { name: "docs -> templates", file: "apps/docs/src/x.ts", code: `import "@bandwise/templates";`, violates: false },
+
   // cli reaches core and system-one-client only from src/local.
   { name: "cli -> client", file: "packages/cli/src/x.ts", code: `import "@bandwise/client";`, violates: false },
   { name: "cli -> core", file: "packages/cli/src/x.ts", code: `import "@bandwise/core";`, violates: true },

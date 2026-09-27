@@ -1,0 +1,37 @@
+{
+  "name": "@bandwise/templates",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Pure. The template pack: question set specs with metadata, example states and a borderline case per question. Depends only on @bandwise/core.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "@bandwise/source": "./src/index.ts",
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.build.json",
+    "test": "vitest run",
+    "generate": "BANDWISE_WRITE_GENERATED=1 vitest run src/generated-files.test.ts"
+  },
+  "dependencies": {
+    "@bandwise/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@bandwise/cli": "workspace:*",
+    "@bandwise/config": "workspace:*",
+    "@bandwise/system-one-client": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}
