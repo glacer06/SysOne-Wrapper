@@ -1,4 +1,4 @@
-// Live smoke (testing.md, Live smoke): `pnpm smoke [--model <id>] [--provider typesafe|openrouter]`.
+// Live smoke (testing.md, Live smoke): `pnpm smoke [--model <id>] [--provider typesafe|openrouter|vercel]`.
 //
 // Smoke list: jev-preview, jev-latest, the pinned versions sets use, and every registry model with
 // status preview or stable. On OpenRouter, only models with a route row, sent as the route's id.
@@ -24,7 +24,7 @@ import {
   latencyBudgetMs,
   parseSpec,
   registryIdForResolved,
-  reportedCostMicroUsd,
+  responseCostMicroUsd,
   resolveRoute,
   runQuestionSet,
   SEED_SYSTEM_ONE_PRICES,
@@ -191,10 +191,16 @@ export async function smokeModel(target: SmokeTarget, deps: SmokeDeps): Promise<
       add(`${type}.shape`, answer?.type === type, answer === undefined ? "no answer" : `answer type ${answer.type}`);
       add(`${type}.input_tokens`, response.usage.input_tokens > 0, `input_tokens ${response.usage.input_tokens}`);
       const pinned = versionedResolved(deps.provider, response.model, deps.profiles, deps.routes);
-      add(`${type}.versioned_model`, pinned !== null, pinned === null ? `response model ${response.model} is not a versioned registry id` : `answered by ${response.model} (${pinned})`);
+      if (pinned === null && deps.provider === "vercel" && registryIdForResolved(deps.provider, response.model, deps.routes) !== null) {
+        // Vercel answers with the id it was sent (typesafe-ai/jev) and documents no versioned id
+        // (ADR-013), so the build cannot be checked. Reported, not failed.
+        checks.push({ model: target.model, check: `${type}.versioned_model`, ok: true, skipped: true, detail: `answered by ${response.model}; Vercel documents no versioned id, so the build is unknown` });
+      } else {
+        add(`${type}.versioned_model`, pinned !== null, pinned === null ? `response model ${response.model} is not a versioned registry id` : `answered by ${response.model} (${pinned})`);
+      }
       const price = pinned === null ? null : await prices.get(evalContext().orgId, pinned, deps.provider);
       const cost = callCostMicro(
-        { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens, reportedMicro: reportedCostMicroUsd(response.usage) },
+        { inputTokens: response.usage.input_tokens, outputTokens: response.usage.output_tokens, reportedMicro: responseCostMicroUsd(response) },
         price,
       );
       if (cost === null) unpriced = true;

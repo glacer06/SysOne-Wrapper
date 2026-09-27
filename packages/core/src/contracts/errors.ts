@@ -66,6 +66,7 @@ export const ERROR_CODES = {
   rate_limited: { status: 429, retryable: true },
   system_one_rate_limited: { status: 429, retryable: true },
   system_one_invalid_request: { status: 502, retryable: false },
+  system_one_invalid_response: { status: 502, retryable: false },
   system_one_forbidden: { status: 502, retryable: false },
   system_one_unavailable: { status: 503, retryable: true },
   system_one_overloaded: { status: 503, retryable: true },

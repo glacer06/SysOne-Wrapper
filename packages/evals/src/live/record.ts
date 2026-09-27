@@ -1,4 +1,4 @@
-// `pnpm fixtures:record [--model <id>] [--provider typesafe|openrouter]` (testing.md, Fixtures).
+// `pnpm fixtures:record [--model <id>] [--provider typesafe|openrouter|vercel]` (testing.md, Fixtures).
 //
 // Re-sends the request of every committed success fixture for the provider and writes the live
 // answer back in the same file. Error fixtures (401, 402, 422, 429, 529) stay hand-authored: a live
@@ -9,7 +9,7 @@
 
 import { join } from "node:path";
 import { type ModelProfile, type ModelRoute, type SystemOneProvider, type SystemOneRequest, type SystemOneTransport, isTransportError, resolveRoute } from "@sysone/core";
-import { Fixture } from "@sysone/system-one-client/fixture";
+import { Fixture, evaluationFallbackReason } from "@sysone/system-one-client/fixture";
 
 export interface RecordTarget {
   name: string;
@@ -30,7 +30,11 @@ export function planRecording(
   routes: readonly ModelRoute[],
   model?: string,
 ): RecordTarget[] {
-  const sources = fixtures.filter((f) => f.provider === provider && "response" in f);
+  // A fixture the client must reject (an evaluation fallback, ADR-013) cannot be re-recorded: the
+  // live answer to its request is a normal one. It stays as committed.
+  const sources = fixtures.filter(
+    (f) => f.provider === provider && "response" in f && evaluationFallbackReason(f.response, f.responseHeaders) === null,
+  );
   if (model === undefined) {
     return sources.map((f) => ({ name: f.name, path: join(provider, `${f.name}.json`), request: f.request }));
   }
@@ -84,6 +88,7 @@ export async function recordFixtures(targets: readonly RecordTarget[], deps: Rec
           name: t.name,
           provider: deps.provider,
           openapiVersion: deps.openapiVersion,
+          source: "recorded",
           request: t.request,
           ...(requestId !== null ? { requestId } : {}),
           response,

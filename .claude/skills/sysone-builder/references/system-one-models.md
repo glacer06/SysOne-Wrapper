@@ -103,7 +103,7 @@ A model name is pinned only when the registry marks it `kind: "versioned"`. Alia
 |---|---|---|
 | Passive | Every run | `RunSink` compares `model_requested` to `model_resolved` against the last row in `model_alias_observations`. A new pair updates `aliasTarget` and emits `model.alias_moved` ([events.md](events.md)). A changed resolved model is also an auto-demote trigger ([confidence-policy.md](confidence-policy.md)). |
 | Active probe | Nightly | Each alias with no traffic that day gets a one-noul request with a tiny state. The response `model` is recorded like a run. |
-| Listing | Nightly, and when a key is saved or rotated | TypeSafe keys: `GET /v1/models`. OpenRouter keys: OpenRouter's Models API, `GET https://openrouter.ai/api/v1/models?output_modalities=decisions` (the plain listing returns chat models only and leaves System One models out), reading entries `typesafe/*` and `~typesafe/*` and mapping them to registry ids through the route rows (section 15). Reachable ids go into `org_system_one_keys.models`. An unseen name is inserted as `unreviewed` with null limits, and the platform admin is alerted. An OpenRouter id with no route row alerts the platform admin to add one. |
+| Listing | Nightly, and when a key is saved or rotated | TypeSafe keys: `GET /v1/models`. OpenRouter keys: OpenRouter's Models API, `GET https://openrouter.ai/api/v1/models?output_modalities=decisions` (the plain listing returns chat models only and leaves System One models out), reading entries `typesafe/*` and `~typesafe/*` and mapping them to registry ids through the route rows (section 15). Vercel AI Gateway keys (ADR-013): `GET /typesafe/v1/models` in TypeSafe's shape, mapped through the route rows. Reachable ids go into `org_system_one_keys.models`. An unseen name is inserted as `unreviewed` with null limits, and the platform admin is alerted. An OpenRouter or Vercel id with no route row alerts the platform admin to add one. |
 | Contract watch | Nightly | Diffs `openapi.json`, `llms.txt` and `models.md` against committed snapshots, including the keys of `components.schemas.Question.discriminator.mapping`. A change alerts the platform admin and opens an issue. |
 
 The jobs are listed in [architecture.md](architecture.md) (background jobs). Publishing on an `unreviewed` model is always blocked.
@@ -125,7 +125,7 @@ A candidate found only through `supersedes` is marked cross-family. Without `sup
 ## 8. Pricing
 
 - Prices live in `price_books`, keyed by the exact versioned ID, with an optional `provider`. Alias rows are rejected, because an alias row would misprice runs after the alias moves. A row for the run's provider wins over a provider-independent row.
-- A provider-reported `usage.cost` (OpenRouter sends one) is the call's actual cost and wins over the price book. The price book is the fallback and the source for estimates such as `avgEscalationCostMicroUsd` ([savings-model.md](savings-model.md)).
+- A provider-reported cost (OpenRouter's `usage.cost`, or Vercel AI Gateway's `provider_metadata.gateway.cost`, ADR-013) is the call's actual cost and wins over the price book. The price book is the fallback and the source for estimates such as `avgEscalationCostMicroUsd` ([savings-model.md](savings-model.md)).
 - Runs are priced by `model_resolved`, mapped to a registry id through the route rows on a provider other than TypeSafe: `system_one_cost_usd = input_tokens * price.in + output_tokens * price.out` ([system-one-api-contract.md](system-one-api-contract.md)).
 - Unpriced model: in BYO key mode the run succeeds with cost `null` and warning `model_unpriced`. In platform key mode the run is refused with `422 model_unpriced`, because it cannot be billed.
 - The registry sync alerts the platform admin when a `stable` model has no price row.
@@ -203,7 +203,7 @@ If the model adds a question type, stop: that needs an ADR, a `QuestionTypeModul
 - English is the strongest language. Test other languages on the org's own content before routing on them.
 - TypeSafe says rate limits adjust dynamically and can change without notice. Treat `rpm` and `tokensPerSec` as the published values at `lastReviewed`.
 - Price row: `jev-1.13.0`, $0.042 per million input tokens, output free ([system-one-api-contract.md](system-one-api-contract.md)).
-- Route rows for OpenRouter are in section 15 and `SEED_MODEL_ROUTES` in `catalog.ts`.
+- Route rows for OpenRouter and Vercel AI Gateway are in section 15 and `SEED_MODEL_ROUTES` in `catalog.ts`.
 
 ## 14. Default model
 
@@ -219,14 +219,14 @@ Jev is the default because of a setting, not because code names it. No template,
 
 ## 15. Providers and routes
 
-ADR-011 (proposed) adds a provider dimension. The same registry model can be reached through TypeSafe directly or through OpenRouter, and the two can differ in the id sent, the id that answers, the limits and the price. The API side is in [system-one-api-contract.md](system-one-api-contract.md#routes).
+ADR-011 (proposed) adds a provider dimension, and ADR-013 (accepted) adds Vercel AI Gateway as a third provider. The same registry model can be reached through TypeSafe directly, OpenRouter or Vercel AI Gateway, and they can differ in the id sent, the id that answers, the limits and the price. The API side is in [system-one-api-contract.md](system-one-api-contract.md#routes).
 
 - **One profile, many routes.** `ModelProfile` stays one row per model. A provider other than TypeSafe gets a `ModelRoute` row per model it serves (`system_one_model_routes`, contract in `packages/core/src/contracts/models.ts`):
 
 ```ts
 ModelRoute = {
   modelId: string,              // registry id, "jev-1.13.0"
-  provider: "openrouter",       // never "typesafe": TypeSafe is the identity route and has no rows
+  provider: "openrouter" | "vercel",  // never "typesafe": TypeSafe is the identity route and has no rows
   providerModelId: string,      // the id sent: "typesafe/jev-1.13", "~typesafe/jev-latest"
   pinned: boolean,              // true only when providerModelId names exactly one build
   resolvedIds: string[],        // response `model` values accepted as this model: "typesafe/jev-1.13-20260917"
@@ -252,4 +252,17 @@ Seed route rows (OpenRouter's Jev pages and Models API, 2026-09-26):
 - OpenRouter lists Jev at $0.042 per million input tokens and $0 output, the same as TypeSafe, so no provider-specific price row is seeded. `usage.cost` carries the actual charge.
 - OpenRouter publishes no per-model rpm or tokens per second for Jev, so the route leaves them null and the profile's values apply as a ceiling. OpenRouter's own 429s map to `system_one_rate_limited`.
 - `jev-preview` has no OpenRouter route.
-- **Other gateways.** TypeSafe's Python SDK usage page (`docs.typesafe.ai/sdk/python/usage.md`) also mentions Vercel AI Gateway (`https://ai-gateway.vercel.sh/typesafe`, model `typesafe-ai/jev`). It is not verified against Vercel's own docs and is out of scope, like Cloudflare Workers AI, which neither documents. Adding one later is another `SystemOneProvider` value plus route rows, through an ADR.
+
+**Vercel AI Gateway (ADR-013, accepted 2026-09-27).** The third provider, `vercel`. Vercel's page "TypeSafe API with AI Gateway" (checked 2026-09-27) documents one model id, `typesafe-ai/jev`, and no versioned id. Seed route row:
+
+| Model id | Provider | providerModelId | Pinned | resolvedIds | Limits | Docs |
+|---|---|---|---|---|---|---|
+| `jev-latest` | vercel | `typesafe-ai/jev` | no | none (an alias) | all null: Vercel publishes none, so the profile's apply | `https://vercel.com/docs/ai-gateway/sdks-and-apis/typesafe` |
+
+- `jev-1.13.0` and `jev-preview` have no Vercel route, so they are not reachable on Vercel. Add a pinned row only after a versioned Vercel id is confirmed; until then `model.alias_past_shadow` keeps Vercel sets in `inactive` or `shadow`.
+- The documented response `model` is `typesafe-ai/jev`, the id sent. It maps back to `jev-latest` through `providerModelId`, so the build that answered is unknown on this route.
+- `toVercelModelId` in core is the default and the seed's cross-check. The route row is authoritative.
+- `provider_metadata.gateway.cost` is the provider-reported cost (section 8). No Vercel price row is seeded.
+- **Registry sync.** Vercel implements TypeSafe's `GET /v1/models` at `/typesafe/v1/models`, so the sync lists Vercel keys with `client.models.list()` on the Vercel `baseURL` and maps each name through the route rows. A Vercel id with no route row alerts the platform admin and is never inserted as a profile, because it is not a TypeSafe id. Vercel shows no alias target, so the listing records no observation.
+
+- **Other gateways.** Cloudflare Workers AI is not documented by TypeSafe or by Cloudflare as a System One route and is out of scope. Adding one later is another `SystemOneProvider` value plus route rows, through an ADR.

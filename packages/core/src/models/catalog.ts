@@ -121,6 +121,20 @@ const SEED_ROUTE_INPUT: readonly ModelRouteInput[] = [
     docsUrl: "https://openrouter.ai/typesafe",
     lastReviewed: LAST_REVIEWED,
   },
+  // Vercel AI Gateway (ADR-013), checked on 2026-09-27 against Vercel's "TypeSafe API with AI
+  // Gateway" page. It documents one id, `typesafe-ai/jev`, and no versioned id, so jev-1.13.0 has
+  // no Vercel row and this row is not pinned. Sets on Vercel stay in inactive or shadow until a
+  // versioned id is confirmed. Vercel publishes no limits of its own, so the profile's apply.
+  {
+    modelId: "jev-latest",
+    provider: "vercel",
+    providerModelId: "typesafe-ai/jev",
+    pinned: false,
+    resolvedIds: [],
+    limits: { requestTokens: null, statePlusLongestQuestionTokens: null, rpm: null, tokensPerSec: null },
+    docsUrl: "https://vercel.com/docs/ai-gateway/sdks-and-apis/typesafe",
+    lastReviewed: "2026-09-27",
+  },
 ];
 
 /** Seed ModelRoute rows, parsed at load so a bad edit fails loudly. */

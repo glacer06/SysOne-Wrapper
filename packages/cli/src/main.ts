@@ -9,7 +9,7 @@ export interface CommandOutput {
 }
 
 export const USAGE = `Usage:
-  sysone run --local <spec.json> <state.json> [--json] [--provider typesafe|openrouter]
+  sysone run --local <spec.json> <state.json> [--json] [--provider typesafe|openrouter|vercel]
                      [--rollout shadow|controlled|full|paused] [--channel production|staging]
 
   --local   Run the spec with the fixture transport: no network call and no System One key.
@@ -17,7 +17,7 @@ export const USAGE = `Usage:
 
 Management commands (sets, publish, rollout, evals and more) arrive with Phase 3.`;
 
-const PROVIDERS = ["typesafe", "openrouter"] as const;
+const PROVIDERS = ["typesafe", "openrouter", "vercel"] as const;
 const ROLLOUTS = ["shadow", "controlled", "full", "paused"] as const;
 const CHANNELS = ["production", "staging"] as const;
 

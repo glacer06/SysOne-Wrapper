@@ -38,10 +38,16 @@ describe("platform seed", () => {
     const pinned = models.data.find((m) => m.id === "jev-1.13.0");
     expect(pinned?.kind).toBe("versioned");
     expect(pinned?.limits?.requestTokens).toBe(64_000);
-    const routes = await t.db.withNoTenant((tx) => platformRepositories.systemOneModelRoutes.listByProvider(tx, "openrouter"));
-    expect(routes.map((r) => [r.modelId, r.providerModelId, r.pinned])).toEqual(
-      SEED_MODEL_ROUTES.map((r) => [r.modelId, r.providerModelId, r.pinned]).sort(),
-    );
+    for (const provider of ["openrouter", "vercel"] as const) {
+      const routes = await t.db.withNoTenant((tx) => platformRepositories.systemOneModelRoutes.listByProvider(tx, provider));
+      expect(routes.map((r) => [r.modelId, r.providerModelId, r.pinned])).toEqual(
+        SEED_MODEL_ROUTES.filter((r) => r.provider === provider)
+          .map((r) => [r.modelId, r.providerModelId, r.pinned])
+          .sort(),
+      );
+    }
+    // ADR-013: Vercel serves only jev-latest, as typesafe-ai/jev, not pinned.
+    expect(SEED_MODEL_ROUTES.filter((r) => r.provider === "vercel").map((r) => r.providerModelId)).toEqual(["typesafe-ai/jev"]);
     expect(await t.db.withNoTenant((tx) => platformRepositories.systemOneModelRoutes.listByProvider(tx, "typesafe"))).toEqual(
       [],
     );

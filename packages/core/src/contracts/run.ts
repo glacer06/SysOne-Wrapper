@@ -53,6 +53,26 @@ export function reportedCostMicroUsd(usage: { cost?: number | undefined }): Micr
   return usage.cost === undefined ? null : microFromUsd(usage.cost);
 }
 
+const DECIMAL_USD = /^\d+(\.\d+)?$/;
+
+/**
+ * The provider-reported cost of one response as integer micro-USD, or null when the provider sent
+ * none. OpenRouter sends `usage.cost`, a number. Vercel AI Gateway sends
+ * `provider_metadata.gateway.cost`, a decimal string such as "0.00001155" (ADR-013). `usage.cost`
+ * wins when both are present. A gateway cost that is not a plain non-negative decimal is ignored,
+ * so the price book prices the call.
+ */
+export function responseCostMicroUsd(response: {
+  usage: { cost?: number | undefined };
+  provider_metadata?: { gateway?: { cost?: string | undefined } | undefined } | undefined;
+}): MicroUsd | null {
+  const fromUsage = reportedCostMicroUsd(response.usage);
+  if (fromUsage !== null) return fromUsage;
+  const gateway = response.provider_metadata?.gateway?.cost;
+  if (gateway === undefined || !DECIMAL_USD.test(gateway)) return null;
+  return microFromUsd(Number(gateway));
+}
+
 function isWholeMicroUsd(usd: number): boolean {
   const micro = usd * 1e6;
   const rounded = Math.round(micro);
@@ -179,8 +199,8 @@ export const RunCall = z.object({
   /** Who served the call (ADR-011). Absent on calls recorded before ADR-011, which were typesafe. */
   provider: SystemOneProvider.optional(),
   /**
-   * The provider-reported `usage.cost`, rounded to whole micro-USD. When present it is the call's
-   * actual System One cost and the price book is not read (savings-model.md).
+   * The provider-reported cost (OpenRouter `usage.cost` or Vercel `provider_metadata.gateway.cost`),
+   * rounded to whole micro-USD. When present it is the call's actual System One cost and the price book is not read (savings-model.md).
    */
   providerCostUsd: UsdAmount.optional(),
   typesafeRequestId: z.string().nullable(),

@@ -7,6 +7,7 @@
 import { readFileSync } from "node:fs";
 import { KnownAnswer, SystemOneRequest, SystemOneResponse, isKnownAnswer } from "@sysone/core";
 import { describe, expect, it } from "vitest";
+import { evaluationFallbackReason } from "./fallback-guard.js";
 import { loadBundledFixtures } from "./load.js";
 import { systemOneCodeForStatus } from "./status-map.js";
 
@@ -35,6 +36,19 @@ describe("fixture contract", () => {
       expect(isKnownAnswer(answer)).toBe(true);
       KnownAnswer.parse(answer);
       expect(answer.type).toBe(f.request.questions[qid]?.type);
+    }
+    if (f.name === "evaluation-fallback") {
+      // The one fixture the client must reject (ADR-013): both signals are present.
+      expect(evaluationFallbackReason(response)).not.toBeNull();
+      expect(evaluationFallbackReason(response, f.responseHeaders)).toMatch(/header/);
+      return;
+    }
+    expect(evaluationFallbackReason(response, f.responseHeaders)).toBeNull();
+    if (f.provider === "vercel") {
+      // Doc-derived until `pnpm fixtures:record --provider vercel` records real ones.
+      expect(["doc-derived", "recorded"]).toContain(f.source);
+      expect(response.model).toBe("typesafe-ai/jev");
+      expect(Number(response.provider_metadata?.gateway?.cost)).toBeGreaterThan(0);
     }
     if (f.provider === "openrouter") {
       expect(response.id).toMatch(/^gen-/);
@@ -66,6 +80,11 @@ describe("fixture contract", () => {
       "openrouter/error-402",
       "typesafe/outage-503",
       "openrouter/outage-503",
+      "vercel/noul",
+      "vercel/choice",
+      "vercel/score",
+      "vercel/outage-503",
+      "vercel/evaluation-fallback",
     ]) {
       expect(names.has(name), name).toBe(true);
     }

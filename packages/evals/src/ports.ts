@@ -33,6 +33,7 @@ export function evalContext(orgId = EVAL_ORG_ID): TenantContext {
 export const PROVIDER_KEY_ENV = {
   typesafe: "TYPESAFE_API_KEY",
   openrouter: "OPENROUTER_API_KEY",
+  vercel: "AI_GATEWAY_API_KEY",
 } as const satisfies Record<SystemOneProvider, string>;
 
 /**

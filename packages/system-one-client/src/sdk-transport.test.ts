@@ -58,6 +58,41 @@ describe("SdkTransport success path", () => {
     expect(out.response.usage.cost).toBe(0.00002);
   });
 
+  it("sends to Vercel AI Gateway's base URL with no providerOptions, and keeps provider_metadata (ADR-013)", async () => {
+    const seen: Seen[] = [];
+    const body = { ...okBody, model: "typesafe-ai/jev", provider_metadata: { gateway: { cost: "0.00001155" } } };
+    const t = new SdkTransport({ fetch: fakeFetch(200, body, {}, seen) });
+    const out = await t.call({ ...request, model: "typesafe-ai/jev" }, opts({ provider: "vercel", apiKey: "vck_key" }));
+    expect(seen[0]?.url).toBe("https://ai-gateway.vercel.sh/typesafe/v1/systemone");
+    expect(seen[0]?.headers["authorization"]).toBe("Bearer vck_key");
+    expect(Object.keys(seen[0]?.body as object).sort()).toEqual(["model", "questions", "state"]);
+    expect(out.response.provider_metadata?.gateway?.cost).toBe("0.00001155");
+  });
+
+  it("rejects an evaluation fallback by its header as system_one_invalid_response", async () => {
+    const choice = { type: "choice", choice: "billing", confidence: 0.4, probabilities: { billing: 0.4, technical: 0.6 } };
+    const body = { ...okBody, model: "typesafe-ai/jev", answers: { is_urgent: choice } };
+    const t = new SdkTransport({ fetch: fakeFetch(200, body, { "x-ai-gateway-evaluation-fallback-triggered": "true" }) });
+    const err = await t.call(request, opts({ provider: "vercel" })).catch((e: unknown) => e);
+    expect(err).toMatchObject({ code: "system_one_invalid_response", retryable: false });
+  });
+
+  it.each([
+    ["choice", { type: "choice", choice: "billing", confidence: 0, probabilities: {} }],
+    ["score", { type: "score", score: 1, legend: { "0": "a", "1": "b" }, confidence: 0, probabilities: {} }],
+  ])("rejects a %s answer with confidence 0 and no probabilities, even without the header", async (_type, answer) => {
+    const body = { ...okBody, model: "anthropic/claude-sonnet-4.5", answers: { is_urgent: answer } };
+    const t = new SdkTransport({ fetch: fakeFetch(200, body) });
+    const err = await t.call(request, opts({ provider: "vercel" })).catch((e: unknown) => e);
+    expect(err).toMatchObject({ code: "system_one_invalid_response" });
+  });
+
+  it("accepts a choice answer with confidence 0 when probabilities are present", async () => {
+    const answer = { type: "choice", choice: "billing", confidence: 0, probabilities: { billing: 0.5, technical: 0.5 } };
+    const t = new SdkTransport({ fetch: fakeFetch(200, { ...okBody, answers: { is_urgent: answer } }) });
+    expect((await t.call(request, opts())).response.answers["is_urgent"]).toMatchObject({ confidence: 0 });
+  });
+
   it("returns null when neither a header nor an id is present", async () => {
     const t = new SdkTransport({ fetch: fakeFetch(200, okBody) });
     expect((await t.call(request, opts())).requestId).toBeNull();

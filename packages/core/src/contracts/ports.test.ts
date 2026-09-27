@@ -53,7 +53,8 @@ describe("port payloads", () => {
     expect(ResolvedKey.safeParse({ apiKey: "", mode: "byo", provider: "typesafe" }).success).toBe(false);
     expect(ResolvedKey.safeParse({ apiKey: "ts_x", mode: "shared", provider: "typesafe" }).success).toBe(false);
     expect(ResolvedKey.safeParse({ apiKey: "ts_x", mode: "byo" }).success).toBe(false);
-    expect(ResolvedKey.safeParse({ apiKey: "ts_x", mode: "byo", provider: "vercel" }).success).toBe(false);
+    expect(ResolvedKey.safeParse({ apiKey: "ts_x", mode: "byo", provider: "cloudflare" }).success).toBe(false);
+    expect(ResolvedKey.safeParse({ apiKey: "vck_x", mode: "byo", provider: "vercel" }).success).toBe(true);
   });
 
   it("ModelPrice is integer micro-USD per million tokens", () => {
@@ -92,7 +93,8 @@ describe("port payloads", () => {
     };
     expect(RunSinkRecord.safeParse(record).success).toBe(true);
     expect(RunSinkRecord.safeParse({ ...record, provider: "openrouter" }).success).toBe(true);
-    expect(RunSinkRecord.safeParse({ ...record, provider: "vercel" }).success).toBe(false);
+    expect(RunSinkRecord.safeParse({ ...record, provider: "cloudflare" }).success).toBe(false);
+    expect(RunSinkRecord.safeParse({ ...record, provider: "vercel" }).success).toBe(true);
     expect(RunSinkRecord.safeParse({ ...record, stateHash: "" }).success).toBe(false);
     expect(RunSinkRecord.safeParse({ ...record, parentRunId: sampleResult.versionId }).success).toBe(true);
     const { keyMode: _keyMode, ...withoutKeyMode } = record;

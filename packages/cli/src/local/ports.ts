@@ -34,11 +34,11 @@ export const LOCAL_CONTEXT: TenantContext = {
 export function localResolvedModel(sent: string, provider: SystemOneProvider): string {
   const aliasTarget = (id: string): string | null => SEED_MODEL_PROFILES.find((p) => p.id === id)?.aliasTarget ?? null;
   if (provider === "typesafe") return aliasTarget(sent) ?? sent;
-  const route = SEED_MODEL_ROUTES.find((r) => r.providerModelId === sent);
+  const route = SEED_MODEL_ROUTES.find((r) => r.provider === provider && r.providerModelId === sent);
   if (route === undefined) return sent;
   // An alias route has no builds of its own: answer with its target's route build.
   const target = aliasTarget(route.modelId);
-  const build = route.resolvedIds[0] ?? SEED_MODEL_ROUTES.find((r) => r.modelId === target)?.resolvedIds[0];
+  const build = route.resolvedIds[0] ?? SEED_MODEL_ROUTES.find((r) => r.provider === provider && r.modelId === target)?.resolvedIds[0];
   return build ?? sent;
 }
 
@@ -54,7 +54,7 @@ export function localPorts(now: () => number, newId: () => string): LocalPorts {
     systemOne: transport,
     models: createMemoryModelCatalog(SEED_MODEL_PROFILES, SEED_MODEL_ROUTES),
     // Local mode sends nothing anywhere, so the key is a placeholder that never leaves the process.
-    keys: staticKeyResolver({ typesafe: "local-fixture", openrouter: "local-fixture" }),
+    keys: staticKeyResolver({ typesafe: "local-fixture", openrouter: "local-fixture", vercel: "local-fixture" }),
     limiter: allowAllLimiter,
     quota: allowAllQuota,
     runs: createMemoryRunSink(newId),

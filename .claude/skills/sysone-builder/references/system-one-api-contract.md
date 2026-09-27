@@ -108,6 +108,8 @@ On the OpenRouter route the same status mapping applies, plus these statuses Ope
 | 502, 503, 524 | `system_one_unavailable` | Provider or edge failure, after SDK retries |
 | 529 | `system_one_overloaded` | After SDK retries |
 
+A 200 response that shows a Vercel AI Gateway evaluation fallback maps to `system_one_invalid_response`, not retryable ([Vercel AI Gateway](#vercel-ai-gateway), ADR-013).
+
 - All SDK errors extend `TypeSafeError`, and every HTTP error extends `APIError`. `packages/system-one-client` maps them to the codes above at the edge and never passes raw provider messages through.
 - The HTTP status SysOne returns for each code is in [api.md](api.md).
 - **Retries belong to the SDK.** Do not wrap it in a second retry loop.
@@ -160,7 +162,7 @@ SDK defaults, quoted from the `RetryPolicy` and `TypeSafeClientConfig` reference
 - Node 20+. ESM, CJS, and types included. `dangerouslyAllowBrowser` stays false: only `system-one-client` imports the SDK, and it runs server-side.
 - Error classes: `AuthenticationError`, `BadRequestError`, `PermissionDeniedError`, `NotFoundError`, `UnprocessableEntityError`, `RateLimitError`, `InternalServerError` (all extend `APIError`), plus `APIConnectionError`, `APITimeoutError` and `APIUserAbortError`. All extend `TypeSafeError`.
 - Multi-tenant: construct one client per org key and provider (cache by provider plus key fingerprint). Never rely on the process env key for tenant traffic.
-- `client.models.list()` returns `ModelCard[]` (`name`, `description`, `release_date`). The registry sync uses it for TypeSafe keys only; it fails against OpenRouter ([Routes](#routes)).
+- `client.models.list()` returns `ModelCard[]` (`name`, `description`, `release_date`). The registry sync uses it for TypeSafe keys and for Vercel AI Gateway keys (ADR-013); it fails against OpenRouter ([Routes](#routes)).
 - SDK upgrades go through a Renovate PR that re-records fixtures and passes `pnpm smoke` ([conventions.md](conventions.md)).
 
 ## Python SDK usage
@@ -233,7 +235,29 @@ SysOne calls System One server-side through `SystemOneTransport`: the SDK transp
 - **Cost.** `usage.cost` is the provider's actual charge for the request. It wins over the price book ([savings-model.md](savings-model.md)).
 - **Not used: OpenRouter's Decisions API** (`POST https://openrouter.ai/api/alpha/decisions`). It is alpha and has its own request shape, so SysOne does not build on it. The System One API is the only OpenRouter surface SysOne calls.
 - **Not a System One endpoint: `typesafe/jev-router`.** OpenRouter lists a free, OpenAI-compatible chat model (launched 2026-09-25) that uses Jev to pick an LLM and a reasoning effort per request, with a 1M token context and multimodal input. It is an LLM router. ADR-011 proposes it as an optional `llm-client` escalation route, never a `SystemOneTransport` route.
-- **Other gateways.** OpenRouter was confirmed on 2026-09-25 by its own System One API docs. Vercel AI Gateway, mentioned in `docs.typesafe.ai/sdk/python/usage.md`, and Cloudflare Workers AI are still unverified and out of scope.
+- **Other gateways.** OpenRouter was confirmed on 2026-09-25 by its own System One API docs. Vercel AI Gateway is the third route ([Vercel AI Gateway](#vercel-ai-gateway), ADR-013). Cloudflare Workers AI is still unverified and out of scope.
+
+### Vercel AI Gateway
+
+ADR-013 (accepted 2026-09-27) adds `vercel` as a third provider on the same SDK transport. Checked on 2026-09-27 against Vercel's page "TypeSafe API with AI Gateway" (`https://vercel.com/docs/ai-gateway/sdks-and-apis/typesafe`, last updated 2026-09-21).
+
+| | Vercel AI Gateway (`vercel`) |
+|---|---|
+| Endpoint | `POST https://ai-gateway.vercel.sh/typesafe/v1/systemone` |
+| SDK `baseURL` | `https://ai-gateway.vercel.sh/typesafe` (the SDK appends `/v1/systemone`) |
+| Key | AI Gateway API key (`AI_GATEWAY_API_KEY` in platform key mode). OIDC tokens are not supported |
+| Billing | AI Gateway credits, or the org's own TypeSafe key through Vercel's BYOK |
+| Model ids sent | `typesafe-ai/jev` from the route row, for `jev-latest`. No versioned id is documented |
+| Response `model` | `typesafe-ai/jev` in the documented example |
+| Extra response fields | `provider_metadata.gateway`: `cost` (USD as a decimal string, for example `"0.00001155"`), `marketCost`, `gatewayCost`, routing fields, `generationId` |
+| Errors | TypeSafe's shape; provider errors pass through unchanged, so the TypeSafe status table applies |
+| Model listing | `GET /typesafe/v1/models` in TypeSafe's shape, so `client.models.list()` works with the Vercel `baseURL` |
+
+- **Ids.** `toVercelModelId` maps `jev-latest` to `typesafe-ai/jev` and only prefixes any other id with `typesafe-ai/`, which is unverified. The seed route row `jev-latest` on `vercel` as `typesafe-ai/jev` is authoritative. There is no Vercel row for `jev-1.13.0`, so `resolveRoute` returns null for it on Vercel.
+- **Pinning.** No Vercel route is pinned, so `model.alias_past_shadow` keeps sets on Vercel in `inactive` or `shadow` until a versioned id is confirmed. Same rule as OpenRouter.
+- **Cost.** `provider_metadata.gateway.cost`, rounded to whole micro-USD by `responseCostMicroUsd`, is the call's actual cost (`RunCall.providerCostUsd`). `usage.cost` wins if both are present. A value that is not a plain non-negative decimal is ignored and the price book prices the call.
+- **Evaluation fallbacks are refused.** AI Gateway can rerun an uncertain answer on another model when a request carries `providerOptions.gateway.models`. SysOne never sends `providerOptions`: `SdkTransport` builds the body from `state`, `model` and `questions` only. If a response still shows a fallback, the `x-ai-gateway-evaluation-fallback-triggered` header or a Choice or Score answer with `confidence: 0` and empty `probabilities`, the client rejects it as `system_one_invalid_response` (`assertNotEvaluationFallback` in `system-one-client`, on the SDK and fixture transports). `escalate_to_llm` owns escalation, so an LLM answer is never banded as a System One answer.
+- **Fixtures** are in `packages/system-one-client/fixtures/vercel/` (`noul`, `choice`, `score`, `outage-503`, `evaluation-fallback`), marked `"source": "doc-derived"` until `pnpm fixtures:record --provider vercel` records real ones. `evaluation-fallback` is never re-recorded.
 
 ## Watch
 

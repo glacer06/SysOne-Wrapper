@@ -45,7 +45,7 @@ async function setup(opts: { mode?: KeyMode; kek?: KekProvider } = {}) {
     vault,
     keyMode: async () => opts.mode ?? "byo",
     loadKey: async (c, provider) => rows.get(`${c.orgId}:${provider}`) ?? null,
-    platformKeys: { typesafe: "platform-ts-key" },
+    platformKeys: { typesafe: "platform-ts-key", vercel: "platform-ai-gateway-key" },
     keyEpoch: async () => epoch,
     clock: () => now,
   });
@@ -77,6 +77,8 @@ describe("KeyResolver", () => {
     const { resolver } = await setup();
     expect(await resolver(ctx(ORG_A), "typesafe")).toEqual({ apiKey: TS_KEY, mode: "byo", provider: "typesafe" });
     expect(await resolver(ctx(ORG_A), "openrouter")).toEqual({ apiKey: OR_KEY, mode: "byo", provider: "openrouter" });
+    // No vercel row for ORG_A: its OpenRouter and TypeSafe keys are never sent to Vercel.
+    expect(await authCode(resolver(ctx(ORG_A), "vercel"))).toBe("system_one_auth");
   });
 
   it("fails with system_one_auth when the org has no key for the provider", async () => {
@@ -140,6 +142,8 @@ describe("KeyResolver", () => {
       provider: "typesafe",
     });
     expect(await authCode(resolver(ctx(ORG_A), "openrouter"))).toBe("system_one_auth");
+    // AI_GATEWAY_API_KEY for the vercel route (ADR-013).
+    expect(await resolver(ctx(ORG_A), "vercel")).toEqual({ apiKey: "platform-ai-gateway-key", mode: "platform", provider: "vercel" });
   });
 
   it("reports key_vault_unavailable, retryable, when the KEK cannot be reached", async () => {

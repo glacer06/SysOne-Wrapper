@@ -1,5 +1,5 @@
 // `pnpm eval --org <slug> --set <slug> --version <n> --dataset <name> [--snapshot <id>] [--model <id>]
-//            [--repeats <k>] [--provider typesafe|openrouter] [--transport fixture|sdk] [--data <dir>] [--json]`
+//            [--repeats <k>] [--provider typesafe|openrouter|vercel] [--transport fixture|sdk] [--data <dir>] [--json]`
 //
 // Internal (testing.md, Evals); customers use `sysone eval run`. Offline by default: the fixture
 // transport answers from recorded fixtures and deterministic synthetic answers, and the folder store
@@ -31,7 +31,7 @@ export interface CliIo {
 
 export const USAGE =
   "usage: pnpm eval --org <slug> --set <slug> --version <n> --dataset <name> [--snapshot <id>] [--model <id>] [--repeats <k>]\n" +
-  "                 [--provider typesafe|openrouter] [--transport fixture|sdk] [--data <dir>] [--json]";
+  "                 [--provider typesafe|openrouter|vercel] [--transport fixture|sdk] [--data <dir>] [--json]";
 
 const pct = (x: number | null): string => (x === null ? "   n/a" : `${(x * 100).toFixed(1).padStart(5)}%`);
 const num = (x: number | null, digits = 3): string => (x === null ? "n/a" : x.toFixed(digits));
@@ -123,7 +123,7 @@ export async function main(argv: readonly string[], io: CliIo): Promise<number> 
     const missing = (["org", "set", "version", "dataset"] as const).filter((k) => values[k] === undefined);
     if (missing.length > 0) throw new EvalInputError(`missing --${missing.join(", --")}`);
     const provider = SystemOneProvider.safeParse(values.provider ?? "typesafe");
-    if (!provider.success) throw new EvalInputError("--provider must be typesafe or openrouter");
+    if (!provider.success) throw new EvalInputError("--provider must be typesafe, openrouter or vercel");
     const transportKind = values.transport ?? io.env["SYSTEM_ONE_TRANSPORT"] ?? "fixture";
     if (transportKind !== "fixture" && transportKind !== "sdk") throw new EvalInputError("--transport must be fixture or sdk");
 

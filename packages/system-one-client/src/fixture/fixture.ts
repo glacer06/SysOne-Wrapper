@@ -21,10 +21,22 @@ const base = {
   request: SystemOneRequest,
   /** x-typesafe-request-id. Falls back to the response `id` (OpenRouter). */
   requestId: z.string().min(1).optional(),
+  /**
+   * Where the fixture came from. `recorded`: written by `pnpm fixtures:record`. `hand-authored`:
+   * written by hand from the documented shapes. `doc-derived`: copied from a provider's documented
+   * example, and replaced once `pnpm fixtures:record` records a real one. Absent on fixtures written
+   * before this field.
+   */
+  source: z.enum(["recorded", "hand-authored", "doc-derived"]).optional(),
 };
 
 export const Fixture = z.union([
-  z.strictObject({ ...base, response: SystemOneResponse }),
+  z.strictObject({
+    ...base,
+    response: SystemOneResponse,
+    /** Response headers the client reads, such as the AI Gateway evaluation fallback header. */
+    responseHeaders: z.record(z.string(), z.string()).optional(),
+  }),
   z.strictObject({ ...base, error: FixtureError }),
 ]);
 export type Fixture = z.infer<typeof Fixture>;

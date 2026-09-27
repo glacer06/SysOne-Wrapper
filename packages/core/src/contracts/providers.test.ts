@@ -1,4 +1,4 @@
-// ADR-011: System One through OpenRouter. Response passthrough, id mapping, routes and limits.
+// ADR-011 and ADR-013: System One through OpenRouter and Vercel AI Gateway. Response passthrough, id mapping, routes and limits.
 import { readFileSync } from "node:fs";
 
 import { describe, expect, it } from "vitest";
@@ -11,7 +11,7 @@ import {
   resolveRoute,
   type ModelProfile,
 } from "./models.js";
-import { RunCall, reportedCostMicroUsd, usdFromMicro } from "./run.js";
+import { RunCall, reportedCostMicroUsd, responseCostMicroUsd, usdFromMicro } from "./run.js";
 import {
   SYSTEM_ONE_PROVIDER_BASE_URLS,
   SystemOneProvider,
@@ -19,6 +19,7 @@ import {
   defaultProviderModelId,
   fromOpenRouterModelId,
   toOpenRouterModelId,
+  toVercelModelId,
 } from "./system-one.js";
 
 function readJson(relative: string): unknown {
@@ -32,12 +33,64 @@ function profile(id: string): ModelProfile {
 }
 
 describe("SystemOneProvider", () => {
-  it("is typesafe or openrouter, each with its SDK baseURL", () => {
-    expect(SystemOneProvider.options).toEqual(["typesafe", "openrouter"]);
+  it("is typesafe, openrouter or vercel, each with its SDK baseURL", () => {
+    expect(SystemOneProvider.options).toEqual(["typesafe", "openrouter", "vercel"]);
     expect(SYSTEM_ONE_PROVIDER_BASE_URLS).toEqual({
       typesafe: "https://api.typesafe.ai",
       openrouter: "https://openrouter.ai/api",
+      vercel: "https://ai-gateway.vercel.sh/typesafe",
     });
+  });
+});
+
+describe("Vercel AI Gateway responses (ADR-013)", () => {
+  // Vercel's documented example on "TypeSafe API with AI Gateway", checked 2026-09-27.
+  const body = {
+    model: "typesafe-ai/jev",
+    answers: { refund: { type: "noul", noul: 0.98 } },
+    usage: { input_tokens: 275, output_tokens: 20 },
+    provider_metadata: { gateway: { cost: "0.00001155", marketCost: "0.00001155", generationId: "gen_01" } },
+  };
+
+  it("parses the documented example and keeps every gateway field", () => {
+    const parsed = SystemOneResponse.parse(body);
+    expect(parsed).toEqual(body);
+    expect(parsed.provider_metadata?.gateway?.cost).toBe("0.00001155");
+  });
+
+  it("takes provider_metadata.gateway.cost as the reported cost, rounded to whole micro-USD", () => {
+    expect(responseCostMicroUsd(SystemOneResponse.parse(body))).toBe(12);
+    expect(responseCostMicroUsd({ usage: {}, provider_metadata: { gateway: { cost: "0" } } })).toBe(0);
+  });
+
+  it("prefers usage.cost, and ignores a gateway cost that is not a plain decimal", () => {
+    expect(responseCostMicroUsd({ usage: { cost: 0.00003 }, provider_metadata: { gateway: { cost: "0.001" } } })).toBe(30);
+    expect(responseCostMicroUsd({ usage: {}, provider_metadata: { gateway: { cost: "-1" } } })).toBeNull();
+    expect(responseCostMicroUsd({ usage: {}, provider_metadata: { gateway: { cost: "1e-5" } } })).toBeNull();
+    expect(responseCostMicroUsd({ usage: {} })).toBeNull();
+  });
+
+  it("rejects a gateway cost that is not a string", () => {
+    expect(SystemOneResponse.safeParse({ ...body, provider_metadata: { gateway: { cost: 0.1 } } }).success).toBe(false);
+  });
+});
+
+describe("Vercel model ids (ADR-013)", () => {
+  it("maps jev-latest to the one documented id and keeps prefixed ids", () => {
+    expect(toVercelModelId("jev-latest")).toBe("typesafe-ai/jev");
+    expect(toVercelModelId("typesafe-ai/jev")).toBe("typesafe-ai/jev");
+    expect(defaultProviderModelId("vercel", "jev-latest", "alias")).toBe("typesafe-ai/jev");
+  });
+
+  it("has one seed route: jev-latest as typesafe-ai/jev, not pinned, and no versioned route", () => {
+    const vercel = SEED_MODEL_ROUTES.filter((r) => r.provider === "vercel");
+    expect(vercel.map((r) => [r.modelId, r.providerModelId, r.pinned])).toEqual([["jev-latest", "typesafe-ai/jev", false]]);
+    expect(resolveRoute(profile("jev-1.13.0"), "vercel", SEED_MODEL_ROUTES)).toBeNull();
+    const latest = resolveRoute(profile("jev-latest"), "vercel", SEED_MODEL_ROUTES);
+    expect(latest).toMatchObject({ provider: "vercel", providerModelId: "typesafe-ai/jev", pinned: false });
+    expect(latest?.limits).toEqual(profile("jev-latest").limits);
+    expect(registryIdForResolved("vercel", "typesafe-ai/jev", SEED_MODEL_ROUTES)).toBe("jev-latest");
+    expect(registryIdForResolved("vercel", "openai/gpt-5", SEED_MODEL_ROUTES)).toBeNull();
   });
 });
 
@@ -141,10 +194,11 @@ describe("ModelRoute", () => {
     expect(ModelRoute.safeParse({ ...row, limits }).success).toBe(false);
   });
 
-  it("points every seed route at a seed profile, and the ids match OpenRouter's default mapping", () => {
+  it("points every seed route at a seed profile, and the ids match the provider's default mapping", () => {
     for (const r of SEED_MODEL_ROUTES) {
       const p = profile(r.modelId);
-      if (p.kind === "alias") expect(r.providerModelId).toBe(toOpenRouterModelId(p.id, p.kind));
+      if (r.provider === "vercel") expect(r.providerModelId).toBe(toVercelModelId(p.id));
+      else if (p.kind === "alias") expect(r.providerModelId).toBe(toOpenRouterModelId(p.id, p.kind));
       else expect(r.providerModelId).toBe(toOpenRouterModelId("jev-1.13", null));
     }
   });

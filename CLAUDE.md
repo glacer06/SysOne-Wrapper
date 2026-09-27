@@ -14,8 +14,8 @@ Phase 0 is done. Part two (monorepo scaffold, zod contracts, operation registry,
 pnpm dev                 # console on localhost
 pnpm turbo lint typecheck test build
 pnpm db:migrate          # drizzle-kit migrations
-pnpm fixtures:record [--model <id>] [--provider typesafe|openrouter]   # re-record System One fixtures (TYPESAFE_API_KEY or OPENROUTER_API_KEY)
-pnpm smoke [--model <id>] [--provider typesafe|openrouter]            # live System One smoke test (same keys)
+pnpm fixtures:record [--model <id>] [--provider typesafe|openrouter|vercel]   # re-record System One fixtures (TYPESAFE_API_KEY, OPENROUTER_API_KEY or AI_GATEWAY_API_KEY)
+pnpm smoke [--model <id>] [--provider typesafe|openrouter|vercel]            # live System One smoke test (same keys)
 pnpm eval --org <slug> --set <slug> --version <n> --dataset <name> [--snapshot <id>] [--model <id>] [--repeats <k>]
 pnpm sysone run --local spec.json state.json   # local fixture mode of @sysone/cli
 pnpm sysone <command> --json   # the same CLI customers install from npm; see references/headless-and-agents.md
@@ -36,11 +36,11 @@ pnpm sysone <command> --json   # the same CLI customers install from npm; see re
 
 ## Env vars
 
-`TYPESAFE_API_KEY`, `OPENROUTER_API_KEY` (platform key for the OpenRouter route, ADR-011, and `--provider openrouter` smoke and fixtures), `DATABASE_URL`, `AUTH_SECRET`, `SYSONE_KEK`, `SYSONE_JWT_SIGNING_KEY` (ES256 key for browser tokens), `SYSTEM_ONE_TRANSPORT` (`sdk` or `fixture`), `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `REDIS_URL`, `ANTHROPIC_API_KEY`. Never commit `.env*` files with values.
+`TYPESAFE_API_KEY`, `OPENROUTER_API_KEY` (platform key for the OpenRouter route, ADR-011, and `--provider openrouter` smoke and fixtures), `AI_GATEWAY_API_KEY` (platform key for the Vercel AI Gateway route, ADR-013, and `--provider vercel` smoke and fixtures), `DATABASE_URL`, `AUTH_SECRET`, `SYSONE_KEK`, `SYSONE_JWT_SIGNING_KEY` (ES256 key for browser tokens), `SYSTEM_ONE_TRANSPORT` (`sdk` or `fixture`), `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `REDIS_URL`, `ANTHROPIC_API_KEY`. Never commit `.env*` files with values.
 
 System One base URLs are constants in core (`SYSTEM_ONE_PROVIDER_BASE_URLS`), never env, so no env var can send an org key to another host. The provider is picked per org and per set, not per deployment.
 
-Customer tools (`sysone` CLI, MCP server) read `SYSONE_TOKEN` and `SYSONE_BASE_URL` or a named profile; they never hold a TypeSafe or OpenRouter key.
+Customer tools (`sysone` CLI, MCP server) read `SYSONE_TOKEN` and `SYSONE_BASE_URL` or a named profile; they never hold a TypeSafe, OpenRouter or AI Gateway key.
 
 ## Writing rules for every doc, UI string, commit, and PR
 
