@@ -6,7 +6,7 @@ Multi-tenant SaaS kit around TypeSafe's **System One** models (Jev is the first 
 
 ## Status
 
-Phase 0 is done. Part two (monorepo scaffold, zod contracts, operation registry, `openapi.json`) is built and the gate is green. Nick accepted ADRs 002 to 010 on 2026-09-26 (Better Auth, key vault, cache, jobs runner, billing, headless parity, model registry, app integration, rollout pointers), and the contracts in `packages/core/src/contracts` are frozen. The ADR-009 Python and Standalone sections stay proposed. ADR-011 (OpenRouter as a second route to System One models) is proposed. Phase 1 is next. See `docs/PLAN.md` and `.claude/skills/sysone-builder/references/phases/`.
+Phase 0 is done. Part two (monorepo scaffold, zod contracts, operation registry, `openapi.json`) is built and the gate is green. Nick accepted ADRs 002 to 010 on 2026-09-26 (Better Auth, key vault, cache, jobs runner, billing, headless parity, model registry, app integration, rollout pointers), and the contracts in `packages/core/src/contracts` are frozen. The ADR-009 Python and Standalone sections stay proposed. ADR-011 (OpenRouter as a second route to System One models) is proposed. Nick accepted ADR-012 (outage rule and liveness) on 2026-09-27 and the contracts carry `onUnavailable`. Phase 1 code is merged and the gate is green; the exit gate waits only on real fixtures and the live smoke test, which need a `TYPESAFE_API_KEY` or `OPENROUTER_API_KEY`. Phase 2 starts when Nick says so. See `docs/PLAN.md` and `.claude/skills/sysone-builder/references/phases/`.
 
 ## Commands
 
