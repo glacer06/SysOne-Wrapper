@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "description": "Public customer docs site (Fumadocs). Content in content/docs, API reference read from packages/core/openapi.json at build time.",
+  "engines": {
+    "node": ">=22.13.0 <23"
+  },
   "type": "module",
   "scripts": {
     "dev": "next dev --port 3001",
