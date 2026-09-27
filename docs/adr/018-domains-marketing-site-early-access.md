@@ -43,7 +43,13 @@ Nick wants a marketing site at `www.bandwise.dev` and the app at `app.bandwise.d
 
 ## Consequences
 
-- The database host (Neon or Supabase, ADR-001) must be picked before marketing v1 ships.
+- **Database host: Supabase** (Nick, 2026-09-27: "Supabase"), which settles ADR-001's "Neon or Supabase". Rules for using it:
+  - Bandwise gets its own Supabase project, never a schema inside another product's project (Embers has its own).
+  - Supabase is plain Postgres for us: Drizzle, our migrations, our roles (`bandwise_app`, `bandwise_platform`) and our RLS with `app.org_id`. Supabase Auth is not used; auth stays Better Auth (ADR-002).
+  - The Supabase Data API (PostgREST) is turned off, or no Bandwise schema is exposed to it. The anon and service keys are never used by any Bandwise app.
+  - Vercel functions connect through the Supavisor pooler in transaction mode with prepared statements off; migrations use the direct connection. `set_config('app.org_id', ..., true)` is transaction-local, so it is safe with transaction pooling.
+  - Preview deployments use a Supabase branch or a separate dev project, never production.
+  - Region close to the Vercel functions region.
 - Signups are personal data: the privacy page covers them, and an unsubscribe and delete path exists from day one.
 - The parity test skips `/api/public/`, like `/auth/`.
 

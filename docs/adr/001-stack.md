@@ -17,7 +17,7 @@ Bandwise is a multi-tenant SaaS that wraps TypeSafe's System One models, startin
 | Language | TypeScript, strict, ESM, Node 20+ |
 | Repo | pnpm workspaces + turborepo |
 | Web | Next.js App Router (console, public API, webhooks) |
-| Database | Postgres (Neon or Supabase), Drizzle ORM, Row Level Security on every tenant table |
+| Database | Postgres on Supabase (chosen in ADR-018; was "Neon or Supabase"), Drizzle ORM, Row Level Security on every tenant table |
 | Auth | Better Auth with the organization, admin and two-factor plugins and its Drizzle adapter, mapped onto our `organizations`, `memberships` and `invitations` tables (amended by ADR-002). |
 | Cache and rate limits | Redis (Upstash) |
 | Background jobs | Inngest or an equivalent serverless job runner (decided in ADR-005) |
