@@ -18,7 +18,7 @@ export const microUsd = () => bigint({ mode: "number" });
 /** Token counts and other non-negative integers. */
 export const count = () => integer();
 
-/** Text column typed to a closed union. The union lives in @sysone/core; the column stays text. */
+/** Text column typed to a closed union. The union lives in @bandwise/core; the column stays text. */
 export const textEnum = <const T extends readonly [string, ...string[]]>(values: T) => text({ enum: values });
 
 /** jsonb typed to a TypeScript shape. */

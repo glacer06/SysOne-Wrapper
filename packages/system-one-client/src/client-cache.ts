@@ -2,7 +2,7 @@
 // org key and provider, cache by provider plus key fingerprint"). The cache key never holds the
 // key itself, only a fingerprint.
 
-import { type SystemOneProvider, sha256Hex } from "@sysone/core";
+import { type SystemOneProvider, sha256Hex } from "@bandwise/core";
 
 /** A short, stable, non-reversible fingerprint of a key: the first 16 hex chars of its SHA-256. */
 export function keyFingerprint(apiKey: string): string {

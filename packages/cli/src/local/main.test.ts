@@ -2,13 +2,13 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { RunResult } from "@sysone/core";
+import { RunResult } from "@bandwise/core";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { USAGE, main, parseArgs } from "../main.js";
 import { localResolvedModel } from "./ports.js";
 
 const at = (relative: string): string => fileURLToPath(new URL(`../${relative}`, import.meta.url));
-const DEMO_SPEC = at("../../../.claude/skills/sysone-builder/templates/question-set.example.json");
+const DEMO_SPEC = at("../../../.claude/skills/bandwise-builder/templates/question-set.example.json");
 const DEMO_STATE = at("../examples/email-triage.state.json");
 const TWO_STAGE_SPEC = at("../../system-one-client/fixtures/specs/two-stage.json");
 
@@ -40,7 +40,7 @@ describe("parseArgs", () => {
   });
 });
 
-describe("sysone run --local", () => {
+describe("bandwise run --local", () => {
   let fetchCalls = 0;
   const realFetch = globalThis.fetch;
   const realKey = process.env["TYPESAFE_API_KEY"];
@@ -95,7 +95,7 @@ describe("sysone run --local", () => {
   });
 
   it("a request no fixture covers gets synthetic answers, and the output says so", async () => {
-    const dir = mkdtempSync(join(tmpdir(), "sysone-local-"));
+    const dir = mkdtempSync(join(tmpdir(), "bandwise-local-"));
     const state = join(dir, "state.json");
     writeFileSync(state, JSON.stringify({ ticket: "The export button does nothing when I click it." }));
     const out = await main(["run", "--local", TWO_STAGE_SPEC, state]);
@@ -115,7 +115,7 @@ describe("sysone run --local", () => {
   });
 
   it("reports bad files and invalid specs with exit 1", async () => {
-    const dir = mkdtempSync(join(tmpdir(), "sysone-local-"));
+    const dir = mkdtempSync(join(tmpdir(), "bandwise-local-"));
     const notJson = join(dir, "bad.json");
     writeFileSync(notJson, "{ nope");
     const badSpec = join(dir, "spec.json");
@@ -131,7 +131,7 @@ describe("sysone run --local", () => {
   });
 
   it("an invalid state is refused before any call", async () => {
-    const dir = mkdtempSync(join(tmpdir(), "sysone-local-"));
+    const dir = mkdtempSync(join(tmpdir(), "bandwise-local-"));
     const state = join(dir, "state.json");
     writeFileSync(state, JSON.stringify({ email: { from: 1 } }));
     const out = await main(["run", "--local", DEMO_SPEC, state]);
@@ -140,7 +140,7 @@ describe("sysone run --local", () => {
   });
 
   it("shows lint findings and failed runs", async () => {
-    const dir = mkdtempSync(join(tmpdir(), "sysone-local-"));
+    const dir = mkdtempSync(join(tmpdir(), "bandwise-local-"));
     const spec = join(dir, "spec.json");
     const state = join(dir, "state.json");
     writeFileSync(state, JSON.stringify({ ticket: "hi" }));

@@ -1,5 +1,5 @@
 // defineOperation turns one catalog row plus its zod schemas into a registry entry.
-// The catalog row (OPERATION_CATALOG in @sysone/core) supplies the method, path, scope, role,
+// The catalog row (OPERATION_CATALOG in @bandwise/core) supplies the method, path, scope, role,
 // risk, phase and actors, so the registry cannot drift from references/management-api.md.
 
 import {
@@ -19,7 +19,7 @@ import {
   type Phase,
   type RiskResource,
   type Scope,
-} from "@sysone/core";
+} from "@bandwise/core";
 import { z } from "zod";
 
 import { OperationNotImplementedError } from "./errors";

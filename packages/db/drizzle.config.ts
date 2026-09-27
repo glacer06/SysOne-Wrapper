@@ -8,6 +8,6 @@ export default defineConfig({
   out: "./migrations",
   casing: "snake_case",
   dbCredentials: {
-    url: process.env["DATABASE_URL"] ?? "postgres://localhost:5432/sysone",
+    url: process.env["DATABASE_URL"] ?? "postgres://localhost:5432/bandwise",
   },
 });

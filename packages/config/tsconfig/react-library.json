@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "display": "SysOne React library",
+  "display": "Bandwise React library",
   "extends": "./library.json",
   "compilerOptions": {
     "lib": ["ES2023", "DOM", "DOM.Iterable"],

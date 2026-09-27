@@ -1,5 +1,5 @@
 {
-  "extends": "@sysone/config/tsconfig/nextjs.json",
+  "extends": "@bandwise/config/tsconfig/nextjs.json",
   "compilerOptions": {
     "paths": {
       "~/*": ["./src/*"]

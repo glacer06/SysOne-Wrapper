@@ -1,5 +1,5 @@
 // The evaluation fallback guard (ADR-013). Vercel AI Gateway can rerun an uncertain answer on
-// another model, often an LLM, when a request carries `providerOptions.gateway.models`. SysOne never
+// another model, often an LLM, when a request carries `providerOptions.gateway.models`. Bandwise never
 // sends providerOptions, so a fallback should never happen. If a response still shows one, it is an
 // LLM answer that looks like a System One answer, and banding it would corrupt bands, calibration
 // and savings. The client rejects it as system_one_invalid_response.
@@ -8,7 +8,7 @@
 // never imports the SDK. It applies to every provider: a Choice or Score answer with confidence 0
 // and no probabilities is never a System One answer.
 
-import { ERROR_CODES, type SystemOneProvider, type SystemOneResponse, TransportError } from "@sysone/core";
+import { ERROR_CODES, type SystemOneProvider, type SystemOneResponse, TransportError } from "@bandwise/core";
 
 /** The header AI Gateway sets when an evaluation fallback gave the final answer. */
 export const EVALUATION_FALLBACK_HEADER = "x-ai-gateway-evaluation-fallback-triggered";
@@ -48,6 +48,6 @@ export function assertNotEvaluationFallback(
   if (reason === null) return;
   throw new TransportError(
     { code: "system_one_invalid_response", retryable: ERROR_CODES.system_one_invalid_response.retryable, requestId },
-    `System One on ${provider} returned an evaluation fallback answer, which SysOne does not accept: ${reason}`,
+    `System One on ${provider} returned an evaluation fallback answer, which Bandwise does not accept: ${reason}`,
   );
 }

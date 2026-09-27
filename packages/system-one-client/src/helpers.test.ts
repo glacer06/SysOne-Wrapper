@@ -1,4 +1,4 @@
-import { isTransportError } from "@sysone/core";
+import { isTransportError } from "@bandwise/core";
 import { describe, expect, it } from "vitest";
 import { ClientCache, keyFingerprint } from "./client-cache.js";
 import { FixtureTransport } from "./fixture/fixture-transport.js";

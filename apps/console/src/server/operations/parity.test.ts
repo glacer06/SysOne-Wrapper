@@ -6,7 +6,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { NON_OPERATION_ROUTES, OPERATION_CATALOG } from "@sysone/core";
+import { NON_OPERATION_ROUTES, OPERATION_CATALOG } from "@bandwise/core";
 import { describe, expect, it } from "vitest";
 
 import { renderOpenApi, type OpenApiDocument } from "./openapi";
@@ -38,10 +38,10 @@ describe("parity: catalog, registry and openapi.json", () => {
     expect(doc).toBeDefined();
     expect(doc?.method).toBe(entry.method);
     expect(doc?.path).toBe(entry.path);
-    expect(doc?.op["x-sysone-scope"]).toBe(entry.scope);
-    expect(doc?.op["x-sysone-min-role"]).toBe(entry.minRole);
-    expect(doc?.op["x-sysone-risk"]).toBe(entry.risk);
-    expect(doc?.op["x-sysone-actors"]).toEqual(OPERATIONS[id].descriptor.actors);
+    expect(doc?.op["x-bandwise-scope"]).toBe(entry.scope);
+    expect(doc?.op["x-bandwise-min-role"]).toBe(entry.minRole);
+    expect(doc?.op["x-bandwise-risk"]).toBe(entry.risk);
+    expect(doc?.op["x-bandwise-actors"]).toEqual(OPERATIONS[id].descriptor.actors);
   });
 
   it("documents no operation that is missing from the catalog", () => {
@@ -57,21 +57,21 @@ describe("parity: catalog, registry and openapi.json", () => {
   });
 
   it("maps every curated MCP tool to an operation that is not session only", () => {
-    const tools = [...documented.values()].filter((d) => d.op["x-sysone-mcp-tool"] !== undefined);
+    const tools = [...documented.values()].filter((d) => d.op["x-bandwise-mcp-tool"] !== undefined);
     expect(tools.length).toBeGreaterThan(0);
-    for (const tool of tools) expect(tool.op["x-sysone-actors"]).not.toEqual(["user"]);
+    for (const tool of tools) expect(tool.op["x-bandwise-actors"]).not.toEqual(["user"]);
   });
 
   it("keeps repositories out of the console org and platform pages", () => {
     const appDir = fileURLToPath(new URL("apps/console/src/app/", ROOT));
     const pages = ["(org)", "(platform)"].map((d) => join(appDir, d)).filter((d) => existsSync(d));
     for (const file of pages.flatMap(sourceFiles)) {
-      expect(readFileSync(file, "utf8")).not.toMatch(/from\s+["']@sysone\/db["']/);
+      expect(readFileSync(file, "utf8")).not.toMatch(/from\s+["']@bandwise\/db["']/);
     }
   });
 
   it.todo("every /api/v1 route handler maps to one registry entry (Phase 2, generated from op.http)");
-  it.todo("every sysone CLI command maps to an operation that is not session only (Phase 3)");
+  it.todo("every bandwise CLI command maps to an operation that is not session only (Phase 3)");
   it.todo("every MCP server tool in packages/mcp-server maps to its registry entry (Phase 3)");
 });
 

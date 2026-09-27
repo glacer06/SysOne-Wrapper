@@ -1,6 +1,6 @@
 // Envelope encryption for stored secrets (ADR-003). One random 256-bit DEK per row, AES-256-GCM
 // with a random 96-bit IV and a 128-bit tag, and additional authenticated data
-// `sysone:v1:<table>:<org_id>:<row_id>`, so a ciphertext copied to another org or row fails to
+// `bandwise:v1:<table>:<org_id>:<row_id>`, so a ciphertext copied to another org or row fails to
 // open instead of returning the wrong secret. Only this module and KeyResolver touch plaintext.
 
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from "node:crypto";
@@ -24,7 +24,7 @@ export interface VaultScope {
 }
 
 export function secretAad(table: VaultTable, orgId: string, rowId: string): Buffer {
-  return Buffer.from(`sysone:v1:${table}:${orgId}:${rowId}`, "utf8");
+  return Buffer.from(`bandwise:v1:${table}:${orgId}:${rowId}`, "utf8");
 }
 
 /** First 16 hex characters of the key's SHA-256 (ADR-003). Keys the per-org SDK client cache. */

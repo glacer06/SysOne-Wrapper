@@ -5,7 +5,7 @@
 // until the fixtures are re-recorded.
 
 import { readFileSync } from "node:fs";
-import { KnownAnswer, SystemOneRequest, SystemOneResponse, isKnownAnswer } from "@sysone/core";
+import { KnownAnswer, SystemOneRequest, SystemOneResponse, isKnownAnswer } from "@bandwise/core";
 import { describe, expect, it } from "vitest";
 import { evaluationFallbackReason } from "./fallback-guard.js";
 import { loadBundledFixtures } from "./load.js";

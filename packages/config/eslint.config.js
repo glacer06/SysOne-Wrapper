@@ -1,3 +1,3 @@
-import sysone from "./eslint/index.js";
+import bandwise from "./eslint/index.js";
 
-export default sysone;
+export default bandwise;

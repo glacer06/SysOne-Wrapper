@@ -1,4 +1,4 @@
-# SysOne Wrapper: Plan
+# Bandwise: Plan
 
 **Owner:** Nick Sims
 **Date:** 2026-09-26
@@ -8,7 +8,7 @@
 
 TypeSafe's Jev is a new kind of model. It doesn't write. It decides. You hand it `state` and a few typed questions, and it returns typed answers with probabilities and a calibrated confidence number, in well under a second, for $0.042 per million input tokens (Jev 1.13) with free output. That makes it cheap enough to put a judgment call at every decision point in software: routing, triage, guardrails, PR safety, which LLM to use, which context to keep.
 
-Raw API calls leave a lot on the table. Nobody owns the questions. There's no versioning, no review loop for the uncertain cases, no way to change a threshold without a deploy, and no proof the thing is saving money. SysOne is that missing layer, sold as a multi-tenant product and used by Nick across his own orgs (SGR, Personal, Dallas).
+Raw API calls leave a lot on the table. Nobody owns the questions. There's no versioning, no review loop for the uncertain cases, no way to change a threshold without a deploy, and no proof the thing is saving money. Bandwise is that missing layer, sold as a multi-tenant product and used by Nick across his own orgs (SGR, Personal, Dallas).
 
 On 2026-09-26 Nick set the bar:
 
@@ -16,9 +16,9 @@ On 2026-09-26 Nick set the bar:
 
 That becomes four commitments:
 
-- **Headless parity (ADR-007).** Everything the console does is an operation that the API, the `sysone` CLI and the MCP server also expose, so an agent can run the product.
+- **Headless parity (ADR-007).** Everything the console does is an operation that the API, the `bandwise` CLI and the MCP server also expose, so an agent can run the product.
 - **Any System One model (ADR-008).** Model facts are registry data and code names are neutral, so a new TypeSafe model is a registry row, not a rewrite.
-- **App setup and deploy (ADR-009).** SysOne finds decision points in an app, builds the set, and wires it in through generated typed code, with interface versions that fail loudly.
+- **App setup and deploy (ADR-009).** Bandwise finds decision points in an app, builds the set, and wires it in through generated typed code, with interface versions that fail loudly.
 - **Effectiveness loop (ADR-010).** Apps report outcomes, audit samples keep precision honest, and thresholds, questions and models improve through proposals, experiments and human approval.
 
 ## What the product covers
@@ -35,8 +35,8 @@ That becomes four commitments:
 | Full administration | Multi-tenant orgs, five roles, platform super-admin, audit log, keys, billing, retention, PII, reports, alerts |
 | Wide flexibility | Structured instructions, multi-stage runs, composites, LLM escalation, pluggable transports, plugins, API, embed, MCP |
 | Set up apps | App profile, opportunity finder (agent and console), pattern advisor, Definition Studio prefill, generated typed clients, app bindings (Phase 4b) |
-| Deploy | Deploy targets managed, managed_typed, standalone (ADR-009); specs as code; `sysone codegen` and `sysone check`; interface versioning (Phases 3 and 4b) |
-| Headless | Management API with console parity, agent tokens with approvals, `@sysone/cli`, MCP server, event feed (Phases 2 and 3) |
+| Deploy | Deploy targets managed, managed_typed, standalone (ADR-009); specs as code; `bandwise codegen` and `bandwise check`; interface versioning (Phases 3 and 4b) |
+| Headless | Management API with console parity, agent tokens with approvals, `@bandwise/cli`, MCP server, event feed (Phases 2 and 3) |
 | Improve effectiveness | App feedback, audit sampling, quality targets, threshold suggestions, set health, proposals, champion/challenger, improve mode (Phases 3 and 3b) |
 | Any System One model | Model registry, limits and prices as data, new-model detection, try-on-model upgrades, contract watch (Phases 0, 1, 3, 3b) |
 
@@ -63,12 +63,12 @@ That becomes four commitments:
                           +------- packages/core (pure) --+
                             contracts, compiler, router, savings, lints
 
-  host apps  --> @sysone/client or generated client --> /api/v1   @sysone/react (browser, no secrets)
-  agents, CI --> sysone CLI or MCP server --> sa_ agent token --> /api/v1
+  host apps  --> @bandwise/client or generated client --> /api/v1   @bandwise/react (browser, no secrets)
+  agents, CI --> bandwise CLI or MCP server --> sa_ agent token --> /api/v1
   Chrome ext --> device flow agent token --> /api/v1
 ```
 
-Full detail is in `.claude/skills/sysone-builder/references/architecture.md`.
+Full detail is in `.claude/skills/bandwise-builder/references/architecture.md`.
 
 ## Key decisions
 
@@ -93,39 +93,39 @@ ADRs are in `docs/adr/`: `002-auth-library.md` to `006-billing-model.md`, `007-h
 | 0 | Builder skill, plan, scaffold, frozen contracts (operation registry skeleton, error envelope v2, ModelProfile, SetInterface, agent actor), ADRs 002 to 010, CI | Scaffold passes lint, typecheck, test, build |
 | 1 | Core engine with question-type modules and limits from model profiles, system-one-client, llm-client, model registry seed, schema with RLS, fixtures, local CLI | End-to-end run on fixtures; cross-tenant suite passes |
 | 2 | Auth, orgs, keys, app tokens, agent tokens and device flow, approvals, idempotency, rate limits with an eval bucket, Stripe foundation, platform admin | Three-org switch with no leak; Stripe reconciles within 0.1%; an agent token never exceeds its user's role |
-| 3 | Console and management API with parity, `sysone` CLI, MCP server (stdio), event feed, feedback API, audit sampling, rollout gates and auto-demote, model registry pages | Publish v2 and roll back from the console or the API with no app redeploy; an agent using only the CLI or MCP runs create to production, waiting for human approval |
+| 3 | Console and management API with parity, `bandwise` CLI, MCP server (stdio), event feed, feedback API, audit sampling, rollout gates and auto-demote, model registry pages | Publish v2 and roll back from the console or the API with no app redeploy; an agent using only the CLI or MCP runs create to production, waiting for human approval |
 | 3b | Effectiveness loop: threshold suggester and replay, set health, proposals, champion/challenger across versions and models, model upgrades, Studio improve mode | An agent tunes a set from labels and promotes a challenger after admin approval; injected drift auto-demotes |
-| 4 | Embed kit: `@sysone/client` (edge-safe, typed run, feedback), `@sysone/react`, integration recipes, example app | No secrets in bundles; under 15 kB gzip |
-| 4b | Integrate and deploy: opportunities, TypeScript codegen, app bindings, `sysone init`, `codegen` and `check`, interface-breaking guard; Python and standalone behind ADR-009 | An agent wires a set into a sample Next.js repo with no console clicks |
+| 4 | Embed kit: `@bandwise/client` (edge-safe, typed run, feedback), `@bandwise/react`, integration recipes, example app | No secrets in bundles; under 15 kB gzip |
+| 4b | Integrate and deploy: opportunities, TypeScript codegen, app bindings, `bandwise init`, `codegen` and `check`, interface-breaking guard; Python and standalone behind ADR-009 | An agent wires a set into a sample Next.js repo with no console clicks |
 | 5 | Plugin SDK, adapters (including the web page adapter), actions, eleven templates tagged by pattern, org event webhooks | Templates build working sets; actions idempotent |
 | 6 | Chrome extension: evaluate page, action picker | No keys in extension; nothing sent before a click |
 | 7 | MCP HTTP transport, Claude Code plugin with operator and integrate skills, marketplace | Install, then set up and run a set from a prompt |
 
 Phases 3b and 4b start when Phase 3 lands and run in parallel with Phase 4.
 
-Checklists: `.claude/skills/sysone-builder/references/phases/`.
+Checklists: `.claude/skills/bandwise-builder/references/phases/`.
 
 ## Spinning up the team
 
 Each role runs as its own Claude Code session (or subagent) on its own branch and worktree. Every session starts by loading the builder skill. Suggested kickoff prompts:
 
 **Architect / Lead (Phase 0 part two)**
-> Load the sysone-builder skill. Complete Phase 0 part two from `references/phases/phase-0.md`: scaffold the pnpm and turborepo workspace, write the zod contracts in `packages/core/src/contracts` (including OperationDef, the error envelope v2, ModelProfile, SetInterface and the agent actor) and the operation registry skeleton, generate `openapi.json`, add boundary lint rules and CI, and draft ADRs 002 through 010. Open a draft PR per logical chunk.
+> Load the bandwise-builder skill. Complete Phase 0 part two from `references/phases/phase-0.md`: scaffold the pnpm and turborepo workspace, write the zod contracts in `packages/core/src/contracts` (including OperationDef, the error envelope v2, ModelProfile, SetInterface and the agent actor) and the operation registry skeleton, generate `openapi.json`, add boundary lint rules and CI, and draft ADRs 002 through 010. Open a draft PR per logical chunk.
 
 **Core Engine (Phase 1)**
-> Load the sysone-builder skill. Build the Core Engine items in `references/phases/phase-1.md`. Start with the confidence router and its table-driven tests, then the compiler, stages, savings math, preflight, and lints. Use the fixture transport only. Don't touch `packages/db`.
+> Load the bandwise-builder skill. Build the Core Engine items in `references/phases/phase-1.md`. Start with the confidence router and its table-driven tests, then the compiler, stages, savings math, preflight, and lints. Use the fixture transport only. Don't touch `packages/db`.
 
 **Platform / Tenancy (Phase 1)**
-> Load the sysone-builder skill. Build the Platform items in `references/phases/phase-1.md`: the full Drizzle schema from `references/data-model.md` with RLS in migration 0001, `withTenant`, repositories, the immutability trigger, and a two-org seed. Pair with QA on the cross-tenant suite.
+> Load the bandwise-builder skill. Build the Platform items in `references/phases/phase-1.md`: the full Drizzle schema from `references/data-model.md` with RLS in migration 0001, `withTenant`, repositories, the immutability trigger, and a two-org seed. Pair with QA on the cross-tenant suite.
 
 **QA / Evals (Phase 1)**
-> Load the sysone-builder skill. Build the QA items in `references/phases/phase-1.md`: the fixture minimum set from `references/testing.md`, the fixture contract test, the cross-tenant suite generator, and `pnpm smoke`.
+> Load the bandwise-builder skill. Build the QA items in `references/phases/phase-1.md`: the fixture minimum set from `references/testing.md`, the fixture contract test, the cross-tenant suite generator, and `pnpm smoke`.
 
 **Integrations (Phase 3)**
-> Load the sysone-builder skill. Build the `@sysone/cli` management commands and the MCP stdio server from `references/headless-and-agents.md` against the Phase 3 operations. Stay in `packages/cli` and `packages/mcp-server`.
+> Load the bandwise-builder skill. Build the `@bandwise/cli` management commands and the MCP stdio server from `references/headless-and-agents.md` against the Phase 3 operations. Stay in `packages/cli` and `packages/mcp-server`.
 
 **Quality / Learning (Phase 3)**
-> Load the sysone-builder skill. Build the gate evaluator, auto-demote job and audit sampler from `references/effectiveness-loop.md` in `packages/core/src/learning` and `apps/console/src/jobs/learning`.
+> Load the bandwise-builder skill. Build the gate evaluator, auto-demote job and audit sampler from `references/effectiveness-loop.md` in `packages/core/src/learning` and `apps/console/src/jobs/learning`.
 
 Later phases follow the same pattern: load the skill, open the phase file, stay in your lane, hand off through the protocol in `references/team-playbook.md`.
 
@@ -135,7 +135,7 @@ Later phases follow the same pattern: load the skill, open the phase file, stay 
 - ADRs 003 to 010 accepted, 2026-09-26. Done. The ADR-009 Python and Standalone sections still need their own acceptance.
 - ADR-011 (OpenRouter route) decided.
 - Default `agentApprovals` setting reviewed with the Security reviewer.
-- Stripe, Linear (project SysOne, `P-NSI-36`, in the NSIMS team), and Sentry connectors authorized in claude.ai so agents can use them.
+- Stripe, Linear (project Bandwise, `P-NSI-36`, in the NSIMS team), and Sentry connectors authorized in claude.ai so agents can use them.
 - DPA lists TypeSafe (and Anthropic, if Studio drafting is on) as subprocessors, plus OpenRouter for any org that uses the OpenRouter route.
 - TypeSafe rate limits confirmed for the expected load. The published 1,200 RPM and 250k tokens/sec limits are shared across every tenant on the platform key, and TypeSafe says they are adjusting dynamically.
 

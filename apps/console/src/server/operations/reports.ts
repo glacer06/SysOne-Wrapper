@@ -1,6 +1,6 @@
 // Reports, audit and events (management-api.md, Reports, audit and events; events.md).
 
-import { EventListResult, EventType, IsoTimestamp, TokenId, UserId } from "@sysone/core";
+import { EventListResult, EventType, IsoTimestamp, TokenId, UserId } from "@bandwise/core";
 import { z } from "zod";
 
 import { defineOperation, operationGroup, placeholderOutput } from "./define";

@@ -1,4 +1,4 @@
-import { defineSysoneVitestConfig } from "@sysone/config/vitest";
+import { defineBandwiseVitestConfig } from "@bandwise/config/vitest";
 
 // The confidence router and the spec compiler keep 100% branch coverage (phase-1.md exit gate,
 // SKILL.md definition of done). The router is router.ts plus the files it decides with: the
@@ -6,7 +6,7 @@ import { defineSysoneVitestConfig } from "@sysone/config/vitest";
 // evaluator. The compiler is compiler.ts plus preflight.ts and the question-type compile functions.
 const FULL = { branches: 100, functions: 100, lines: 100, statements: 100 };
 
-export default defineSysoneVitestConfig({
+export default defineBandwiseVitestConfig({
   test: {
     coverage: {
       enabled: true,

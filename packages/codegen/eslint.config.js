@@ -1,3 +1,3 @@
-import { pure } from "@sysone/config/eslint";
+import { pure } from "@bandwise/config/eslint";
 
 export default pure;

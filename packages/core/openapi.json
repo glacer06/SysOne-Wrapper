@@ -1,9 +1,9 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "SysOne API",
+    "title": "Bandwise API",
     "version": "v1",
-    "description": "SysOne management and run API. Generated from the operation registry in apps/console/src/server/operations and the zod contracts in @sysone/core. Do not edit by hand; run `pnpm openapi`."
+    "description": "Bandwise management and run API. Generated from the operation registry in apps/console/src/server/operations and the zod contracts in @bandwise/core. Do not edit by hand; run `pnpm openapi`."
   },
   "servers": [
     {
@@ -52,7 +52,7 @@
             }
           },
           {
-            "name": "SysOne-Interface",
+            "name": "Bandwise-Interface",
             "in": "header",
             "required": false,
             "description": "The interface major the caller was built against. A different live major returns 409 interface_mismatch.",
@@ -102,22 +102,22 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "run",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "run",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent",
           "apiKey"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [
           "review.created",
           "model.alias_moved"
         ],
-        "x-sysone-mcp-tool": "run_set"
+        "x-bandwise-mcp-tool": "run_set"
       }
     },
     "/api/v1/sets/{ref}/manifest": {
@@ -168,18 +168,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent",
           "apiKey"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": []
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": []
       }
     },
     "/api/v1/runs": {
@@ -352,19 +352,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "runs:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "runs:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent",
           "apiKey"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -416,19 +416,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "runs:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "runs:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent",
           "apiKey"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -469,19 +469,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "usage:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "usage:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent",
           "apiKey"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -543,17 +543,17 @@
             "bearerToken": []
           }
         ],
-        "x-sysone-scope": "run",
-        "x-sysone-min-role": "none",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "run",
+        "x-bandwise-min-role": "none",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "apiKey"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": false
         }
@@ -616,21 +616,21 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "runs:write",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "runs:write",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent",
           "apiKey"
         ],
-        "x-sysone-phase": "4b",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [
+        "x-bandwise-phase": "4b",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [
           "review.created"
         ],
-        "x-sysone-placeholder": {
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -695,19 +695,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "list_projects",
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "list_projects",
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -768,18 +768,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:write",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:write",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -844,19 +844,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "list_goals",
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "list_goals",
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -917,19 +917,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:write",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:write",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "create_goal",
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "create_goal",
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -1001,18 +1001,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:write",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:write",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -1077,18 +1077,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "list_templates"
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "list_templates"
       }
     },
     "/api/v1/sets": {
@@ -1150,20 +1150,20 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent",
           "apiKey"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "list_sets",
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "list_sets",
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -1224,19 +1224,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:write",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:write",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "create_set",
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "create_set",
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -1288,19 +1288,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "get_set",
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "get_set",
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -1380,19 +1380,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:write",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "high*",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:write",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "high*",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "update_set",
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "update_set",
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -1454,18 +1454,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:write",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:write",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": true,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": true,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -1527,18 +1527,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "get_draft"
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "get_draft"
       },
       "put": {
         "operationId": "draft.update",
@@ -1625,18 +1625,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:write",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:write",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "update_draft"
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "update_draft"
       }
     },
     "/api/v1/sets/{ref}/draft/validate": {
@@ -1697,18 +1697,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "validate_draft"
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "validate_draft"
       }
     },
     "/api/v1/sets/{ref}/versions": {
@@ -1779,18 +1779,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -1852,19 +1852,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent",
           "apiKey"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -1968,18 +1968,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "diff_versions"
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "diff_versions"
       }
     },
     "/api/v1/sets/{ref}/publish": {
@@ -2079,22 +2079,22 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "release:<channel>",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "high*",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "release:<channel>",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "high*",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [
           "set.published",
           "interface.breaking_published",
           "experiment.started"
         ],
-        "x-sysone-mcp-tool": "publish"
+        "x-bandwise-mcp-tool": "publish"
       }
     },
     "/api/v1/sets/{ref}/channels/{channel}/rollback": {
@@ -2184,21 +2184,21 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "release:<channel>",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "safety",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "release:<channel>",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "safety",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [
           "release.rolled_back"
         ],
-        "x-sysone-mcp-tool": "rollback",
-        "x-sysone-placeholder": {
+        "x-bandwise-mcp-tool": "rollback",
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -2298,22 +2298,22 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "release:production",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "high*",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "release:production",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "high*",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [
           "release.promoted",
           "experiment.started"
         ],
-        "x-sysone-mcp-tool": "promote",
-        "x-sysone-placeholder": {
+        "x-bandwise-mcp-tool": "promote",
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -2387,18 +2387,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -2462,19 +2462,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "get_rollout_gates",
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "get_rollout_gates",
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -2575,22 +2575,22 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "release:<channel>",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "high*",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "release:<channel>",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "high*",
+        "x-bandwise-actors": [
           "user",
           "agent",
           "system"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [
           "rollout.changed"
         ],
-        "x-sysone-mcp-tool": "change_rollout",
-        "x-sysone-placeholder": {
+        "x-bandwise-mcp-tool": "change_rollout",
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -2672,21 +2672,21 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "release:<channel>",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "high*",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "release:<channel>",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "high*",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3b",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [
+        "x-bandwise-phase": "3b",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [
           "experiment.started"
         ],
-        "x-sysone-mcp-tool": "start_experiment",
-        "x-sysone-placeholder": {
+        "x-bandwise-mcp-tool": "start_experiment",
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -2738,19 +2738,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3b",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "get_experiment",
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3b",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "get_experiment",
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -2832,22 +2832,22 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "release:<channel>",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "high",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "release:<channel>",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "high",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3b",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [
+        "x-bandwise-phase": "3b",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [
           "release.promoted",
           "experiment.decided"
         ],
-        "x-sysone-mcp-tool": "decide_experiment",
-        "x-sysone-placeholder": {
+        "x-bandwise-mcp-tool": "decide_experiment",
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -2919,22 +2919,22 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "release:<channel>",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "safety",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "release:<channel>",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "safety",
+        "x-bandwise-actors": [
           "user",
           "agent",
           "system"
         ],
-        "x-sysone-phase": "3b",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [
+        "x-bandwise-phase": "3b",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [
           "experiment.decided"
         ],
-        "x-sysone-mcp-tool": "decide_experiment",
-        "x-sysone-placeholder": {
+        "x-bandwise-mcp-tool": "decide_experiment",
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -2999,19 +2999,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "list_datasets",
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "list_datasets",
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -3072,19 +3072,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:write",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:write",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "create_dataset",
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "create_dataset",
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -3156,19 +3156,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:write",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:write",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "import_dataset_cases",
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "import_dataset_cases",
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -3240,18 +3240,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -3315,17 +3315,17 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:write",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:write",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": []
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": []
       }
     },
     "/api/v1/datasets/{id}/export": {
@@ -3376,17 +3376,17 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": true,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": []
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": true,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": []
       }
     },
     "/api/v1/datasets/{id}/features": {
@@ -3445,18 +3445,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3b",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3b",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -3521,18 +3521,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "evals:run",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "evals:run",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": true,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "start_eval"
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": true,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "start_eval"
       }
     },
     "/api/v1/evals/{id}": {
@@ -3581,18 +3581,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -3666,17 +3666,17 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "evals:run",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "evals:run",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": true,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": []
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": true,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": []
       }
     },
     "/api/v1/jobs/{id}": {
@@ -3727,18 +3727,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "any",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "any",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "get_job"
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "get_job"
       }
     },
     "/api/v1/review": {
@@ -3826,20 +3826,20 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "review:read",
-        "x-sysone-min-role": "reviewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "review:read",
+        "x-bandwise-min-role": "reviewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent",
           "apiKey"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "list_review_items",
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "list_review_items",
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -3911,19 +3911,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "review:write",
-        "x-sysone-min-role": "reviewer",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "review:write",
+        "x-bandwise-min-role": "reviewer",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent",
           "apiKey"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -3995,22 +3995,22 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "review:write",
-        "x-sysone-min-role": "reviewer",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "review:write",
+        "x-bandwise-min-role": "reviewer",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent",
           "apiKey"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [
           "review.resolved"
         ],
-        "x-sysone-mcp-tool": "resolve_review_item",
-        "x-sysone-placeholder": {
+        "x-bandwise-mcp-tool": "resolve_review_item",
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -4082,21 +4082,21 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "review:write",
-        "x-sysone-min-role": "reviewer",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "review:write",
+        "x-bandwise-min-role": "reviewer",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent",
           "apiKey"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [
           "review.resolved"
         ],
-        "x-sysone-placeholder": {
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -4165,19 +4165,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "session_only",
-        "x-sysone-min-role": "reviewer",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "session_only",
+        "x-bandwise-min-role": "reviewer",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [
           "review.resolved"
         ],
-        "x-sysone-placeholder": {
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -4242,19 +4242,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "feedback:write",
-        "x-sysone-min-role": "reviewer",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "feedback:write",
+        "x-bandwise-min-role": "reviewer",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent",
           "apiKey"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "report_feedback"
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "report_feedback"
       }
     },
     "/api/v1/sets/{ref}/health": {
@@ -4305,18 +4305,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "reports:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "reports:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3b",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "get_set_health"
+        "x-bandwise-phase": "3b",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "get_set_health"
       }
     },
     "/api/v1/health": {
@@ -4378,17 +4378,17 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "reports:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "reports:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3b",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": []
+        "x-bandwise-phase": "3b",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": []
       }
     },
     "/api/v1/sets/{ref}/policy-suggestions": {
@@ -4469,19 +4469,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3b",
-        "x-sysone-async": true,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "suggest_thresholds",
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3b",
+        "x-bandwise-async": true,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "suggest_thresholds",
+        "x-bandwise-placeholder": {
           "input": true,
           "output": false
         }
@@ -4546,19 +4546,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3b",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "list_proposals",
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3b",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "list_proposals",
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -4630,19 +4630,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:write",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:write",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3b",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "decide_proposal",
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3b",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "decide_proposal",
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -4714,19 +4714,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:write",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:write",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3b",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "decide_proposal",
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3b",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "decide_proposal",
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -4818,18 +4818,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -4890,18 +4890,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:write",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:write",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -4953,18 +4953,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -5036,18 +5036,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:write",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:write",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -5119,18 +5119,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:write",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:write",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -5202,18 +5202,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:write",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:write",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -5287,18 +5287,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "evals:run",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "evals:run",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": true,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": true,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": false
         }
@@ -5370,20 +5370,20 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:write",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:write",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [
           "review.created"
         ],
-        "x-sysone-placeholder": {
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -5465,18 +5465,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:write",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:write",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -5550,19 +5550,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "evals:run",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "evals:run",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3b",
-        "x-sysone-async": true,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "improve_set",
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3b",
+        "x-bandwise-async": true,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "improve_set",
+        "x-bandwise-placeholder": {
           "input": true,
           "output": false
         }
@@ -5627,19 +5627,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent",
           "apiKey"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "list_models"
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "list_models"
       }
     },
     "/api/v1/models/{id}": {
@@ -5690,17 +5690,17 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": []
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": []
       }
     },
     "/api/v1/model-upgrades": {
@@ -5738,18 +5738,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3b",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3b",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -5832,18 +5832,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "evals:run",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "evals:run",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3b",
-        "x-sysone-async": true,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "try_model"
+        "x-bandwise-phase": "3b",
+        "x-bandwise-async": true,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "try_model"
       }
     },
     "/api/v1/apps": {
@@ -5905,18 +5905,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -5977,19 +5977,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "apps:write",
-        "x-sysone-min-role": "admin",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "apps:write",
+        "x-bandwise-min-role": "admin",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "create_app",
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "create_app",
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -6061,18 +6061,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "apps:write",
-        "x-sysone-min-role": "admin",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "apps:write",
+        "x-bandwise-min-role": "admin",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -6154,18 +6154,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "apps:write",
-        "x-sysone-min-role": "admin",
-        "x-sysone-risk": "high*",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "apps:write",
+        "x-bandwise-min-role": "admin",
+        "x-bandwise-risk": "high*",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -6236,18 +6236,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "apps:write",
-        "x-sysone-min-role": "admin",
-        "x-sysone-risk": "safety",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "apps:write",
+        "x-bandwise-min-role": "admin",
+        "x-bandwise-risk": "safety",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": true,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": true,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -6321,17 +6321,17 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "4b",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": []
+        "x-bandwise-phase": "4b",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": []
       },
       "post": {
         "operationId": "opportunity.create",
@@ -6400,18 +6400,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "apps:write",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "apps:write",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "4b",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "add_opportunity"
+        "x-bandwise-phase": "4b",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "add_opportunity"
       }
     },
     "/api/v1/apps/{id}/opportunities/{oid}": {
@@ -6489,19 +6489,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "apps:write",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "apps:write",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "4b",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "update_opportunity",
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "4b",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "update_opportunity",
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -6575,18 +6575,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "4b",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "4b",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -6656,20 +6656,20 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "apps:write",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "apps:write",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "4b",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [
+        "x-bandwise-phase": "4b",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [
           "binding.created"
         ],
-        "x-sysone-placeholder": {
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -6740,18 +6740,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "apps:write",
-        "x-sysone-min-role": "editor",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "apps:write",
+        "x-bandwise-min-role": "editor",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "4b",
-        "x-sysone-async": false,
-        "x-sysone-destructive": true,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "4b",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": true,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -6858,21 +6858,21 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "4b",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [
+        "x-bandwise-phase": "4b",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [
           "binding.created"
         ],
-        "x-sysone-mcp-tool": "generate_client",
-        "x-sysone-placeholder": {
+        "x-bandwise-mcp-tool": "generate_client",
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -6937,19 +6937,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "reports:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "reports:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "get_report",
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "get_report",
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -7014,18 +7014,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "reports:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "reports:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -7147,18 +7147,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "audit:read",
-        "x-sysone-min-role": "admin",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "audit:read",
+        "x-bandwise-min-role": "admin",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -7232,19 +7232,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "events:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "events:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent",
           "apiKey"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "list_events"
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "list_events"
       }
     },
     "/api/v1/webhooks": {
@@ -7306,18 +7306,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "admin:write",
-        "x-sysone-min-role": "admin",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "admin:write",
+        "x-bandwise-min-role": "admin",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "5",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "5",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -7378,18 +7378,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "admin:write",
-        "x-sysone-min-role": "admin",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "admin:write",
+        "x-bandwise-min-role": "admin",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "5",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "5",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -7451,18 +7451,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "admin:write",
-        "x-sysone-min-role": "admin",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "admin:write",
+        "x-bandwise-min-role": "admin",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "5",
-        "x-sysone-async": false,
-        "x-sysone-destructive": true,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "5",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": true,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -7503,18 +7503,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "any",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "any",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -7552,17 +7552,17 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "session_only",
-        "x-sysone-min-role": "admin",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "session_only",
+        "x-bandwise-min-role": "admin",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -7622,17 +7622,17 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "session_only",
-        "x-sysone-min-role": "none",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "session_only",
+        "x-bandwise-min-role": "none",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -7697,17 +7697,17 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "any",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "any",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": []
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": []
       }
     },
     "/api/v1/approvals/{id}": {
@@ -7758,18 +7758,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "any",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "any",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-mcp-tool": "get_approval"
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-mcp-tool": "get_approval"
       }
     },
     "/api/v1/approvals/{id}/decide": {
@@ -7835,19 +7835,19 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "session_only",
-        "x-sysone-min-role": "requested_operation",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "session_only",
+        "x-bandwise-min-role": "requested_operation",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [
           "approval.decided"
         ],
-        "x-sysone-placeholder": {
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -7912,18 +7912,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "admin:write",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "admin:write",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -7994,18 +7994,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "admin:write",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "high*",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "admin:write",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "high*",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -8067,18 +8067,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "admin:write",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "safety",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "admin:write",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "safety",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": true,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": true,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -8143,18 +8143,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "admin:write",
-        "x-sysone-min-role": "admin",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "admin:write",
+        "x-bandwise-min-role": "admin",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -8227,18 +8227,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "admin:write",
-        "x-sysone-min-role": "admin",
-        "x-sysone-risk": "high",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "admin:write",
+        "x-bandwise-min-role": "admin",
+        "x-bandwise-risk": "high",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -8320,18 +8320,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "admin:write",
-        "x-sysone-min-role": "admin",
-        "x-sysone-risk": "high",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "admin:write",
+        "x-bandwise-min-role": "admin",
+        "x-bandwise-risk": "high",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -8401,18 +8401,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "admin:write",
-        "x-sysone-min-role": "admin",
-        "x-sysone-risk": "high",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "admin:write",
+        "x-bandwise-min-role": "admin",
+        "x-bandwise-risk": "high",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": true,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": true,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -8453,18 +8453,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "admin:write",
-        "x-sysone-min-role": "admin",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "admin:write",
+        "x-bandwise-min-role": "admin",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -8525,18 +8525,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "admin:write",
-        "x-sysone-min-role": "admin",
-        "x-sysone-risk": "high",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "admin:write",
+        "x-bandwise-min-role": "admin",
+        "x-bandwise-risk": "high",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": true,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": true,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -8609,18 +8609,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "admin:write",
-        "x-sysone-min-role": "admin",
-        "x-sysone-risk": "high",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "admin:write",
+        "x-bandwise-min-role": "admin",
+        "x-bandwise-risk": "high",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -8661,18 +8661,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -8743,18 +8743,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "admin:write",
-        "x-sysone-min-role": "admin",
-        "x-sysone-risk": "high*",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "admin:write",
+        "x-bandwise-min-role": "admin",
+        "x-bandwise-risk": "high*",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -8795,18 +8795,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "reports:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "reports:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -8867,18 +8867,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "admin:write",
-        "x-sysone-min-role": "admin",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "admin:write",
+        "x-bandwise-min-role": "admin",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -8943,18 +8943,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "5",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "5",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -9006,18 +9006,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "sets:read",
-        "x-sysone-min-role": "viewer",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "sets:read",
+        "x-bandwise-min-role": "viewer",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "5",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "5",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -9087,18 +9087,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "admin:write",
-        "x-sysone-min-role": "admin",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "admin:write",
+        "x-bandwise-min-role": "admin",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "5",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "5",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -9161,18 +9161,18 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "admin:write",
-        "x-sysone-min-role": "owner",
-        "x-sysone-risk": "high",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "admin:write",
+        "x-bandwise-min-role": "owner",
+        "x-bandwise-risk": "high",
+        "x-bandwise-actors": [
           "user",
           "agent"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": true,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": true,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -9234,17 +9234,17 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "platform_admin",
-        "x-sysone-min-role": "superadmin",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "platform_admin",
+        "x-bandwise-min-role": "superadmin",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -9302,17 +9302,17 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "platform_admin",
-        "x-sysone-min-role": "superadmin",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "platform_admin",
+        "x-bandwise-min-role": "superadmin",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -9381,17 +9381,17 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "platform_admin",
-        "x-sysone-min-role": "superadmin",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "platform_admin",
+        "x-bandwise-min-role": "superadmin",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -9429,17 +9429,17 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "platform_admin",
-        "x-sysone-min-role": "superadmin",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "platform_admin",
+        "x-bandwise-min-role": "superadmin",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -9497,17 +9497,17 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "platform_admin",
-        "x-sysone-min-role": "superadmin",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "platform_admin",
+        "x-bandwise-min-role": "superadmin",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -9545,17 +9545,17 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "platform_admin",
-        "x-sysone-min-role": "superadmin",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "platform_admin",
+        "x-bandwise-min-role": "superadmin",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -9613,17 +9613,17 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "platform_admin",
-        "x-sysone-min-role": "superadmin",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "platform_admin",
+        "x-bandwise-min-role": "superadmin",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": true,
           "output": true
         }
@@ -9685,17 +9685,17 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "platform_admin",
-        "x-sysone-min-role": "superadmin",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "platform_admin",
+        "x-bandwise-min-role": "superadmin",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -9764,17 +9764,17 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "platform_admin",
-        "x-sysone-min-role": "superadmin",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "platform_admin",
+        "x-bandwise-min-role": "superadmin",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -9843,17 +9843,17 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "platform_admin",
-        "x-sysone-min-role": "superadmin",
-        "x-sysone-risk": "normal",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "platform_admin",
+        "x-bandwise-min-role": "superadmin",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
           "user"
         ],
-        "x-sysone-phase": "2",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }
@@ -9915,17 +9915,17 @@
             "consoleSession": []
           }
         ],
-        "x-sysone-scope": "platform_admin",
-        "x-sysone-min-role": "superadmin",
-        "x-sysone-risk": "read",
-        "x-sysone-actors": [
+        "x-bandwise-scope": "platform_admin",
+        "x-bandwise-min-role": "superadmin",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
           "user"
         ],
-        "x-sysone-phase": "3",
-        "x-sysone-async": false,
-        "x-sysone-destructive": false,
-        "x-sysone-emits": [],
-        "x-sysone-placeholder": {
+        "x-bandwise-phase": "3",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": [],
+        "x-bandwise-placeholder": {
           "input": false,
           "output": true
         }

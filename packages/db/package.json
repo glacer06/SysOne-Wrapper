@@ -1,12 +1,12 @@
 {
-  "name": "@sysone/db",
+  "name": "@bandwise/db",
   "version": "0.0.0",
   "private": true,
   "description": "Drizzle schema, RLS policies, migrations, withTenant(), repositories. The only importer of drizzle-orm.",
   "type": "module",
   "exports": {
     ".": {
-      "@sysone/source": "./src/index.ts",
+      "@bandwise/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
@@ -20,20 +20,20 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "db:generate": "NODE_OPTIONS=--conditions=@sysone/source drizzle-kit generate",
-    "db:migrate": "tsx --conditions=@sysone/source scripts/migrate.ts",
-    "db:seed": "tsx --conditions=@sysone/source scripts/seed.ts",
-    "rls:sql": "tsx --conditions=@sysone/source scripts/print-security-block.ts"
+    "db:generate": "NODE_OPTIONS=--conditions=@bandwise/source drizzle-kit generate",
+    "db:migrate": "tsx --conditions=@bandwise/source scripts/migrate.ts",
+    "db:seed": "tsx --conditions=@bandwise/source scripts/seed.ts",
+    "rls:sql": "tsx --conditions=@bandwise/source scripts/print-security-block.ts"
   },
   "dependencies": {
-    "@sysone/core": "workspace:*",
+    "@bandwise/core": "workspace:*",
     "drizzle-orm": "catalog:",
     "pg": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
     "@electric-sql/pglite": "catalog:",
-    "@sysone/config": "workspace:*",
+    "@bandwise/config": "workspace:*",
     "@types/node": "catalog:",
     "@types/pg": "catalog:",
     "drizzle-kit": "catalog:",

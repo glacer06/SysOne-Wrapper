@@ -1,5 +1,5 @@
 {
-  "name": "@sysone/console",
+  "name": "@bandwise/console",
   "version": "0.0.0",
   "private": true,
   "description": "Tenant console, platform admin and /api/v1. The only place with DB and TypeSafe keys.",
@@ -13,12 +13,12 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@sysone/billing": "workspace:*",
-    "@sysone/core": "workspace:*",
-    "@sysone/db": "workspace:*",
-    "@sysone/llm-client": "workspace:*",
-    "@sysone/system-one-client": "workspace:*",
-    "@sysone/tenancy": "workspace:*",
+    "@bandwise/billing": "workspace:*",
+    "@bandwise/core": "workspace:*",
+    "@bandwise/db": "workspace:*",
+    "@bandwise/llm-client": "workspace:*",
+    "@bandwise/system-one-client": "workspace:*",
+    "@bandwise/tenancy": "workspace:*",
     "@t3-oss/env-nextjs": "catalog:",
     "next": "catalog:",
     "react": "catalog:",
@@ -27,7 +27,7 @@
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@sysone/config": "workspace:*",
+    "@bandwise/config": "workspace:*",
     "@types/node": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",

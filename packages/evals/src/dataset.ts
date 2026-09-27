@@ -3,7 +3,7 @@
 // labeled answer: an option key for a choice, true or false for a noul, a level index for a score,
 // and a level ("high", "medium", "low") for a composite.
 
-import { JsonValue, hashJson } from "@sysone/core";
+import { JsonValue, hashJson } from "@bandwise/core";
 import { z } from "zod";
 
 export const DatasetSplit = z.enum(["drafting", "calibration", "test"]);

@@ -1,17 +1,17 @@
 {
-  "name": "@sysone/system-one-client",
+  "name": "@bandwise/system-one-client",
   "version": "0.0.0",
   "private": true,
   "description": "SystemOneTransport implementations. The only importer of @typesafe-ai/sdk.",
   "type": "module",
   "exports": {
     ".": {
-      "@sysone/source": "./src/index.ts",
+      "@bandwise/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
     "./fixture": {
-      "@sysone/source": "./src/fixture/index.ts",
+      "@bandwise/source": "./src/fixture/index.ts",
       "types": "./dist/fixture/index.d.ts",
       "import": "./dist/fixture/index.js"
     }
@@ -28,12 +28,12 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@sysone/core": "workspace:*",
+    "@bandwise/core": "workspace:*",
     "@typesafe-ai/sdk": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@sysone/config": "workspace:*",
+    "@bandwise/config": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "typescript": "catalog:",

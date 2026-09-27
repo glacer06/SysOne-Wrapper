@@ -7,7 +7,7 @@ import {
   type SystemOneRequest,
   type SystemOneTransport,
   TransportError,
-} from "@sysone/core";
+} from "@bandwise/core";
 import { type SdkTransportOptions, createSdkClient, mapSdkError } from "./sdk-transport.js";
 
 /** One entry of GET /v1/models (openapi.json ModelMetadata). */

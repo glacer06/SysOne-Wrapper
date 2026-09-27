@@ -6,7 +6,7 @@
 // platform traffic or log its bodies. Retries belong to the SDK; there is no second loop.
 
 import Anthropic, { APIConnectionError, APIError, APIUserAbortError } from "@anthropic-ai/sdk";
-import { type LlmCompletion, type LlmCompletionRequest, type LlmTransport, TransportError, isTransportError } from "@sysone/core";
+import { type LlmCompletion, type LlmCompletionRequest, type LlmTransport, TransportError, isTransportError } from "@bandwise/core";
 import { llmAborted, llmErrorForStatus, llmUnreachable, llmUnreadable } from "./fixture/errors.js";
 
 /** The Anthropic API host. A constant, never env. */

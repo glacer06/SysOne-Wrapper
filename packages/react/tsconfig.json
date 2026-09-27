@@ -1,5 +1,5 @@
 {
-  "extends": "@sysone/config/tsconfig/react-library.json",
+  "extends": "@bandwise/config/tsconfig/react-library.json",
   "include": [
     "src",
     "*.config.ts"

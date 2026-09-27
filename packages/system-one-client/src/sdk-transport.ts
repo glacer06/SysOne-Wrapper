@@ -32,7 +32,7 @@ import {
   type SystemOneTransport,
   TransportError,
   isTransportError,
-} from "@sysone/core";
+} from "@bandwise/core";
 import { ClientCache } from "./client-cache.js";
 import { assertNotEvaluationFallback } from "./fixture/fallback-guard.js";
 import { transportErrorForStatus } from "./fixture/status-map.js";
@@ -125,7 +125,7 @@ export class SdkTransport implements SystemOneTransport {
       if (!parsed.success) {
         throw new TransportError(
           { code: "system_one_unavailable", retryable: false, requestId: requestId ?? null },
-          `System One on ${opts.provider} returned a response SysOne cannot read`,
+          `System One on ${opts.provider} returned a response Bandwise cannot read`,
         );
       }
       const id = requestId ?? parsed.data.id ?? null;

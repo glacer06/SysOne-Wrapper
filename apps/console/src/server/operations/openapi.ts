@@ -29,7 +29,7 @@ import {
   SpecDiff,
   SystemOneAnswer,
   SystemOneUsage,
-} from "@sysone/core";
+} from "@bandwise/core";
 import { z } from "zod";
 
 import { type AnyObjectSchema, type RegisteredOperation } from "./define";
@@ -97,8 +97,8 @@ const INPUT_MARK = "~input";
 const SHARED_DEFS = /^#\/components\/schemas\/__shared#\/\$defs\/(.+)$/;
 
 const API_DESCRIPTION =
-  "SysOne management and run API. Generated from the operation registry in apps/console/src/server/operations " +
-  "and the zod contracts in @sysone/core. Do not edit by hand; run `pnpm openapi`.";
+  "Bandwise management and run API. Generated from the operation registry in apps/console/src/server/operations " +
+  "and the zod contracts in @bandwise/core. Do not edit by hand; run `pnpm openapi`.";
 
 export function buildOpenApiDocument(
   operations: readonly RegisteredOperation[] = listOperations(),
@@ -196,7 +196,7 @@ export function buildOpenApiDocument(
 
   return {
     openapi: "3.1.0",
-    info: { title: "SysOne API", version: "v1", description: API_DESCRIPTION },
+    info: { title: "Bandwise API", version: "v1", description: API_DESCRIPTION },
     servers: [{ url: "/", description: "The console origin. Every path carries the /api/v1 prefix." }],
     paths,
     components: { schemas: sortKeys(reachable(paths, schemas)), securitySchemes: SECURITY_SCHEMES },
@@ -246,7 +246,7 @@ function pathOperation(op: RegisteredOperation, body: JsonSchema | null, respons
   }
   if (op.id === "set.run") {
     parameters.push({
-      name: "SysOne-Interface",
+      name: "Bandwise-Interface",
       in: "header",
       required: false,
       description: "The interface major the caller was built against. A different live major returns 409 interface_mismatch.",
@@ -297,17 +297,17 @@ function pathOperation(op: RegisteredOperation, body: JsonSchema | null, respons
     ...(tokens ? [{ bearerToken: [] }] : []),
     ...(sessions ? [{ consoleSession: [] }] : []),
   ];
-  operation["x-sysone-scope"] = catalog.scope;
-  operation["x-sysone-min-role"] = catalog.minRole;
-  operation["x-sysone-risk"] = catalog.risk;
-  operation["x-sysone-actors"] = descriptor.actors;
-  operation["x-sysone-phase"] = op.phase;
-  operation["x-sysone-async"] = descriptor.async;
-  operation["x-sysone-destructive"] = descriptor.destructive;
-  operation["x-sysone-emits"] = descriptor.emits;
-  if (descriptor.mcp !== undefined) operation["x-sysone-mcp-tool"] = descriptor.mcp.tool;
+  operation["x-bandwise-scope"] = catalog.scope;
+  operation["x-bandwise-min-role"] = catalog.minRole;
+  operation["x-bandwise-risk"] = catalog.risk;
+  operation["x-bandwise-actors"] = descriptor.actors;
+  operation["x-bandwise-phase"] = op.phase;
+  operation["x-bandwise-async"] = descriptor.async;
+  operation["x-bandwise-destructive"] = descriptor.destructive;
+  operation["x-bandwise-emits"] = descriptor.emits;
+  if (descriptor.mcp !== undefined) operation["x-bandwise-mcp-tool"] = descriptor.mcp.tool;
   if (op.placeholder.input || op.placeholder.output) {
-    operation["x-sysone-placeholder"] = { input: op.placeholder.input, output: op.placeholder.output };
+    operation["x-bandwise-placeholder"] = { input: op.placeholder.input, output: op.placeholder.output };
   }
   return operation;
 }

@@ -7,7 +7,7 @@ import {
   ReviewItemId,
   ReviewItemKind,
   ReviewItemStatus,
-} from "@sysone/core";
+} from "@bandwise/core";
 import { z } from "zod";
 
 import { defineOperation, operationGroup, placeholderInput, placeholderOutput } from "./define";

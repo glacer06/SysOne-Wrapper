@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
-  title: "SysOne console",
+  title: "Bandwise console",
   description: "Manage System One question sets, rollouts and savings.",
 };
 

@@ -1,7 +1,7 @@
 import { cpSync, mkdtempSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { sequentialIds, steppingClock } from "@sysone/core";
+import { sequentialIds, steppingClock } from "@bandwise/core";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_DATA_DIR, main } from "./cli.js";
 import { offlineTransport } from "./ports.js";
@@ -13,7 +13,7 @@ function io(env: Record<string, string | undefined> = {}) {
 }
 
 function dataCopy(): string {
-  const dir = mkdtempSync(join(tmpdir(), "sysone-evals-"));
+  const dir = mkdtempSync(join(tmpdir(), "bandwise-evals-"));
   cpSync(DEFAULT_DATA_DIR, dir, { recursive: true, filter: (src) => !/[\\/](snapshots|eval-runs)([\\/]|$)/.test(src) });
   return dir;
 }

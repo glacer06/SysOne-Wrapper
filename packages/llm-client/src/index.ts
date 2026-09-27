@@ -1,9 +1,9 @@
-// @sysone/llm-client: LlmTransport implementations. The only importer of @anthropic-ai/sdk.
+// @bandwise/llm-client: LlmTransport implementations. The only importer of @anthropic-ai/sdk.
 // Anthropic is the default route; the OpenRouter chat route (ADR-011, proposed) is off unless the
-// config turns it on. The fixture transport also ships alone as @sysone/llm-client/fixture, which
+// config turns it on. The fixture transport also ships alone as @bandwise/llm-client/fixture, which
 // never loads the SDK.
 
-import type { LlmTransport } from "@sysone/core";
+import type { LlmTransport } from "@bandwise/core";
 import { AnthropicLlmTransport, type AnthropicLlmTransportOptions } from "./anthropic-transport.js";
 import { OpenRouterLlmTransport, type OpenRouterLlmTransportOptions } from "./openrouter-transport.js";
 import { RoutedLlmTransport } from "./routed-transport.js";

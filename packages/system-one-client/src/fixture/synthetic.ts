@@ -1,4 +1,4 @@
-// Deterministic synthetic answers for requests no fixture covers (`sysone run --local` on a spec of
+// Deterministic synthetic answers for requests no fixture covers (`bandwise run --local` on a spec of
 // your own). They are shaped like real answers so the whole run path works, but they are not model
 // output: the same request always gets the same numbers, derived from a hash of it.
 
@@ -10,7 +10,7 @@ import {
   canonicalJson,
   estimateTokens,
   sha256Hex,
-} from "@sysone/core";
+} from "@bandwise/core";
 
 /** A stream of numbers in [0, 1) from a seed, by chained SHA-256. */
 function unitStream(seed: string): () => number {

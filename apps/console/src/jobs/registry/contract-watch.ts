@@ -4,8 +4,8 @@
 // and opens an issue. The fix is a PR that adapts the code, re-records fixtures if the version
 // moved, and re-snapshots the documents.
 
-import { hashJson } from "@sysone/core";
-import { CONTRACT_SOURCES, type ContractSource } from "@sysone/system-one-client";
+import { hashJson } from "@bandwise/core";
+import { CONTRACT_SOURCES, type ContractSource } from "@bandwise/system-one-client";
 import type { AlertSink, EventSink, HttpFetch, IssueSink, JobSteps } from "./ports";
 import { inlineSteps } from "./ports";
 

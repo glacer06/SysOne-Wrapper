@@ -1,12 +1,12 @@
 {
-  "name": "@sysone/client",
+  "name": "@bandwise/client",
   "version": "0.0.0",
   "private": true,
-  "description": "@sysone/client: server client, proxy handlers, short-lived browser tokens.",
+  "description": "@bandwise/client: server client, proxy handlers, short-lived browser tokens.",
   "type": "module",
   "exports": {
     ".": {
-      "@sysone/source": "./src/index.ts",
+      "@bandwise/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
@@ -21,7 +21,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@sysone/config": "workspace:*",
+    "@bandwise/config": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "typescript": "catalog:",

@@ -16,7 +16,7 @@ import {
   type RunResult,
   type SystemOneAnswer,
   microFromUsd,
-} from "@sysone/core";
+} from "@bandwise/core";
 import { type CalibrationPoint, type ReliabilityBin, mean, percentile, reliability, share, wilson } from "./stats.js";
 
 export const BANDS: readonly Band[] = ["high", "medium", "low"];

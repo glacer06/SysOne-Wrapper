@@ -10,7 +10,7 @@ import {
   QuestionSetSpec,
   StorageMode,
   ValueSettings,
-} from "@sysone/core";
+} from "@bandwise/core";
 import { z } from "zod";
 
 import { defineOperation, operationGroup, placeholderInput, placeholderOutput } from "./define";

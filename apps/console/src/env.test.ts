@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const validEnv = {
-  DATABASE_URL: "postgres://app:app@localhost:5432/sysone",
+  DATABASE_URL: "postgres://app:app@localhost:5432/bandwise",
   AUTH_SECRET: "a".repeat(32),
-  SYSONE_KEK: "test-kek",
-  SYSONE_JWT_SIGNING_KEY: "test-signing-key",
+  BANDWISE_KEK: "test-kek",
+  BANDWISE_JWT_SIGNING_KEY: "test-signing-key",
 };
 
 async function loadEnv() {

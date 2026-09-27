@@ -1,4 +1,4 @@
 import type { Linter } from "eslint";
 
-declare const sysoneNext: Linter.Config[];
-export default sysoneNext;
+declare const bandwiseNext: Linter.Config[];
+export default bandwiseNext;

@@ -12,7 +12,7 @@ import {
   type OperationContextFor,
   type OperationId,
   type RunSource,
-} from "@sysone/core";
+} from "@bandwise/core";
 import type { z } from "zod";
 
 import type { RegisteredOperation } from "./define";
@@ -26,7 +26,7 @@ export interface RunOperationOptions {
   ifMatch?: string;
   /** ?dryRun=true: run the checks and the preview, write nothing. */
   dryRun?: boolean;
-  /** set.run: the SysOne-Interface header, becomes RunRequest.interfaceMajor. */
+  /** set.run: the Bandwise-Interface header, becomes RunRequest.interfaceMajor. */
   interfaceMajor?: number;
   /**
    * set.run: the run source, set by the adapter from the auth mode and surface (RunRequest.source).

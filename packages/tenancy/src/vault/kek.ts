@@ -1,4 +1,4 @@
-// Key encryption keys (ADR-003). SYSONE_KEK names the KEK:
+// Key encryption keys (ADR-003). BANDWISE_KEK names the KEK:
 //   production: aws-kms:<key ARN>             (Phase 2; not implemented here)
 //   dev and CI: local:<base64 32 bytes>[,<base64 32 bytes>...]
 // With a local KEK the first key is active and the others only unwrap, which lets tests exercise
@@ -30,7 +30,7 @@ export class KekUnavailableError extends Error {
   override readonly name = "KekUnavailableError";
 }
 
-/** SYSONE_KEK is missing, malformed or not allowed in this environment. */
+/** BANDWISE_KEK is missing, malformed or not allowed in this environment. */
 export class KekConfigError extends Error {
   override readonly name = "KekConfigError";
 }
@@ -39,7 +39,7 @@ const IV_BYTES = 12;
 const TAG_BYTES = 16;
 
 function contextAad(context: EncryptionContext): Buffer {
-  return Buffer.from(`sysone:kek:v1:${context.table}:${context.orgId}`, "utf8");
+  return Buffer.from(`bandwise:kek:v1:${context.table}:${context.orgId}`, "utf8");
 }
 
 export function localKekId(key: Buffer): string {
@@ -89,20 +89,20 @@ export class LocalKekProvider implements KekProvider {
 }
 
 export interface KekEnv {
-  SYSONE_KEK?: string | undefined;
+  BANDWISE_KEK?: string | undefined;
   VERCEL_ENV?: string | undefined;
 }
 
 /**
- * Builds the KEK provider from SYSONE_KEK. Refuses a `local:` KEK when VERCEL_ENV is production.
+ * Builds the KEK provider from BANDWISE_KEK. Refuses a `local:` KEK when VERCEL_ENV is production.
  * `aws-kms:` lands with the Phase 2 KMS provider.
  */
 export function kekFromEnv(env: KekEnv): KekProvider {
-  const value = env.SYSONE_KEK;
-  if (value === undefined || value === "") throw new KekConfigError("SYSONE_KEK is not set");
+  const value = env.BANDWISE_KEK;
+  if (value === undefined || value === "") throw new KekConfigError("BANDWISE_KEK is not set");
   if (value.startsWith("local:")) {
     if (env.VERCEL_ENV === "production") {
-      throw new KekConfigError("a local: SYSONE_KEK is not allowed in production");
+      throw new KekConfigError("a local: BANDWISE_KEK is not allowed in production");
     }
     const keys = value
       .slice("local:".length)
@@ -113,5 +113,5 @@ export function kekFromEnv(env: KekEnv): KekProvider {
   if (value.startsWith("aws-kms:")) {
     throw new KekConfigError("the aws-kms KEK provider lands in Phase 2 (ADR-003)");
   }
-  throw new KekConfigError("SYSONE_KEK must start with local: or aws-kms:");
+  throw new KekConfigError("BANDWISE_KEK must start with local: or aws-kms:");
 }

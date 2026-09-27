@@ -113,7 +113,7 @@ describe("error codes", () => {
 
   it("matches the api.md code table: status, code and retryable", () => {
     const doc = readFileSync(
-      new URL("../../../../.claude/skills/sysone-builder/references/api.md", import.meta.url),
+      new URL("../../../../.claude/skills/bandwise-builder/references/api.md", import.meta.url),
       "utf8",
     );
     const rows = [...doc.matchAll(/^\| (\d{3}) \| `([a-z_]+)` \| (yes|no) \|/gm)].map((m) => [

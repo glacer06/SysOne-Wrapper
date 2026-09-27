@@ -1,3 +1,3 @@
-import sysone from "@sysone/config/eslint";
+import bandwise from "@bandwise/config/eslint";
 
-export default sysone;
+export default bandwise;

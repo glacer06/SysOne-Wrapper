@@ -1,4 +1,4 @@
-// `sysone run --local spec.json state.json`: run a spec file on a state file with core and the
+// `bandwise run --local spec.json state.json`: run a spec file on a state file with core and the
 // fixture transport (headless-and-agents.md; phase-1.md, Integrations). It makes no network call
 // and needs no key. Recorded fixtures answer the requests they cover; anything else gets
 // deterministic synthetic answers, and the output says so.
@@ -15,7 +15,7 @@ import {
   lint,
   parseSpec,
   runQuestionSet,
-} from "@sysone/core";
+} from "@bandwise/core";
 import { LOCAL_CONTEXT, localPorts } from "./ports.js";
 
 export interface LocalRunOptions {

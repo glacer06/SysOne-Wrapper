@@ -5,7 +5,7 @@
 
 import { and, asc, desc, eq, gte, type InferInsertModel, type InferSelectModel, isNull, or, sql } from "drizzle-orm";
 
-import type { ModelPrice, Page, PageReq, PointerChannel, SystemOneProvider } from "@sysone/core/contracts";
+import type { ModelPrice, Page, PageReq, PointerChannel, SystemOneProvider } from "@bandwise/core/contracts";
 
 import { type AnyTx, drizzleOf, type TenantTx, type UserTx } from "../internal/drizzle.js";
 import * as s from "../schema/index.js";
@@ -356,7 +356,7 @@ function readOnly<T extends IdTable>(table: T) {
   return { table: name, get, list };
 }
 
-/** Platform tables. The app role reads them; only sysone_platform writes them (except below). */
+/** Platform tables. The app role reads them; only bandwise_platform writes them (except below). */
 export const platformRepositories = {
   systemOneModels: readOnly(s.systemOneModels),
   systemOneModelRoutes: {

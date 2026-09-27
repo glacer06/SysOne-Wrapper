@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Entry point of the `sysone` binary.
+// Entry point of the `bandwise` binary.
 
 import { main } from "./main.js";
 

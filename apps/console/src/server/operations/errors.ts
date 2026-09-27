@@ -12,7 +12,7 @@ import {
   type OperationId,
   type Phase,
   type Scope,
-} from "@sysone/core";
+} from "@bandwise/core";
 
 /** The envelope fields an error may carry besides code and message (api.md, Error envelope). */
 export type OperationErrorExtras = Omit<ErrorEnvelopeInit, "message" | "requestId">;

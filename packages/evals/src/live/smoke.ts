@@ -29,7 +29,7 @@ import {
   runQuestionSet,
   SEED_SYSTEM_ONE_PRICES,
   sequentialIds,
-} from "@sysone/core";
+} from "@bandwise/core";
 import { createEvalPorts, evalContext } from "../ports.js";
 
 /** Most a smoke run may spend per model (testing.md). */

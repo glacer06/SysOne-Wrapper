@@ -22,7 +22,7 @@ import {
   sequentialIds,
   staticKeyResolver,
   steppingClock,
-} from "@sysone/core";
+} from "@bandwise/core";
 import { describe, expect, it } from "vitest";
 import { FixtureTransport } from "./fixture-transport.js";
 import { BUNDLED_FIXTURES_DIR, loadBundledFixtures, loadFixturesFromDir } from "./load.js";

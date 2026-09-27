@@ -1,11 +1,11 @@
-// HTTP status to SysOne error code (system-one-api-contract.md, Errors, plus the OpenRouter rows).
+// HTTP status to Bandwise error code (system-one-api-contract.md, Errors, plus the OpenRouter rows).
 // It reads the status only, never the body: OpenRouter's error body differs from TypeSafe's, and
 // provider messages must not reach a caller. Shared by the SDK transport and the fixture transport,
 // so it lives in the fixture folder, which never imports the SDK.
 
-import { ERROR_CODES, type ErrorCode, TransportError, type SystemOneProvider } from "@sysone/core";
+import { ERROR_CODES, type ErrorCode, TransportError, type SystemOneProvider } from "@bandwise/core";
 
-/** The SysOne code for a System One HTTP status on either provider. */
+/** The Bandwise code for a System One HTTP status on either provider. */
 export function systemOneCodeForStatus(status: number): ErrorCode {
   switch (status) {
     case 400:

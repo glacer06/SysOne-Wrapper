@@ -7,9 +7,9 @@
 
 ## Context
 
-[architecture.md](../../.claude/skills/sysone-builder/references/architecture.md#caching) sets three cache layers: specs by version id, the release pointer with an L1, an L2 and an epoch key, and an opt-in result cache. It also requires the `org:{orgId}:` prefix on every key. Other references set time bounds that need a home:
+[architecture.md](../../.claude/skills/bandwise-builder/references/architecture.md#caching) sets three cache layers: specs by version id, the release pointer with an L1, an L2 and an epoch key, and an opt-in result cache. It also requires the `org:{orgId}:` prefix on every key. Other references set time bounds that need a home:
 
-- token revocation within 60 seconds and org suspension within 30 seconds ([security.md](../../.claude/skills/sysone-builder/references/security.md))
+- token revocation within 60 seconds and org suspension within 30 seconds ([security.md](../../.claude/skills/bandwise-builder/references/security.md))
 - decrypted TypeSafe keys in memory for at most 5 minutes ([ADR-003](003-key-vault.md))
 - one SDK client per org key, cached by fingerprint
 - the quota guard's same-day Redis counter (phase-2.md) and the rate limiters

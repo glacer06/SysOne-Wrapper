@@ -1,4 +1,4 @@
-// In-memory RunPorts for tests, fixtures and `sysone run --local` (architecture.md, Ports: "each
+// In-memory RunPorts for tests, fixtures and `bandwise run --local` (architecture.md, Ports: "each
 // has an in-memory or fixture implementation for tests"). Pure: no I/O, no clock, no randomness.
 
 import type {

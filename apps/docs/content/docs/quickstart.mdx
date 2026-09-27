@@ -6,9 +6,9 @@ description: Run a question set on your own machine with the CLI in local mode.
 Local mode runs a spec file against a state file on your machine. It uses fixture answers instead of a live model, so it makes no network call and needs no System One key. It is the fastest way to see how questions, bands, actions and routes fit together.
 
 <Callout title="What works today">
-  The `sysone` CLI is not on npm yet. A published package, and the commands that manage sets
+  The `bandwise` CLI is not on npm yet. A published package, and the commands that manage sets
   through the HTTP API, arrive in Phase 3. Until then, local mode runs from a checkout of the
-  source repository with `pnpm sysone`.
+  source repository with `pnpm bandwise`.
 </Callout>
 
 ## 1. Get the repository ready
@@ -139,13 +139,13 @@ The state is what the questions judge. It must match the spec's input schema. Sa
 ## 4. Run it
 
 ```bash
-pnpm sysone run --local spec.json state.json
+pnpm bandwise run --local spec.json state.json
 ```
 
 The output looks like this:
 
 ```text
-sysone run --local (fixture transport, no network, no key)
+bandwise run --local (fixture transport, no network, no key)
 model jev-1.13.0 answered by jev-1.13.0; rollout full; status ok
 run band low; overall action review; route read_later
 
@@ -171,7 +171,7 @@ Read each decision line from left to right: the question, its value, its band, t
 Local runs default to the `full` stage. Run the same files in `shadow`:
 
 ```bash
-pnpm sysone run --local spec.json state.json --rollout shadow
+pnpm bandwise run --local spec.json state.json --rollout shadow
 ```
 
 ```text

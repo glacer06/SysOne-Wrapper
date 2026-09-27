@@ -364,7 +364,7 @@ export const RunRequest = z.strictObject({
   options: RunOptions,
   /** From the Idempotency-Key header. */
   idempotencyKey: z.string().min(1).optional(),
-  /** From the SysOne-Interface header. */
+  /** From the Bandwise-Interface header. */
   interfaceMajor: z.number().int().nonnegative().optional(),
 });
 export type RunRequest = z.infer<typeof RunRequest>;

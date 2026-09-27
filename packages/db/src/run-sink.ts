@@ -16,9 +16,9 @@ import {
   RunSinkRecord,
   type RunSinkResult,
   type TenantContext,
-} from "@sysone/core/contracts";
+} from "@bandwise/core/contracts";
 
-import type { SysoneDb } from "./client.js";
+import type { BandwiseDb } from "./client.js";
 import type { TenantTx } from "./internal/drizzle.js";
 import { platformRepositories, repos } from "./repos/index.js";
 
@@ -39,7 +39,7 @@ export interface LabelSelectorInput {
 export type LabelSelector = (input: LabelSelectorInput) => LabelSelection | null;
 
 export interface RunSinkDeps {
-  db: SysoneDb;
+  db: BandwiseDb;
   /** Defaults to the wall clock. Tests inject a fixed time. */
   clock?: () => Date;
   /** Defaults to Math.random. Tests inject a sequence. */

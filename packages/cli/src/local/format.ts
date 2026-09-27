@@ -1,6 +1,6 @@
-// Human output for `sysone run --local`. `--json` prints the RunResult envelope instead.
+// Human output for `bandwise run --local`. `--json` prints the RunResult envelope instead.
 
-import type { LintResult, RunResult } from "@sysone/core";
+import type { LintResult, RunResult } from "@bandwise/core";
 
 const pad = (s: string, n: number): string => (s.length >= n ? s : s + " ".repeat(n - s.length));
 
@@ -9,7 +9,7 @@ const usd = (n: number | null): string => (n === null ? "unpriced" : `$${n.toFix
 /** A short, plain report of one local run. */
 export function formatRun(result: RunResult, lints: readonly LintResult[], answersFrom: ReadonlyArray<"fixture" | "synthetic">): string {
   const lines: string[] = [];
-  lines.push("sysone run --local (fixture transport, no network, no key)");
+  lines.push("bandwise run --local (fixture transport, no network, no key)");
   lines.push(`model ${result.modelRequested} answered by ${result.modelResolved ?? "none"}; rollout ${result.rollout}; status ${result.status}`);
   if (result.error !== undefined) lines.push(`error ${result.error.code}: ${result.error.message}`);
   lines.push(`run band ${result.runBand}; overall action ${result.overallAction}; route ${result.route ?? "none"}`);

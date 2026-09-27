@@ -1,5 +1,5 @@
 {
-  "extends": "@sysone/config/tsconfig/library.json",
+  "extends": "@bandwise/config/tsconfig/library.json",
   "include": [
     "src",
     "*.config.ts"

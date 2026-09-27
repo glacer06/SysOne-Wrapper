@@ -21,7 +21,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-import type { Decision, RunStage, SystemOneAnswer } from "@sysone/core/contracts";
+import type { Decision, RunStage, SystemOneAnswer } from "@bandwise/core/contracts";
 
 import { count, createdAt, json, microUsd, pk, textArray, textEnum, ts } from "./columns.js";
 import { goals, projects, questionSets, questionSetVersions } from "./decisions.js";

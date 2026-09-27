@@ -1,5 +1,5 @@
 {
-  "name": "@sysone/docs",
+  "name": "@bandwise/docs",
   "version": "0.0.0",
   "private": true,
   "description": "Public customer docs site (Fumadocs). Content in content/docs, API reference read from packages/core/openapi.json at build time.",
@@ -22,8 +22,8 @@
     "react-dom": "catalog:"
   },
   "devDependencies": {
-    "@sysone/config": "workspace:*",
-    "@sysone/core": "workspace:*",
+    "@bandwise/config": "workspace:*",
+    "@bandwise/core": "workspace:*",
     "@tailwindcss/postcss": "catalog:",
     "@types/mdx": "catalog:",
     "@types/node": "catalog:",

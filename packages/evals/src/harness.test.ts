@@ -7,7 +7,7 @@ import {
   parseSpec,
   sequentialIds,
   steppingClock,
-} from "@sysone/core";
+} from "@bandwise/core";
 import { describe, expect, it } from "vitest";
 import { parseDataset } from "./dataset.js";
 import { highPrecisionGate, regressionGate } from "./gates.js";

@@ -1,7 +1,7 @@
 // Health, tuning and proposals, and models (management-api.md, Health, tuning and proposals;
 // Models). Phase 3b rows stay stubbed until the effectiveness loop lands.
 
-import { JobAccepted, ModelListItem, ModelProfile, SetHealth } from "@sysone/core";
+import { JobAccepted, ModelListItem, ModelProfile, SetHealth } from "@bandwise/core";
 import { z } from "zod";
 
 import { defineOperation, operationGroup, placeholderInput, placeholderOutput } from "./define";

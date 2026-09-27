@@ -12,7 +12,7 @@ A System One call can fail after SDK retries (`system_one_unavailable`, `system_
 
 A public report from 2026-09-26 shows why this matters. A builder put Jev between an LLM and themselves to block drafts that broke their rules. When Jev stopped answering, the calling agent decided silence was the safe choice and stopped sending anything at all. It took a second agent to notice and unstick it. The failure was not the outage. It was treating "no answer" as "block everything" with nobody alerted.
 
-TypeSafe's official agent skill also asks builders to separate missing evidence, model errors, code errors and service failures when a decision is wrong. SysOne records no such class.
+TypeSafe's official agent skill also asks builders to separate missing evidence, model errors, code errors and service failures when a decision is wrong. Bandwise records no such class.
 
 ## Decision
 
@@ -40,7 +40,7 @@ No set has been published, so changing the default changes no live behavior.
 
 ## Consequences
 
-- Spec, `RunResult` handling, the router and the embed kit components change. `@sysone/client` and `@sysone/react` must render an outage as the configured action, never as a blank.
+- Spec, `RunResult` handling, the router and the embed kit components change. `@bandwise/client` and `@bandwise/react` must render an outage as the configured action, never as a blank.
 - New lint: `outage.auto_not_allowed` if anything maps `onUnavailable` to `auto`.
 - Savings: outage runs book no savings and are excluded from calibration metrics.
 - Fixtures: add an outage fixture per provider.

@@ -32,7 +32,7 @@ export const OTHER_ORG_ID = "01890000-0000-7000-8000-00000000000b";
 export const SET_ID = "01890000-0000-7000-8000-0000000000a1";
 export const VERSION_ID = "01890000-0000-7000-8000-0000000000b1";
 
-const examplePath = new URL("../../../../.claude/skills/sysone-builder/templates/question-set.example.json", import.meta.url);
+const examplePath = new URL("../../../../.claude/skills/bandwise-builder/templates/question-set.example.json", import.meta.url);
 
 /** The skill's example spec, parsed. */
 export function exampleSpec(): QuestionSetSpec {

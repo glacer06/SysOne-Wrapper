@@ -15,7 +15,7 @@ What the model call does not give you is everything around it. Who can change th
 - **Confidence bands to actions.** Every answer lands in a high, medium or low band. Each band maps to an action: act on it, send it to a person for review, fall back to your existing path, or escalate to an LLM.
 - **Rollout.** A set moves through stages per channel: inactive, shadow, controlled, full, and paused as a kill switch. You measure in shadow before you let answers act.
 - **Cost, savings and escalation spend.** Every run reports what the System One calls cost, an estimate of what the same judgments would have cost as LLM calls, and what any escalations to an LLM actually cost.
-- **Headless first.** Everything the console will do is also an operation in the HTTP API, the `sysone` CLI and an MCP server, so scripts and agents can run the whole loop. Risky moves by agents wait for a human to approve them.
+- **Headless first.** Everything the console will do is also an operation in the HTTP API, the `bandwise` CLI and an MCP server, so scripts and agents can run the whole loop. Risky moves by agents wait for a human to approve them.
 
 ## What works today
 

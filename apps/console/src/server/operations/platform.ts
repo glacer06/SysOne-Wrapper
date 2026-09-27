@@ -1,7 +1,7 @@
 // Platform admin operations (management-api.md, Platform). Session only: a superadmin console
 // session with MFA. Org, app and agent tokens get 404.
 
-import { JsonValue, OrgId } from "@sysone/core";
+import { JsonValue, OrgId } from "@bandwise/core";
 import { z } from "zod";
 
 import { defineOperation, operationGroup, placeholderInput, placeholderOutput } from "./define";

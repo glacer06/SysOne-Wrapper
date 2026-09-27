@@ -1,7 +1,7 @@
 // FixtureLlmTransport: replays LLM fixtures and never touches the network (unit tests, CI, local
 // runs). It never imports @anthropic-ai/sdk.
 
-import { type LlmCompletion, type LlmCompletionRequest, type LlmTransport, TransportError } from "@sysone/core";
+import { type LlmCompletion, type LlmCompletionRequest, type LlmTransport, TransportError } from "@bandwise/core";
 import { llmAborted, llmErrorForStatus } from "./errors.js";
 import { type LlmFixture, llmFixtureKey } from "./fixture.js";
 

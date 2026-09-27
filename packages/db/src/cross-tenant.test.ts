@@ -14,7 +14,7 @@ import { is, sql } from "drizzle-orm";
 import { PgTable, getTableConfig } from "drizzle-orm/pg-core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { defaultQualityTarget, DEFAULT_LABELING_POLICY } from "@sysone/core/contracts";
+import { defaultQualityTarget, DEFAULT_LABELING_POLICY } from "@bandwise/core/contracts";
 
 import { drizzleOf, type TenantTx } from "./internal/drizzle.js";
 import { authRepositories, buildRepositories, type Repositories } from "./repos/index.js";

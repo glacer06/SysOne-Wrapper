@@ -1,5 +1,5 @@
 {
-  "name": "sysone-wrapper",
+  "name": "bandwise",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.33.0",
@@ -7,18 +7,18 @@
     "node": ">=22.13.0"
   },
   "scripts": {
-    "dev": "turbo run dev --filter=@sysone/console",
+    "dev": "turbo run dev --filter=@bandwise/console",
     "build": "turbo run build",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "openapi": "tsx --conditions=@sysone/source apps/console/scripts/openapi.ts",
-    "db:migrate": "pnpm --filter @sysone/db db:migrate",
-    "db:seed": "pnpm --filter @sysone/db db:seed",
-    "fixtures:record": "tsx --conditions=@sysone/source packages/evals/src/live/record-bin.ts",
-    "smoke": "tsx --conditions=@sysone/source packages/evals/src/live/smoke-bin.ts",
-    "eval": "tsx --conditions=@sysone/source packages/evals/src/bin.ts",
-    "sysone": "tsx --conditions=@sysone/source packages/cli/src/bin.ts"
+    "openapi": "tsx --conditions=@bandwise/source apps/console/scripts/openapi.ts",
+    "db:migrate": "pnpm --filter @bandwise/db db:migrate",
+    "db:seed": "pnpm --filter @bandwise/db db:seed",
+    "fixtures:record": "tsx --conditions=@bandwise/source packages/evals/src/live/record-bin.ts",
+    "smoke": "tsx --conditions=@bandwise/source packages/evals/src/live/smoke-bin.ts",
+    "eval": "tsx --conditions=@bandwise/source packages/evals/src/bin.ts",
+    "bandwise": "tsx --conditions=@bandwise/source packages/cli/src/bin.ts"
   },
   "devDependencies": {
     "tsx": "catalog:",

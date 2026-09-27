@@ -8,7 +8,7 @@
 import { and, asc, eq, getTableName, gt, type SQL } from "drizzle-orm";
 import type { AnyPgColumn, PgTable } from "drizzle-orm/pg-core";
 
-import type { Page, PageReq } from "@sysone/core/contracts";
+import type { Page, PageReq } from "@bandwise/core/contracts";
 
 import { type AnyTx, drizzleOf, type TenantTx } from "../internal/drizzle.js";
 

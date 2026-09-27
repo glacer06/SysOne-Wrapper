@@ -5,7 +5,7 @@ import { sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/node-postgres";
 import pg from "pg";
 
-import { TenantContext, UserId } from "@sysone/core/contracts";
+import { TenantContext, UserId } from "@bandwise/core/contracts";
 
 import { DRIZZLE, type DrizzleDb, type NoTenantTx, type TenantTx, type UserTx } from "./internal/drizzle.js";
 import { TENANT_SETTING, USER_SETTING } from "./rls.js";
@@ -13,7 +13,7 @@ import * as schema from "./schema/index.js";
 
 export type { NoTenantTx, TenantTx, UserTx, AnyTx } from "./internal/drizzle.js";
 
-export interface SysoneDb {
+export interface BandwiseDb {
   /**
    * Opens a transaction, runs `select set_config('app.org_id', orgId, true)` (transaction-local,
    * so a pooled connection never keeps it), and hands `fn` a scope that tenant repositories accept.
@@ -28,7 +28,7 @@ export interface SysoneDb {
 }
 
 /** Wraps a drizzle database. Internal: callers use createDatabase or the test harness. */
-export function wrapDrizzle(db: DrizzleDb, close: () => Promise<void>): SysoneDb {
+export function wrapDrizzle(db: DrizzleDb, close: () => Promise<void>): BandwiseDb {
   return {
     async withTenant(ctx, fn) {
       const parsed = TenantContext.parse(ctx);
@@ -52,14 +52,14 @@ export function wrapDrizzle(db: DrizzleDb, close: () => Promise<void>): SysoneDb
 }
 
 export interface CreateDatabaseOptions {
-  /** DATABASE_URL. The login role must be a member of sysone_app and must not have BYPASSRLS. */
+  /** DATABASE_URL. The login role must be a member of bandwise_app and must not have BYPASSRLS. */
   connectionString: string;
   /** Pool size. Defaults to 10. */
   max?: number;
 }
 
 /** A pooled node-postgres database. */
-export function createDatabase(opts: CreateDatabaseOptions): SysoneDb {
+export function createDatabase(opts: CreateDatabaseOptions): BandwiseDb {
   const pool = new pg.Pool({ connectionString: opts.connectionString, max: opts.max ?? 10 });
   const db: DrizzleDb = drizzle(pool, { schema, casing: "snake_case" });
   return wrapDrizzle(db, () => pool.end());

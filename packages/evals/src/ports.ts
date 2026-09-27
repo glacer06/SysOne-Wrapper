@@ -19,8 +19,8 @@ import {
   createMemoryPriceBook,
   createMemoryRunSink,
   staticKeyResolver,
-} from "@sysone/core";
-import { FixtureTransport, loadBundledFixtures } from "@sysone/system-one-client/fixture";
+} from "@bandwise/core";
+import { FixtureTransport, loadBundledFixtures } from "@bandwise/system-one-client/fixture";
 
 /** The org id evals run under when the store has no real org ids (folder and memory stores). */
 export const EVAL_ORG_ID = "00000000-0000-7000-8000-0000000e7a1f";

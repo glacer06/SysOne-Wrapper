@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { packageName } from "./index.js";
 
-describe("@sysone/plugin-sdk", () => {
+describe("@bandwise/plugin-sdk", () => {
   it("loads", () => {
-    expect(packageName).toBe("@sysone/plugin-sdk");
+    expect(packageName).toBe("@bandwise/plugin-sdk");
   });
 });

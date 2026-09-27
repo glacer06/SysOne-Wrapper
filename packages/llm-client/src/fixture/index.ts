@@ -1,4 +1,4 @@
-// @sysone/llm-client/fixture: the fixture LlmTransport and fixture loading. This subpath never
+// @bandwise/llm-client/fixture: the fixture LlmTransport and fixture loading. This subpath never
 // imports @anthropic-ai/sdk, so tests and local runs need no SDK and no key.
 
 export { FixtureLlmTransport, type FixtureLlmCall, type FixtureLlmTransportOptions } from "./fixture-transport.js";

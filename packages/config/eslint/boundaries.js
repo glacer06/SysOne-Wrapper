@@ -33,7 +33,7 @@ export const elements = [
   { type: "core-openapi", pattern: "packages/core/openapi.json", mode: "file" },
   { type: "core-contracts", pattern: "packages/core/src/contracts" },
   { type: "core", pattern: "packages/core" },
-  // The fixture subpath never loads @typesafe-ai/sdk, so `sysone run --local` can use it.
+  // The fixture subpath never loads @typesafe-ai/sdk, so `bandwise run --local` can use it.
   { type: "system-one-client-fixture", pattern: "packages/system-one-client/src/fixture" },
   { type: "system-one-client", pattern: "packages/system-one-client" },
   // The fixture subpath never loads @anthropic-ai/sdk (the exclusive-externals rule enforces it).
@@ -200,7 +200,7 @@ function buildPolicies() {
   // A workspace import that did not resolve to a file under packages/ or apps/ cannot be
   // classified, so it would skip the element rules above. Fail it instead.
   policies.push({
-    disallow: { to: { module: { origin: "external", source: "@sysone/*" } } },
+    disallow: { to: { module: { origin: "external", source: "@bandwise/*" } } },
     message:
       "{{dependency.source}} did not resolve to a workspace file. Add it to the package exports and to packages/config/tsconfig/resolve.json.",
   });
@@ -211,7 +211,7 @@ function buildPolicies() {
 /** @type {import("eslint").Linter.Config[]} */
 export const boundariesConfig = [
   {
-    name: "sysone/boundaries",
+    name: "bandwise/boundaries",
     files: ["**/*.{js,mjs,cjs,ts,mts,cts,tsx,jsx}"],
     plugins: { boundaries },
     settings: {
@@ -227,7 +227,7 @@ export const boundariesConfig = [
         [resolverPath]: {
           project: resolveTsconfig,
           alwaysTryTypes: true,
-          conditionNames: ["@sysone/source", "types", "import", "node", "require", "default"],
+          conditionNames: ["@bandwise/source", "types", "import", "node", "require", "default"],
         },
       },
     },
@@ -301,14 +301,14 @@ export const pureRestrictedSyntax = [
 
 /**
  * Add to the eslint.config.js of every pure package, after the shared config:
- * `export default [...sysone, ...purityConfig];`. Tests, test helpers and fixtures are exempt,
+ * `export default [...bandwise, ...purityConfig];`. Tests, test helpers and fixtures are exempt,
  * since they may read files and use Node. Flat config globs are relative to the package, so the
  * pure packages opt in; the boundary tests check that core and codegen do.
  * @type {import("eslint").Linter.Config[]}
  */
 export const purityConfig = [
   {
-    name: "sysone/purity",
+    name: "bandwise/purity",
     files: ["src/**/*.{js,mjs,cjs,ts,mts,cts,tsx,jsx}"],
     ignores: ["**/*.test.{ts,tsx,js}", "**/test/**", "**/__fixtures__/**"],
     rules: {

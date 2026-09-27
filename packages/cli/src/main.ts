@@ -1,4 +1,4 @@
-// The sysone command line. Phase 1 ships `run --local`; the management commands over /api/v1
+// The bandwise command line. Phase 1 ships `run --local`; the management commands over /api/v1
 // land in Phase 3 (headless-and-agents.md). Every command supports --json and never prompts.
 // Exit codes: 0 ok, 1 error, 2 diff or drift, 3 approval pending.
 
@@ -9,7 +9,7 @@ export interface CommandOutput {
 }
 
 export const USAGE = `Usage:
-  sysone run --local <spec.json> <state.json> [--json] [--provider typesafe|openrouter|vercel]
+  bandwise run --local <spec.json> <state.json> [--json] [--provider typesafe|openrouter|vercel]
                      [--rollout shadow|controlled|full|paused] [--channel production|staging]
 
   --local   Run the spec with the fixture transport: no network call and no System One key.
@@ -43,7 +43,7 @@ export function parseArgs(argv: readonly string[]): Parsed {
   if (argv.length === 0 || argv.includes("--help") || argv.includes("-h")) return { kind: "help" };
   const [command, ...rest] = argv;
   if (command !== "run") return { kind: "error", message: `unknown command "${command}"; only "run --local" is available before Phase 3` };
-  if (!rest.includes("--local")) return { kind: "error", message: "sysone run needs --local until the /api/v1 commands land in Phase 3" };
+  if (!rest.includes("--local")) return { kind: "error", message: "bandwise run needs --local until the /api/v1 commands land in Phase 3" };
 
   const positional: string[] = [];
   const out: Extract<Parsed, { kind: "run-local" }> = { kind: "run-local", specPath: "", statePath: "", json: false };
@@ -67,7 +67,7 @@ export function parseArgs(argv: readonly string[]): Parsed {
     } else if (arg.startsWith("--")) return { kind: "error", message: `unknown option ${arg}` };
     else positional.push(arg);
   }
-  if (positional.length !== 2) return { kind: "error", message: "sysone run --local needs a spec file and a state file" };
+  if (positional.length !== 2) return { kind: "error", message: "bandwise run --local needs a spec file and a state file" };
   out.specPath = positional[0] as string;
   out.statePath = positional[1] as string;
   return out;

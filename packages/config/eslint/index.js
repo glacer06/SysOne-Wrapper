@@ -1,7 +1,7 @@
 // @ts-check
 /**
- * Shared ESLint flat config for every SysOne package.
- * Entry point: `import sysone from "@sysone/config/eslint"; export default sysone;`
+ * Shared ESLint flat config for every Bandwise package.
+ * Entry point: `import bandwise from "@bandwise/config/eslint"; export default bandwise;`
  */
 import js from "@eslint/js";
 import globals from "globals";
@@ -11,7 +11,7 @@ import { boundariesConfig, purityConfig } from "./boundaries.js";
 /** @type {import("eslint").Linter.Config[]} */
 export const ignores = [
   {
-    name: "sysone/ignores",
+    name: "bandwise/ignores",
     ignores: [
       "**/node_modules/**",
       "**/dist/**",
@@ -26,12 +26,12 @@ export const ignores = [
 ];
 
 /** @type {import("eslint").Linter.Config[]} */
-const sysone = [
+const bandwise = [
   ...ignores,
   js.configs.recommended,
   ...tseslint.configs.strict,
   {
-    name: "sysone/base",
+    name: "bandwise/base",
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
@@ -53,8 +53,8 @@ const sysone = [
   ...boundariesConfig,
 ];
 
-export default sysone;
+export default bandwise;
 export { boundariesConfig, purityConfig } from "./boundaries.js";
 
 /** The shared config plus the purity rules, for core and codegen. */
-export const pure = [...sysone, ...purityConfig];
+export const pure = [...bandwise, ...purityConfig];

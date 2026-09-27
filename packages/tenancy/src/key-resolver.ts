@@ -3,7 +3,7 @@
 // fingerprint, for at most 5 minutes, and never reaches a log, an error message or Redis (ADR-003,
 // ADR-004). A key is never returned for a provider other than the one asked for (ADR-011).
 //
-// Tenancy never imports @sysone/db. The console wires `loadKey` and `keyMode` to the repositories
+// Tenancy never imports @bandwise/db. The console wires `loadKey` and `keyMode` to the repositories
 // inside withTenant.
 
 import {
@@ -13,7 +13,7 @@ import {
   type SystemOneProvider,
   type TenantContext,
   TransportError,
-} from "@sysone/core/contracts";
+} from "@bandwise/core/contracts";
 
 import { KekUnavailableError } from "./vault/kek.js";
 import { keyFingerprint, type SealedSecret, type Vault } from "./vault/vault.js";

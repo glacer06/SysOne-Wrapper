@@ -1,7 +1,7 @@
 // The operation registry: one entry per row of OPERATION_CATALOG, keyed by operation id.
 // Server Actions, /api/v1 route handlers, the CLI and the MCP server all go through it.
 
-import { OPERATION_CATALOG, type OperationId } from "@sysone/core";
+import { OPERATION_CATALOG, type OperationId } from "@bandwise/core";
 import type { z } from "zod";
 
 import type { RegisteredOperation } from "./define";

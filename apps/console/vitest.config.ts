@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
-import { defineSysoneVitestConfig } from "@sysone/config/vitest";
+import { defineBandwiseVitestConfig } from "@bandwise/config/vitest";
 
-export default defineSysoneVitestConfig({
+export default defineBandwiseVitestConfig({
   resolve: {
     alias: {
       // server-only throws outside a React Server Component bundle. Tests run in plain Node.

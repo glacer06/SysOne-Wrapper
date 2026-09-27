@@ -36,7 +36,7 @@ function readJson(relative: string): unknown {
 }
 
 const result = RunResult.parse(readJson("./__fixtures__/run-result.sample.json"));
-const exampleSpec = readJson("../../../../.claude/skills/sysone-builder/templates/question-set.example.json");
+const exampleSpec = readJson("../../../../.claude/skills/bandwise-builder/templates/question-set.example.json");
 
 /** The runs row for the sample RunResult, per the mapping table in data-model.md. */
 function rowFromResult(r: RunResult): unknown {

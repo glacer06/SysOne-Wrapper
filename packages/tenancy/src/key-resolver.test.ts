@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 
 import { describe, expect, it } from "vitest";
 
-import { isTransportError, type KeyMode, type SystemOneProvider, type TenantContext } from "@sysone/core/contracts";
+import { isTransportError, type KeyMode, type SystemOneProvider, type TenantContext } from "@bandwise/core/contracts";
 
 import { createKeyResolver, KEY_CACHE_MAX_TTL_MS, KeyVaultUnavailableError, type StoredKeyRow } from "./key-resolver.js";
 import { KekUnavailableError, LocalKekProvider, type KekProvider } from "./vault/kek.js";

@@ -95,18 +95,18 @@ describe("buildOpenApiDocument", () => {
 
   it("documents the approval response on operations an agent may need approved", () => {
     for (const { op } of operations) {
-      const risk = op["x-sysone-risk"];
-      const agent = (op["x-sysone-actors"] as string[]).includes("agent");
+      const risk = op["x-bandwise-risk"];
+      const agent = (op["x-bandwise-actors"] as string[]).includes("agent");
       const responses = op["responses"] as Record<string, unknown>;
-      expect(responses["202"] !== undefined).toBe(((risk === "high" || risk === "high*") && agent) || op["x-sysone-async"] === true);
+      expect(responses["202"] !== undefined).toBe(((risk === "high" || risk === "high*") && agent) || op["x-bandwise-async"] === true);
     }
   });
 
   it("flags open shapes and keeps their paths", () => {
-    const open = operations.filter((o) => o.op["x-sysone-placeholder"] !== undefined);
+    const open = operations.filter((o) => o.op["x-bandwise-placeholder"] !== undefined);
     expect(open.length).toBeGreaterThan(0);
     const usage = doc.paths["/api/v1/usage"]?.["get"];
-    expect(usage?.["x-sysone-placeholder"]).toEqual({ input: true, output: true });
+    expect(usage?.["x-bandwise-placeholder"]).toEqual({ input: true, output: true });
   });
 
   it("keeps optional input and required If-Match where the registry says so", () => {

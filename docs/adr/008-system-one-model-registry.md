@@ -16,7 +16,7 @@ What TypeSafe provides (checked against the live docs and `https://api.typesafe.
 - `GET /v1/models` returns only `name`, `description` and `release_date` per entry. It lists what the calling key can reach, and today it lists the aliases. Versioned IDs such as `jev-1.13.0` are accepted whether or not they appear. It does not say what an alias points to, and it gives no limits, prices or question types.
 - The response's `model` field reports the versioned ID that answered.
 
-So SysOne has to curate model facts itself. Before this ADR:
+So Bandwise has to curate model facts itself. Before this ADR:
 
 - Preflight hard-coded 32k and 64k tokens, and the rate budget assumed 1,200 requests per minute.
 - Cost used a `$0.042` per million literal, assumed output is always free, and the contract named a `model_prices` store that does not exist next to `price_books`.
@@ -141,7 +141,7 @@ The prefix is `systemOne`, not `model`, because the envelope already carries LLM
 
 ADR-011 (proposed) revisits this section: OpenRouter confirmed a System One endpoint on 2026-09-25, and ADR-011 adds it as a second provider through the same SDK transport, as the last sentence below anticipates.
 
-TypeSafe's Python SDK usage page documents OpenRouter and Vercel AI Gateway, each with its own base URL, key and model ID. Cloudflare Workers AI is not documented. SysOne calls TypeSafe server-side, so gateways are out of scope for v1. If one is added later, it is configuration on the existing SDK transport (base URL, key, provider model ID), not a new transport, and the registry maps each canonical model ID to the provider's ID so pinning, pricing and upgrades treat them as one model.
+TypeSafe's Python SDK usage page documents OpenRouter and Vercel AI Gateway, each with its own base URL, key and model ID. Cloudflare Workers AI is not documented. Bandwise calls TypeSafe server-side, so gateways are out of scope for v1. If one is added later, it is configuration on the existing SDK transport (base URL, key, provider model ID), not a new transport, and the registry maps each canonical model ID to the provider's ID so pinning, pricing and upgrades treat them as one model.
 
 ## Options considered
 
@@ -161,7 +161,7 @@ TypeSafe's Python SDK usage page documents OpenRouter and Vercel AI Gateway, eac
 - The renames cost nothing now and would be breaking after the freeze. Every doc applies them in the same pass, and ADR-001's package row is amended.
 - Fixtures must include a response whose `model` differs from the requested alias. Tests must cover the pinned classification table above, and preflight with a fake 16k profile blocking a 20k state.
 - Ownership: Platform / Tenancy owns `system_one_models` and the registry sync and contract watch jobs. Core Engine owns the question-type modules, preflight and lints, and `packages/system-one-client`.
-- Docs that carry the detail: [system-one-models.md](../../.claude/skills/sysone-builder/references/system-one-models.md) (profiles, lifecycle, detection, seed table, upgrade flow), [system-one-api-contract.md](../../.claude/skills/sysone-builder/references/system-one-api-contract.md) (API-wide rules, errors, pricing formula), [spec-schema.md](../../.claude/skills/sysone-builder/references/spec-schema.md) (`QuestionTypeModule`), [architecture.md](../../.claude/skills/sysone-builder/references/architecture.md), [data-model.md](../../.claude/skills/sysone-builder/references/data-model.md), [savings-model.md](../../.claude/skills/sysone-builder/references/savings-model.md), [conventions.md](../../.claude/skills/sysone-builder/references/conventions.md) and [testing.md](../../.claude/skills/sysone-builder/references/testing.md).
+- Docs that carry the detail: [system-one-models.md](../../.claude/skills/bandwise-builder/references/system-one-models.md) (profiles, lifecycle, detection, seed table, upgrade flow), [system-one-api-contract.md](../../.claude/skills/bandwise-builder/references/system-one-api-contract.md) (API-wide rules, errors, pricing formula), [spec-schema.md](../../.claude/skills/bandwise-builder/references/spec-schema.md) (`QuestionTypeModule`), [architecture.md](../../.claude/skills/bandwise-builder/references/architecture.md), [data-model.md](../../.claude/skills/bandwise-builder/references/data-model.md), [savings-model.md](../../.claude/skills/bandwise-builder/references/savings-model.md), [conventions.md](../../.claude/skills/bandwise-builder/references/conventions.md) and [testing.md](../../.claude/skills/bandwise-builder/references/testing.md).
 
 ## Rollout
 

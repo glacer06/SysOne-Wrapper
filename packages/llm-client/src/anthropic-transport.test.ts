@@ -1,5 +1,5 @@
 import { APIConnectionError, APIUserAbortError } from "@anthropic-ai/sdk";
-import { TransportError, isTransportError } from "@sysone/core";
+import { TransportError, isTransportError } from "@bandwise/core";
 import { afterEach, describe, expect, it } from "vitest";
 import { ANTHROPIC_BASE_URL, ANTHROPIC_SDK_LOG_LEVEL, AnthropicLlmTransport, createAnthropicClient, mapAnthropicError } from "./anthropic-transport.js";
 import { loadBundledLlmFixtures } from "./fixture/load.js";

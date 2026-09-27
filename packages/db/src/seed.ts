@@ -1,5 +1,5 @@
 // Org seeds (data-model.md, rule 6: seeds always create at least two orgs). Every tenant row is
-// written as sysone_app through withTenant, so the seed itself exercises the RLS policies.
+// written as bandwise_app through withTenant, so the seed itself exercises the RLS policies.
 //
 // TWO_ORG_SEED backs the cross-tenant suite. THREE_ORG_SEED (sgr, personal, dallas) backs the
 // Phase 2 Playwright org switch; the same user belongs to all three with different roles.
@@ -10,11 +10,11 @@ import {
   QuestionSetSpec,
   type Role,
   type TenantContext,
-} from "@sysone/core/contracts";
+} from "@bandwise/core/contracts";
 
 import { sql } from "drizzle-orm";
 
-import type { SysoneDb } from "./client.js";
+import type { BandwiseDb } from "./client.js";
 import { drizzleOf } from "./internal/drizzle.js";
 import { authRepositories, repos } from "./repos/index.js";
 
@@ -55,17 +55,17 @@ export const THREE_ORG_SEED: readonly OrgSeed[] = [
     slug: "sgr",
     name: "SGR",
     members: [
-      { email: "nick@sysone.test", name: "Nick", role: "owner" },
-      { email: "rita@sysone.test", name: "Rita", role: "reviewer" },
+      { email: "nick@bandwise.test", name: "Nick", role: "owner" },
+      { email: "rita@bandwise.test", name: "Rita", role: "reviewer" },
     ],
   },
-  { slug: "personal", name: "Personal", members: [{ email: "nick@sysone.test", name: "Nick", role: "owner" }] },
+  { slug: "personal", name: "Personal", members: [{ email: "nick@bandwise.test", name: "Nick", role: "owner" }] },
   {
     slug: "dallas",
     name: "Dallas",
     members: [
-      { email: "nick@sysone.test", name: "Nick", role: "admin" },
-      { email: "vic@sysone.test", name: "Vic", role: "viewer" },
+      { email: "nick@bandwise.test", name: "Nick", role: "admin" },
+      { email: "vic@bandwise.test", name: "Vic", role: "viewer" },
     ],
   },
 ];
@@ -105,7 +105,7 @@ export function systemContext(orgId: string, requestId = "seed"): TenantContext 
   return { orgId, actor: { type: "system" }, client: "job", plan: "internal", requestId };
 }
 
-async function ensureUser(db: SysoneDb, m: OrgSeedMember): Promise<string> {
+async function ensureUser(db: BandwiseDb, m: OrgSeedMember): Promise<string> {
   return db.withNoTenant(async (tx) => {
     const existing = await authRepositories.users.getByEmail(tx, m.email);
     if (existing !== null) return existing.id;
@@ -120,7 +120,7 @@ async function ensureUser(db: SysoneDb, m: OrgSeedMember): Promise<string> {
  * gen_random_uuid(). Each org gets one audit row for the seed.
  */
 /** A fresh org id from the database (gen_random_uuid), so the seed needs no id source of its own. */
-async function newOrgIdFromDb(db: SysoneDb): Promise<string> {
+async function newOrgIdFromDb(db: BandwiseDb): Promise<string> {
   return db.withNoTenant(async (tx) => {
     const res = await drizzleOf(tx).execute<{ id: string }>(sql`select gen_random_uuid()::text as id`);
     const id = (res as unknown as { rows: { id: string }[] }).rows[0]?.id;
@@ -129,7 +129,7 @@ async function newOrgIdFromDb(db: SysoneDb): Promise<string> {
   });
 }
 
-export async function seedOrgs(db: SysoneDb, seeds: readonly OrgSeed[]): Promise<SeededOrg[]> {
+export async function seedOrgs(db: BandwiseDb, seeds: readonly OrgSeed[]): Promise<SeededOrg[]> {
   const out: SeededOrg[] = [];
   for (const seed of seeds) {
     const userIds: Record<string, string> = {};

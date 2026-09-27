@@ -3,9 +3,9 @@
 // Each job is a plain async function over these ports, so it runs in unit tests with in-memory
 // stores and recorded HTTP, and the runner (Inngest, Phase 2) only wraps it. The Postgres adapter
 // maps them onto system_one_models, system_one_model_routes, model_alias_observations,
-// org_system_one_keys.models and price_books as the sysone_platform role; it lands with the runner.
+// org_system_one_keys.models and price_books as the bandwise_platform role; it lands with the runner.
 
-import type { EventData, ModelProfile, ModelRoute, SystemOneProvider } from "@sysone/core";
+import type { EventData, ModelProfile, ModelRoute, SystemOneProvider } from "@bandwise/core";
 
 /** A fetch the jobs call for HTTP that is not a System One request. Tests pass a replayer. */
 export type HttpFetch = (url: string, init?: { method?: string; headers?: Record<string, string>; signal?: AbortSignal }) => Promise<Response>;

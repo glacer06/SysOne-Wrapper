@@ -30,7 +30,7 @@ function readJson(relative: string): unknown {
   return JSON.parse(readFileSync(new URL(relative, import.meta.url), "utf8")) as unknown;
 }
 
-const exampleSpec = readJson("../../../../.claude/skills/sysone-builder/templates/question-set.example.json");
+const exampleSpec = readJson("../../../../.claude/skills/bandwise-builder/templates/question-set.example.json");
 const sampleResult = RunResult.parse(readJson("./__fixtures__/run-result.sample.json"));
 
 describe("port payloads", () => {
@@ -157,14 +157,14 @@ describe("transport errors", () => {
     const e = new TransportError({ code: "system_one_rate_limited", retryable: true, requestId: "req_1" }, "rate limited");
     expect(isTransportError(e)).toBe(true);
     expect(e.code).toBe("system_one_rate_limited");
-    const copy = Object.assign(new Error("x"), { brand: "sysone.transport_error", code: "client_aborted", retryable: false, requestId: null });
+    const copy = Object.assign(new Error("x"), { brand: "bandwise.transport_error", code: "client_aborted", retryable: false, requestId: null });
     expect(isTransportError(copy)).toBe(true);
   });
 
   it("rejects other errors and unknown codes", () => {
     expect(isTransportError(new Error("boom"))).toBe(false);
     expect(isTransportError(null)).toBe(false);
-    expect(isTransportError({ brand: "sysone.transport_error", code: "teapot", retryable: false, requestId: null })).toBe(false);
+    expect(isTransportError({ brand: "bandwise.transport_error", code: "teapot", retryable: false, requestId: null })).toBe(false);
   });
 });
 

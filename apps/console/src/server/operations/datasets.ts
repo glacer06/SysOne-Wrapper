@@ -1,7 +1,7 @@
 // Datasets, evals and jobs (management-api.md, Datasets, evals and jobs).
 // The test split never appears in any response.
 
-import { DatasetId, Job, JobAccepted, JobId, JsonValue } from "@sysone/core";
+import { DatasetId, Job, JobAccepted, JobId, JsonValue } from "@bandwise/core";
 import { z } from "zod";
 
 import { defineOperation, operationGroup, placeholderInput, placeholderOutput } from "./define";

@@ -84,19 +84,19 @@ describe("kekFromEnv", () => {
   const local = `local:${k1.toString("base64")},${k2.toString("base64")}`;
 
   it("parses a local KEK list; the first key is active", () => {
-    const kek = kekFromEnv({ SYSONE_KEK: local });
+    const kek = kekFromEnv({ BANDWISE_KEK: local });
     expect(kek.activeKekId).toBe(localKekId(k1));
     expect(localKekId(k1)).toMatch(/^local:[0-9a-f]{8}$/);
   });
 
   it("refuses a local KEK in production", () => {
-    expect(() => kekFromEnv({ SYSONE_KEK: local, VERCEL_ENV: "production" })).toThrow(KekConfigError);
+    expect(() => kekFromEnv({ BANDWISE_KEK: local, VERCEL_ENV: "production" })).toThrow(KekConfigError);
   });
 
   it("refuses a missing, malformed or short KEK", () => {
     expect(() => kekFromEnv({})).toThrow(KekConfigError);
-    expect(() => kekFromEnv({ SYSONE_KEK: "plain-text" })).toThrow(KekConfigError);
-    expect(() => kekFromEnv({ SYSONE_KEK: `local:${randomBytes(16).toString("base64")}` })).toThrow(KekConfigError);
-    expect(() => kekFromEnv({ SYSONE_KEK: "aws-kms:arn:aws:kms:us-east-1:1:key/x" })).toThrow(/Phase 2/);
+    expect(() => kekFromEnv({ BANDWISE_KEK: "plain-text" })).toThrow(KekConfigError);
+    expect(() => kekFromEnv({ BANDWISE_KEK: `local:${randomBytes(16).toString("base64")}` })).toThrow(KekConfigError);
+    expect(() => kekFromEnv({ BANDWISE_KEK: "aws-kms:arn:aws:kms:us-east-1:1:key/x" })).toThrow(/Phase 2/);
   });
 });

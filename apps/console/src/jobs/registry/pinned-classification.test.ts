@@ -11,7 +11,7 @@ import {
   classifyModelName,
   createMemoryModelCatalog,
   resolveRoute,
-} from "@sysone/core";
+} from "@bandwise/core";
 import { describe, expect, it } from "vitest";
 import { loadRecording, replayFetch } from "~/test/replay-http";
 import { createMemoryRegistryStore, createRecorder, registrySync } from "./index";

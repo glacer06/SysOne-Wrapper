@@ -51,7 +51,7 @@ describe("EventType", () => {
 
   it("matches every type in the events.md catalog tables", () => {
     const doc = readFileSync(
-      new URL("../../../../.claude/skills/sysone-builder/references/events.md", import.meta.url),
+      new URL("../../../../.claude/skills/bandwise-builder/references/events.md", import.meta.url),
       "utf8",
     );
     const catalog = doc.slice(doc.indexOf("## Catalog"), doc.indexOf("## Pull feed"));

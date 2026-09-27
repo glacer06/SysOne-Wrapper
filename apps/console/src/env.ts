@@ -18,9 +18,9 @@ export const serverEnvShape = {
   // Session signing secret for the auth library (ADR-002).
   AUTH_SECRET: z.string().min(32),
   // Key encryption key for the tenant key vault (ADR-003).
-  SYSONE_KEK: z.string().min(1),
+  BANDWISE_KEK: z.string().min(1),
   // ES256 private key that signs short-lived browser tokens.
-  SYSONE_JWT_SIGNING_KEY: z.string().min(1),
+  BANDWISE_JWT_SIGNING_KEY: z.string().min(1),
   // Which SystemOneTransport the server uses. "fixture" never calls the network.
   SYSTEM_ONE_TRANSPORT: z.enum(["sdk", "fixture"]).default("fixture"),
   // Stripe keys. Required once billing lands in Phase 2.

@@ -8,8 +8,8 @@
 // TypeSafe's live openapi.json info.version.
 
 import { join } from "node:path";
-import { type ModelProfile, type ModelRoute, type SystemOneProvider, type SystemOneRequest, type SystemOneTransport, isTransportError, resolveRoute } from "@sysone/core";
-import { Fixture, evaluationFallbackReason } from "@sysone/system-one-client/fixture";
+import { type ModelProfile, type ModelRoute, type SystemOneProvider, type SystemOneRequest, type SystemOneTransport, isTransportError, resolveRoute } from "@bandwise/core";
+import { Fixture, evaluationFallbackReason } from "@bandwise/system-one-client/fixture";
 
 export interface RecordTarget {
   name: string;

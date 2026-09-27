@@ -1,3 +1,3 @@
-import sysoneNext from "@sysone/config/eslint/next";
+import bandwiseNext from "@bandwise/config/eslint/next";
 
-export default sysoneNext;
+export default bandwiseNext;

@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 
-import type { OrgLessContext, Scope, TenantContext } from "@sysone/core";
+import type { OrgLessContext, Scope, TenantContext } from "@bandwise/core";
 import { describe, expect, it } from "vitest";
 
 import { OperationError, OperationNotImplementedError } from "./errors";
@@ -20,7 +20,7 @@ const session: TenantContext = {
 
 const exampleSpec: unknown = JSON.parse(
   readFileSync(
-    new URL("../../../../../.claude/skills/sysone-builder/templates/question-set.example.json", import.meta.url),
+    new URL("../../../../../.claude/skills/bandwise-builder/templates/question-set.example.json", import.meta.url),
     "utf8",
   ),
 );

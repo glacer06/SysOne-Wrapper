@@ -44,7 +44,7 @@ describe("migration 0001", () => {
     const found = await rows<{ relname: string }>(
       `select c.relname from pg_class c join pg_namespace n on n.oid = c.relnamespace
        where n.nspname = 'public' and c.relkind in ('r', 'p') and not c.relispartition
-       and c.relname <> 'sysone_migrations' order by 1`,
+       and c.relname <> 'bandwise_migrations' order by 1`,
     );
     expect(found.map((r) => r.relname).sort()).toEqual([...ALL_TABLES].sort());
     expect(new Set(ALL_TABLES).size).toBe(ALL_TABLES.length);
@@ -147,9 +147,9 @@ describe("app role", () => {
 
   it("is not a member of the platform role", async () => {
     // SET ROLE is checked against the session user, which is the superuser in this harness, so the
-    // membership itself is what the test checks. A production login role is a member of sysone_app only.
+    // membership itself is what the test checks. A production login role is a member of bandwise_app only.
     const [row] = await rows<{ member: boolean }>(
-      "select pg_has_role($1, 'sysone_platform', 'MEMBER') as member",
+      "select pg_has_role($1, 'bandwise_platform', 'MEMBER') as member",
       [APP_ROLE],
     );
     expect(row?.member).toBe(false);

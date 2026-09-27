@@ -1,7 +1,7 @@
 // Applies migrations/*.sql in journal order and seeds the platform rows (the model registry, its
-// OpenRouter routes, platform price rows and platform settings) from @sysone/core's catalog.
+// OpenRouter routes, platform price rows and platform settings) from @bandwise/core's catalog.
 //
-// Runs as the migrating role (the table owner), never as sysone_app. The migrator is driver
+// Runs as the migrating role (the table owner), never as bandwise_app. The migrator is driver
 // agnostic, so the node-postgres deployment and the PGlite test harness share it.
 
 import { readMigrationFiles } from "drizzle-orm/migrator";
@@ -17,7 +17,7 @@ import {
   SEED_MODEL_ROUTES,
   SEED_PLATFORM_DEFAULT_MODEL,
   SEED_SYSTEM_ONE_PRICES,
-} from "@sysone/core";
+} from "@bandwise/core";
 
 import type { DrizzleDb } from "./internal/drizzle.js";
 import { PLATFORM_ROLE } from "./rls.js";
@@ -26,9 +26,9 @@ import * as s from "./schema/index.js";
 /** packages/db/migrations, from src/ and from dist/. */
 export const MIGRATIONS_DIR = fileURLToPath(new URL("../migrations/", import.meta.url));
 
-const JOURNAL_TABLE = "sysone_migrations";
+const JOURNAL_TABLE = "bandwise_migrations";
 
-/** Applies every migration not yet recorded in sysone_migrations. Returns how many ran. */
+/** Applies every migration not yet recorded in bandwise_migrations. Returns how many ran. */
 export async function migrateDrizzle(db: DrizzleDb, migrationsFolder = MIGRATIONS_DIR): Promise<number> {
   const migrations = readMigrationFiles({ migrationsFolder });
   return db.transaction(async (tx) => {
@@ -54,7 +54,7 @@ export async function migrateDrizzle(db: DrizzleDb, migrationsFolder = MIGRATION
 }
 
 /**
- * Seeds platform rows as sysone_platform (SET LOCAL ROLE), so the platform policies apply. Existing
+ * Seeds platform rows as bandwise_platform (SET LOCAL ROLE), so the platform policies apply. Existing
  * rows are left alone: once seeded, the registry belongs to the platform admin. Writes one platform
  * audit row when anything was inserted.
  */

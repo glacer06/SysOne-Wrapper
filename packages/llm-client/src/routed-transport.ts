@@ -3,7 +3,7 @@
 // OpenRouter id (`vendor/model`, for example typesafe/jev-router). With the route off, an
 // OpenRouter id fails as llm_unavailable, which core turns into review.
 
-import { type LlmCompletion, type LlmCompletionRequest, type LlmTransport, TransportError } from "@sysone/core";
+import { type LlmCompletion, type LlmCompletionRequest, type LlmTransport, TransportError } from "@bandwise/core";
 import type { LlmRoute } from "./fixture/errors.js";
 
 /** True for an OpenRouter model id: `vendor/model`, optionally with a leading `~` for an alias. */

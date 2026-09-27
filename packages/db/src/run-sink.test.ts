@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import { RunResult, type RunSinkRecord, type TenantContext } from "@sysone/core/contracts";
+import { RunResult, type RunSinkRecord, type TenantContext } from "@bandwise/core/contracts";
 
 import { platformRepositories, repos } from "./repos/index.js";
 import { createRunSink, type LabelSelector, RunSinkSetNotFoundError } from "./run-sink.js";

@@ -3,7 +3,7 @@
 // escalation model is an OpenRouter id such as typesafe/jev-router. It is an LLM route, never a
 // System One route, and its spend is LLM spend. It stays off unless the router config enables it.
 
-import { type LlmCompletion, type LlmCompletionRequest, type LlmTransport, isTransportError } from "@sysone/core";
+import { type LlmCompletion, type LlmCompletionRequest, type LlmTransport, isTransportError } from "@bandwise/core";
 import { z } from "zod";
 import { llmAborted, llmErrorForStatus, llmUnreachable, llmUnreadable } from "./fixture/errors.js";
 

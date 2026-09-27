@@ -9,7 +9,7 @@
 // OpenRouter's aliases are tracked apart from TypeSafe's, so their aliasTarget is never written
 // to the profile.
 
-import { ModelProfile, type SystemOneProvider, registryIdForResolved } from "@sysone/core";
+import { ModelProfile, type SystemOneProvider, registryIdForResolved } from "@bandwise/core";
 import type { AlertSink, EventSink, RegistryStore } from "./ports";
 
 export interface ObserveDeps {

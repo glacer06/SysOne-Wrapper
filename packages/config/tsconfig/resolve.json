@@ -5,27 +5,27 @@
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
     "customConditions": [
-      "@sysone/source"
+      "@bandwise/source"
     ],
     "allowJs": true,
     "noEmit": true,
     "paths": {
-      "@sysone/core/contracts": [
+      "@bandwise/core/contracts": [
         "../../core/src/contracts/index.ts"
       ],
-      "@sysone/core/openapi.json": [
+      "@bandwise/core/openapi.json": [
         "../../core/openapi.json"
       ],
-      "@sysone/client/server": [
+      "@bandwise/client/server": [
         "../../client/src/server/index.ts"
       ],
-      "@sysone/system-one-client/fixture": [
+      "@bandwise/system-one-client/fixture": [
         "../../system-one-client/src/fixture/index.ts"
       ],
-      "@sysone/llm-client/fixture": [
+      "@bandwise/llm-client/fixture": [
         "../../llm-client/src/fixture/index.ts"
       ],
-      "@sysone/*": [
+      "@bandwise/*": [
         "../../*/src/index.ts",
         "../../*/src/index.tsx"
       ]

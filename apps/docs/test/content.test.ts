@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
-import { SEED_MODEL_PROFILES, lint, parseSpec } from "@sysone/core";
+import { SEED_MODEL_PROFILES, lint, parseSpec } from "@bandwise/core";
 import { createFromSource } from "fumadocs-core/search/server";
 import { describe, expect, it } from "vitest";
 import { OPENAPI_PATH, type ApiDocument, isPlatformOperation, listOperations, loadApiDocument, phaseLabel } from "~/lib/api-spec";
@@ -82,9 +82,9 @@ describe("API reference", () => {
   });
 
   it("never dates an operation before the API goes live in Phase 3", () => {
-    expect(phaseLabel([{ "x-sysone-phase": "2" }])).toBe("Phase 3");
-    expect(phaseLabel([{ "x-sysone-phase": "3" }, { "x-sysone-phase": "4b" }])).toBe("Phases 3 to 4b");
-    expect(phaseLabel([{ "x-sysone-phase": "3b" }, { "x-sysone-phase": "5" }, { "x-sysone-phase": "3b" }])).toBe("Phases 3b to 5");
+    expect(phaseLabel([{ "x-bandwise-phase": "2" }])).toBe("Phase 3");
+    expect(phaseLabel([{ "x-bandwise-phase": "3" }, { "x-bandwise-phase": "4b" }])).toBe("Phases 3 to 4b");
+    expect(phaseLabel([{ "x-bandwise-phase": "3b" }, { "x-bandwise-phase": "5" }, { "x-bandwise-phase": "3b" }])).toBe("Phases 3b to 5");
   });
 });
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { RateLimitResult, type TenantContext } from "@sysone/core/contracts";
+import { RateLimitResult, type TenantContext } from "@bandwise/core/contracts";
 
 import { createInMemoryQuotaGuard } from "./quota-guard.js";
 import { createInMemoryRateLimiter } from "./rate-limiter.js";

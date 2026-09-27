@@ -1,8 +1,8 @@
-// Local mode of @sysone/cli. The only CLI folder that may import core and the fixture subpath of
+// Local mode of @bandwise/cli. The only CLI folder that may import core and the fixture subpath of
 // system-one-client; bin.ts loads it with a dynamic import, so the published package keeps both
 // as optional peer dependencies.
 
-import type { RolloutStage, SystemOneProvider } from "@sysone/core";
+import type { RolloutStage, SystemOneProvider } from "@bandwise/core";
 import type { CommandOutput } from "../main.js";
 import { formatRun } from "./format.js";
 import { runLocal } from "./run-local.js";

@@ -45,13 +45,13 @@
       "cache": false,
       "persistent": true
     },
-    "@sysone/config#build": {
+    "@bandwise/config#build": {
       "dependsOn": [
         "^build"
       ],
       "outputs": []
     },
-    "@sysone/config#test": {
+    "@bandwise/config#test": {
       "dependsOn": [
         "transit"
       ],
@@ -62,29 +62,29 @@
       ],
       "outputs": []
     },
-    "@sysone/core#test": {
+    "@bandwise/core#test": {
       "dependsOn": [
         "transit"
       ],
       "inputs": [
         "$TURBO_DEFAULT$",
-        "$TURBO_ROOT$/.claude/skills/sysone-builder/templates/**",
-        "$TURBO_ROOT$/.claude/skills/sysone-builder/references/**"
+        "$TURBO_ROOT$/.claude/skills/bandwise-builder/templates/**",
+        "$TURBO_ROOT$/.claude/skills/bandwise-builder/references/**"
       ],
       "outputs": []
     },
-    "@sysone/console#test": {
+    "@bandwise/console#test": {
       "dependsOn": [
         "transit"
       ],
       "inputs": [
         "$TURBO_DEFAULT$",
-        "$TURBO_ROOT$/.claude/skills/sysone-builder/templates/**",
+        "$TURBO_ROOT$/.claude/skills/bandwise-builder/templates/**",
         "$TURBO_ROOT$/packages/core/openapi.json"
       ],
       "outputs": []
     },
-    "@sysone/docs#build": {
+    "@bandwise/docs#build": {
       "dependsOn": [
         "^build"
       ],
@@ -100,7 +100,7 @@
         "!.next/cache/**"
       ]
     },
-    "@sysone/docs#test": {
+    "@bandwise/docs#test": {
       "dependsOn": [
         "transit"
       ],
@@ -110,7 +110,7 @@
       ],
       "outputs": []
     },
-    "@sysone/evals#test": {
+    "@bandwise/evals#test": {
       "dependsOn": [
         "transit"
       ],
@@ -120,13 +120,13 @@
       ],
       "outputs": []
     },
-    "@sysone/cli#test": {
+    "@bandwise/cli#test": {
       "dependsOn": [
         "transit"
       ],
       "inputs": [
         "$TURBO_DEFAULT$",
-        "$TURBO_ROOT$/.claude/skills/sysone-builder/templates/**",
+        "$TURBO_ROOT$/.claude/skills/bandwise-builder/templates/**",
         "$TURBO_ROOT$/packages/system-one-client/fixtures/**"
       ],
       "outputs": []

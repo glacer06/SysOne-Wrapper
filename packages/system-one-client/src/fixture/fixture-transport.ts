@@ -1,5 +1,5 @@
 // FixtureTransport: replays fixtures and never touches the network (SYSTEM_ONE_TRANSPORT=fixture,
-// unit tests, CI, `sysone run --local`). It never imports @typesafe-ai/sdk.
+// unit tests, CI, `bandwise run --local`). It never imports @typesafe-ai/sdk.
 
 import {
   type SystemOneCallOptions,
@@ -8,7 +8,7 @@ import {
   type SystemOneRequest,
   type SystemOneTransport,
   TransportError,
-} from "@sysone/core";
+} from "@bandwise/core";
 import { type Fixture, fixtureKey } from "./fixture.js";
 import { assertNotEvaluationFallback } from "./fallback-guard.js";
 import { transportErrorForStatus } from "./status-map.js";

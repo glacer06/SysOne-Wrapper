@@ -7,13 +7,13 @@
 
 ## Context
 
-ADR-001 picks Stripe Billing with usage meters. phase-2.md asks for plans with limits in code, Stripe meters, Checkout, the Customer Portal, idempotent webhooks, a grace period with read-only mode, and a meter outbox keyed by run id. It says to meter System One cost in micro-USD, never raw tokens at one rate. The exit gate: on a Stripe test clock, invoiced System One spend matches `usage_daily` within 0.1 percent. [architecture.md](../../.claude/skills/sysone-builder/references/architecture.md#core-contracts-packagescoresrccontracts) leaves the plan ids to this ADR.
+ADR-001 picks Stripe Billing with usage meters. phase-2.md asks for plans with limits in code, Stripe meters, Checkout, the Customer Portal, idempotent webhooks, a grace period with read-only mode, and a meter outbox keyed by run id. It says to meter System One cost in micro-USD, never raw tokens at one rate. The exit gate: on a Stripe test clock, invoiced System One spend matches `usage_daily` within 0.1 percent. [architecture.md](../../.claude/skills/bandwise-builder/references/architecture.md#core-contracts-packagescoresrccontracts) leaves the plan ids to this ADR.
 
 Facts from the references:
 
-- Money is integer micro-USD. Each System One call is priced by its `model_resolved` from the price book, and a platform-key run on an unpriced model is refused with `422 model_unpriced` ([savings-model.md](../../.claude/skills/sysone-builder/references/savings-model.md#money-math)).
+- Money is integer micro-USD. Each System One call is priced by its `model_resolved` from the price book, and a platform-key run on an unpriced model is refused with `422 model_unpriced` ([savings-model.md](../../.claude/skills/bandwise-builder/references/savings-model.md#money-math)).
 - `usage_events` is an outbox written in the run's transaction. "Every successful run has usage events" is a tested invariant. A replayed run writes none ([ADR-007](007-headless-parity.md)).
-- BYO-key orgs pay TypeSafe directly. Platform-key orgs pay us for System One spend. LLM calls (`escalate_to_llm`, Studio drafting, improve mode) use SysOne's Anthropic key in every key mode.
+- BYO-key orgs pay TypeSafe directly. Platform-key orgs pay us for System One spend. LLM calls (`escalate_to_llm`, Studio drafting, improve mode) use Bandwise's Anthropic key in every key mode.
 - Checkout and the portal are hosted by Stripe and are not operations (ADR-007). Only owners manage billing.
 
 ## Decision
@@ -42,7 +42,7 @@ Plan = {
 
 | Plan id | For | Key modes | Stripe |
 |---|---|---|---|
-| `free` | trying SysOne | BYO | no customer |
+| `free` | trying Bandwise | BYO | no customer |
 | `team` | small teams, self-serve | BYO or platform | base price plus meters |
 | `business` | larger orgs, self-serve, SSO | BYO or platform | base price plus meters |
 | `enterprise` | sales-led, set by the platform admin | BYO or platform | custom prices on the same meters |
@@ -56,10 +56,10 @@ Four Stripe meters, each summing `value`, with `stripe_customer_id` in the paylo
 
 | Kind and meter | Value | Written when | Priced |
 |---|---|---|---|
-| `run` -> `sysone_runs` | 1 | every successful run a caller made | graduated price; the plan's included runs are a free first tier, so Stripe computes overage and our code never does |
-| `eval_run` -> `sysone_eval_runs` | 1 | eval cases and challenger samples, runs SysOne makes to measure a version | unpriced by default; recorded so it can be priced later with no code change |
-| `system_one_cost` -> `sysone_system_one_cost` | the run's `system_one_cost_micro_usd` | platform key mode only, any run kind | per micro-USD through `unit_amount_decimal`; 1 micro-USD at cost is 0.0001 cents |
-| `llm_cost` -> `sysone_llm_cost` | the LLM cost in micro-USD | every run with escalation cost, and jobs that call an LLM | same as above |
+| `run` -> `bandwise_runs` | 1 | every successful run a caller made | graduated price; the plan's included runs are a free first tier, so Stripe computes overage and our code never does |
+| `eval_run` -> `bandwise_eval_runs` | 1 | eval cases and challenger samples, runs Bandwise makes to measure a version | unpriced by default; recorded so it can be priced later with no code change |
+| `system_one_cost` -> `bandwise_system_one_cost` | the run's `system_one_cost_micro_usd` | platform key mode only, any run kind | per micro-USD through `unit_amount_decimal`; 1 micro-USD at cost is 0.0001 cents |
+| `llm_cost` -> `bandwise_llm_cost` | the LLM cost in micro-USD | every run with escalation cost, and jobs that call an LLM | same as above |
 
 Why cost and not tokens: the run already carries its cost, priced per call by the resolved model. Metering that integer means the invoice and the savings ledger use the same number, output-token prices are included, and a new model needs a price book row but no new Stripe meter or price.
 

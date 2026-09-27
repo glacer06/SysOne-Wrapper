@@ -1,5 +1,5 @@
 // Schemas shared by several operations: path params, list params and list pages, risk helpers.
-// Contract shapes come from @sysone/core; nothing here redefines one.
+// Contract shapes come from @bandwise/core; nothing here redefines one.
 
 import {
   ListParams,
@@ -10,7 +10,7 @@ import {
   type Scope,
   type StorageMode,
   isLessPrivateStorageMode,
-} from "@sysone/core";
+} from "@bandwise/core";
 import { z } from "zod";
 
 import { markPlaceholder, type RiskLevel } from "./define";

@@ -1,6 +1,6 @@
 // Eval gates (testing.md, Evals, Gates; confidence-policy.md, Quality targets).
 
-import type { QualityTarget } from "@sysone/core";
+import type { QualityTarget } from "@bandwise/core";
 import type { EvalMetrics } from "./metrics.js";
 
 export type GateStatus = "pass" | "fail" | "insufficient_data";

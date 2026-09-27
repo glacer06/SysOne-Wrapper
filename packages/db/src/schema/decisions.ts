@@ -23,7 +23,7 @@ import type {
   LabelingPolicy,
   QualityTarget,
   ValueSettings,
-} from "@sysone/core/contracts";
+} from "@bandwise/core/contracts";
 
 import { createdAt, json, pk, textEnum, ts } from "./columns.js";
 import { E } from "./enums.js";

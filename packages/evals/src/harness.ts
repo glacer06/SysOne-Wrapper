@@ -18,7 +18,7 @@ import {
   lint,
   microFromUsd,
   runQuestionSet,
-} from "@sysone/core";
+} from "@bandwise/core";
 import { type Dataset, type DatasetSnapshot, type EvalCase, casesForSnapshot, takeSnapshot } from "./dataset.js";
 import { type CaseOutcome, type EvalMetrics, computeMetrics } from "./metrics.js";
 import type { EvalRunRecord, EvalStore, StoredVersion } from "./store.js";

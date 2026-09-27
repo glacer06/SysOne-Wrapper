@@ -1,4 +1,4 @@
-// RunPorts for `sysone run --local`: core's in-memory ports, the seed model registry and price
+// RunPorts for `bandwise run --local`: core's in-memory ports, the seed model registry and price
 // book, and the fixture transport. No network, no database, no System One key.
 
 import {
@@ -16,8 +16,8 @@ import {
   createMemoryPriceBook,
   createMemoryRunSink,
   staticKeyResolver,
-} from "@sysone/core";
-import { FixtureTransport, loadBundledFixtures } from "@sysone/system-one-client/fixture";
+} from "@bandwise/core";
+import { FixtureTransport, loadBundledFixtures } from "@bandwise/system-one-client/fixture";
 
 /** The org every local run belongs to. Nothing is stored anywhere. */
 export const LOCAL_ORG_ID = "00000000-0000-7000-8000-00000000c0de";

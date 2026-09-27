@@ -1,5 +1,5 @@
 // Brand, domain and links for the docs site. A rename is one edit here.
-// Code identifiers the pages show (the `sysone` CLI, `@sysone/*` packages, SYSONE_* env vars)
+// Code identifiers the pages show (the `bandwise` CLI, `@bandwise/*` packages, BANDWISE_* env vars)
 // are the real names in the repo today and are not set here.
 
 export const productName = "Bandwise";

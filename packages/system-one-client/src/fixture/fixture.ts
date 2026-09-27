@@ -2,7 +2,7 @@
 // per file, keyed by a hash of the provider and the request. The request includes `model`, so the
 // same questions on two models are two fixtures.
 
-import { SystemOneProvider, SystemOneRequest, SystemOneResponse, hashJson } from "@sysone/core";
+import { SystemOneProvider, SystemOneRequest, SystemOneResponse, hashJson } from "@bandwise/core";
 import { z } from "zod";
 
 export const FixtureError = z.strictObject({

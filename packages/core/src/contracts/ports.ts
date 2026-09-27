@@ -59,7 +59,7 @@ export const TransportErrorInfo = z.strictObject({
 });
 export type TransportErrorInfo = z.infer<typeof TransportErrorInfo>;
 
-const TRANSPORT_ERROR_BRAND = "sysone.transport_error";
+const TRANSPORT_ERROR_BRAND = "bandwise.transport_error";
 
 /**
  * What SystemOneTransport and LlmTransport throw. system-one-client maps SDK errors to the

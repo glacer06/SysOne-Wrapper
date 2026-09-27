@@ -1,8 +1,8 @@
 // Registry jobs against recorded HTTP (no network): registry sync, alias observation, alias probe
 // and contract watch (system-one-models.md section 6; testing.md, Model registry tests).
 
-import { EventEnvelope, SEED_MODEL_PROFILES, SEED_MODEL_ROUTES, SEED_SYSTEM_ONE_PRICES } from "@sysone/core";
-import { SdkTransport, loadContractSnapshots } from "@sysone/system-one-client";
+import { EventEnvelope, SEED_MODEL_PROFILES, SEED_MODEL_ROUTES, SEED_SYSTEM_ONE_PRICES } from "@bandwise/core";
+import { SdkTransport, loadContractSnapshots } from "@bandwise/system-one-client";
 import { describe, expect, it } from "vitest";
 import { loadRecording, replayFetch, textFetch } from "~/test/replay-http";
 import {

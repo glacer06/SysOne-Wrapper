@@ -48,25 +48,25 @@ type Case = { name: string; file: string; code: string; violates: boolean };
 
 const cases: Case[] = [
   // react never imports server packages.
-  { name: "react -> db", file: "packages/react/src/x.ts", code: `import "@sysone/db";`, violates: true },
-  { name: "react -> tenancy", file: "packages/react/src/x.ts", code: `import "@sysone/tenancy";`, violates: true },
-  { name: "react -> system-one-client", file: "packages/react/src/x.ts", code: `import "@sysone/system-one-client";`, violates: true },
-  { name: "react -> llm-client", file: "packages/react/src/x.ts", code: `import "@sysone/llm-client";`, violates: true },
-  { name: "react -> client server entrypoint", file: "packages/react/src/x.ts", code: `import "@sysone/client/server";`, violates: true },
-  { name: "react -> client", file: "packages/react/src/x.ts", code: `import "@sysone/client";`, violates: false },
-  { name: "react -> core contracts", file: "packages/react/src/x.ts", code: `import "@sysone/core/contracts";`, violates: false },
+  { name: "react -> db", file: "packages/react/src/x.ts", code: `import "@bandwise/db";`, violates: true },
+  { name: "react -> tenancy", file: "packages/react/src/x.ts", code: `import "@bandwise/tenancy";`, violates: true },
+  { name: "react -> system-one-client", file: "packages/react/src/x.ts", code: `import "@bandwise/system-one-client";`, violates: true },
+  { name: "react -> llm-client", file: "packages/react/src/x.ts", code: `import "@bandwise/llm-client";`, violates: true },
+  { name: "react -> client server entrypoint", file: "packages/react/src/x.ts", code: `import "@bandwise/client/server";`, violates: true },
+  { name: "react -> client", file: "packages/react/src/x.ts", code: `import "@bandwise/client";`, violates: false },
+  { name: "react -> core contracts", file: "packages/react/src/x.ts", code: `import "@bandwise/core/contracts";`, violates: false },
 
   // Workspace imports must resolve, or they would skip the element rules.
-  { name: "unresolved workspace subpath", file: "packages/client/src/x.ts", code: `import "@sysone/core/not-a-subpath";`, violates: true },
+  { name: "unresolved workspace subpath", file: "packages/client/src/x.ts", code: `import "@bandwise/core/not-a-subpath";`, violates: true },
 
   // Exclusive third-party SDKs.
   { name: "system-one-client -> @typesafe-ai/sdk", file: "packages/system-one-client/src/x.ts", code: `import "@typesafe-ai/sdk";`, violates: false },
   { name: "console -> @typesafe-ai/sdk", file: "apps/console/src/server/x.ts", code: `import "@typesafe-ai/sdk";`, violates: true },
   { name: "llm-client -> @anthropic-ai/sdk", file: "packages/llm-client/src/x.ts", code: `import "@anthropic-ai/sdk";`, violates: false },
   { name: "llm-client fixture -> @anthropic-ai/sdk", file: "packages/llm-client/src/fixture/x.ts", code: `import "@anthropic-ai/sdk";`, violates: true },
-  { name: "llm-client fixture -> core", file: "packages/llm-client/src/fixture/x.ts", code: `import "@sysone/core";`, violates: false },
-  { name: "llm-client -> its fixture subpath", file: "packages/llm-client/src/x.ts", code: `import "@sysone/llm-client/fixture";`, violates: false },
-  { name: "console -> llm-client fixture subpath", file: "apps/console/src/server/x.ts", code: `import "@sysone/llm-client/fixture";`, violates: false },
+  { name: "llm-client fixture -> core", file: "packages/llm-client/src/fixture/x.ts", code: `import "@bandwise/core";`, violates: false },
+  { name: "llm-client -> its fixture subpath", file: "packages/llm-client/src/x.ts", code: `import "@bandwise/llm-client/fixture";`, violates: false },
+  { name: "console -> llm-client fixture subpath", file: "apps/console/src/server/x.ts", code: `import "@bandwise/llm-client/fixture";`, violates: false },
   { name: "tenancy -> @anthropic-ai/sdk", file: "packages/tenancy/src/x.ts", code: `import "@anthropic-ai/sdk";`, violates: true },
   { name: "db -> drizzle-orm", file: "packages/db/src/x.ts", code: `import "drizzle-orm";`, violates: false },
   { name: "db -> drizzle-orm/pg-core", file: "packages/db/src/x.ts", code: `import "drizzle-orm/pg-core";`, violates: false },
@@ -81,47 +81,47 @@ const cases: Case[] = [
   { name: "core contracts -> zod", file: "packages/core/src/contracts/x.ts", code: `import "zod";`, violates: false },
   { name: "core -> node:fs", file: "packages/core/src/x.ts", code: `import "node:fs";`, violates: true },
   { name: "core -> third-party package", file: "packages/core/src/x.ts", code: `import "undici";`, violates: true },
-  { name: "core -> db", file: "packages/core/src/x.ts", code: `import "@sysone/db";`, violates: true },
+  { name: "core -> db", file: "packages/core/src/x.ts", code: `import "@bandwise/db";`, violates: true },
   { name: "core test -> vitest", file: "packages/core/src/x.test.ts", code: `import "vitest";`, violates: false },
 
   // codegen imports only core contracts.
-  { name: "codegen -> core contracts", file: "packages/codegen/src/x.ts", code: `import "@sysone/core/contracts";`, violates: false },
-  { name: "codegen -> core root", file: "packages/codegen/src/x.ts", code: `import "@sysone/core";`, violates: true },
+  { name: "codegen -> core contracts", file: "packages/codegen/src/x.ts", code: `import "@bandwise/core/contracts";`, violates: false },
+  { name: "codegen -> core root", file: "packages/codegen/src/x.ts", code: `import "@bandwise/core";`, violates: true },
 
   // cli reaches core and system-one-client only from src/local.
-  { name: "cli -> client", file: "packages/cli/src/x.ts", code: `import "@sysone/client";`, violates: false },
-  { name: "cli -> core", file: "packages/cli/src/x.ts", code: `import "@sysone/core";`, violates: true },
-  { name: "cli local -> core", file: "packages/cli/src/local/x.ts", code: `import "@sysone/core";`, violates: false },
+  { name: "cli -> client", file: "packages/cli/src/x.ts", code: `import "@bandwise/client";`, violates: false },
+  { name: "cli -> core", file: "packages/cli/src/x.ts", code: `import "@bandwise/core";`, violates: true },
+  { name: "cli local -> core", file: "packages/cli/src/local/x.ts", code: `import "@bandwise/core";`, violates: false },
   // Local mode takes only the fixture subpath: the SDK transport is off limits (phase-1.md exit gate).
-  { name: "cli local -> system-one-client SDK transport", file: "packages/cli/src/local/x.ts", code: `import "@sysone/system-one-client";`, violates: true },
-  { name: "cli local -> system-one-client fixture", file: "packages/cli/src/local/x.ts", code: `import "@sysone/system-one-client/fixture";`, violates: false },
+  { name: "cli local -> system-one-client SDK transport", file: "packages/cli/src/local/x.ts", code: `import "@bandwise/system-one-client";`, violates: true },
+  { name: "cli local -> system-one-client fixture", file: "packages/cli/src/local/x.ts", code: `import "@bandwise/system-one-client/fixture";`, violates: false },
   { name: "cli local -> @typesafe-ai/sdk", file: "packages/cli/src/local/x.ts", code: `import "@typesafe-ai/sdk";`, violates: true },
-  { name: "cli -> system-one-client fixture", file: "packages/cli/src/x.ts", code: `import "@sysone/system-one-client/fixture";`, violates: true },
+  { name: "cli -> system-one-client fixture", file: "packages/cli/src/x.ts", code: `import "@bandwise/system-one-client/fixture";`, violates: true },
   { name: "system-one-client fixture -> @typesafe-ai/sdk", file: "packages/system-one-client/src/fixture/x.ts", code: `import "@typesafe-ai/sdk";`, violates: true },
   { name: "system-one-client fixture -> SDK transport", file: "packages/system-one-client/src/fixture/x.ts", code: `import "../sdk-transport.js";`, violates: true },
   { name: "system-one-client -> its fixture folder", file: "packages/system-one-client/src/x.ts", code: `import "./fixture/index.js";`, violates: false },
 
   // The HTTP clients build against the generated OpenAPI document by package name.
-  { name: "cli -> core openapi.json", file: "packages/cli/src/x.ts", code: `import "@sysone/core/openapi.json";`, violates: false },
-  { name: "mcp-server -> core openapi.json", file: "packages/mcp-server/src/x.ts", code: `import "@sysone/core/openapi.json";`, violates: false },
-  { name: "example-embed -> core openapi.json", file: "apps/example-embed/src/x.ts", code: `import "@sysone/core/openapi.json";`, violates: false },
-  { name: "mcp-server -> core root", file: "packages/mcp-server/src/x.ts", code: `import "@sysone/core";`, violates: true },
+  { name: "cli -> core openapi.json", file: "packages/cli/src/x.ts", code: `import "@bandwise/core/openapi.json";`, violates: false },
+  { name: "mcp-server -> core openapi.json", file: "packages/mcp-server/src/x.ts", code: `import "@bandwise/core/openapi.json";`, violates: false },
+  { name: "example-embed -> core openapi.json", file: "apps/example-embed/src/x.ts", code: `import "@bandwise/core/openapi.json";`, violates: false },
+  { name: "mcp-server -> core root", file: "packages/mcp-server/src/x.ts", code: `import "@bandwise/core";`, violates: true },
 
   // The public docs site reads core's contracts and OpenAPI document, and nothing server side.
-  { name: "docs -> core", file: "apps/docs/test/x.test.ts", code: `import "@sysone/core";`, violates: false },
-  { name: "docs -> core openapi.json", file: "apps/docs/src/x.ts", code: `import "@sysone/core/openapi.json";`, violates: false },
-  { name: "docs -> db", file: "apps/docs/src/x.ts", code: `import "@sysone/db";`, violates: true },
-  { name: "docs -> system-one-client", file: "apps/docs/src/x.ts", code: `import "@sysone/system-one-client";`, violates: true },
+  { name: "docs -> core", file: "apps/docs/test/x.test.ts", code: `import "@bandwise/core";`, violates: false },
+  { name: "docs -> core openapi.json", file: "apps/docs/src/x.ts", code: `import "@bandwise/core/openapi.json";`, violates: false },
+  { name: "docs -> db", file: "apps/docs/src/x.ts", code: `import "@bandwise/db";`, violates: true },
+  { name: "docs -> system-one-client", file: "apps/docs/src/x.ts", code: `import "@bandwise/system-one-client";`, violates: true },
 
   // mcp-server calls /api/v1 over HTTP only.
-  { name: "mcp-server -> db", file: "packages/mcp-server/src/x.ts", code: `import "@sysone/db";`, violates: true },
+  { name: "mcp-server -> db", file: "packages/mcp-server/src/x.ts", code: `import "@bandwise/db";`, violates: true },
 
   // Server packages depend on core, and only console wires them together.
-  { name: "system-one-client -> core", file: "packages/system-one-client/src/x.ts", code: `import "@sysone/core";`, violates: false },
-  { name: "billing -> db", file: "packages/billing/src/x.ts", code: `import "@sysone/db";`, violates: true },
-  { name: "console server -> db", file: "apps/console/src/server/x.ts", code: `import "@sysone/db";`, violates: false },
-  { name: "console org page -> db", file: "apps/console/src/app/(org)/[orgSlug]/page.ts", code: `import "@sysone/db";`, violates: true },
-  { name: "console platform page -> db", file: "apps/console/src/app/(platform)/platform/page.ts", code: `import "@sysone/db";`, violates: true },
+  { name: "system-one-client -> core", file: "packages/system-one-client/src/x.ts", code: `import "@bandwise/core";`, violates: false },
+  { name: "billing -> db", file: "packages/billing/src/x.ts", code: `import "@bandwise/db";`, violates: true },
+  { name: "console server -> db", file: "apps/console/src/server/x.ts", code: `import "@bandwise/db";`, violates: false },
+  { name: "console org page -> db", file: "apps/console/src/app/(org)/[orgSlug]/page.ts", code: `import "@bandwise/db";`, violates: true },
+  { name: "console platform page -> db", file: "apps/console/src/app/(platform)/platform/page.ts", code: `import "@bandwise/db";`, violates: true },
 ];
 
 describe("boundary rules from references/architecture.md", () => {

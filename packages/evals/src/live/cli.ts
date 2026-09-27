@@ -12,9 +12,9 @@ import {
   SEED_MODEL_ROUTES,
   SystemOneProvider,
   type SystemOneTransport,
-} from "@sysone/core";
-import { SdkTransport } from "@sysone/system-one-client";
-import { BUNDLED_FIXTURES_DIR, type Fixture, loadBundledFixtures } from "@sysone/system-one-client/fixture";
+} from "@bandwise/core";
+import { SdkTransport } from "@bandwise/system-one-client";
+import { BUNDLED_FIXTURES_DIR, type Fixture, loadBundledFixtures } from "@bandwise/system-one-client/fixture";
 import { PROVIDER_KEY_ENV } from "../ports.js";
 import { RecordPlanError, planRecording, recordFixtures } from "./record.js";
 import { runSmoke, smokeList } from "./smoke.js";

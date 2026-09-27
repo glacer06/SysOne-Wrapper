@@ -5,7 +5,7 @@
 import type { ErrorCode } from "../contracts/errors.js";
 import type { ErrorDetail } from "../contracts/errors.js";
 
-const BRAND = "sysone.run_refused";
+const BRAND = "bandwise.run_refused";
 
 export class RunRefusedError extends Error {
   override readonly name = "RunRefusedError";
@@ -30,7 +30,7 @@ export const RUN_ERROR_MESSAGES: Partial<Record<ErrorCode, string>> = {
   system_one_auth: "The org's System One key was rejected.",
   system_one_forbidden: "The org's System One key cannot use this model.",
   system_one_invalid_request: "System One rejected the request.",
-  system_one_invalid_response: "System One returned an answer SysOne cannot use.",
+  system_one_invalid_response: "System One returned an answer Bandwise cannot use.",
   system_one_rate_limited: "System One rate limited the request.",
   system_one_overloaded: "System One is overloaded.",
   system_one_unavailable: "System One did not answer in time.",

@@ -3,7 +3,7 @@
 // a caller. Shared by every LlmTransport, so it lives in the fixture folder, which never imports
 // @anthropic-ai/sdk.
 
-import { TransportError } from "@sysone/core";
+import { TransportError } from "@bandwise/core";
 
 /** Where an LLM call went. `openrouter` is the optional chat route of ADR-011 (proposed). */
 export type LlmRoute = "anthropic" | "openrouter";
@@ -26,9 +26,9 @@ export function llmUnreachable(route: LlmRoute): TransportError {
   return new TransportError({ code: "llm_unavailable", retryable: true, requestId: null }, `LLM provider ${route} could not be reached`);
 }
 
-/** llm_invalid_reply when a response arrived but SysOne cannot read it. */
+/** llm_invalid_reply when a response arrived but Bandwise cannot read it. */
 export function llmUnreadable(route: LlmRoute, requestId: string | null = null): TransportError {
-  return new TransportError({ code: "llm_invalid_reply", retryable: false, requestId }, `LLM provider ${route} returned a response SysOne cannot read`);
+  return new TransportError({ code: "llm_invalid_reply", retryable: false, requestId }, `LLM provider ${route} returned a response Bandwise cannot read`);
 }
 
 /** client_aborted, the same code SystemOneTransport uses. */

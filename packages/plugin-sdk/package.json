@@ -1,12 +1,12 @@
 {
-  "name": "@sysone/plugin-sdk",
+  "name": "@bandwise/plugin-sdk",
   "version": "0.0.0",
   "private": true,
   "description": "definePlugin(), InputAdapter, QuestionTemplate, ActionHandler. Phase 5.",
   "type": "module",
   "exports": {
     ".": {
-      "@sysone/source": "./src/index.ts",
+      "@bandwise/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
@@ -21,7 +21,7 @@
     "test": "vitest run"
   },
   "devDependencies": {
-    "@sysone/config": "workspace:*",
+    "@bandwise/config": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "typescript": "catalog:",

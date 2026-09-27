@@ -3,7 +3,7 @@
 import { sql } from "drizzle-orm";
 import { boolean, check, index, integer, pgTable, text, unique, uuid } from "drizzle-orm/pg-core";
 
-import type { EventEnvelope } from "@sysone/core/contracts";
+import type { EventEnvelope } from "@bandwise/core/contracts";
 
 import { createdAt, json, microUsd, pk, textArray, textEnum, ts } from "./columns.js";
 import { E } from "./enums.js";
@@ -80,7 +80,7 @@ export const usageEvents = pgTable(
 
 /**
  * Hybrid table: platform rows have org_id null. Read policy allows null or the caller's org; org
- * rows are written by the org, platform rows only by the sysone_platform role.
+ * rows are written by the org, platform rows only by the bandwise_platform role.
  */
 export const priceBooks = pgTable(
   "price_books",

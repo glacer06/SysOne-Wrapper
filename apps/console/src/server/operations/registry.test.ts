@@ -11,7 +11,7 @@ import {
   type RiskResource,
   type RolloutStage,
   type TenantContext,
-} from "@sysone/core";
+} from "@bandwise/core";
 import { describe, expect, it } from "vitest";
 
 import { OperationNotImplementedError } from "./errors";
@@ -20,7 +20,7 @@ import { rolloutChangeRisk } from "./schemas";
 
 const ROOT = new URL("../../../../../", import.meta.url);
 const exampleSpec: unknown = JSON.parse(
-  readFileSync(new URL(".claude/skills/sysone-builder/templates/question-set.example.json", ROOT), "utf8"),
+  readFileSync(new URL(".claude/skills/bandwise-builder/templates/question-set.example.json", ROOT), "utf8"),
 );
 
 const ctx: TenantContext = {

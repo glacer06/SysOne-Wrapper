@@ -9,7 +9,7 @@ import {
   SpecDiff,
   VersionId,
   type Scope,
-} from "@sysone/core";
+} from "@bandwise/core";
 import { z } from "zod";
 
 import { defineOperation, operationGroup, placeholderInput, placeholderOutput } from "./define";

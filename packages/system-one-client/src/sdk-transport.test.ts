@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { type SystemOneCallOptions, type SystemOneRequest, TransportError, isTransportError } from "@sysone/core";
+import { type SystemOneCallOptions, type SystemOneRequest, TransportError, isTransportError } from "@bandwise/core";
 import { APIConnectionError, TypeSafeError } from "@typesafe-ai/sdk";
 import { describe, expect, it } from "vitest";
 import { SDK_LOG_LEVEL, SdkTransport, createSdkClient, mapSdkError } from "./sdk-transport.js";

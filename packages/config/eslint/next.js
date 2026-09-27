@@ -1,17 +1,17 @@
 // @ts-check
 /**
  * ESLint flat config for Next.js apps: the shared config plus Next rules.
- * Entry point: `import sysoneNext from "@sysone/config/eslint/next"; export default sysoneNext;`
+ * Entry point: `import bandwiseNext from "@bandwise/config/eslint/next"; export default bandwiseNext;`
  */
 import nextPlugin from "@next/eslint-plugin-next";
 import globals from "globals";
-import sysone from "./index.js";
+import bandwise from "./index.js";
 
 /** @type {import("eslint").Linter.Config[]} */
-const sysoneNext = [
-  ...sysone,
+const bandwiseNext = [
+  ...bandwise,
   {
-    name: "sysone/next",
+    name: "bandwise/next",
     files: ["**/*.{js,mjs,ts,tsx,jsx}"],
     plugins: { "@next/next": nextPlugin },
     languageOptions: {
@@ -24,4 +24,4 @@ const sysoneNext = [
   },
 ];
 
-export default sysoneNext;
+export default bandwiseNext;

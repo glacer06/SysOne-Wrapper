@@ -5,7 +5,7 @@
 // An allowed check counts one run. Phase 2 reads usage_daily plus a same-day Redis counter instead
 // (ADR-006), behind the same port.
 
-import type { QuotaGuard, QuotaResult, TenantContext } from "@sysone/core/contracts";
+import type { QuotaGuard, QuotaResult, TenantContext } from "@bandwise/core/contracts";
 
 export interface InMemoryQuotaGuardOptions {
   /** The org's runs per month, or null for unlimited. */

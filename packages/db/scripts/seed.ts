@@ -1,6 +1,6 @@
 // pnpm db:seed [--three]: seeds the two-org set (acme, globex) or, with --three, sgr, personal and
 // dallas for the Phase 2 E2E org switch. DATABASE_URL must be the app's login role (a member of
-// sysone_app), so the seed writes through withTenant and RLS like the console does.
+// bandwise_app), so the seed writes through withTenant and RLS like the console does.
 import { createDatabase, seedOrgs, THREE_ORG_SEED, TWO_ORG_SEED } from "../src/index.js";
 
 const url = process.env["DATABASE_URL"];

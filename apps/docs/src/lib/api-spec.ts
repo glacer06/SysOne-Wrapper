@@ -18,7 +18,7 @@ export interface ApiOperation {
   summary?: string;
   description?: string;
   tags?: string[];
-  "x-sysone-phase"?: string;
+  "x-bandwise-phase"?: string;
   [key: string]: unknown;
 }
 
@@ -153,7 +153,7 @@ function phaseRank(phase: string): number {
 
 /** The phase an operation is callable over HTTP: its own phase, but never before the API is live. */
 export function availableFrom(op: ApiOperation): string {
-  const phase = op["x-sysone-phase"] ?? API_LIVE_PHASE;
+  const phase = op["x-bandwise-phase"] ?? API_LIVE_PHASE;
   return phaseRank(phase) < phaseRank(API_LIVE_PHASE) ? API_LIVE_PHASE : phase;
 }
 

@@ -1,7 +1,7 @@
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { LlmCompletion, LlmCompletionRequest, isTransportError } from "@sysone/core";
+import { LlmCompletion, LlmCompletionRequest, isTransportError } from "@bandwise/core";
 import { describe, expect, it } from "vitest";
 import { FixtureLlmTransport } from "./fixture-transport.js";
 import { isRetryableLlmStatus, llmErrorForStatus } from "./errors.js";

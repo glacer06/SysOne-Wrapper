@@ -131,22 +131,22 @@ importers:
 
   apps/console:
     dependencies:
-      '@sysone/billing':
+      '@bandwise/billing':
         specifier: workspace:*
         version: link:../../packages/billing
-      '@sysone/core':
+      '@bandwise/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@sysone/db':
+      '@bandwise/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@sysone/llm-client':
+      '@bandwise/llm-client':
         specifier: workspace:*
         version: link:../../packages/llm-client
-      '@sysone/system-one-client':
+      '@bandwise/system-one-client':
         specifier: workspace:*
         version: link:../../packages/system-one-client
-      '@sysone/tenancy':
+      '@bandwise/tenancy':
         specifier: workspace:*
         version: link:../../packages/tenancy
       '@t3-oss/env-nextjs':
@@ -168,7 +168,7 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@sysone/config':
+      '@bandwise/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@types/node':
@@ -214,10 +214,10 @@ importers:
         specifier: 'catalog:'
         version: 19.3.0(react@19.3.0)
     devDependencies:
-      '@sysone/config':
+      '@bandwise/config':
         specifier: workspace:*
         version: link:../../packages/config
-      '@sysone/core':
+      '@bandwise/core':
         specifier: workspace:*
         version: link:../../packages/core
       '@tailwindcss/postcss':
@@ -253,7 +253,7 @@ importers:
 
   apps/example-embed:
     devDependencies:
-      '@sysone/config':
+      '@bandwise/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@types/node':
@@ -271,14 +271,14 @@ importers:
 
   packages/billing:
     dependencies:
-      '@sysone/core':
+      '@bandwise/core':
         specifier: workspace:*
         version: link:../core
       zod:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@sysone/config':
+      '@bandwise/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -296,13 +296,13 @@ importers:
 
   packages/cli:
     devDependencies:
-      '@sysone/config':
+      '@bandwise/config':
         specifier: workspace:*
         version: link:../config
-      '@sysone/core':
+      '@bandwise/core':
         specifier: workspace:*
         version: link:../core
-      '@sysone/system-one-client':
+      '@bandwise/system-one-client':
         specifier: workspace:*
         version: link:../system-one-client
       '@types/node':
@@ -320,7 +320,7 @@ importers:
 
   packages/client:
     devDependencies:
-      '@sysone/config':
+      '@bandwise/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -338,7 +338,7 @@ importers:
 
   packages/codegen:
     devDependencies:
-      '@sysone/config':
+      '@bandwise/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -397,7 +397,7 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@sysone/config':
+      '@bandwise/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -418,7 +418,7 @@ importers:
 
   packages/db:
     dependencies:
-      '@sysone/core':
+      '@bandwise/core':
         specifier: workspace:*
         version: link:../core
       drizzle-orm:
@@ -434,7 +434,7 @@ importers:
       '@electric-sql/pglite':
         specifier: 'catalog:'
         version: 0.5.8
-      '@sysone/config':
+      '@bandwise/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -461,17 +461,17 @@ importers:
 
   packages/evals:
     dependencies:
-      '@sysone/core':
+      '@bandwise/core':
         specifier: workspace:*
         version: link:../core
-      '@sysone/system-one-client':
+      '@bandwise/system-one-client':
         specifier: workspace:*
         version: link:../system-one-client
       zod:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@sysone/config':
+      '@bandwise/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -492,14 +492,14 @@ importers:
       '@anthropic-ai/sdk':
         specifier: 'catalog:'
         version: 0.128.0(zod@4.6.5)
-      '@sysone/core':
+      '@bandwise/core':
         specifier: workspace:*
         version: link:../core
       zod:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@sysone/config':
+      '@bandwise/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -517,7 +517,7 @@ importers:
 
   packages/mcp-server:
     devDependencies:
-      '@sysone/config':
+      '@bandwise/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -535,7 +535,7 @@ importers:
 
   packages/plugin-sdk:
     devDependencies:
-      '@sysone/config':
+      '@bandwise/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -553,7 +553,7 @@ importers:
 
   packages/react:
     devDependencies:
-      '@sysone/config':
+      '@bandwise/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -571,7 +571,7 @@ importers:
 
   packages/system-one-client:
     dependencies:
-      '@sysone/core':
+      '@bandwise/core':
         specifier: workspace:*
         version: link:../core
       '@typesafe-ai/sdk':
@@ -581,7 +581,7 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@sysone/config':
+      '@bandwise/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':
@@ -599,14 +599,14 @@ importers:
 
   packages/tenancy:
     dependencies:
-      '@sysone/core':
+      '@bandwise/core':
         specifier: workspace:*
         version: link:../core
       zod:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@sysone/config':
+      '@bandwise/config':
         specifier: workspace:*
         version: link:../config
       '@types/node':

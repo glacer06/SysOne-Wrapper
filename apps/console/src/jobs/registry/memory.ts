@@ -1,6 +1,6 @@
 // In-memory registry ports for tests and local runs of the registry jobs.
 
-import type { ModelProfile, ModelRoute, SystemOneProvider } from "@sysone/core";
+import type { ModelProfile, ModelRoute, SystemOneProvider } from "@bandwise/core";
 import type { AlertKind, AlertSink, AliasObservationRow, EventSink, IssueSink, RegistryEvent, RegistryStore } from "./ports";
 
 export interface MemoryRegistryStore extends RegistryStore {

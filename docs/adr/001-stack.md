@@ -8,7 +8,7 @@
 
 ## Context
 
-SysOne is a multi-tenant SaaS that wraps TypeSafe's System One models, starting with Jev. Nick sells it and also runs it across his own orgs (SGR, Personal, Dallas). It needs a console, a public API, an embed kit, billing, and later a Chrome extension and an MCP server. A team of agents will build it in parallel, so the stack must be common, well typed, and easy to split into lanes.
+Bandwise is a multi-tenant SaaS that wraps TypeSafe's System One models, starting with Jev. Nick sells it and also runs it across his own orgs (SGR, Personal, Dallas). It needs a console, a public API, an embed kit, billing, and later a Chrome extension and an MCP server. A team of agents will build it in parallel, so the stack must be common, well typed, and easy to split into lanes.
 
 ## Decision
 
@@ -51,7 +51,7 @@ The plan Nick approved first named Auth.js. The design review recommended Better
 - Every package boundary is enforced by lint, so agents can work in parallel with little overlap.
 - RLS adds some migration work per table. That cost is accepted because retrofitting tenancy later is how SaaS products leak data.
 - Pinning to Vercel and serverless jobs means no long-running workers. Rollups and meter pushes run as scheduled jobs.
-- This ADR covers SysOne's own stack. SDKs and generated code shipped to customers may include Python (ADR-009); that adds a second toolchain only in `packages/client-py`.
+- This ADR covers Bandwise's own stack. SDKs and generated code shipped to customers may include Python (ADR-009); that adds a second toolchain only in `packages/client-py`.
 
 ## Rollout
 

@@ -45,7 +45,7 @@ export const TENANT_TABLES = [
 
 /**
  * Tenant tables whose org_id may be null for platform rows. Tenant RLS never matches a null
- * org_id, so those rows are visible only to the sysone_platform role.
+ * org_id, so those rows are visible only to the bandwise_platform role.
  * - price_books: platform default prices, readable by every org (hybrid read policy).
  * - audit_log, events: platform events, not readable by any org.
  */
@@ -54,7 +54,7 @@ export const HYBRID_TABLES = ["price_books", "audit_log", "events"] as const;
 /** The tenant itself: RLS matches its `id` against app.org_id. */
 export const ORG_TABLE = "organizations" as const;
 
-/** No org_id, no tenant RLS. The app role reads them; sysone_platform writes them. */
+/** No org_id, no tenant RLS. The app role reads them; bandwise_platform writes them. */
 export const PLATFORM_TABLES = [
   "system_one_models",
   "system_one_model_routes",

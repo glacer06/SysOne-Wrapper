@@ -3,11 +3,11 @@
 - **Status:** accepted (decided by Nick, 2026-09-26)
 - **Date:** 2026-09-26
 - **Owner:** Platform / Tenancy
-- **Contract impact:** none. The `jobs` table and `GET /api/v1/jobs/{id}` stay the public job status ([management-api.md](../../.claude/skills/sysone-builder/references/management-api.md#jobs)). Two env vars, `INNGEST_EVENT_KEY` and `INNGEST_SIGNING_KEY`, are added when the runner lands in Phase 2.
+- **Contract impact:** none. The `jobs` table and `GET /api/v1/jobs/{id}` stay the public job status ([management-api.md](../../.claude/skills/bandwise-builder/references/management-api.md#jobs)). Two env vars, `INNGEST_EVENT_KEY` and `INNGEST_SIGNING_KEY`, are added when the runner lands in Phase 2.
 
 ## Context
 
-ADR-001 hosts on Vercel with no long-running workers and leaves the runner to this ADR. Work that must run outside a request ([architecture.md](../../.claude/skills/sysone-builder/references/architecture.md#background-jobs)):
+ADR-001 hosts on Vercel with no long-running workers and leaves the runner to this ADR. Work that must run outside a request ([architecture.md](../../.claude/skills/bandwise-builder/references/architecture.md#background-jobs)):
 
 - **Scheduled:** the meter outbox push every minute ([ADR-006](006-billing-model.md)); nightly rollups, retention, registry sync, contract watch and key checks; the hourly gate evaluator and auto-demote (Phase 3); the weekly threshold refit (Phase 3b); pruning; approval reminders and expiry.
 - **Triggered:** `eval`, `compare`, `calibrate`, `improve`, `try_model`, `policy_suggest` and `export` jobs, which return `202 { jobId }`; action dispatch after a run commits, idempotent by `runId:decisionId`; webhook deliveries with retries; the KEK re-wrap ([ADR-003](003-key-vault.md)); cache invalidation retries ([ADR-004](004-cache.md)).
@@ -31,7 +31,7 @@ Constraints:
    - A sweeper runs every minute and re-sends `queued` rows older than 2 minutes. That covers a crash between commit and send.
 4. **Ids only in Inngest.** Event payloads and step outputs carry ids, counts and cursors (`orgId`, `jobId`, `runId`). Inngest stores both, so state, answers, keys and tokens never go in them. Steps read what they need from Postgres inside `withTenant`.
 5. **Long jobs run as steps.** An eval runs its cases in chunks of about 50 per step, each well under the function time limit, and aggregates at the end. A retry replays only the step that failed.
-6. **Fairness.** Every tenant function sets an Inngest concurrency key on `orgId`, plus a global limit. Eval-type jobs also draw from the eval limiter bucket, which caps them at 25 percent of the org's RPM with the lowest priority ([security.md](../../.claude/skills/sysone-builder/references/security.md#rate-limits-for-agents-and-evals)).
+6. **Fairness.** Every tenant function sets an Inngest concurrency key on `orgId`, plus a global limit. Eval-type jobs also draw from the eval limiter bucket, which caps them at 25 percent of the org's RPM with the lowest priority ([security.md](../../.claude/skills/bandwise-builder/references/security.md#rate-limits-for-agents-and-evals)).
 7. **Schedules** are Inngest cron functions. A scheduled job that covers every org sends one event per org, so one failing org does not block the rest.
 8. **Action dispatch** sends one event per decision with `id` set to `runId:decisionId`, which gives `ActionRegistry` its idempotency.
 9. **Local and CI.** Development uses the Inngest Dev Server. Unit tests call job functions directly with an in-memory `steps`. No test calls Inngest's cloud.

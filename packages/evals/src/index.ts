@@ -1,7 +1,7 @@
-// @sysone/evals: datasets, metrics, the eval harness and CLI, gates, and the live smoke and fixture
-// recording scripts (testing.md). Internal: customers use `sysone eval run`.
+// @bandwise/evals: datasets, metrics, the eval harness and CLI, gates, and the live smoke and fixture
+// recording scripts (testing.md). Internal: customers use `bandwise eval run`.
 
-export const packageName = "@sysone/evals";
+export const packageName = "@bandwise/evals";
 
 export * from "./stats.js";
 export * from "./dataset.js";

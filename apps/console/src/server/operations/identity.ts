@@ -10,7 +10,7 @@ import {
   Scope,
   TokenId,
   UserId,
-} from "@sysone/core";
+} from "@bandwise/core";
 import { z } from "zod";
 
 import { defineOperation, operationGroup, placeholderInput, placeholderOutput, type RiskLevel } from "./define";

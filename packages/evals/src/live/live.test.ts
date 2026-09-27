@@ -1,8 +1,8 @@
 // pnpm smoke and pnpm fixtures:record, offline: the SDK transport is swapped for fixtures, so no
 // test makes a network call (golden rule 7).
 
-import { SEED_MODEL_PROFILES, SEED_MODEL_ROUTES, type SystemOneTransport } from "@sysone/core";
-import { FixtureTransport, type Fixture, fixtureKey, loadBundledFixtures } from "@sysone/system-one-client/fixture";
+import { SEED_MODEL_PROFILES, SEED_MODEL_ROUTES, type SystemOneTransport } from "@bandwise/core";
+import { FixtureTransport, type Fixture, fixtureKey, loadBundledFixtures } from "@bandwise/system-one-client/fixture";
 import { describe, expect, it } from "vitest";
 import { offlineTransport } from "../ports.js";
 import { recordMain, smokeMain } from "./cli.js";

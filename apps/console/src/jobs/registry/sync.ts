@@ -10,8 +10,8 @@
 // alerts the platform admin. The key's reachable registry ids go into org_system_one_keys.models: every listed
 // id, plus the observed target of each listed alias (section 3, Reachability).
 
-import { type SystemOneProvider, registryIdForResolved } from "@sysone/core";
-import { listModels } from "@sysone/system-one-client";
+import { type SystemOneProvider, registryIdForResolved } from "@bandwise/core";
+import { listModels } from "@bandwise/system-one-client";
 import { type ObserveDeps, insertUnseen, observeAlias } from "./observe";
 import { aliasBuild, fetchOpenRouterSystemOneModels } from "./openrouter-models";
 import { type HttpFetch, type JobSteps, inlineSteps } from "./ports";

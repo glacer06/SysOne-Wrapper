@@ -2,8 +2,8 @@
 // observation that UTC day gets a one-noul request with a tiny state, and the response `model` is
 // recorded like a run. Off TypeSafe, only aliases with a route row are probed, sent as the route id.
 
-import { type SystemOneProvider, type SystemOneTransport, isTransportError, resolveRoute } from "@sysone/core";
-import { probeAlias } from "@sysone/system-one-client";
+import { type SystemOneProvider, type SystemOneTransport, isTransportError, resolveRoute } from "@bandwise/core";
+import { probeAlias } from "@bandwise/system-one-client";
 import { type AliasObservationOutcome, type ObserveDeps, observeAlias } from "./observe";
 import { type JobSteps, inlineSteps } from "./ports";
 

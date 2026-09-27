@@ -1,13 +1,13 @@
 // @ts-check
 /**
  * Shared Vitest preset.
- * Usage in a package: `export default defineSysoneVitestConfig();`
- * The "@sysone/source" condition makes workspace imports resolve to src/, so tests never need a build.
+ * Usage in a package: `export default defineBandwiseVitestConfig();`
+ * The "@bandwise/source" condition makes workspace imports resolve to src/, so tests never need a build.
  */
 import { defaultClientConditions, defaultServerConditions } from "vite";
 import { defineConfig, mergeConfig } from "vitest/config";
 
-const sourceCondition = "@sysone/source";
+const sourceCondition = "@bandwise/source";
 
 /** @type {import("vitest/config").ViteUserConfig} */
 export const vitestPreset = defineConfig({
@@ -39,6 +39,6 @@ export const vitestPreset = defineConfig({
  * @param {import("vitest/config").ViteUserConfig} [overrides]
  * @returns {import("vitest/config").ViteUserConfig}
  */
-export function defineSysoneVitestConfig(overrides = {}) {
+export function defineBandwiseVitestConfig(overrides = {}) {
   return mergeConfig(vitestPreset, overrides);
 }

@@ -1,12 +1,12 @@
 {
-  "name": "@sysone/evals",
+  "name": "@bandwise/evals",
   "version": "0.0.0",
   "private": true,
   "description": "Datasets, metrics, eval CLI, CI gate, live smoke and fixture recording.",
   "type": "module",
   "exports": {
     ".": {
-      "@sysone/source": "./src/index.ts",
+      "@bandwise/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
@@ -22,12 +22,12 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@sysone/core": "workspace:*",
-    "@sysone/system-one-client": "workspace:*",
+    "@bandwise/core": "workspace:*",
+    "@bandwise/system-one-client": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@sysone/config": "workspace:*",
+    "@bandwise/config": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "typescript": "catalog:",

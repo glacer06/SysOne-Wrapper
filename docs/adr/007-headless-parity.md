@@ -7,7 +7,7 @@
 
 ## Context
 
-On 2026-09-26 Nick asked that SysOne "have a UI/UX but also be headless so an agent can manage it as well." Headless means an agent can do everything a person can do in the console, under the same checks.
+On 2026-09-26 Nick asked that Bandwise "have a UI/UX but also be headless so an agent can manage it as well." Headless means an agent can do everything a person can do in the console, under the same checks.
 
 The plan before this ADR could not deliver that:
 
@@ -55,14 +55,14 @@ OperationDef<I, O> = {
 }
 ```
 
-This is the same shape as [management-api.md](../../.claude/skills/sysone-builder/references/management-api.md), which carries the catalog and the `DryRunResult` type. `actors` defaults to `["user", "agent"]`.
+This is the same shape as [management-api.md](../../.claude/skills/bandwise-builder/references/management-api.md), which carries the catalog and the `DryRunResult` type. `actors` defaults to `["user", "agent"]`.
 
 `runOperation(id, ctx, input, { idempotencyKey?, ifMatch?, dryRun? })` runs the same steps for every caller: resolve the actor, validate the input, check actor, scope and role with `can()`, apply the approval gate, look up the idempotency key, check `If-Match`, run the handler inside `withTenant`, write the audit row and the events in `emits`, and store the idempotent response. With `dryRun`, it stops before the handler, runs `preview` and writes nothing.
 
 The approval-gate step of `runOperation` (step 4 in management-api.md) calls `risk` when it is a function; the `high*` conditions in the catalog are implemented there.
 
 - Server Actions and `/api/v1` route handlers are thin adapters over `runOperation`. Console UI code calls operations, never repositories.
-- `@sysone/cli` and the MCP server call `/api/v1` over HTTP. Neither touches the database or a TypeSafe key.
+- `@bandwise/cli` and the MCP server call `/api/v1` over HTTP. Neither touches the database or a TypeSafe key.
 - `openapi.json` is generated from the registry and served at `GET /api/v1/openapi.json`. MSW mocks come from the same file.
 - A CI parity test fails when an operation has no route or no OpenAPI path, or when a curated MCP tool or CLI command maps to no operation or to a session-only operation.
 - No operation at all: Stripe checkout and the billing portal (Stripe hosts them), and platform admin impersonation.
@@ -172,14 +172,14 @@ New codes: `403 insufficient_scope` (the resource is in the caller's org but the
 - Agents get the same capabilities, checks and audit trail as people. OpenAPI, MSW mocks, CLI help and MCP tool schemas all come from the registry.
 - Console work pays a small tax: define the operation (schemas, scope, role, risk, route) before building the screen. A console feature is not done until its route and OpenAPI path exist and the parity test passes.
 - The approvals UI and inbox are required in Phase 3, before any agent can publish to production.
-- Ownership: Platform / Tenancy owns the registry, services and routes. Console UI calls operations. Integrations owns `@sysone/cli` and the MCP server.
+- Ownership: Platform / Tenancy owns the registry, services and routes. Console UI calls operations. Integrations owns `@bandwise/cli` and the MCP server.
 - Tests QA must add: the parity test; a replayed publish creates no version; a replayed run creates no second `runId`, action or usage event; an `If-Match` mismatch returns 412; an agent publish to a protected set stays pending until approved; `inactive` to `shadow` is not gated and `shadow` to `controlled` is; lowering `agentApprovals` stays pending even when the setting is `off`; moves toward safety are never gated; `insufficient_scope` in the caller's org and 404 across orgs; demoting the user removes the token's permission on the next request.
-- Docs that carry the detail: [management-api.md](../../.claude/skills/sysone-builder/references/management-api.md) (registry, catalog, safe retries), [headless-and-agents.md](../../.claude/skills/sysone-builder/references/headless-and-agents.md) (CLI, MCP, profiles), [events.md](../../.claude/skills/sysone-builder/references/events.md), [api.md](../../.claude/skills/sysone-builder/references/api.md) (auth modes and error table), [security.md](../../.claude/skills/sysone-builder/references/security.md) (agent tokens and approvals), [conventions.md](../../.claude/skills/sysone-builder/references/conventions.md), [data-model.md](../../.claude/skills/sysone-builder/references/data-model.md) and [testing.md](../../.claude/skills/sysone-builder/references/testing.md).
+- Docs that carry the detail: [management-api.md](../../.claude/skills/bandwise-builder/references/management-api.md) (registry, catalog, safe retries), [headless-and-agents.md](../../.claude/skills/bandwise-builder/references/headless-and-agents.md) (CLI, MCP, profiles), [events.md](../../.claude/skills/bandwise-builder/references/events.md), [api.md](../../.claude/skills/bandwise-builder/references/api.md) (auth modes and error table), [security.md](../../.claude/skills/bandwise-builder/references/security.md) (agent tokens and approvals), [conventions.md](../../.claude/skills/bandwise-builder/references/conventions.md), [data-model.md](../../.claude/skills/bandwise-builder/references/data-model.md) and [testing.md](../../.claude/skills/bandwise-builder/references/testing.md).
 
 ## Rollout
 
 - **Phase 0 part two:** `OperationDef`, the agent actor, the `Role` and `Scope` unions and error envelope v2 land in `packages/core/src/contracts`, and the registry skeleton in `apps/console/src/server/operations`, before the freeze. This ADR is accepted in the same step. No code exists yet, so these are doc edits, not per-field ADRs.
 - **Phase 2:** agent tokens and the device flow, the approval gate and `approval_requests`, idempotency keys and `If-Match`.
-- **Phase 3:** every operation in management-api.md, the parity test, `@sysone/cli` management commands, the MCP server over stdio and the event feed.
+- **Phase 3:** every operation in management-api.md, the parity test, `@bandwise/cli` management commands, the MCP server over stdio and the event feed.
 - **Phase 7:** the MCP HTTP transport and the Claude Code plugin packaging.
 - **Reversal:** if the approval gate is too strict for an org, an owner changes `agentApprovals`; the always-gated list stays. To stop all agent access in an org, revoke its agent tokens. Removing or demoting the user takes effect on the next request because the role is recomputed each time.

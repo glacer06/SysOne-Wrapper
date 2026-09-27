@@ -3,7 +3,7 @@
 // The harness only sees the EvalStore port. Two implementations ship here: an in-memory store for
 // tests, and a folder store for `pnpm eval` offline. The Postgres store (dataset_cases,
 // dataset_snapshots, eval_runs through withTenant) belongs to the console, which may import
-// @sysone/db; this package may not (architecture.md, Packages and boundaries).
+// @bandwise/db; this package may not (architecture.md, Packages and boundaries).
 //
 // Folder layout under the root:
 //   <org>/sets/<set>/v<n>.json       a QuestionSetSpec
@@ -13,7 +13,7 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { type QuestionSetSpec, type SystemOneProvider, hashJson, parseSpec } from "@sysone/core";
+import { type QuestionSetSpec, type SystemOneProvider, hashJson, parseSpec } from "@bandwise/core";
 import { type Dataset, type DatasetSnapshot, parseDataset } from "./dataset.js";
 import type { EvalMetrics } from "./metrics.js";
 

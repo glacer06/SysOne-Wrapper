@@ -129,7 +129,7 @@ describe("catalogActors", () => {
 // Parity with the markdown table: every row of management-api.md's Catalog section, in order.
 describe("catalog matches management-api.md", () => {
   const doc = readFileSync(
-    new URL("../../../../.claude/skills/sysone-builder/references/management-api.md", import.meta.url),
+    new URL("../../../../.claude/skills/bandwise-builder/references/management-api.md", import.meta.url),
     "utf8",
   );
   const section = doc.slice(doc.indexOf("## Catalog"), doc.indexOf("## Safe retries"));

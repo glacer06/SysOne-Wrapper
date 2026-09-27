@@ -1,12 +1,12 @@
 {
-  "name": "@sysone/tenancy",
+  "name": "@bandwise/tenancy",
   "version": "0.0.0",
   "private": true,
   "description": "TenantContext resolution, key vault, token hashing, rate limits, quotas.",
   "type": "module",
   "exports": {
     ".": {
-      "@sysone/source": "./src/index.ts",
+      "@bandwise/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     }
@@ -21,11 +21,11 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@sysone/core": "workspace:*",
+    "@bandwise/core": "workspace:*",
     "zod": "catalog:"
   },
   "devDependencies": {
-    "@sysone/config": "workspace:*",
+    "@bandwise/config": "workspace:*",
     "@types/node": "catalog:",
     "eslint": "catalog:",
     "typescript": "catalog:",

@@ -4,7 +4,7 @@
 import type { ExtractTablesWithRelations } from "drizzle-orm";
 import type { PgDatabase, PgQueryResultHKT, PgTransaction } from "drizzle-orm/pg-core";
 
-import type { TenantContext } from "@sysone/core/contracts";
+import type { TenantContext } from "@bandwise/core/contracts";
 
 import type * as schema from "../schema/index.js";
 
@@ -13,7 +13,7 @@ export type DrizzleDb = PgDatabase<PgQueryResultHKT, Schema>;
 export type DrizzleTx = PgTransaction<PgQueryResultHKT, Schema, ExtractTablesWithRelations<Schema>>;
 
 /** Private key of the drizzle transaction on a scope. Not reachable from outside the package. */
-export const DRIZZLE: unique symbol = Symbol("sysone.db.drizzle");
+export const DRIZZLE: unique symbol = Symbol("bandwise.db.drizzle");
 
 /** A transaction with app.org_id set to `orgId`. Tenant repositories take only this. */
 export interface TenantTx {

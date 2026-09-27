@@ -1,16 +1,16 @@
 // `pnpm eval --org <slug> --set <slug> --version <n> --dataset <name> [--snapshot <id>] [--model <id>]
 //            [--repeats <k>] [--provider typesafe|openrouter|vercel] [--transport fixture|sdk] [--data <dir>] [--json]`
 //
-// Internal (testing.md, Evals); customers use `sysone eval run`. Offline by default: the fixture
+// Internal (testing.md, Evals); customers use `bandwise eval run`. Offline by default: the fixture
 // transport answers from recorded fixtures and deterministic synthetic answers, and the folder store
 // reads specs and datasets from --data. `--transport sdk` (or SYSTEM_ONE_TRANSPORT=sdk) makes live
 // calls with TYPESAFE_API_KEY or OPENROUTER_API_KEY for the chosen provider.
 
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
-import { SystemOneProvider, type SystemOneTransport } from "@sysone/core";
-import { SdkTransport } from "@sysone/system-one-client";
-import type { FixtureTransport } from "@sysone/system-one-client/fixture";
+import { SystemOneProvider, type SystemOneTransport } from "@bandwise/core";
+import { SdkTransport } from "@bandwise/system-one-client";
+import type { FixtureTransport } from "@bandwise/system-one-client/fixture";
 import { EvalInputError, type EvalReport, runEval } from "./harness.js";
 import { BANDS, type BandMetrics } from "./metrics.js";
 import { PROVIDER_KEY_ENV, createEvalPorts, evalContext, offlineTransport } from "./ports.js";
@@ -159,7 +159,7 @@ export async function main(argv: readonly string[], io: CliIo): Promise<number> 
         provider: provider.data,
       },
       {
-        store: createFolderEvalStore(values.data ?? io.env["SYSONE_EVALS_DIR"] ?? DEFAULT_DATA_DIR),
+        store: createFolderEvalStore(values.data ?? io.env["BANDWISE_EVALS_DIR"] ?? DEFAULT_DATA_DIR),
         ports: createEvalPorts({ transport, keys, clock: now, newId }),
         ctx: evalContext(),
         transportKind,

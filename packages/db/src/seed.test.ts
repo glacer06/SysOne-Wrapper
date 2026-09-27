@@ -8,7 +8,7 @@ import {
   QuestionSetSpec,
   SEED_MODEL_PROFILES,
   SEED_MODEL_ROUTES,
-} from "@sysone/core";
+} from "@bandwise/core";
 
 import { drizzleOf } from "./internal/drizzle.js";
 import { authRepositories, platformRepositories, repos } from "./repos/index.js";
@@ -86,9 +86,9 @@ describe("three-org seed", () => {
   });
 
   it("puts one user in all three orgs with a role per org, visible through withUser", async () => {
-    const nick = three[0]?.userIds["nick@sysone.test"];
+    const nick = three[0]?.userIds["nick@bandwise.test"];
     if (nick === undefined) throw new Error("no nick");
-    for (const org of three) expect(org.userIds["nick@sysone.test"]).toBe(nick);
+    for (const org of three) expect(org.userIds["nick@bandwise.test"]).toBe(nick);
     const [memberships, orgs] = await t.db.withUser(nick, async (tx) => [
       await authRepositories.myMemberships(tx),
       await authRepositories.myOrganizations(tx),
@@ -104,7 +104,7 @@ describe("three-org seed", () => {
   });
 
   it("shows a user only their own memberships before an org is picked", async () => {
-    const vic = three[2]?.userIds["vic@sysone.test"];
+    const vic = three[2]?.userIds["vic@bandwise.test"];
     if (vic === undefined) throw new Error("no vic");
     const memberships = await t.db.withUser(vic, (tx) => authRepositories.myMemberships(tx));
     expect(memberships.map((m) => m.role)).toEqual(["viewer"]);
@@ -112,11 +112,11 @@ describe("three-org seed", () => {
 
   it("shows open invitations addressed to the user's email only", async () => {
     const sgr = three[0];
-    const rita = sgr?.userIds["rita@sysone.test"];
+    const rita = sgr?.userIds["rita@bandwise.test"];
     if (sgr === undefined || rita === undefined) throw new Error("seed failed");
     await t.db.withTenant(systemContext(sgr.orgId), async (tx) => {
       await repos.invitations.insert(tx, {
-        email: "RITA@sysone.test",
+        email: "RITA@bandwise.test",
         role: "editor",
         tokenHash: "hash-rita",
         expiresAt: new Date(Date.now() + 86_400_000),
@@ -133,7 +133,7 @@ describe("three-org seed", () => {
   });
 
   it("gives withUser no access to tenant tables", async () => {
-    const nick = three[0]?.userIds["nick@sysone.test"];
+    const nick = three[0]?.userIds["nick@bandwise.test"];
     if (nick === undefined) throw new Error("no nick");
     const n = await t.db.withUser(nick, async (tx) => {
       const res = (await drizzleOf(tx).execute(sql`select count(*)::int as n from question_sets`)) as unknown as {

@@ -1,6 +1,6 @@
-// @sysone/tenancy: key vault, KeyResolver, rate limits and quotas. The only package that touches
+// @bandwise/tenancy: key vault, KeyResolver, rate limits and quotas. The only package that touches
 // crypto. Phase 1 ships the dev implementations: a local KEK vault (ADR-003), an in-memory rate
-// limiter and an in-memory quota guard, all typed to the @sysone/core ports.
+// limiter and an in-memory quota guard, all typed to the @bandwise/core ports.
 
 export {
   type EncryptionContext,

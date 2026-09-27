@@ -1,10 +1,10 @@
 // Platform tables: no org_id and no tenant RLS (data-model.md, Platform tables). The app role
-// reads them; the sysone_platform role writes them. RunSink is the one app-role writer of
+// reads them; the bandwise_platform role writes them. RunSink is the one app-role writer of
 // model_alias_observations, inside the run's transaction.
 
 import { boolean, date, pgTable, primaryKey, text, unique } from "drizzle-orm/pg-core";
 
-import type { ModelLimits, RouteLimits } from "@sysone/core/contracts";
+import type { ModelLimits, RouteLimits } from "@bandwise/core/contracts";
 
 import { createdAt, json, pk, textArray, textEnum, ts } from "./columns.js";
 import { E } from "./enums.js";

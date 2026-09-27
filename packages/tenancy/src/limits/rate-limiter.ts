@@ -9,7 +9,7 @@
 // A rejected request consumes nothing. Phase 2 replaces this with Redis Lua scripts behind the
 // same port.
 
-import type { RateLimiter, RateLimitResult, TenantContext } from "@sysone/core/contracts";
+import type { RateLimiter, RateLimitResult, TenantContext } from "@bandwise/core/contracts";
 
 export interface InMemoryRateLimiterOptions {
   /** The org's RPM (plan limit with overrides). */

@@ -2,7 +2,7 @@
 // of the request (model, system, prompt, maxOutputTokens). The same prompt on two models is two
 // fixtures.
 
-import { LlmCompletion, LlmCompletionRequest, hashJson } from "@sysone/core";
+import { LlmCompletion, LlmCompletionRequest, hashJson } from "@bandwise/core";
 import { z } from "zod";
 
 export const LlmFixtureRoute = z.enum(["anthropic", "openrouter"]);

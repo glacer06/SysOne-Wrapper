@@ -1,5 +1,5 @@
-// @sysone/system-one-client/fixture: the fixture transport and fixture loading. This subpath
-// never imports @typesafe-ai/sdk, so `sysone run --local` can use it with no SDK and no key
+// @bandwise/system-one-client/fixture: the fixture transport and fixture loading. This subpath
+// never imports @typesafe-ai/sdk, so `bandwise run --local` can use it with no SDK and no key
 // (architecture.md, Packages and boundaries).
 
 export { FixtureTransport, type FixtureCall, type FixtureTransportOptions } from "./fixture-transport.js";

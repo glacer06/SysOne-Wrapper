@@ -1,6 +1,6 @@
 // Definition Studio (management-api.md, Definition Studio; definition-studio.md).
 
-import { GoalId, JobAccepted, SetId } from "@sysone/core";
+import { GoalId, JobAccepted, SetId } from "@bandwise/core";
 import { z } from "zod";
 
 import { defineOperation, operationGroup, placeholderInput, placeholderOutput } from "./define";

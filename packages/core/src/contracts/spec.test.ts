@@ -17,7 +17,7 @@ import {
 } from "./spec.js";
 
 const examplePath = new URL(
-  "../../../../.claude/skills/sysone-builder/templates/question-set.example.json",
+  "../../../../.claude/skills/bandwise-builder/templates/question-set.example.json",
   import.meta.url,
 );
 

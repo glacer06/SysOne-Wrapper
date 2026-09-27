@@ -1,4 +1,4 @@
-// Closed unions for text columns. Where @sysone/core has the zod enum, the column reuses its
+// Closed unions for text columns. Where @bandwise/core has the zod enum, the column reuses its
 // options, so the database type and the contract cannot drift. Unions data-model.md names that
 // have no contract enum are listed here.
 
@@ -43,7 +43,7 @@ import {
   VersionSource,
   VersionStatus,
   Action,
-} from "@sysone/core/contracts";
+} from "@bandwise/core/contracts";
 
 /** A zod enum's options as the non-empty tuple drizzle's text({ enum }) wants. */
 function options<T extends string>(e: { readonly options: readonly T[] }): [T, ...T[]] {
