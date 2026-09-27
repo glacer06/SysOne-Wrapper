@@ -46,6 +46,9 @@ The loop, its contracts and its rules are in [effectiveness-loop.md](../effectiv
 ## Value
 - [ ] Quality-adjusted value in rollups and set health, shown next to gross savings in the Savings and ROI report ([savings-model.md](../savings-model.md)) (Billing / Savings, with Quality / Learning for precision inputs)
 
+## Docs site
+- [ ] Docs pages ([team-playbook.md](../team-playbook.md#docs-site)): App feedback and labeling; Quality targets, precision and coverage; Threshold suggestions and replay; Set health; Proposals; Champion and challenger experiments; Upgrading to a new System One model; Per-question calibration (ADR-014); Studio improve mode
+
 ## Exit gate
 - On a seeded set with 500 labeled fixture runs, an agent using only MCP tools gets a threshold suggestion, applies it to a draft, runs a challenger, and promotes it after admin approval.
 - Registering a new stable model in the registry lists every pinned set in that family on the Model upgrades page, and try-model produces an eval comparison and a proposal.

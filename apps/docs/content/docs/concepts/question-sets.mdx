@@ -1,0 +1,46 @@
+---
+title: Question sets and versions
+description: How a set bundles questions and policies, and how versions and channels release it.
+---
+
+A **question set** is a named bundle of System One questions plus the policies that turn their answers into actions. Your app calls a set by its id or slug. The questions and thresholds live in the set, not in your app's code, so they can be reviewed and changed without a redeploy.
+
+## What a spec holds
+
+Each version of a set is one spec. The [quickstart](/docs/quickstart) has a full example. The main parts:
+
+| Part | What it is |
+| --- | --- |
+| `model` | The System One model to call, such as `jev-1.13.0`. |
+| `input.schema` | A JSON Schema for the state your app sends. |
+| `stages` | One or more groups of questions. Each stage is one model call. |
+| `policies` | Per question: bands, thresholds and the action for each band. |
+| `composites` | Optional weighted combinations of questions, such as an urgency score. |
+| `routes` | Conditions that pick one output label, with `defaultRoute` as the fallback. |
+| `savings` | The comparator model and the savings kind used for the cost report. |
+| `onUnavailable` | What happens when the model is down. See [outages](/docs/concepts/outages). |
+
+## Stages
+
+Questions in one stage are sent in one request. They run in parallel and cannot see each other's answers. Ask every question that can be answered from the same state in one stage, including ones that only matter in some cases, and mark those with `relevantWhen`. An answer that does not apply then creates no review item, does not lower the run's band and does not count toward savings.
+
+Add a second stage only when an earlier answer is needed to build new state or to decide what to ask next.
+
+## Drafts and published versions
+
+Every set has a mutable **draft**. Publishing freezes the draft into a numbered **version**. Published versions never change. To change a live set, you edit the draft and publish a new version.
+
+A caller can name a version directly:
+
+- `triage` runs whatever version the channel points at.
+- `triage@7` runs version 7.
+- `triage@draft` runs the draft, and always behaves like [shadow](/docs/concepts/rollout).
+
+## Channels
+
+A **channel** is a release pointer, `production` or `staging`, that points at one version. Promoting moves the pointer forward. Rolling back moves it back. Each channel pointer also holds the set's [rollout stage](/docs/concepts/rollout), so the same version can be in `full` on staging while it is still in `shadow` on production.
+
+<Callout title="Coming in Phase 3">
+  Publishing, channels and rollback are managed through the console, the HTTP API and the CLI,
+  which arrive in Phase 3. Today you can run a spec file with the CLI in local mode.
+</Callout>

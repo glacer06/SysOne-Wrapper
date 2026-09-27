@@ -38,6 +38,9 @@
 - [ ] Shell: layout, org switcher, nav, settings pages (members, keys, apps, agent tokens, billing, retention, PII, agent approvals)
 - [ ] Approvals inbox: list pending requests, approve or reject in a console session
 
+## Docs site
+- [ ] Docs pages ([team-playbook.md](../team-playbook.md#docs-site)): Organizations, members and roles; Provider keys (bring your own TypeSafe, OpenRouter or AI Gateway key, validation, rotation), and update Providers to drop its Phase 2 callout; Agent tokens and approvals (scopes, role ceiling, device flow), and update Agents and MCP; Plans, billing and quotas
+
 ## Exit gate
 - One user in three orgs (SGR, Personal, Dallas style seed) switches with no data leak (Playwright).
 - One Playwright test per role proves its permissions.

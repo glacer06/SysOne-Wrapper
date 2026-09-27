@@ -1,0 +1,20 @@
+{
+  "title": "Docs",
+  "root": true,
+  "pages": [
+    "index",
+    "quickstart",
+    "---Concepts---",
+    "concepts/question-sets",
+    "concepts/question-types",
+    "concepts/confidence-bands",
+    "concepts/rollout",
+    "concepts/outages",
+    "concepts/cost-and-savings",
+    "concepts/providers",
+    "---Reference---",
+    "api",
+    "cli",
+    "agents-and-mcp"
+  ]
+}

@@ -17,7 +17,7 @@ This is how a team of Claude agents (and humans) builds SysOne in parallel witho
 | **Quality / Learning** | `packages/core/src/learning` (pure: gate evaluator, precision intervals, threshold suggester, label selector, drift stats, stability), `apps/console/src/jobs/learning` (gate evaluator, auto-demote, question rollup, threshold refit, experiment scorer, model-upgrade candidates), `effectiveness-loop.md` | Phase 3 |
 | **Extensions** | `packages/plugin-sdk`, `plugins-builtin`, `apps/extension-chrome` | Phase 5 onward |
 | **Security reviewer** (part-time) | Threat model; reviews every change to keys, authz, tokens, agent tokens, approvals, the device flow, webhooks, embed, extension, codegen output and the standalone export | Phase 2 onward |
-| **Docs** | Skill references, API docs, embed quickstart, DPA and subprocessor notes | Continuous |
+| **Docs** | `apps/docs` (the public customer docs site), skill references, API docs, embed quickstart, DPA and subprocessor notes | Continuous |
 
 If a file isn't in your lane, don't edit it. Open a handoff (below).
 
@@ -64,6 +64,18 @@ Phase 6   Chrome extension   ||   Phase 7  Integrations (MCP HTTP, Claude Code p
 - **Track work in Linear**, project SysOne (`P-NSI-36`) in the NSIMS team, one milestone per phase. Put the issue key, for example `NSI-412`, in the PR title and branch name.
 - **A console feature is not done until its operation, route and OpenAPI path exist and the parity test passes.**
 - **Don't guess System One behavior.** Read the live docs or run `pnpm smoke`. Record new fixtures when behavior matters.
+
+## Docs site
+
+The public customer docs live in `apps/docs`, a Fumadocs site. Run it with `pnpm --filter @sysone/docs dev` (port 3001).
+
+- **Every phase adds or updates its customer pages as part of done.** Each phase checklist names the pages it owes. A phase is not done while its pages are missing or out of date.
+- **Pages for unbuilt features say so.** Use a callout that says "Coming in Phase N" or "Available from Phase N". Never describe an unbuilt feature as live.
+- **Facts come from the repo.** Every claim must match the references and the contracts. If you are not sure, leave it out.
+- **Brand in one place.** The product name, docs domain and GitHub URL live in `apps/docs/src/site.ts`. Pages write the product name as `%product%`. Code identifiers keep their real names (`sysone`, `@sysone/*`, `SYSONE_*`).
+- **The API reference is generated** from `packages/core/openapi.json` at build time. Do not copy the schema into the site. `llms.txt` and `llms-full.txt` are generated from the same pages.
+- **Independent product.** The footer says the product is independent and built on TypeSafe's System One models, and links docs.typesafe.ai. Never present the site as TypeSafe's docs.
+- Content tests in `apps/docs/test` check that every page is listed, that the quickstart spec validates, and the writing rules below.
 
 ## Handoff protocol
 

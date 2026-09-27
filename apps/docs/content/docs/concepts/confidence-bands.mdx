@@ -1,0 +1,81 @@
+---
+title: Confidence bands and actions
+description: How each answer lands in a band, and how each band becomes an action.
+---
+
+Every answer lands in one of three **bands**: high, medium or low. Each question's policy maps each band to an **action**. Your app acts on the result, not on raw probabilities.
+
+## From answer to band
+
+**Choice and score** answers carry a `confidence` from 0 to 1. The policy sets two thresholds:
+
+```json
+"thresholds": { "high": 0.75, "medium": 0.45 }
+```
+
+A confidence at or above `high` is the high band. At or above `medium` is the medium band. Anything lower is the low band. A choice policy can also set stricter thresholds for risky options with `perOption`.
+
+**Noul** answers have no confidence field, only the probability of yes. The policy sets where yes and no become clear:
+
+```json
+"noul": { "trueAt": 0.85, "falseAt": 0.15, "reviewMargin": 0.1 }
+```
+
+| Probability of yes | Band | Value |
+| --- | --- | --- |
+| 0.85 or more | high | `true` |
+| 0.15 or less | high | `false` |
+| 0.75 to under 0.85 | medium | `true` |
+| over 0.15 to 0.25 | medium | `false` |
+| anything in between | low | `null` |
+
+## From band to action
+
+| Action | What happens |
+| --- | --- |
+| `auto` | The answer is applied. |
+| `review` | A review item is created for a person. Nothing else happens until they resolve it. |
+| `fallback` | The configured fallback runs: a fixed value, another set, or nothing. |
+| `escalate_to_llm` | A reasoning model is called during the run. Its answer is returned next to the System One answer, and its cost is counted as escalation spend. |
+
+A policy picks one action per band:
+
+```json
+"actions": {
+  "high": { "kind": "auto" },
+  "medium": { "kind": "review" },
+  "low": { "kind": "review" }
+}
+```
+
+If an escalation fails or times out, that decision becomes `review` instead.
+
+## Gating and the run as a whole
+
+A question marked `gating: true` counts toward the run's overall result. The **run band** is the lowest band among relevant gating decisions. The **overall action** is the most conservative action among them, in this order: `review`, then `fallback`, then `escalate_to_llm`, then `auto`.
+
+A question whose `relevantWhen` condition is false is left out. It creates no review item, does not lower the run band and does not count toward savings.
+
+## Action and effective action
+
+Each decision in a run result carries two actions:
+
+- `action` is what the policy says.
+- `effectiveAction` is what the current [rollout stage](/docs/concepts/rollout) allows.
+
+Your app should always act on `effectiveAction`.
+
+## Choosing thresholds
+
+Thresholds should follow the cost of a wrong action, not the question. These are starting points by risk tier, measured on Jev 1.13. Tune them on your own labeled data.
+
+| Tier | Example | high | medium | Noul trueAt / falseAt / margin |
+| --- | --- | --- | --- | --- |
+| Low risk | Tagging, sorting, UI hints | 0.60 | 0.30 | 0.80 / 0.20 / 0.10 |
+| Standard | Routing tickets, ranking, triage | 0.75 | 0.45 | 0.85 / 0.15 / 0.10 |
+| High risk | Money movement, account changes | 0.90 | 0.70 | 0.95 / 0.05 / 0.05 |
+
+- If all you need is the best option, take the top choice and don't threshold it.
+- Low confidence on a harmless preference can be fine. Several acceptable options spread probability.
+- Confidence summarizes the probabilities. It is not permission to act.
+- Don't copy a noul threshold to a choice question.

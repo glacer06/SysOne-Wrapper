@@ -83,6 +83,7 @@ If the live docs and this skill disagree, the docs win. Fix the skill in the sam
 apps/console        Next.js App Router. Tenant console, platform admin, /api/v1. Only place with DB + TypeSafe keys.
   src/server/operations   Operation registry. One OperationDef per capability behind console, API, CLI, MCP.
 apps/example-embed  E2E target that consumes the embed kit.
+apps/docs           Public customer docs site (Fumadocs). No DB, no keys. API reference from openapi.json.
 apps/extension-chrome  Phase 6. WXT, MV3.
 packages/core       Pure. Contracts, spec compiler, stage orchestrator, confidence router, composites, lints,
                     cost + savings, token preflight. src/question-types (one module per type),

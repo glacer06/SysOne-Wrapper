@@ -1,0 +1,30 @@
+---
+title: CLI reference
+description: The sysone command line. Local mode works today; the rest arrives in Phase 3.
+---
+
+<Callout type="warn" title="Coming in Phase 3">
+  The published `sysone` CLI, with commands to manage sets, publish versions, change rollout
+  stages and run evals over the HTTP API, arrives in Phase 3. This page will list every command
+  then.
+</Callout>
+
+## What works today
+
+One command works now, from a checkout of the source repository:
+
+```bash
+pnpm sysone run --local <spec.json> <state.json> [--json]
+  [--rollout shadow|controlled|full|paused]
+  [--channel production|staging]
+  [--provider typesafe|openrouter|vercel]
+```
+
+It runs a spec on a state with fixture answers. It makes no network call and needs no key. See the [quickstart](/docs/quickstart).
+
+## Conventions the full CLI will follow
+
+- Every command supports `--json` for scripts and agents.
+- It never prompts when input is not a terminal. A command that needs confirmation then fails and asks for `--yes`.
+- Exit codes: `0` ok, `1` error, `2` a diff or drift was found, `3` an approval is pending.
+- It reads `SYSONE_TOKEN` and `SYSONE_BASE_URL`, or a named profile. It never holds a TypeSafe, OpenRouter or AI Gateway key.

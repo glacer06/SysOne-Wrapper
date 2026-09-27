@@ -10,6 +10,9 @@
 - [ ] Autonomy rule: clicks on its own only for high-band answers on org-allowlisted sites and only when the set's production rollout is `full`; everything else waits for confirmation
 - [ ] Sets using the web page adapter default to the high-risk tier, and their gate dataset includes adversarial cases ([security.md](../security.md), State is untrusted)
 
+## Docs site
+- [ ] Docs pages ([team-playbook.md](../team-playbook.md#docs-site)): Chrome extension (install, sign in, evaluate page mode, action picker mode, the autonomy rule)
+
 ## Exit gate
 - No TypeSafe key anywhere in the extension.
 - Nothing is sent before the user clicks.

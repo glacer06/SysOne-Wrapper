@@ -12,6 +12,9 @@
 - [ ] `apps/example-embed` using both modes
 - [ ] Integration recipes per [deploy-and-codegen.md](../deploy-and-codegen.md): Next.js route handler, Express, plain HTTP (curl), Python httpx; each branches on `effectiveAction`
 
+## Docs site
+- [ ] Docs pages ([team-playbook.md](../team-playbook.md#docs-site)): Embed kit overview; `@sysone/client` reference (server client, Next.js route, browser tokens, `pk_` mode); `@sysone/react` components and theming; integration recipes (Next.js, Express, plain HTTP, Python)
+
 ## Exit gate
 - `example-embed` E2E passes in both modes.
 - CI bundle scan finds no key patterns in client output.

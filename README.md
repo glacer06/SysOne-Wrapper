@@ -21,6 +21,7 @@ SysOne is that layer.
 
 ## Where things are
 
+- `apps/docs`: the public customer docs site (Fumadocs). Run it with `pnpm --filter @sysone/docs dev` and open http://localhost:3001/docs. The product name and docs domain live in `apps/docs/src/site.ts`.
 - `docs/PLAN.md`: the full plan
 - `docs/adr/`: architecture decisions
 - `.claude/skills/sysone-builder/`: the builder skill every agent on the team loads first
