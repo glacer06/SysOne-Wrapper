@@ -24,7 +24,7 @@ Scan the repository root unless the person names a folder. Skip `node_modules`, 
 
 ### 2. Find LLM calls
 
-Search with the patterns in `references/detection-patterns.md`: SDK calls for Anthropic, OpenAI, the Vercel AI SDK, LangChain and LiteLLM, and raw `fetch` or HTTP calls to chat endpoints. Also follow wrappers: when the repo has its own `askLLM()` or `classify()` helper, find its callers.
+Search with the patterns in `references/detection-patterns.md`: SDK calls for Anthropic, OpenAI, the Vercel AI SDK, LangChain and LiteLLM, and raw `fetch` or HTTP calls to chat endpoints. Also follow wrappers: when the repo has its own `askLLM()` or `classify()` helper, find its callers. Search for direct System One calls too (`.systemOne(`, `.system_one(`, `experimental_evaluate`, `/v1/systemone`): list them as their own group, since their questions already exist and only need to move into a managed spec.
 
 ### 3. Keep only calls used as decisions
 

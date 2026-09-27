@@ -19,6 +19,18 @@ Search patterns for LLM calls, then the signals that a call is a decision. Use t
 
 Also search for the repo's own wrappers (`askLLM`, `classify`, `judge`, `llm(`) once you see one, and find every caller.
 
+## Existing System One calls
+
+A repo may already call Jev directly. These are the easiest candidates: the questions exist, so the draft spec is a translation, and the win is versions, bands, review and a cost record rather than a model swap. Report them in their own group, and check whether the code applies a threshold and what it does on an error.
+
+| Library | Language | Search for |
+|---|---|---|
+| TypeSafe SDK | TS/JS | `@typesafe-ai/sdk`, `TypeSafeClient`, `.systemOne(` |
+| TypeSafe SDK | Python | `typesafe`, `TypeSafeClient`, `.system_one(` |
+| Vercel AI SDK | TS/JS | `experimental_evaluate`, `typesafe-ai/jev` |
+| Raw HTTP | any | `/v1/systemone`, `api.typesafe.ai`, `ai-gateway.vercel.sh/typesafe`, `openrouter.ai/api/v1/systemone`, `/typesafe/v1/systemone` (a LiteLLM proxy) |
+| Cloudflare Workers AI | TS/JS | `typesafe/jev` with `env.AI.run(` or `/ai/run` |
+
 ## Decision signals in the prompt
 
 - "classify", "categorize", "label", "which category", "which of the following"
