@@ -16,11 +16,19 @@ TypeSafe's official agent skill also asks builders to separate missing evidence,
 
 ## Decision
 
-1. **Outage rule per set.** `QuestionSetSpec` gains `onUnavailable: "fallback" | "review" | "escalate_to_llm"`, default `fallback`. It never resolves to `auto`.
+1. **Outage rule per set.** `QuestionSetSpec` gains `onUnavailable: "fallback" | "review" | "escalate_to_llm"`, default `review` since Amendment 1 (originally `fallback`). It never resolves to `auto`.
 2. **Always an instruction.** When System One is unavailable after retries, `runQuestionSet` returns a normal `RunResult` with `status: "error"`, `error.code` set, and every gating decision's `effectiveAction` equal to `onUnavailable`. No caller ever receives an empty decision set.
 3. **Liveness alert.** A job raises `alert.raised` with kind `set_silent` when a set that normally produces decisions on a channel produced none, or only errors, for its window (default 15 minutes at production traffic, configurable per set). Rollout pages and set health show it.
 4. **Failure classes.** Review resolutions and feedback reports can carry `failureClass: "missing_evidence" | "model_error" | "code_error" | "service"`. Proposals and set health group misses by class.
 5. **Latency baseline.** TypeSafe's published 70 to 500 ms end-to-end figure is recorded as the reference in `system-one-api-contract.md`; per-set p50 and p95 are measured, not assumed.
+
+### Amendment 1 (Nick, 2026-09-27: "amend ADR-012 to default to review")
+
+6. **Fail closed by default.** When a spec leaves `onUnavailable` out, it resolves to `review`, not `fallback`. An outage becomes work for a person, never a decision dropped where nobody looks. `fallback` and `escalate_to_llm` stay available when the owner picks them on purpose.
+7. **New lint `outage.fallback_silent` (warning).** Raised when `onUnavailable` is `fallback` and a gating decision's fallback would do nothing (no config, or `noop`), because an outage would then drop that decision with nobody told.
+8. **Review load during an outage.** Review items created by an outage carry `failureClass: "service"` so the review queue can group and bulk-resolve them per outage window (Phase 3). The `set_silent` alert still fires.
+
+No set has been published, so changing the default changes no live behavior.
 
 ## Options considered
 
