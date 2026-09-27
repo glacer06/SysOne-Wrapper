@@ -18,7 +18,8 @@
     "fixtures:record": "tsx --conditions=@bandwise/source packages/evals/src/live/record-bin.ts",
     "smoke": "tsx --conditions=@bandwise/source packages/evals/src/live/smoke-bin.ts",
     "eval": "tsx --conditions=@bandwise/source packages/evals/src/bin.ts",
-    "bandwise": "tsx --conditions=@bandwise/source packages/cli/src/bin.ts"
+    "bandwise": "tsx --conditions=@bandwise/source packages/cli/src/bin.ts",
+    "kit:export": "pnpm --filter @bandwise/kit-export export"
   },
   "devDependencies": {
     "tsx": "catalog:",

@@ -15,7 +15,8 @@ export const USAGE = `Usage:
   --local   Run the spec with the fixture transport: no network call and no System One key.
             Recorded fixtures answer the requests they cover; others get synthetic answers.
 
-Management commands (sets, publish, rollout, evals and more) arrive with Phase 3.`;
+Management commands (sets, publish, rollout, evals and more) work against Bandwise Cloud and
+are not in this release. Nothing here needs a Bandwise account.`;
 
 const PROVIDERS = ["typesafe", "openrouter", "vercel"] as const;
 const ROLLOUTS = ["shadow", "controlled", "full", "paused"] as const;
@@ -42,8 +43,8 @@ function oneOf<T extends string>(allowed: readonly T[], value: string | undefine
 export function parseArgs(argv: readonly string[]): Parsed {
   if (argv.length === 0 || argv.includes("--help") || argv.includes("-h")) return { kind: "help" };
   const [command, ...rest] = argv;
-  if (command !== "run") return { kind: "error", message: `unknown command "${command}"; only "run --local" is available before Phase 3` };
-  if (!rest.includes("--local")) return { kind: "error", message: "bandwise run needs --local until the /api/v1 commands land in Phase 3" };
+  if (command !== "run") return { kind: "error", message: `unknown command "${command}"; this release has only "run --local"` };
+  if (!rest.includes("--local")) return { kind: "error", message: "bandwise run needs --local: running a published set needs Bandwise Cloud, which this release does not call" };
 
   const positional: string[] = [];
   const out: Extract<Parsed, { kind: "run-local" }> = { kind: "run-local", specPath: "", statePath: "", json: false };

@@ -1,11 +1,9 @@
 node_modules
-.turbo
 dist
-.next
-next-env.d.ts
 coverage
+.turbo
 *.tsbuildinfo
+*.tgz
+.release
 .env*
-!.env.example
 .DS_Store
-/dist-kit/

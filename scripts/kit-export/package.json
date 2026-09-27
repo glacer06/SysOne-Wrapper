@@ -1,0 +1,22 @@
+{
+  "name": "@bandwise/kit-export",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Builds the public bandwise-kit repository tree from this monorepo and scans it for anything private.",
+  "type": "module",
+  "scripts": {
+    "export": "tsx --conditions=@bandwise/source src/bin.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@bandwise/config": "workspace:*",
+    "@bandwise/templates": "workspace:*",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

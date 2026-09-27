@@ -131,6 +131,24 @@
       ],
       "outputs": []
     },
+    "@bandwise/kit-export#test": {
+      "dependsOn": [
+        "transit"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/packages/core/**",
+        "$TURBO_ROOT$/packages/cli/**",
+        "$TURBO_ROOT$/packages/system-one-client/**",
+        "$TURBO_ROOT$/packages/templates/**",
+        "$TURBO_ROOT$/packages/config/**",
+        "$TURBO_ROOT$/plugins/claude-code/skills/find-decisions/**",
+        "$TURBO_ROOT$/.claude/skills/bandwise-builder/**",
+        "$TURBO_ROOT$/docs/**",
+        "$TURBO_ROOT$/pnpm-workspace.yaml"
+      ],
+      "outputs": []
+    },
     "@bandwise/cli#test": {
       "dependsOn": [
         "transit"
