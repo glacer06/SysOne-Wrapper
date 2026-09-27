@@ -1,6 +1,6 @@
 # ADR-012: Outage behaviour and liveness
 
-- **Status:** proposed
+- **Status:** accepted (Nick, 2026-09-27)
 - **Date:** 2026-09-27
 - **Owner:** Architect / Lead
 - **Decider:** Nick
