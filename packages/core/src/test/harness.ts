@@ -45,7 +45,7 @@ export function exampleSpec(): QuestionSetSpec {
 export function exampleState(): Record<string, unknown> {
   return {
     email: { from: "ana@acme.com", subject: "Re: contract", body: "Can you approve the contract by Friday?", signature: "Ana, +1 555 0100" },
-    me: { name: "Nick", known_contacts: ["ana@acme.com"] },
+    me: { name: "Sam", known_contacts: ["ana@acme.com"] },
   };
 }
 

@@ -5,7 +5,7 @@ description: Use when someone wants to find LLM calls in a codebase that are rea
 
 # Find decisions
 
-Many LLM calls do not need to write anything. They answer "yes or no", "which one" or "how much", and the app branches on the answer. Those calls can run on a System One model (Jev is the first) through a Bandwise question set, which is faster, cheaper, and returns a calibrated confidence band instead of free text.
+Many LLM calls do not need to write anything. They answer "yes or no", "which one" or "how much", and the app branches on the answer. Those calls can run on a System One model (Jev is the first) through a Bandwise question set, which is faster and cheaper, and returns a typed answer with a confidence that Bandwise maps to an action, instead of free text.
 
 This skill finds those calls in the current repository and drafts a spec for the best ones. It is part of the free Bandwise kit.
 
