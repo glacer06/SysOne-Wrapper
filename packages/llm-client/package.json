@@ -2,17 +2,23 @@
   "name": "@sysone/llm-client",
   "version": "0.0.0",
   "private": true,
-  "description": "LlmTransport port and fixture transport. The only importer of @anthropic-ai/sdk.",
+  "description": "LlmTransport implementations: Anthropic (default), an optional OpenRouter chat route (ADR-011), and a fixture transport. The only importer of @anthropic-ai/sdk.",
   "type": "module",
   "exports": {
     ".": {
       "@sysone/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./fixture": {
+      "@sysone/source": "./src/fixture/index.ts",
+      "types": "./dist/fixture/index.d.ts",
+      "import": "./dist/fixture/index.js"
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "fixtures"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
@@ -21,6 +27,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "catalog:",
     "@sysone/core": "workspace:*",
     "zod": "catalog:"
   },

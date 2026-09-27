@@ -57,6 +57,7 @@ FeedbackReport = {
                                                          // composite level or route output
   observedAt: string,                                    // ISO 8601
   idempotencyKey: string,
+  failureClass?: "missing_evidence" | "model_error" | "code_error" | "service",   // ADR-012
 }
 ```
 
@@ -326,7 +327,7 @@ QA / Evals owns these, with Quality / Learning. Details in [testing.md](testing.
 
 ## Failure triage
 
-Every missed or disputed decision gets one failure class, set by the reviewer or by the resolver of a feedback report, and stored with the case:
+Every missed or disputed decision gets one failure class (ADR-012, accepted), set by the reviewer or by the resolver of a feedback report, and stored with the case. It travels as the optional `failureClass` on `FeedbackReport`, on `review.resolve` input and on `review.resolved` resolutions:
 
 | Class | Meaning | Usual fix |
 |---|---|---|
@@ -334,5 +335,7 @@ Every missed or disputed decision gets one failure class, set by the reviewer or
 | `model_error` | The evidence was there and the model answered wrong | Rewrite the question, add a no-match option, split the judgment, or try another model |
 | `code_error` | Our code composed, routed or mapped the answer wrong | Fix the spec, composite or route |
 | `service` | Timeout, outage or rate limit | Check the outage rule and limits, not the question |
+
+Outage runs (warning `system_one_outage`, ADR-012) are not misses: they book no savings, pick no label items and never count toward precision, coverage or calibration. The `set_silent` liveness alert covers them instead ([confidence-policy.md](confidence-policy.md#outage-behaviour-adr-012-accepted)).
 
 Proposals and set health group misses by class, so a spike in `missing_evidence` points at the input, not the prompt. The runs explorer shows state, questions and answers together for each miss, which is what the class is judged from. This follows the official TypeSafe skill's instruction to separate missing evidence, model errors, code errors and service failures.

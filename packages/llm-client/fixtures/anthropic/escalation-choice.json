@@ -1,0 +1,16 @@
+{
+  "name": "escalation-choice",
+  "route": "anthropic",
+  "request": {
+    "model": "claude-haiku-4-5",
+    "system": "You answer one classification question about the state below. Reply with exactly one option key from this list: billing, technical, none. Do not explain.",
+    "prompt": "{\"criteria\":{\"billing\":\"Payments\",\"none\":null,\"technical\":\"Bugs\"},\"question\":\"Which team should handle `ticket`?\",\"state\":{\"ticket\":\"The app crashes every time I open the invoices page.\"}}",
+    "maxOutputTokens": 16
+  },
+  "completion": {
+    "text": "technical",
+    "model": "claude-haiku-4-5",
+    "inputTokens": 112,
+    "outputTokens": 2
+  }
+}

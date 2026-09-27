@@ -53,7 +53,7 @@ examples/             Sample apps that integrate SysOne (Integrations).
 Import boundaries are enforced with `eslint-plugin-boundaries`:
 
 - Only `system-one-client` imports `@typesafe-ai/sdk`.
-- Only `llm-client` imports `@anthropic-ai/sdk`.
+- Only `llm-client` imports `@anthropic-ai/sdk`. Its fixture subpath `@sysone/llm-client/fixture` (`packages/llm-client/src/fixture/**`) never does; the exclusive-externals rule covers it as its own element.
 - Only `db` imports `drizzle-orm`. Raw `db` handles are not exported.
 - Only `tenancy` touches crypto and KMS.
 - `react` never imports `client` server entrypoints, `tenancy`, `db`, or `system-one-client`.
@@ -393,6 +393,7 @@ QuestionSetSpec = {
   routes?: Array<{ when: Condition, output: string }>,   // first match wins
   defaultRoute?: string,                                  // used when no route matches
   savings?: { comparatorModel?: string, estOutputTokensPerQuestion?: number, kind?: SavingsKind },
+  onUnavailable?: "fallback" | "review" | "escalate_to_llm",  // outage rule (ADR-012); default fallback, never auto
 }
 
 QuestionDef = {
@@ -464,7 +465,7 @@ Two choices decide how a System One call leaves the server. They are separate.
 - Preflight, pinning and pricing read the provider's route (`ModelCatalog.effective(name, provider)`). Changing a set's provider re-runs the model lints, like changing its model.
 - Fixtures are recorded per provider. `pnpm fixtures:record --provider openrouter` and `pnpm smoke --provider openrouter` need `OPENROUTER_API_KEY`.
 
-**LLM routes** (`llm-client`). Escalations, Studio drafting, improve mode and opportunity drafting go through `LlmTransport`. The default route is Anthropic through `@anthropic-ai/sdk`. ADR-011 proposes a second, optional route: OpenRouter's OpenAI-compatible chat endpoint over plain `fetch`, used only for `escalate_to_llm` when an `EscalationConfig.model` names an OpenRouter model id. That includes `typesafe/jev-router`, a free OpenRouter model that uses Jev to pick an LLM and a reasoning effort per request. It is an LLM router, not a System One endpoint, so it never goes through `SystemOneTransport`, and its spend is LLM spend ([savings-model.md](savings-model.md)). Until ADR-011 is accepted, `llm-client` stays Anthropic only.
+**LLM routes** (`llm-client`). Escalations, Studio drafting, improve mode and opportunity drafting go through `LlmTransport`. The default route is Anthropic through `@anthropic-ai/sdk`. ADR-011 proposes a second, optional route: OpenRouter's OpenAI-compatible chat endpoint over plain `fetch`, used only for `escalate_to_llm` when an `EscalationConfig.model` names an OpenRouter model id. That includes `typesafe/jev-router`, a free OpenRouter model that uses Jev to pick an LLM and a reasoning effort per request. It is an LLM router, not a System One endpoint, so it never goes through `SystemOneTransport`, and its spend is LLM spend ([savings-model.md](savings-model.md)). The code is built: `createLlmTransport({ anthropic, openrouter? })` returns a `RoutedLlmTransport` that sends `vendor/model` ids to OpenRouter only when `openrouter.enabled` is true. Until ADR-011 is accepted, deployments leave it off, so an OpenRouter id fails as `llm_unavailable` and the escalation falls back to review. `LlmCompletion` has no cost field yet, so OpenRouter's reported `usage.cost` is not passed through; escalation cost comes from the price book row of the model that answered.
 
 ## Managed live
 
@@ -531,6 +532,7 @@ The operation builds `PublishCtx` from the stores; core never reads them. The ed
 | `policy.noul_order` | Noul settings break `0 < falseAt < trueAt < 1` or `falseAt + reviewMargin < trueAt - reviewMargin` | error |
 | `policy.per_option_keys` | `perOption` keys are not a subset of the choice's option keys | error |
 | `policy.type_mismatch` | A question has no policy, or its policy type differs from the question type | error |
+| `outage.auto_not_allowed` | `onUnavailable` is `auto` (ADR-012); an outage gives no answer to act on. The strict schema refuses it with the same rule id | error |
 | `policy.all_gating_thresholded` | Every question is gating and thresholded; suggest the top-choice preset where only the best option matters | warning |
 | `stage.same_stage_dependency` | Question depends on another answer in the same stage | error |
 | `stage.needless_second_call` | A stage's `when` reads an earlier answer but its `stateFrom` is `input` only; merge into the earlier stage and use `relevantWhen` | warning |

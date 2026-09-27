@@ -5,7 +5,7 @@ import type { ModelProfile } from "../contracts/models.js";
 import type { LintResult, QuestionSetSpec } from "../contracts/spec.js";
 import type { PublishCtx } from "../contracts/tenant.js";
 import { profileLints, publishLints } from "./model-rules.js";
-import { moduleLints, pathLints, policyLints, stageLints } from "./spec-rules.js";
+import { moduleLints, outageLints, pathLints, policyLints, stageLints } from "./spec-rules.js";
 import { weaknessLints } from "./weakness-rules.js";
 
 /** Every lint rule id core emits. */
@@ -42,6 +42,7 @@ export const LINT_RULES = [
   "weakness.generation",
   "weakness.large_unreferenced_state",
   "weakness.threshold_copied",
+  "outage.auto_not_allowed",
 ] as const;
 export type LintRule = (typeof LINT_RULES)[number];
 
@@ -55,6 +56,7 @@ export function lint(spec: QuestionSetSpec, profile: ModelProfile | null, publis
     ...pathLints(spec),
     ...stageLints(spec),
     ...policyLints(spec),
+    ...outageLints(spec),
     ...profileLints(spec, profile),
     ...weaknessLints(spec, profile),
     ...(publishCtx === undefined ? [] : publishLints(spec, profile, publishCtx)),

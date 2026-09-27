@@ -42,6 +42,39 @@ export function effectiveAction(i: EffectiveActionInput): Action {
   }
 }
 
+export interface OutageActionInput {
+  /** The routing stage (routingStage of the pointer stage and channel). */
+  stage: RolloutStage;
+  kind: "question" | "composite";
+  gating: boolean;
+  relevant: boolean;
+  /** The spec's outage rule, default applied. Never auto. */
+  onUnavailable: "fallback" | "review" | "escalate_to_llm";
+}
+
+/**
+ * The effective action of a decision when System One was unavailable after retries (ADR-012,
+ * confidence-policy.md "Outage behaviour"). Never auto. Relevant gating decisions take the set's
+ * outage rule in controlled and full. Shadow, paused and inactive never act, so they stay fallback.
+ * Non-gating decisions are fallback, as in the low band of controlled. A composite has no answer
+ * type for an LLM to return, so an escalate_to_llm rule becomes review for it.
+ */
+export function outageEffectiveAction(i: OutageActionInput): Action {
+  if (!i.relevant || !i.gating || isShadowLike(i.stage)) return "fallback";
+  if (i.kind === "composite" && i.onUnavailable === "escalate_to_llm") return "review";
+  return i.onUnavailable;
+}
+
+/**
+ * Decision.executed on an outage: true when the run creates a review item or makes the LLM call.
+ * An outage fallback runs nothing (no policy fallback config applies), so it is false, as it is on
+ * the challenger arm. The stages that never act already resolve to fallback.
+ */
+export function isOutageExecuted(i: { effectiveAction: Action; arm: ExperimentArm | undefined }): boolean {
+  if (i.arm === "challenger") return false;
+  return i.effectiveAction === "review" || i.effectiveAction === "escalate_to_llm";
+}
+
 export interface ExecutedInput {
   stage: RolloutStage;
   /** The decision's band (a composite's certainty band). */

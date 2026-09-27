@@ -1,6 +1,7 @@
 // Review and feedback (management-api.md, Review and feedback; api.md, Feedback).
 
 import {
+  FailureClass,
   FeedbackBatch,
   JsonValue,
   ReviewItemId,
@@ -48,6 +49,8 @@ export const reviewOperations = operationGroup(
       id: ReviewItemId,
       resolution: JsonValue,
       addToDataset: z.boolean().optional(),
+      /** Why the decision was wrong (ADR-012). */
+      failureClass: FailureClass.optional(),
     }),
     // shape: Phase 3, owner Platform / Tenancy
     output: placeholderOutput(),

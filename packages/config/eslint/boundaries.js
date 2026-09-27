@@ -36,6 +36,8 @@ export const elements = [
   // The fixture subpath never loads @typesafe-ai/sdk, so `sysone run --local` can use it.
   { type: "system-one-client-fixture", pattern: "packages/system-one-client/src/fixture" },
   { type: "system-one-client", pattern: "packages/system-one-client" },
+  // The fixture subpath never loads @anthropic-ai/sdk (the exclusive-externals rule enforces it).
+  { type: "llm-client-fixture", pattern: "packages/llm-client/src/fixture" },
   { type: "llm-client", pattern: "packages/llm-client" },
   { type: "db", pattern: "packages/db" },
   { type: "tenancy", pattern: "packages/tenancy" },
@@ -69,7 +71,8 @@ export const allowedElementDeps = {
   core: ["core-contracts"],
   "system-one-client-fixture": ["core", "core-contracts"],
   "system-one-client": ["core", "core-contracts", "system-one-client-fixture"],
-  "llm-client": ["core", "core-contracts"],
+  "llm-client-fixture": ["core", "core-contracts"],
+  "llm-client": ["core", "core-contracts", "llm-client-fixture"],
   db: ["core", "core-contracts"],
   tenancy: ["core", "core-contracts"],
   billing: ["core", "core-contracts"],
@@ -101,6 +104,7 @@ export const allowedElementDeps = {
     "system-one-client",
     "system-one-client-fixture",
     "llm-client",
+    "llm-client-fixture",
     "db",
     "tenancy",
     "billing",

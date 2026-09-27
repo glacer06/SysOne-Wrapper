@@ -1,0 +1,20 @@
+{
+  "name": "error-529",
+  "route": "anthropic",
+  "request": {
+    "model": "claude-haiku-4-5",
+    "system": "You answer one classification question about the state below. Reply with exactly one option key from this list: billing, technical, none. Do not explain.",
+    "prompt": "{\"criteria\":{\"billing\":\"Payments\",\"none\":null,\"technical\":\"Bugs\"},\"question\":\"Which team should handle `ticket`?\",\"state\":{\"ticket\":\"error-529 fixture\"}}",
+    "maxOutputTokens": 16
+  },
+  "error": {
+    "status": 529,
+    "body": {
+      "type": "error",
+      "error": {
+        "type": "overloaded_error",
+        "message": "Overloaded"
+      }
+    }
+  }
+}

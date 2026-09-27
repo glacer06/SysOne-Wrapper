@@ -89,7 +89,7 @@ RunCost = {
   counterfactualMode: "one_call" | "per_question",
   savingsUsd: number,                              // 0 whenever savingsSuppressed is set
   savingsKind: SavingsKind,                        // exactly one per set, from spec.savings.kind (default "decision")
-  savingsSuppressed: "shadow" | "eval" | "staging" | "experiment" | null,
+  savingsSuppressed: "shadow" | "eval" | "staging" | "experiment" | "outage" | null,
   llmCallsAvoided: number,
   contextTokensPruned?: number,
   escalationCostUsd: number,                       // actual LLM spend from escalate_to_llm
@@ -230,7 +230,7 @@ The caller reports `tokensBefore` and `tokensAfter` in `options.metadata` ([spec
 - Savings are estimates. Every report labels them as estimates and shows the assumptions: the comparator, output tokens per question and the `counterfactualMode`.
 - Savings assume that auto decisions are correct. Reports say so, and the quality-adjusted value below removes that assumption. Savings on a set with fewer labeled high-band decisions than its `QualityTarget.minLabeledHigh` are labeled "unverified".
 - Never show negative savings as zero. If the System One model cost more on some runs, the ledger shows it.
-- Shadow, eval, staging and experiment runs report `savingsUsd = 0` with `savingsSuppressed` set to the reason. They still record their cost and their counterfactual, so reports can show would-be savings separately. In an experiment, only the challenger arm is suppressed; the champion's runs book savings as usual.
+- Shadow, eval, staging and experiment runs report `savingsUsd = 0` with `savingsSuppressed` set to the reason. They still record their cost and their counterfactual, so reports can show would-be savings separately. In an experiment, only the challenger arm is suppressed; the champion's runs book savings as usual. An outage run (ADR-012) reports `savingsSuppressed: "outage"` and counts no decisions, whatever its channel or stage; any LLM escalation it made is still booked as `escalationCostUsd`.
 
 ## Quality-adjusted value
 
@@ -295,6 +295,7 @@ Each report is available in the org console, as CSV, as a PDF monthly summary, a
 | Review SLA breach | `review.sla_breached` |
 | Rate headroom above 80% | `alert.raised`, kind `rate_headroom` |
 | Quota near limit | `alert.raised`, kind `quota` |
+| Set silent: no decisions, or only errors, for the liveness window (ADR-012) | `alert.raised`, kind `set_silent` |
 | Org key invalid | `key.invalid` |
 
 Alerts show in the console and go out by email. Alerts are also events: available through the event feed from Phase 3 ([events.md](events.md)) and through org webhooks from Phase 5.

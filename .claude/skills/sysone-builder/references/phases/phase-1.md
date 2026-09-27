@@ -16,7 +16,7 @@
 - [x] Model id mapping through route rows: send `resolveRoute(...).providerModelId`, map the response `model` back with `registryIdForResolved`, warn `model_resolved_unmapped` when no route knows it
 - [x] Preflight from the effective limits (`ModelCatalog.effective(name, provider).limits`): jev-1.13.0 on OpenRouter blocks a request over 32,000 tokens that TypeSafe direct would accept
 - [x] Call cost from `usage.cost` when present (`reportedCostMicroUsd`, stored as `RunCall.providerCostUsd`), else the price book ([savings-model.md](../savings-model.md))
-- [ ] `llm-client`: `LlmTransport` port and a fixture transport
+- [x] `llm-client`: `LlmTransport` over `@anthropic-ai/sdk` (`AnthropicLlmTransport`: explicit key, base URL and log level, so no env var or profile steers it), an optional OpenRouter chat route (`OpenRouterLlmTransport`, including `typesafe/jev-router`) that stays off until the config enables it (ADR-011, proposed), `RoutedLlmTransport` and `createLlmTransport` to pick the route by model id, and `FixtureLlmTransport` as its own subpath `@sysone/llm-client/fixture` that never imports the SDK. Hand-authored LLM fixtures in `packages/llm-client/fixtures/`
 
 ## Integrations
 - [x] `packages/cli` local mode: `pnpm sysone run --local spec.json state.json` (fixture transport only; no network, no key). The code lives in `packages/cli/src/local/**`, the only CLI folder that may import `core` and the fixture subpath export of `system-one-client`. It never imports the SDK transport ([architecture.md](../architecture.md#packages-and-boundaries)). Demo spec: the skill's `templates/question-set.example.json`. The seeded question templates in [definition-studio.md](../definition-studio.md) are a different thing and arrive in Phases 3 and 5.

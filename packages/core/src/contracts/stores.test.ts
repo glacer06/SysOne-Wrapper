@@ -15,6 +15,7 @@ import {
   Pointer,
   ResolvedSetRef,
   ReviewItem,
+  ReviewResolveInput,
   RunListFilter,
   RunRecord,
   RunRecordSource,
@@ -197,6 +198,13 @@ describe("versions and pointers", () => {
 });
 
 describe("review, audit and approvals", () => {
+  it("a resolution may carry a failure class (ADR-012)", () => {
+    const input = { resolution: { value: "billing" }, addToDataset: false, pendingConfirmation: false };
+    expect(ReviewResolveInput.parse(input)).toEqual(input);
+    expect(ReviewResolveInput.parse({ ...input, failureClass: "code_error" }).failureClass).toBe("code_error");
+    expect(ReviewResolveInput.safeParse({ ...input, failureClass: "unknown" }).success).toBe(false);
+  });
+
   it("a review item may wait in pending_confirmation", () => {
     const item = {
       id: "01923f4e-7b2b-7c3d-8e4f-5a6b7c8d9e10",

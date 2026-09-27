@@ -74,7 +74,8 @@ const LatencyMs = z.number().int().nonnegative();
 export const CounterfactualMode = z.enum(["one_call", "per_question"]);
 export type CounterfactualMode = z.infer<typeof CounterfactualMode>;
 
-export const SavingsSuppressed = z.enum(["shadow", "eval", "staging", "experiment"]);
+/** `outage`: System One was unavailable after retries (ADR-012); the run books no savings. */
+export const SavingsSuppressed = z.enum(["shadow", "eval", "staging", "experiment", "outage"]);
 export type SavingsSuppressed = z.infer<typeof SavingsSuppressed>;
 
 export const RunCost = z.object({

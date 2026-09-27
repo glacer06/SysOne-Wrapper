@@ -30,6 +30,7 @@ import {
   VersionId,
 } from "./common.js";
 import { GateResult } from "./errors.js";
+import { FailureClass } from "./learning.js";
 import { SystemOneProvider } from "./system-one.js";
 // stores.ts imports this file at runtime, so only types come back the other way. The enums below
 // repeat stores.ts values, and the checks at the end of this file keep them equal.
@@ -224,6 +225,8 @@ export const ReviewResolution = z.object({
   value: JsonValue,
   /** True when the server dispatched the decision's policy handler. */
   execute: z.boolean(),
+  /** Why the decision was wrong, when the reviewer set a class (ADR-012). */
+  failureClass: FailureClass.optional(),
 });
 export type ReviewResolution = z.infer<typeof ReviewResolution>;
 
@@ -241,7 +244,18 @@ export const ReviewResolvedData = z.object({
   resolvedByTokenId: TokenId.optional(),
 });
 
-export const AlertKind = z.enum(["band_drift", "precision_below_target", "no_truth_source", "rate_headroom", "quota"]);
+/**
+ * `set_silent` (ADR-012): a set that normally produces decisions on a channel produced none, or
+ * only errors, for its liveness window.
+ */
+export const AlertKind = z.enum([
+  "band_drift",
+  "precision_below_target",
+  "no_truth_source",
+  "rate_headroom",
+  "quota",
+  "set_silent",
+]);
 export type AlertKind = z.infer<typeof AlertKind>;
 
 export const AlertSeverity = z.enum(["info", "warning", "critical"]);

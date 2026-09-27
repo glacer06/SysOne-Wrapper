@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   DEFAULT_LABELING_POLICY,
+  FAILURE_CLASSES,
+  FailureClass,
   FEEDBACK_MAX_ITEMS,
   FeedbackBatch,
   FeedbackReport,
@@ -32,6 +34,15 @@ describe("FeedbackReport", () => {
   it("parses a route target matched by runId", () => {
     const item = { ...byRef, externalRef: undefined, runId: RUN_ID, target: { route: true }, observed: "urgent" };
     expect(FeedbackReport.safeParse(item).success).toBe(true);
+  });
+
+  it("accepts an optional failure class and rejects an unknown one (ADR-012)", () => {
+    for (const failureClass of FAILURE_CLASSES) {
+      expect(FeedbackReport.safeParse({ ...byRef, failureClass }).success, failureClass).toBe(true);
+    }
+    expect(FAILURE_CLASSES).toEqual(["missing_evidence", "model_error", "code_error", "service"]);
+    expect(FeedbackReport.safeParse({ ...byRef, failureClass: "outage" }).success).toBe(false);
+    expect(FailureClass.safeParse("service").success).toBe(true);
   });
 
   it("accepts observed booleans and score level indexes", () => {

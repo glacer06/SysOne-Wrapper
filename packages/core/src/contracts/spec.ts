@@ -118,6 +118,27 @@ export const SpecSavings = z.strictObject({
 export type SpecSavings = z.infer<typeof SpecSavings>;
 
 // ---------------------------------------------------------------------------
+// Outage rule (ADR-012)
+
+/** What a gating decision does when System One is unavailable after retries. Never `auto`. */
+export const ON_UNAVAILABLE_ACTIONS = ["fallback", "review", "escalate_to_llm"] as const;
+export const OnUnavailable = z.enum(ON_UNAVAILABLE_ACTIONS);
+export type OnUnavailable = z.infer<typeof OnUnavailable>;
+
+/** The outage rule when a spec leaves `onUnavailable` out. */
+export const DEFAULT_ON_UNAVAILABLE: OnUnavailable = "fallback";
+
+/** Rule id when anything maps `onUnavailable` to `auto`. */
+export const OUTAGE_AUTO_NOT_ALLOWED_RULE = "outage.auto_not_allowed";
+export const OUTAGE_AUTO_NOT_ALLOWED_MESSAGE =
+  "onUnavailable cannot be auto: an outage gives no answer to act on; use fallback, review or escalate_to_llm";
+
+/** The spec's outage rule, with the default applied. */
+export function onUnavailableOf(spec: Pick<QuestionSetSpec, "onUnavailable">): OnUnavailable {
+  return spec.onUnavailable ?? DEFAULT_ON_UNAVAILABLE;
+}
+
+// ---------------------------------------------------------------------------
 // QuestionSetSpec
 
 /** Rule id for a key the strict spec schema does not know. */
@@ -141,6 +162,11 @@ const QuestionSetSpecShape = z.strictObject({
   routes: z.array(Route).optional(),
   defaultRoute: z.string().min(1).optional(),
   savings: SpecSavings.optional(),
+  /**
+   * The outage rule (ADR-012): every gating decision's effectiveAction when System One is
+   * unavailable after retries. Default `fallback`. `auto` is not allowed (`outage.auto_not_allowed`).
+   */
+  onUnavailable: OnUnavailable.optional(),
 });
 
 export const QuestionSetSpec = QuestionSetSpecShape.superRefine((spec, ctx) => {
@@ -254,8 +280,19 @@ export type ParseSpecResult =
 export function parseSpec(input: unknown): ParseSpecResult {
   const result = QuestionSetSpec.safeParse(input);
   if (result.success) return { ok: true, spec: result.data };
-  return { ok: false, details: specIssuesToDetails(result.error.issues) };
+  const details = specIssuesToDetails(result.error.issues);
+  // An outage rule of `auto` gets its own rule id, so the message says why it is refused.
+  if (typeof input === "object" && input !== null && (input as { onUnavailable?: unknown }).onUnavailable === "auto") {
+    for (const d of details) {
+      if (d.path === "/onUnavailable") {
+        d.rule = OUTAGE_AUTO_NOT_ALLOWED_RULE;
+        d.message = OUTAGE_AUTO_NOT_ALLOWED_MESSAGE;
+      }
+    }
+  }
+  return { ok: false, details };
 }
+
 
 // ---------------------------------------------------------------------------
 // SetInterface (spec-schema.md section 11, ADR-009 section 3)

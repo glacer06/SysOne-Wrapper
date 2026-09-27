@@ -64,6 +64,8 @@ describe("fixture contract", () => {
       "openrouter/score",
       "openrouter/alias-latest",
       "openrouter/error-402",
+      "typesafe/outage-503",
+      "openrouter/outage-503",
     ]) {
       expect(names.has(name), name).toBe(true);
     }

@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { Action, Band, Channel, RolloutStage } from "../contracts/common.js";
 import type { ActionRef, CompositePolicy, ConfidencePolicy } from "../contracts/policy.js";
-import type { Composite, QuestionSetSpec } from "../contracts/spec.js";
+import type { Composite, OnUnavailable, QuestionSetSpec } from "../contracts/spec.js";
 import type { SystemOneAnswer } from "../contracts/system-one.js";
 import { exampleSpec } from "../test/harness.js";
-import { effectiveAction, isExecuted, routingStage } from "./effective-action.js";
-import { type RouterInput, compositeLevel, escalationConfigOf, fallbackConfigOf, routeAnswers, summarizeDecisions } from "./router.js";
+import { effectiveAction, isExecuted, isOutageExecuted, outageEffectiveAction, routingStage } from "./effective-action.js";
+import { type RouterInput, compositeLevel, escalationConfigOf, fallbackConfigOf, routeAnswers, routeOutage, summarizeDecisions } from "./router.js";
 
 const NOUL_FOR_BAND: Record<Band, number> = { high: 0.97, medium: 0.8, low: 0.5 };
 
@@ -379,5 +379,92 @@ describe("the example spec", () => {
     expect(out.decisions["work_type"]?.relevant).toBe(true);
     expect(out.overallAction).toBe("auto");
     expect(out.runBand).toBe("high");
+  });
+});
+
+// ADR-012: the outage rows of the effective-action table. One row per rollout stage, gating and
+// outage rule. `eff` is every decision's effectiveAction when System One was unavailable.
+type OutageRow = { stage: RolloutStage; gating: boolean; rule: OnUnavailable; eff: Action; executed: boolean };
+const OUTAGE_STAGES: RolloutStage[] = ["inactive", "shadow", "controlled", "full", "paused"];
+const outageTable: OutageRow[] = OUTAGE_STAGES.flatMap((stage) =>
+  (["fallback", "review", "escalate_to_llm"] as const).flatMap((rule) =>
+    [true, false].map((gating): OutageRow => {
+      const acts = gating && (stage === "controlled" || stage === "full");
+      const eff: Action = acts ? rule : "fallback";
+      return { stage, gating, rule, eff, executed: eff !== "fallback" };
+    }),
+  ),
+);
+
+describe("outage: the effective-action table across rollout stages (ADR-012)", () => {
+  it("has a row for every stage, gating value and outage rule, and none resolves to auto", () => {
+    expect(outageTable).toHaveLength(5 * 3 * 2);
+    expect(outageTable.every((r) => r.eff !== "auto")).toBe(true);
+  });
+
+  it.each(outageTable)("$stage, gating $gating, onUnavailable $rule -> $eff (executed $executed)", (row) => {
+    expect(outageEffectiveAction({ stage: row.stage, kind: "question", gating: row.gating, relevant: true, onUnavailable: row.rule })).toBe(row.eff);
+    const s = spec({ q: noulPolicy(row.gating, { kind: "auto" }) }, { onUnavailable: row.rule });
+    const out = routeOutage({ spec: s, skipped: new Set(), rollout: row.stage, channel: "production" });
+    expect(out.decisions["q"]).toEqual({ kind: "question", value: null, band: "low", relevant: true, action: row.eff, effectiveAction: row.eff, executed: row.executed });
+    expect(out.runBand).toBe("low");
+    expect(out.route).toBeNull();
+  });
+
+  it("an irrelevant decision is fallback whatever the rule", () => {
+    for (const stage of OUTAGE_STAGES) {
+      expect(outageEffectiveAction({ stage, kind: "question", gating: true, relevant: false, onUnavailable: "review" })).toBe("fallback");
+    }
+  });
+
+  it("a composite cannot escalate: escalate_to_llm becomes review for it", () => {
+    expect(outageEffectiveAction({ stage: "full", kind: "composite", gating: true, relevant: true, onUnavailable: "escalate_to_llm" })).toBe("review");
+    expect(outageEffectiveAction({ stage: "full", kind: "composite", gating: true, relevant: true, onUnavailable: "fallback" })).toBe("fallback");
+  });
+
+  it("an omitted rule is fallback, and slug@draft behaves as shadow", () => {
+    const s = spec({ q: noulPolicy(true, { kind: "auto" }) });
+    expect(routeOutage({ spec: s, skipped: new Set(), rollout: "full", channel: "production" }).decisions["q"]?.effectiveAction).toBe("fallback");
+    const review = { ...s, onUnavailable: "review" as const };
+    expect(routeOutage({ spec: review, skipped: new Set(), rollout: "full", channel: "draft" }).decisions["q"]?.effectiveAction).toBe("fallback");
+  });
+
+  it("the challenger arm executes nothing but keeps the effective action", () => {
+    const s = spec({ q: noulPolicy(true, { kind: "auto" }) }, { onUnavailable: "review" });
+    const out = routeOutage({ spec: s, skipped: new Set(), rollout: "full", channel: "production", arm: "challenger" });
+    expect(out.decisions["q"]).toMatchObject({ effectiveAction: "review", executed: false });
+    expect(isOutageExecuted({ effectiveAction: "escalate_to_llm", arm: "champion" })).toBe(true);
+    expect(isOutageExecuted({ effectiveAction: "fallback", arm: undefined })).toBe(false);
+  });
+
+  it("keeps skipped-stage questions skipped, gives composites the rule, and summarizes conservatively", () => {
+    const composite = (id: string, policy?: CompositePolicy): Composite => ({ id, kind: "weighted", terms: [{ q: "a", weight: 1 }], ...(policy ? { policy } : {}) });
+    const cpol = (gating: boolean): CompositePolicy => ({ type: "composite", gating, levelThresholds: { high: 0.7, medium: 0.4 }, actions: { high: { kind: "auto" }, medium: { kind: "review" }, low: { kind: "fallback" } } });
+    const s = spec(
+      { a: noulPolicy(true, { kind: "auto" }), b: noulPolicy(false, { kind: "auto" }), c: noulPolicy(true, { kind: "auto" }) },
+      { onUnavailable: "escalate_to_llm", composites: [composite("urgency", cpol(true)), composite("soft", cpol(false)), composite("bare")] },
+    );
+    const out = routeOutage({ spec: s, skipped: new Set(["c"]), rollout: "full", channel: "production" });
+    expect(out.decisions["a"]).toMatchObject({ effectiveAction: "escalate_to_llm", executed: true });
+    expect(out.meta["a"]?.actionRef).toEqual({ kind: "escalate_to_llm" });
+    expect(out.decisions["b"]).toMatchObject({ effectiveAction: "fallback", executed: false });
+    expect(out.meta["b"]?.actionRef).toBeNull();
+    expect(out.decisions["c"]).toMatchObject({ relevant: false, effectiveAction: "fallback", executed: false });
+    expect(out.decisions["urgency"]).toMatchObject({ kind: "composite", value: null, band: "low", effectiveAction: "review", executed: true });
+    expect(out.decisions["soft"]?.effectiveAction).toBe("fallback");
+    expect(out.decisions["bare"]?.effectiveAction).toBe("fallback");
+    expect(out.meta["bare"]?.counts).toBe(false);
+    expect(out.overallAction).toBe("review");
+    expect(out.runBand).toBe("low");
+    expect(Object.values(out.decisions).some((d) => d.effectiveAction === "auto")).toBe(false);
+  });
+
+  it("an outage escalation reuses the question's own escalate_to_llm config, low band first", () => {
+    const escalate = { kind: "escalate_to_llm", config: { model: "claude-haiku-4-5", maxOutputTokens: 8 } } as const;
+    const policy = { ...noulPolicy(true, { kind: "auto" }), actions: { high: { kind: "auto" }, medium: escalate, low: { kind: "review" } } } as ConfidencePolicy;
+    const s = spec({ q: policy }, { onUnavailable: "escalate_to_llm" });
+    expect(routeOutage({ spec: s, skipped: new Set(), rollout: "controlled", channel: "production" }).meta["q"]?.actionRef).toEqual(escalate);
+    const noPolicy = { ...s, policies: {} };
+    expect(routeOutage({ spec: noPolicy, skipped: new Set(), rollout: "full", channel: "production" }).decisions["q"]?.effectiveAction).toBe("fallback");
   });
 });

@@ -238,6 +238,18 @@ EscalationConfig = {
 "low": { "kind": "escalate_to_llm", "config": { "model": "claude-haiku-4-5", "maxOutputTokens": 64 } }
 ```
 
+### Outage rule (ADR-012)
+
+```ts
+onUnavailable?: "fallback" | "review" | "escalate_to_llm"   // default "fallback"; never "auto"
+```
+
+What every gating decision's `effectiveAction` is when System One is unavailable after retries (`system_one_unavailable` or `system_one_overloaded`). The run still returns a `RunResult` with `status: "error"`, the error code, the warning `system_one_outage` and one decision per question and composite, so a caller never gets an empty decision set. `auto` fails the strict schema with the rule id `outage.auto_not_allowed`. The rows by rollout stage are in [confidence-policy.md](confidence-policy.md#outage-behaviour-adr-012-accepted). Pick the path that is safe for the decision: `review` for a payment gate, `fallback` for tagging, `escalate_to_llm` when an LLM answer is acceptable while System One is down.
+
+```json
+"onUnavailable": "review"
+```
+
 ## 8. Handler refs
 
 `ActionRef.handler` names a handler id that is globally unique: `<namespace>.<name>`, such as `builtin.slack.notify` or `example.post-webhook`. The namespace is the plugin publisher (`builtin` for built-ins). The plugin registry rejects a duplicate id when it loads plugins, and the lint `action.handler_unknown` blocks publishing a spec whose handler is not installed and enabled for the org. Handlers run after commit, only when `effectiveAction` is `auto`, and are idempotent by `runId:decisionId`.
