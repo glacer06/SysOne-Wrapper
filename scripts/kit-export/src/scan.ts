@@ -82,6 +82,9 @@ function textRules(internalDocNames: readonly string[]): TextRule[] {
     { rule: "word.dallas", re: /\bDallas\b/gi },
     { rule: "word.embers", re: /\bEmbers\b/gi },
     { rule: "word.nsims", re: /nsims/gi },
+    // The owner's personal names stay out of the public kit, including sample data.
+    { rule: "word.owner-name", re: /\bNick\b|\bSims\b/g },
+    { rule: "word.assistant-names", re: /\bInstinct\b|\bPJ\b|\bDeeJay\b/g },
     { rule: "ref.linear-id", re: /\bNSI-\d+\b/g },
     { rule: "ref.linear-link", re: /linear\.app/gi },
     { rule: "ref.adr", re: /\bADR-?\d+\b/g },

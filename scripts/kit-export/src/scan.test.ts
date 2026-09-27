@@ -13,6 +13,8 @@ describe("scanText", () => {
     ["a City of Dallas pilot", "word.dallas"],
     ["the Embers CRM", "word.embers"],
     ["NSIMS", "word.nsims"],
+    ["Hi Nick, please approve", "word.owner-name"],
+    ["sent via Instinct", "word.assistant-names"],
     ["see NSI-714", "ref.linear-id"],
     ["https://linear.app/team/issue/X-1", "ref.linear-link"],
     ["accepted in ADR-012", "ref.adr"],
