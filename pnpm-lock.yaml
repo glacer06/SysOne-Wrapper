@@ -220,6 +220,9 @@ importers:
       '@bandwise/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@bandwise/templates':
+        specifier: workspace:*
+        version: link:../../packages/templates
       '@tailwindcss/postcss':
         specifier: 'catalog:'
         version: 4.3.3
@@ -431,12 +434,12 @@ importers:
         specifier: 'catalog:'
         version: 4.6.5
     devDependencies:
-      '@electric-sql/pglite':
-        specifier: 'catalog:'
-        version: 0.5.8
       '@bandwise/config':
         specifier: workspace:*
         version: link:../config
+      '@electric-sql/pglite':
+        specifier: 'catalog:'
+        version: 0.5.8
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.4
@@ -584,6 +587,34 @@ importers:
       '@bandwise/config':
         specifier: workspace:*
         version: link:../config
+      '@types/node':
+        specifier: 'catalog:'
+        version: 22.20.4
+      eslint:
+        specifier: 'catalog:'
+        version: 10.11.0(jiti@2.7.0)
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 5.0.2(@types/node@22.20.4)(@vitest/coverage-v8@5.0.2)(vite@8.3.1(@types/node@22.20.4)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+
+  packages/templates:
+    dependencies:
+      '@bandwise/core':
+        specifier: workspace:*
+        version: link:../core
+    devDependencies:
+      '@bandwise/cli':
+        specifier: workspace:*
+        version: link:../cli
+      '@bandwise/config':
+        specifier: workspace:*
+        version: link:../config
+      '@bandwise/system-one-client':
+        specifier: workspace:*
+        version: link:../system-one-client
       '@types/node':
         specifier: 'catalog:'
         version: 22.20.4

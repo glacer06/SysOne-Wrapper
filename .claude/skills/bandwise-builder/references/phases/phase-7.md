@@ -7,10 +7,12 @@ The stdio transport and the Phase 3 curated tools shipped in Phase 3. This phase
 - [ ] `packages/mcp-server` HTTP transport; add the Phase 3b and 4b tools listed in [headless-and-agents.md](../headless-and-agents.md) if they are not already present
 - [ ] Auth with an agent token (`BANDWISE_TOKEN` or a `bandwise login` profile), never an `sk_` app token and never a TypeSafe key
 - [ ] `plugins/claude-code`: `.claude-plugin/plugin.json`, `.mcp.json` (one server entry per profile), and the customer skills `bandwise-operator` and `bandwise-integrate`
+- [x] Kit skill `plugins/claude-code/skills/find-decisions` (ADR-019): scans a repo locally for LLM calls used as decisions, classifies them as Noul, Choice or Score with a pattern, flags poor fits, drafts specs from the template pack, validates with `bandwise run --local`, writes a report. Its `templates/` and `references/templates.md` are generated from `packages/templates`; tests in that package check the frontmatter, every referenced file and drift.
 - [ ] The `bandwise-builder` skill is internal and never ships in this plugin.
 - [ ] Marketplace repo or local marketplace entry
 
 ## Docs site
+- [x] Find decisions page (`apps/docs/content/docs/find-decisions.mdx`), marked as part of the free kit
 - [ ] Docs pages ([team-playbook.md](../team-playbook.md#docs-site)): MCP server over HTTP; the Claude Code plugin and its customer skills; update Agents and MCP so nothing on it is marked as coming
 
 ## Exit gate

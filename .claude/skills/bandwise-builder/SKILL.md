@@ -101,8 +101,9 @@ packages/cli        Phase 3. @bandwise/cli (bin bandwise), published to npm. HTT
 packages/codegen    Phase 4b. Pure. Typed clients from a set interface.
 packages/client-py  Phase 4b, behind ADR-009. Python client generated from openapi.json.
 packages/mcp-server Phase 3 stdio, Phase 7 HTTP. Curated tools over operations.
+packages/templates  Pure. The kit template pack (ADR-019): specs, example states, borderline cases. Core only.
 packages/plugin-sdk, plugins-builtin   Phase 5.
-plugins/claude-code Phase 7. Customer skills bandwise-operator and bandwise-integrate. Never this builder skill.
+plugins/claude-code Phase 7. Customer skills bandwise-operator and bandwise-integrate, plus the kit's find-decisions skill. Never this builder skill.
 examples/*          Sample apps for integration tests and docs.
 ```
 

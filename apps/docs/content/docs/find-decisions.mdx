@@ -1,0 +1,46 @@
+---
+title: Find decisions
+description: A Claude Code skill that finds LLM calls in your code that are really yes/no, pick-one or score decisions, and drafts a spec for each.
+---
+
+<Callout title="Part of the free kit">
+  The find-decisions skill ships with the free %product% kit, licensed Apache-2.0, next to the
+  spec format, the local runner and the [template pack](/docs/templates).
+</Callout>
+
+Many LLM calls do not need to write anything. They answer "is this spam", "which team owns this" or "how urgent is it", and the code branches on the answer. Those calls fit a System One model through a question set: you get a decision and a confidence band instead of free text.
+
+The find-decisions skill looks for those calls in your repository and drafts a spec for the best ones.
+
+## It stays on your machine
+
+The skill runs inside Claude Code in your repository. It reads files, writes a report and draft specs, and runs `bandwise run --local` when the CLI is available. It never sends your code, file paths or findings to any service, including %product% and TypeSafe. Example states it writes are invented, not copied from your data.
+
+## What it does
+
+1. **Finds LLM calls.** It searches for the Anthropic and OpenAI SDKs, the Vercel AI SDK, LangChain, LiteLLM, and raw HTTP calls to chat endpoints, plus your own wrappers around them.
+2. **Keeps the decisions.** A call counts when your code compares its output to fixed values, parses it as yes or no, compares a number to a cutoff, uses it to pick from a list, or uses it to keep or drop items.
+3. **Classifies each one** as a Noul (does X hold), a Choice (which one) or a Score (how much, on a fixed scale), picks a pattern, and lists the state the decision needs.
+4. **Flags poor fits.** A call that must write text, a decision that takes a person more than about 10 seconds, or a choice with no fixed option list stays on the LLM. Exact rules, arithmetic and date logic stay in code.
+5. **Estimates volume and cost only where the code shows it,** such as a call per request, per item in a batch, or on a schedule. Otherwise it says "unknown".
+6. **Ranks the candidates** and drafts a spec for the top three, starting from the closest [template](/docs/templates).
+7. **Validates each draft** with `bandwise run --local` if the CLI is installed, and fixes lint errors.
+8. **Writes a short report** to `bandwise/find-decisions-report.md`: the candidates, the poor fits, the drafts and what to verify.
+
+## Using it
+
+Copy the `find-decisions` skill folder into `.claude/skills/` in your repository (a Claude Code plugin install comes when the kit is published). Then ask Claude Code:
+
+```text
+Find the LLM calls in this repo that are really decisions, and draft %product% specs for the best ones.
+```
+
+Drafts land in `bandwise/sets/<slug>.json`, each with an invented example state next to it.
+
+## After the report
+
+- Check each draft's option list and state fields against your code.
+- Label 20 to 50 real examples per draft and tune the thresholds on them. Template thresholds are starting points.
+- Branch app code on `overallAction` first, then on `route`, and keep your existing path for `fallback`.
+
+The skill makes no claims about accuracy or savings. It tells you what the code shows and what to measure.
