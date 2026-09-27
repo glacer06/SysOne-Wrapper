@@ -1,6 +1,6 @@
 # ADR-018: Domains, marketing site and early access
 
-- **Status:** proposed. Nick decided the domain map, database storage for signups, the operator-kit design system and Vercel Web Analytics on 2026-09-27; the rest is Architect defaults awaiting his accept.
+- **Status:** accepted (Nick, 2026-09-27: "Accept 018")
 - **Date:** 2026-09-27
 - **Owner:** Architect / Lead, reviewed by the Security reviewer
 - **Decider:** Nick
