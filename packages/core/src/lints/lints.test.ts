@@ -322,16 +322,17 @@ describe("outage.fallback_silent (ADR-012 Amendment 1)", () => {
     expect(silent(gatingSpec({ kind: "review" }))).toEqual([]);
   });
 
-  it("warns at /onUnavailable when the rule is fallback and a gating decision would do nothing", () => {
-    for (const low of [{ kind: "fallback", config: { kind: "noop" } }, { kind: "fallback" }, { kind: "review" }] as const) {
-      const r = silent({ ...gatingSpec(low), onUnavailable: "fallback" });
-      expect(r).toEqual([
-        {
-          rule: "outage.fallback_silent",
-          severity: "warning",
-          path: "/onUnavailable",
-          message: 'onUnavailable is fallback, but "team" has no fallback value, so an outage would drop them with nobody told; use review or give them a fallback value',
-        },
+  it("warns at /onUnavailable when the rule is fallback, whatever fallback config the bands carry", () => {
+    const lows = [
+      { kind: "fallback", config: { kind: "noop" } },
+      { kind: "fallback" },
+      { kind: "review" },
+      { kind: "fallback", config: { kind: "value", value: "billing" } },
+      { kind: "fallback", config: { kind: "set", setRef: "triage-backup" } },
+    ] as const;
+    for (const low of lows) {
+      expect(silent({ ...gatingSpec(low), onUnavailable: "fallback" })).toEqual([
+        { rule: "outage.fallback_silent", severity: "warning", path: "/onUnavailable", message: 'onUnavailable is fallback: on an outage "team" come back as fallback with no value, so the app decides on its own and nobody is told unless it says so; use review to send outages to a person' },
       ]);
     }
   });
@@ -342,14 +343,9 @@ describe("outage.fallback_silent (ADR-012 Amendment 1)", () => {
       { id: "risk", kind: "weighted", terms: [{ q: "team", weight: 1, option: "billing" }], policy: { type: "composite", gating: true, levelThresholds: { high: 0.7, medium: 0.4 }, actions: { high: { kind: "review" }, medium: { kind: "review" }, low: { kind: "auto" } } } },
       { id: "soft", kind: "weighted", terms: [{ q: "team", weight: 1, option: "billing" }], policy: { type: "composite", gating: false, levelThresholds: { high: 0.7, medium: 0.4 }, actions: { high: { kind: "review" }, medium: { kind: "review" }, low: { kind: "auto" } } } },
     ];
-    expect(silent(s)[0]?.message).toContain('"team", "risk" have no fallback value');
+    expect(silent(s)[0]?.message).toContain('"team", "risk" come back as fallback');
     const quiet = { ...minimal(), onUnavailable: "fallback" as const };
     expect(silent(quiet)).toEqual([]);
-  });
-
-  it("stays quiet when every gating decision has a value or set fallback", () => {
-    expect(silent({ ...gatingSpec({ kind: "fallback", config: { kind: "value", value: "billing" } }), onUnavailable: "fallback" })).toEqual([]);
-    expect(silent({ ...gatingSpec({ kind: "fallback", config: { kind: "set", setRef: "triage-backup" } }), onUnavailable: "fallback" })).toEqual([]);
   });
 
   it("stays quiet on review and escalate_to_llm", () => {

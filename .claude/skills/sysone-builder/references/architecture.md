@@ -533,7 +533,7 @@ The operation builds `PublishCtx` from the stores; core never reads them. The ed
 | `policy.per_option_keys` | `perOption` keys are not a subset of the choice's option keys | error |
 | `policy.type_mismatch` | A question has no policy, or its policy type differs from the question type | error |
 | `outage.auto_not_allowed` | `onUnavailable` is `auto` (ADR-012); an outage gives no answer to act on. The strict schema refuses it with the same rule id | error |
-| `outage.fallback_silent` | `onUnavailable` is explicitly `fallback` and a gating decision would do nothing on an outage: its first fallback action (low band first) has no config or `noop`, or it has no fallback action at all (ADR-012 Amendment 1). Path `/onUnavailable`. Use `review` or give those decisions a `value` or `set` fallback | warning |
+| `outage.fallback_silent` | `onUnavailable` is explicitly `fallback` and the set has gating decisions. An outage runs no fallback config, so each comes back as `fallback` with no value and the app decides alone (ADR-012 Amendment 1). Names every gating decision. Path `/onUnavailable`. Use `review` to send outages to a person | warning |
 | `policy.all_gating_thresholded` | Every question is gating and thresholded; suggest the top-choice preset where only the best option matters | warning |
 | `stage.same_stage_dependency` | Question depends on another answer in the same stage | error |
 | `stage.needless_second_call` | A stage's `when` reads an earlier answer but its `stateFrom` is `input` only; merge into the earlier stage and use `relevantWhen` | warning |

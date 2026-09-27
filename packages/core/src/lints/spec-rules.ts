@@ -1,6 +1,6 @@
 // Lints that read only the spec (architecture.md, Lints table).
 
-import type { ActionRef, CompositeActionRef, ConfidencePolicy, Thresholds } from "../contracts/policy.js";
+import type { ConfidencePolicy, Thresholds } from "../contracts/policy.js";
 import type { LintResult, QuestionSetSpec } from "../contracts/spec.js";
 import {
   ON_UNAVAILABLE_ACTIONS,
@@ -189,42 +189,28 @@ export function outageLints(spec: QuestionSetSpec): LintResult[] {
 }
 
 /**
- * True when a decision's configured fallback does something: its first fallback action (low band
- * first, the order an outage escalation reads its config in) has a `value` or `set` config. No
- * fallback action, an omitted config and `noop` all do nothing.
- */
-function hasFallbackValue(actions: Record<"high" | "medium" | "low", ActionRef | CompositeActionRef>): boolean {
-  for (const band of ["low", "medium", "high"] as const) {
-    const ref = actions[band];
-    if (ref.kind === "fallback") return ref.config !== undefined && ref.config.kind !== "noop";
-  }
-  return false;
-}
-
-/**
- * outage.fallback_silent (ADR-012 Amendment 1): onUnavailable is explicitly `fallback` and at least
- * one gating decision has no fallback value, so an outage would drop that decision with nobody
- * told. The default (`review`) never raises it.
+ * outage.fallback_silent (ADR-012 Amendment 1): onUnavailable is explicitly `fallback` and the set
+ * has gating decisions. An outage runs no FallbackConfig (confidence-policy.md), so every gating
+ * decision comes back as `fallback` with no value and the app decides on its own, with nobody told
+ * unless the app says so. The default (`review`) never raises it.
  */
 function fallbackSilentLints(spec: QuestionSetSpec): LintResult[] {
   const silent: string[] = [];
   for (const { id } of questionEntries(spec)) {
     const policy = spec.policies[id];
-    if (policy === undefined || policy.type === "composite" || !policy.gating) continue;
-    if (!hasFallbackValue(policy.actions)) silent.push(id);
+    if (policy !== undefined && policy.type !== "composite" && policy.gating) silent.push(id);
   }
   for (const c of spec.composites ?? []) {
-    if (c.policy?.gating === true && !hasFallbackValue(c.policy.actions)) silent.push(c.id);
+    if (c.policy?.gating === true) silent.push(c.id);
   }
   if (silent.length === 0) return [];
   const ids = silent.map((id) => `"${id}"`).join(", ");
-  const verb = silent.length === 1 ? "has" : "have";
   return [
     finding(
       "outage.fallback_silent",
       "warning",
       "/onUnavailable",
-      `onUnavailable is fallback, but ${ids} ${verb} no fallback value, so an outage would drop them with nobody told; use review or give them a fallback value`,
+      `onUnavailable is fallback: on an outage ${ids} come back as fallback with no value, so the app decides on its own and nobody is told unless it says so; use review to send outages to a person`,
     ),
   ];
 }
