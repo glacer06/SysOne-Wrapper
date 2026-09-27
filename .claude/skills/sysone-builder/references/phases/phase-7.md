@@ -10,6 +10,9 @@ The stdio transport and the Phase 3 curated tools shipped in Phase 3. This phase
 - [ ] The `sysone-builder` skill is internal and never ships in this plugin.
 - [ ] Marketplace repo or local marketplace entry
 
+## Docs site
+- [ ] Docs pages ([team-playbook.md](../team-playbook.md#docs-site)): MCP server over HTTP; the Claude Code plugin and its customer skills; update Agents and MCP so nothing on it is marked as coming
+
 ## Exit gate
 - `claude plugin install` works from the marketplace.
 - In a sample repo, a prompt like "set up SysOne in this app" produces an opportunity, a set and a generated typed client.

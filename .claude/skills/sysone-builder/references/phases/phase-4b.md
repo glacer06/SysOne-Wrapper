@@ -28,6 +28,9 @@ The flow, contracts and rules are in [deploy-and-codegen.md](../deploy-and-codeg
 - [ ] Python: `packages/client-py` generated from `openapi.json`, the Python codegen target, and `examples/fastapi`. Only after the ADR-009 Python section is accepted.
 - [ ] Standalone export (`typesafe/<slug>.questions.ts` or `.py`, band and route helper golden-tested against `packages/core`) plus `POST /api/v1/runs/ingest`. Only after the ADR-009 Standalone section is accepted. Security reviewer signs off.
 
+## Docs site
+- [ ] Docs pages ([team-playbook.md](../team-playbook.md#docs-site)): Set up an app (opportunities and the pattern advisor); Deploy targets; Typed clients and codegen; App bindings; Specs as code and `sysone check`; the standalone export and the Python client only once ADR-009's proposed sections are accepted
+
 ## Exit gate
 - In a sample Next.js repo with no System One code, an agent using only the CLI or MCP and an agent token records an opportunity, builds a set, publishes it to staging, generates and wires the typed client, and, with the set marked protected, requests promotion to production, which a human approves. The console app page then shows the binding.
 - Publishing a version that removes a route output a bound production app uses fails the lint unless the major is bumped with a reason.

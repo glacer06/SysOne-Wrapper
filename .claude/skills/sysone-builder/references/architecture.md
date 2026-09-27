@@ -13,6 +13,8 @@ apps/
                         src/server/operations/       operation registry (management-api.md)
                         src/jobs/learning/           learning jobs, Phase 3 and 3b (effectiveness-loop.md)
   example-embed/      Next.js app that consumes @sysone/client + @sysone/react. E2E target.
+  docs/               Public customer docs site (Fumadocs). Content only: no DB, no keys. Reads
+                      packages/core/openapi.json at build time (team-playbook.md, Docs site).
   extension-chrome/   Phase 6. WXT, MV3.
 packages/
   core/               PURE. Contracts (zod), spec compiler, stage orchestrator, confidence router,

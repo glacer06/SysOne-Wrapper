@@ -56,6 +56,9 @@ Every console screen in this phase calls an operation ([management-api.md](../ma
 - [ ] Escalation budget alert job: raises `alert.raised` with kind `escalation_over_budget` once per set and day when the day's escalation spend crosses the budget; it alerts only and never stops escalating (ADR-015, [events.md](../events.md))
 - [ ] Audit log viewer with filters and CSV export
 
+## Docs site
+- [ ] Docs pages ([team-playbook.md](../team-playbook.md#docs-site)): Call a set from your app over HTTP (auth modes, `POST /api/v1/sets/{ref}/run`, the error envelope); Publishing, channels and rollback; Rollout gates and auto-demote; Review queue; Evals and datasets; Reports, savings and escalation spend, with the threshold forecast and the escalation budget alert; Alerts, including set silent; Events feed; the full CLI reference with every command; Agents and MCP with the stdio tools; the API reference callouts updated so Phase 3 groups read as live and later groups keep their phase
+
 ## Exit gate
 - Playwright: create a set, publish, set the production rollout to `shadow`, call it through the API, publish v2, the API serves v2 within 30 seconds with no redeploy, roll back, the API serves v1.
 - With production at `controlled`, medium and low band answers on gating decisions create review items of kind `action`; resolving one can add a dataset case.

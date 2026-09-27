@@ -84,6 +84,32 @@
       ],
       "outputs": []
     },
+    "@sysone/docs#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/packages/core/openapi.json"
+      ],
+      "env": [
+        "NEXT_PUBLIC_DOCS_URL"
+      ],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**"
+      ]
+    },
+    "@sysone/docs#test": {
+      "dependsOn": [
+        "transit"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/packages/core/openapi.json"
+      ],
+      "outputs": []
+    },
     "@sysone/evals#test": {
       "dependsOn": [
         "transit"

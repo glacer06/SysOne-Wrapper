@@ -1,0 +1,37 @@
+---
+title: Providers
+description: The routes a System One call can take, and why only TypeSafe direct can be pinned today.
+---
+
+A **provider** is who serves a System One call. The request and response shapes are the same on every route. What differs is the model id you send, the limits, who bills you, and whether a model can be pinned.
+
+| Provider | Endpoint | Pinned model available |
+| --- | --- | --- |
+| TypeSafe (default) | `api.typesafe.ai` | Yes, for example `jev-1.13.0` |
+| OpenRouter | `openrouter.ai/api` | Not yet |
+| Vercel AI Gateway | `ai-gateway.vercel.sh/typesafe` | Not yet |
+
+The provider is picked per org, and a set can override it. One run uses one provider for every call. There is no automatic failover from one provider to another, because that would change the build, the limits and who bills you.
+
+## The pinning caveat
+
+On OpenRouter and Vercel AI Gateway, no model id is confirmed to name exactly one build yet. OpenRouter's Jev id answers with dated builds under one name, and Vercel documents only a moving id. So a set on either route counts as a moving model and can run only in `inactive` and `shadow`. It cannot enter `controlled` or `full` until a pinned route is confirmed. See [pinned models](/docs/concepts/rollout#pinned-models).
+
+## Other differences
+
+- **Limits.** A route can have tighter limits than TypeSafe direct. OpenRouter lists a smaller context for Jev than TypeSafe does, and %product% checks each request against the tighter limit.
+- **Cost.** When a provider reports the cost of a call, that amount is used. Otherwise the price book is.
+- **Vercel fallbacks.** AI Gateway can rerun an uncertain answer on another model. %product% never asks for that. If a response shows that an LLM answered in place of the System One model, the call is rejected, so an LLM answer is never banded as if it were a System One answer. Escalation to an LLM goes through `escalate_to_llm`, where it is logged and costed.
+
+## Status
+
+- TypeSafe direct is the default route.
+- Vercel AI Gateway support is built into the run engine.
+- OpenRouter support is proposed and can change before it ships.
+
+<Callout title="Coming in Phase 2">
+  Adding your own provider keys and choosing a provider in the console arrive in Phase 2. In local
+  mode you can try a route with `--provider`; it uses fixture answers and never calls the provider.
+</Callout>
+
+Your provider keys stay on the server. %product% never sends a key to the browser, and never sends a key to any host other than its provider's.

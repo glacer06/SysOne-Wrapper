@@ -1,0 +1,204 @@
+---
+title: Quickstart
+description: Run a question set on your own machine with the CLI in local mode.
+---
+
+Local mode runs a spec file against a state file on your machine. It uses fixture answers instead of a live model, so it makes no network call and needs no System One key. It is the fastest way to see how questions, bands, actions and routes fit together.
+
+<Callout title="What works today">
+  The `sysone` CLI is not on npm yet. A published package, and the commands that manage sets
+  through the HTTP API, arrive in Phase 3. Until then, local mode runs from a checkout of the
+  source repository with `pnpm sysone`.
+</Callout>
+
+## 1. Get the repository ready
+
+You need Node.js 22.13 or later and pnpm 10. From the repository root:
+
+```bash
+pnpm install
+```
+
+## 2. Write a spec
+
+A spec holds the questions, the policy for each one, and the routes that turn answers into an outcome. This one triages an email with three questions, one of each type. Save it as `spec.json` in the repository root.
+
+```json title="spec.json"
+{
+  "schemaVersion": 1,
+  "model": "jev-1.13.0",
+  "input": {
+    "schema": {
+      "type": "object",
+      "required": ["email"],
+      "properties": {
+        "email": {
+          "type": "object",
+          "required": ["from", "subject", "body"],
+          "properties": {
+            "from": { "type": "string" },
+            "subject": { "type": "string" },
+            "body": { "type": "string" }
+          }
+        }
+      }
+    }
+  },
+  "stages": [
+    {
+      "id": "triage",
+      "questions": {
+        "real_person": {
+          "type": "noul",
+          "instructions": "Was `email` written by a real person to the recipient, rather than sent by an automated system, newsletter, or marketing tool?",
+          "criteria": {
+            "true": "A person wrote this message to the recipient.",
+            "false": "Automated, bulk, newsletter, receipt, or marketing mail."
+          },
+          "meta": { "label": "Real person wrote it" }
+        },
+        "category": {
+          "type": "choice",
+          "instructions": "What kind of message is `email`, judged by what the sender wants from the recipient?",
+          "criteria": {
+            "work_request": "Someone needs work, a decision, or information from the recipient.",
+            "scheduling": "Meeting times, invites, or calendar changes.",
+            "newsletter": "Subscribed content or digests.",
+            "none_of_these": null
+          },
+          "meta": { "label": "Category" }
+        },
+        "cost_of_ignoring": {
+          "type": "score",
+          "instructions": "What will it cost the recipient to ignore `email` for a week?",
+          "criteria": [
+            "Nothing. Safe to ignore.",
+            "Minor. A small delay or a mildly annoyed contact.",
+            "Real. A missed deadline, lost money, or a damaged relationship.",
+            "Severe. Legal, financial, or safety consequences."
+          ],
+          "meta": { "label": "Cost of ignoring" }
+        }
+      }
+    }
+  ],
+  "policies": {
+    "real_person": {
+      "type": "noul",
+      "gating": true,
+      "noul": { "trueAt": 0.85, "falseAt": 0.15, "reviewMargin": 0.1 },
+      "actions": { "high": { "kind": "auto" }, "medium": { "kind": "auto" }, "low": { "kind": "review" } }
+    },
+    "category": {
+      "type": "choice",
+      "gating": false,
+      "thresholds": { "high": 0.6, "medium": 0.3 },
+      "actions": {
+        "high": { "kind": "auto" },
+        "medium": { "kind": "auto" },
+        "low": { "kind": "fallback", "config": { "kind": "value", "value": "none_of_these" } }
+      }
+    },
+    "cost_of_ignoring": {
+      "type": "score",
+      "gating": true,
+      "thresholds": { "high": 0.75, "medium": 0.45 },
+      "actions": { "high": { "kind": "auto" }, "medium": { "kind": "review" }, "low": { "kind": "review" } }
+    }
+  },
+  "routes": [
+    { "when": { "q": "cost_of_ignoring", "gte": 2 }, "output": "urgent" },
+    { "when": { "q": "category", "eq": "newsletter" }, "output": "read_later" }
+  ],
+  "defaultRoute": "normal",
+  "savings": { "comparatorModel": "claude-haiku-4-5", "kind": "decision" }
+}
+```
+
+A few things to notice:
+
+- The instructions point at parts of the state with backticked paths, such as `` `email` ``.
+- The question ids (`real_person`, `category`) are never sent to the model. The instructions carry the whole meaning.
+- `category` has a `none_of_these` option, so the model is not forced to spread probability across wrong answers.
+- `category` is not gating. A low band there falls back to `none_of_these` and does not hold up the run.
+
+## 3. Write a state
+
+The state is what the questions judge. It must match the spec's input schema. Save it as `state.json` next to it.
+
+```json title="state.json"
+{
+  "email": {
+    "from": "ana@acme.com",
+    "subject": "Re: contract renewal",
+    "body": "Hi Nick, legal signed off on the renewal terms. I need your approval on the final contract by Friday so we can keep the current pricing. Can you confirm today?"
+  }
+}
+```
+
+## 4. Run it
+
+```bash
+pnpm sysone run --local spec.json state.json
+```
+
+The output looks like this:
+
+```text
+sysone run --local (fixture transport, no network, no key)
+model jev-1.13.0 answered by jev-1.13.0; rollout full; status ok
+run band low; overall action review; route read_later
+
+decisions
+  real_person       null            band low    review -> review
+  category          "newsletter"    band medium auto -> auto
+  cost_of_ignoring  1.54            band low    review -> review
+
+System One cost $0.000013 for 318 input tokens
+estimated savings $0.000435 against claude-haiku-4-5 (one_call, decision)
+answers: 1 of 1 calls had no recorded fixture and got synthetic answers. They are not model output.
+```
+
+<Callout type="warn" title="These answers are synthetic">
+  No fixture covers this exact request, so local mode made up deterministic answers. They show
+  how the pieces fit, not what the model would say about this email.
+</Callout>
+
+Read each decision line from left to right: the question, its value, its band, then the action the policy asks for and the action the rollout stage allows. Here `real_person` came back at 0.51, a probability of yes near one half, which lands in the low band, so its policy says `review`. The run band is the lowest band among gating decisions, and the overall action is the most conservative one, so the whole run goes to review.
+
+## 5. Try a rollout stage
+
+Local runs default to the `full` stage. Run the same files in `shadow`:
+
+```bash
+pnpm sysone run --local spec.json state.json --rollout shadow
+```
+
+```text
+run band low; overall action fallback; route read_later
+
+decisions
+  real_person       null            band low    review -> fallback
+  category          "newsletter"    band medium auto -> fallback
+  cost_of_ignoring  1.54            band low    review -> fallback
+...
+estimated savings $0.000000 against claude-haiku-4-5 (one_call, decision, suppressed: shadow)
+```
+
+In shadow every decision is still computed and logged, but the action your app should take is always `fallback`: keep your existing path. Savings are not booked for shadow runs. See [rollout stages](/docs/concepts/rollout).
+
+## Options
+
+| Option | Values | Default |
+| --- | --- | --- |
+| `--json` | Print the full run result as JSON | off |
+| `--rollout` | `shadow`, `controlled`, `full`, `paused` | `full` |
+| `--channel` | `production`, `staging` | `production` |
+| `--provider` | `typesafe`, `openrouter`, `vercel` | `typesafe` |
+
+`--json` prints the same run result envelope the HTTP API will return, including the cost block.
+
+## Next steps
+
+- [Question types](/docs/concepts/question-types) explains noul, choice and score.
+- [Confidence bands and actions](/docs/concepts/confidence-bands) explains the thresholds in the policies above.

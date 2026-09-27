@@ -47,6 +47,9 @@
 - [x] Registry sync, alias observation, alias probe and contract watch as plain async functions in `apps/console/src/jobs/registry` (ADR-005: the Inngest wrapper and the Postgres adapter for their ports land with the runner in Phase 2). Tested against recorded HTTP in `__fixtures__/http`, with no network. The TypeSafe `GET /v1/models` and probe recordings are stand-ins until a key is available; the OpenRouter Models API recording is live
 - [x] Contract snapshots for `llms.txt` and `models.md` next to `openapi.json` in `packages/system-one-client/contract` (recorded 2026-09-27)
 
+## Docs site
+- [x] Docs site skeleton in `apps/docs` (NSI-713): Fumadocs with built-in search; Introduction; Quickstart for `pnpm sysone run --local` with a spec the content tests validate; concept pages for question sets and versions, question types, confidence bands and actions, rollout stages and pinned models, the outage rule, cost and savings, and providers; an API reference generated from `packages/core/openapi.json` and marked "Available from Phase 3"; CLI reference and Agents and MCP stubs; `llms.txt` and `llms-full.txt` ([team-playbook.md](../team-playbook.md#docs-site))
+
 ## Exit gate
 - A spec runs end to end against fixtures and returns a valid `RunResult` with bands, actions, cost, and savings.
 - Router and compiler at 100% branch coverage.

@@ -12,6 +12,7 @@ Phase 0 is done. Part two (monorepo scaffold, zod contracts, operation registry,
 
 ```
 pnpm dev                 # console on localhost
+pnpm --filter @sysone/docs dev   # public docs site (apps/docs) on localhost:3001
 pnpm turbo lint typecheck test build
 pnpm db:migrate          # drizzle-kit migrations
 pnpm fixtures:record [--model <id>] [--provider typesafe|openrouter|vercel]   # re-record System One fixtures (TYPESAFE_API_KEY, OPENROUTER_API_KEY or AI_GATEWAY_API_KEY)

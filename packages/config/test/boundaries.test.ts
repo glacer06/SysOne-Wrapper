@@ -107,6 +107,12 @@ const cases: Case[] = [
   { name: "example-embed -> core openapi.json", file: "apps/example-embed/src/x.ts", code: `import "@sysone/core/openapi.json";`, violates: false },
   { name: "mcp-server -> core root", file: "packages/mcp-server/src/x.ts", code: `import "@sysone/core";`, violates: true },
 
+  // The public docs site reads core's contracts and OpenAPI document, and nothing server side.
+  { name: "docs -> core", file: "apps/docs/test/x.test.ts", code: `import "@sysone/core";`, violates: false },
+  { name: "docs -> core openapi.json", file: "apps/docs/src/x.ts", code: `import "@sysone/core/openapi.json";`, violates: false },
+  { name: "docs -> db", file: "apps/docs/src/x.ts", code: `import "@sysone/db";`, violates: true },
+  { name: "docs -> system-one-client", file: "apps/docs/src/x.ts", code: `import "@sysone/system-one-client";`, violates: true },
+
   // mcp-server calls /api/v1 over HTTP only.
   { name: "mcp-server -> db", file: "packages/mcp-server/src/x.ts", code: `import "@sysone/db";`, violates: true },
 

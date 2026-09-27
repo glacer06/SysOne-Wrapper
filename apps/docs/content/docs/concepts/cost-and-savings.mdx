@@ -1,0 +1,47 @@
+---
+title: Cost, savings and escalation spend
+description: What every run reports about money, and how the savings estimate is made.
+---
+
+Every run returns a `cost` block. It says what the System One calls cost, what the same judgments would have cost as LLM calls, and what any escalation to an LLM actually cost.
+
+## The cost block
+
+| Field | Meaning |
+| --- | --- |
+| `systemOneCostUsd` | What the System One calls in this run cost. It uses the provider's reported cost when the provider sends one, and the price book otherwise. |
+| `counterfactualLlmCostUsd` | An estimate of what the counted judgments would have cost on the comparator LLM. |
+| `comparatorModel` | The LLM used for that estimate, such as `claude-haiku-4-5`. |
+| `savingsUsd` | The counterfactual minus the System One cost minus the escalation spend. It can be negative. |
+| `escalationCostUsd` | What `escalate_to_llm` calls in this run actually cost. |
+| `llmCallsMade` | How many LLM calls the run made. |
+| `savingsSuppressed` | Why savings are zero for this run, if they are: `shadow`, `eval`, `staging`, `experiment` or `outage`. |
+| `estimated` | Always `true`. Savings are estimates. |
+
+## How the savings estimate works
+
+By default only questions whose effective action is `auto` count. A question sent to review or fallback did not replace anything yet, so it adds cost but no savings.
+
+The default mode, `one_call`, assumes one LLM call would have answered every counted question at once. It is the conservative case. A set can switch to `per_question`, which assumes one LLM call per question. Every report says which mode it used.
+
+Each set has one savings kind:
+
+- `decision` (default): what the same judgments would cost as LLM calls.
+- `escalation_avoided`: for sets that only call an LLM when the model is unsure. Each run that settled without escalating avoided one LLM call.
+- `context_pruned`: for sets that drop items from a context window. Savings come from the input tokens the downstream LLM no longer reads.
+
+## Honest numbers
+
+- Savings are estimates. Reports will show the comparator, the output tokens assumed per question and the mode next to them.
+- Savings assume `auto` decisions are right. Reports will also show a quality-adjusted value that subtracts the expected cost of wrong answers and of human review.
+- Negative savings are shown as negative, never as zero.
+- Shadow, eval, staging, experiment and outage runs book no savings. They still record their cost.
+
+## Watch escalation spend first
+
+System One calls are cheap per token, so they are rarely what moves the bill. Escalations to an LLM are. For that reason escalation rate and escalation spend per day will sit next to savings in set health and reports, and moving a threshold will show a forecast of review load and escalation spend before you publish.
+
+<Callout title="Coming in Phase 3">
+  Reports, the org dashboard, the threshold forecast and a daily escalation budget alert arrive
+  in Phase 3. Today every local run already prints its System One cost and estimated savings.
+</Callout>

@@ -1,0 +1,20 @@
+---
+title: Agents and MCP
+description: How agents will run the same loop a person runs in the console. Coming in a later phase.
+---
+
+<Callout type="warn" title="Coming in Phases 2, 3 and 7">
+  Agent tokens and approvals arrive in Phase 2. The CLI commands and the MCP server over stdio
+  arrive in Phase 3. The MCP server over HTTP and a Claude Code plugin arrive in Phase 7. Nothing
+  on this page is live yet.
+</Callout>
+
+%product% is built headless first. Every capability of the console is an operation that the HTTP API, the `sysone` CLI and the MCP server also expose, under the same permission checks. An agent can therefore build a set, run evals, publish and move it through rollout.
+
+## The plan in brief
+
+- **Agent tokens.** An agent acts as one user in one org, with scopes and a role ceiling. Its effective role is never higher than the user's own role in that org.
+- **Agents propose, people approve.** High-risk moves by an agent, such as moving a set to `full`, wait for a person to approve them. Moves toward safety, such as pausing or rolling back, never wait.
+- **MCP server.** A curated set of tools over the same operations, for agents that speak the Model Context Protocol.
+
+This page will cover setup and the tool list when they ship.

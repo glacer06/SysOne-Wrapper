@@ -19,15 +19,24 @@ catalog:
   # Pre-1.0 as well. Only packages/llm-client imports it.
   "@anthropic-ai/sdk": ^0.128.0
   "@vitest/coverage-v8": 5.0.2
+  "@tailwindcss/postcss": 4.3.3
+  "@types/mdx": 2.0.14
   eslint: 10.11.0
   eslint-import-resolver-typescript: 4.4.5
+  # Docs site (apps/docs). fumadocs-ui pins fumadocs-core to the same version, so move them together.
+  fumadocs-core: 16.15.15
+  fumadocs-mdx: 15.4.5
+  fumadocs-openapi: 12.0.4
+  fumadocs-ui: 16.15.15
   eslint-plugin-boundaries: 7.2.0
   globals: 17.12.0
   next: 16.3.6
   pg: 8.23.0
+  postcss: 8.5.28
   react: 19.3.0
   react-dom: 19.3.0
   server-only: 0.0.1
+  tailwindcss: 4.3.3
   tsx: 4.23.15
   turbo: 2.11.4
   # TypeScript 7 is outside the typescript-eslint 8 peer range (>=4.8.4 <6.1.0), so this pins the newest 5.x.

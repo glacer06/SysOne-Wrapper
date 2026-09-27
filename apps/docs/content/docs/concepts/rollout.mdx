@@ -1,0 +1,57 @@
+---
+title: Rollout stages and pinned models
+description: How a set goes from measured to trusted, per channel, and why the model must be pinned first.
+---
+
+Each channel of a set has a **rollout stage**. The stage decides how much of the policy is allowed to act. It is stored on the channel pointer, never in the spec, so moving a set forward or back does not need a new version.
+
+## The five stages
+
+| Stage | What happens |
+| --- | --- |
+| `inactive` | The channel does not serve runs. A call returns `409 set_not_live`. |
+| `shadow` | Runs happen and are logged, but every effective action is `fallback`, so your app keeps its existing path. Use it to measure before you trust. |
+| `controlled` | High-band decisions keep their policy action. Medium and low go to `review` when the question is gating, and to `fallback` when it is not. |
+| `full` | Policy actions run as written. |
+| `paused` | The kill switch. Every effective action is `fallback`. Only a person can set it. |
+
+Runs of `slug@draft` always behave like shadow.
+
+## Effective action by stage
+
+| Stage | Band | Effective action |
+| --- | --- | --- |
+| `shadow` | any | `fallback` |
+| `controlled` | high | the policy action |
+| `controlled` | medium or low, gating | `review` |
+| `controlled` | medium or low, not gating | `fallback` |
+| `full` | any | the policy action |
+| `paused` | any | `fallback` |
+
+A forced `fallback` means "keep your existing path". It does not run the fallback configured in the policy.
+
+## Moving between stages
+
+Moves on the production channel pass gates. The defaults:
+
+| Move | Gate |
+| --- | --- |
+| `inactive` to `shadow` | A published version on the channel. |
+| `shadow` to `controlled` | A pinned model, at least 200 shadow runs, enough labeled high-band decisions, and high-band precision at target. |
+| `controlled` to `full` | Coverage and precision at target over the last 7 days, and an admin. An agent needs a human approval. |
+
+Precision gates use the 95 percent lower bound, not the raw rate, so a handful of lucky labels cannot open a gate. With too few labels a gate reports insufficient data, never a pass.
+
+Moves toward safety are never gated: pausing, going back to shadow, or rolling back.
+
+## Pinned models
+
+A **pinned** model names exactly one build, such as `jev-1.13.0`. An alias like `jev-latest`, or a partial id like `jev` or `jev-1.13`, is **moving**: the build behind it can change without notice, and with it the answers and the right thresholds.
+
+A set on a moving model can run in `inactive` and `shadow` only. Pin a versioned model before a set enters `controlled`. Whether a name is pinned comes from the model registry, not from how the name looks.
+
+The model is part of the spec, so moving a set to a new model means publishing a new version of the set.
+
+<Callout title="Coming in Phase 3">
+  Changing rollout stages and the gates arrive with the console and the HTTP API in Phase 3. In local mode you can try each stage with `--rollout`.
+</Callout>

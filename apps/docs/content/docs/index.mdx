@@ -1,0 +1,31 @@
+---
+title: Introduction
+description: What %product% does, and what works today.
+---
+
+%product% is a managed layer around TypeSafe's System One models. Jev is the first of them, and the default.
+
+A System One model does not write text. You give it state, such as an email or a support ticket, and a few typed questions: yes or no, pick one, or rate on a scale. It hands back typed answers with probabilities, fast and cheap. That fits the small judgment calls software makes all day.
+
+What the model call does not give you is everything around it. Who can change the questions? Which version is live? What happens when the model is not sure? Is it saving money? %product% is that layer.
+
+## What it does
+
+- **Versioned question sets.** You write your questions, their thresholds and the actions they lead to in one spec. Drafts can change. Published versions never do, so every run points at an exact version.
+- **Confidence bands to actions.** Every answer lands in a high, medium or low band. Each band maps to an action: act on it, send it to a person for review, fall back to your existing path, or escalate to an LLM.
+- **Rollout.** A set moves through stages per channel: inactive, shadow, controlled, full, and paused as a kill switch. You measure in shadow before you let answers act.
+- **Cost, savings and escalation spend.** Every run reports what the System One calls cost, an estimate of what the same judgments would have cost as LLM calls, and what any escalations to an LLM actually cost.
+- **Headless first.** Everything the console will do is also an operation in the HTTP API, the `sysone` CLI and an MCP server, so scripts and agents can run the whole loop. Risky moves by agents wait for a human to approve them.
+
+## What works today
+
+%product% is being built in phases. Today you can run a question set on your own machine with the CLI in local mode. It uses fixture answers, makes no network call and needs no key. The [quickstart](/docs/quickstart) walks through it.
+
+The hosted console, the HTTP API and the published CLI are not live yet. Pages about them say which phase they arrive in.
+
+## Where to go next
+
+- [Quickstart](/docs/quickstart): run a spec locally in a few minutes.
+- [Question sets and versions](/docs/concepts/question-sets): how a set is built and released.
+- [Confidence bands and actions](/docs/concepts/confidence-bands): how an answer becomes an action.
+- [API reference](/docs/api): the planned HTTP API, generated from its schema.

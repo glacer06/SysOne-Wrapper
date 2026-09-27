@@ -1,0 +1,10 @@
+{
+  "extends": "@sysone/config/tsconfig/nextjs.json",
+  "compilerOptions": {
+    "paths": {
+      "~/*": ["./src/*"]
+    }
+  },
+  "include": ["next-env.d.ts", "src", "test", ".next/types/**/*.ts", ".next/dev/types/**/*.ts", "*.config.ts"],
+  "exclude": ["node_modules", ".next/cache"]
+}

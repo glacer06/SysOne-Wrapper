@@ -1,0 +1,46 @@
+---
+title: Question types
+description: Noul, choice and score, what each returns, and how to write them.
+---
+
+System One models answer three types of question. Each one comes back typed, with probabilities.
+
+| Type | You give | You get back | Confidence |
+| --- | --- | --- | --- |
+| `noul` | Instructions, plus optional `true` and `false` criteria | `noul`: the probability of yes, from 0 to 1 | No separate field |
+| `choice` | A map of option keys to descriptions (a description can be `null`) | The chosen option, a probability per option, and `confidence` | Yes |
+| `score` | An ordered list of 2 to 10 levels | A `score` weighted by probability, so it can land between levels, plus `confidence` | Yes |
+
+A choice can have up to 255 options.
+
+## The question id is never sent to the model
+
+In a spec, each question has an id such as `real_person` or `cost_of_ignoring`. That id is for you and your code. It is not sent to the model. Put the whole meaning of the question in `instructions` and `criteria`.
+
+```json
+"real_person": {
+  "type": "noul",
+  "instructions": "Was `email` written by a real person to the recipient, rather than sent by an automated system, newsletter, or marketing tool?",
+  "criteria": {
+    "true": "A person wrote this message to the recipient.",
+    "false": "Automated, bulk, newsletter, receipt, or marketing mail."
+  },
+  "meta": { "label": "Real person wrote it" }
+}
+```
+
+`instructions` and `criteria` can be plain strings, or JSON objects and arrays when you want structure such as definitions or examples. Point at parts of the state with backticked paths like `` `email.subject` ``.
+
+## Reading a noul
+
+A noul near 0.5 means yes and no are about equally likely. It is not a medium-strength yes. That is why a noul has its own thresholds (`trueAt`, `falseAt`, `reviewMargin`) instead of a confidence cutoff. See [confidence bands](/docs/concepts/confidence-bands).
+
+## Writing questions that work
+
+- Ask one narrow judgment per question. Split a fuzzy ask like "is this urgent?" into separate checks.
+- Give a choice a `none_of_these` option when nothing may fit. Without it, the model has to spread probability across wrong answers.
+- Write score levels that describe concrete situations and make sense on their own.
+- Word the `true` criterion of a noul positively.
+- Give each question the state it needs. Missing evidence shows up as low confidence, which is the model telling you the truth.
+
+For more on how the models behave, see TypeSafe's docs at [docs.typesafe.ai](https://docs.typesafe.ai).

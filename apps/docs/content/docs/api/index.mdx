@@ -1,0 +1,18 @@
+---
+title: API reference
+description: The planned HTTP API, generated from its OpenAPI schema.
+---
+
+<Callout type="warn" title="Available from Phase 3">
+  The HTTP API is not live yet. It opens in Phase 3, and some groups arrive later; each page says
+  when. The pages in this section are generated from the same OpenAPI schema the server will
+  serve, so they show the planned contract. Paths and fields can still change before they ship.
+</Callout>
+
+All paths start with `/api/v1`. Requests authenticate with a bearer token: an app token for your server, a short-lived browser token for a page, or an agent token for scripts and agents.
+
+The endpoint you will call most is `POST /api/v1/sets/{ref}/run`. It runs a question set on the state you send and returns the standard run result, with every decision, the run band, the overall action, the route and the cost block. The [quickstart](/docs/quickstart) shows the same result from the CLI in local mode.
+
+Errors share one envelope with a stable `code`, so your code can branch on it.
+
+Use the menu to browse the API by area.

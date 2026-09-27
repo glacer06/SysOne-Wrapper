@@ -1,0 +1,48 @@
+---
+title: When the model is down
+description: The outage rule, and why it defaults to review and never to auto.
+---
+
+A System One outage is not the same as a low band. A low band means the model answered and was unsure. An outage means there is no answer at all. %product% treats the two differently.
+
+## What counts as an outage
+
+A run is an outage run when the model call fails as unavailable or overloaded after the SDK's own retries. That includes a run that used up its time budget and a connection that failed.
+
+Other failures are not outages. A bad key, a rate limit or a spent quota returns a plain error with no decisions.
+
+## The outage rule
+
+Each set has an `onUnavailable` rule in its spec:
+
+| Value | What gating decisions get during an outage |
+| --- | --- |
+| `review` (default) | A review item, so a person decides. |
+| `fallback` | `fallback`: your app keeps its existing path. |
+| `escalate_to_llm` | An LLM answers instead. If the LLM also fails, the decision becomes `review`. |
+
+The rule can never be `auto`. A spec that sets `auto` is rejected. With no answer, there is nothing safe to apply.
+
+The default is `review` because it fails closed: an outage becomes work for a person instead of a decision nobody made. If you choose `fallback`, you get a warning that names every gating decision, because your app then decides alone and nobody is told.
+
+## What an outage run returns
+
+An outage run still returns a normal run result, so your app always gets an instruction:
+
+- `status` is `error`, with the error code, and the warning `system_one_outage`.
+- There is one decision per question and composite, each in the low band with a `null` value.
+- The effective action follows the table below. Routes do not run.
+
+| Rollout stage | Decision | Effective action |
+| --- | --- | --- |
+| `inactive` | any | none: the channel returns `409 set_not_live` |
+| `shadow`, `paused`, or a draft run | any | `fallback` |
+| `controlled` or `full` | gating | the set's `onUnavailable` rule |
+| `controlled` or `full` | not gating | `fallback` |
+
+Outage runs book no savings. They are left out of precision, coverage and calibration, so a bad hour at the provider does not skew your numbers.
+
+<Callout title="Coming in Phase 3">
+  An alert for a set that goes silent, producing no decisions or only errors for its window,
+  arrives in Phase 3. Silence is an incident, not a safe state.
+</Callout>

@@ -57,6 +57,7 @@ export const elements = [
   { type: "console-ui", pattern: "apps/console/src/app/\\(platform\\)" },
   { type: "console", pattern: "apps/console" },
   { type: "example-embed", pattern: "apps/example-embed" },
+  { type: "docs", pattern: "apps/docs" },
   { type: "extension-chrome", pattern: "apps/extension-chrome" },
 ];
 
@@ -116,6 +117,9 @@ export const allowedElementDeps = {
     "plugins-builtin",
   ],
   "example-embed": ["client", "client-server", "react", "core-contracts", "core-openapi"],
+  // The public docs site. Its tests check the documented spec against core's parser; the site
+  // itself reads packages/core/openapi.json from disk at build time.
+  docs: ["core", "core-contracts", "core-openapi"],
   "extension-chrome": ["client", "react", "core-contracts"],
 };
 
