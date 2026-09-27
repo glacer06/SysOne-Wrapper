@@ -167,6 +167,17 @@ describe("event data", () => {
     expect(() => parseEventData("alert.raised", { ...data, kind: "silent" })).toThrow();
   });
 
+  it("raises the escalation_over_budget alert (ADR-015)", () => {
+    const data = {
+      kind: "escalation_over_budget",
+      severity: "warning",
+      message: "Escalation spend today is $12.40, over the $10.00 daily budget.",
+      metrics: { escalationCostMicroUsd: 12_400_000, budgetMicroUsdPerDay: 10_000_000, escalations: 310 },
+    };
+    expect(parseEventData("alert.raised", data)).toEqual(data);
+    expect(() => parseEventData("alert.raised", { ...data, kind: "over_budget" })).toThrow();
+  });
+
   it("types rollout.auto_demoted rules", () => {
     const data = { channel: "production", from: "full", to: "controlled", rule: "band_drift", metrics: { psi: 0.31 } };
     expect(parseEventData("rollout.auto_demoted", data)).toEqual(data);

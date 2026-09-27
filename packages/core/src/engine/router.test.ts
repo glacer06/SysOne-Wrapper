@@ -422,9 +422,9 @@ describe("outage: the effective-action table across rollout stages (ADR-012)", (
     expect(outageEffectiveAction({ stage: "full", kind: "composite", gating: true, relevant: true, onUnavailable: "fallback" })).toBe("fallback");
   });
 
-  it("an omitted rule is fallback, and slug@draft behaves as shadow", () => {
+  it("an omitted rule is review (ADR-012 Amendment 1), and slug@draft behaves as shadow", () => {
     const s = spec({ q: noulPolicy(true, { kind: "auto" }) });
-    expect(routeOutage({ spec: s, skipped: new Set(), rollout: "full", channel: "production" }).decisions["q"]?.effectiveAction).toBe("fallback");
+    expect(routeOutage({ spec: s, skipped: new Set(), rollout: "full", channel: "production" }).decisions["q"]).toMatchObject({ effectiveAction: "review", executed: true });
     const review = { ...s, onUnavailable: "review" as const };
     expect(routeOutage({ spec: review, skipped: new Set(), rollout: "full", channel: "draft" }).decisions["q"]?.effectiveAction).toBe("fallback");
   });

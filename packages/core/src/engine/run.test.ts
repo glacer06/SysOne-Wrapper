@@ -234,7 +234,7 @@ describe("failed runs return the envelope with status and error", () => {
     const h = makePorts({ transport: scriptedTransport(() => transportError(thrown, true)) });
     const result = await runQuestionSet(ctx, runRequest(exampleState()), resolvedRun(exampleSpec()), h.ports, control());
     expect(RunResult.parse(result)).toBeTruthy();
-    expect(result).toMatchObject({ status: "error", error: { code }, runBand: "low", overallAction: "fallback", modelResolved: null, route: null });
+    expect(result).toMatchObject({ status: "error", error: { code }, runBand: "low", overallAction: "review", modelResolved: null, route: null });
     expect(Object.keys(result.decisions).length).toBeGreaterThan(0);
     expect(isOutageRun(result)).toBe(true);
     expect(isOutageCode(code)).toBe(true);
@@ -455,7 +455,7 @@ describe("outage rule (ADR-012)", () => {
     Object.entries(spec.policies).filter(([, p]) => p.gating).map(([id]) => id);
 
   it.each([
-    [undefined, "fallback"],
+    [undefined, "review"],
     ["fallback", "fallback"],
     ["review", "review"],
   ] as const)("onUnavailable %s: every gating decision is %s, band low, never auto", async (rule, action) => {

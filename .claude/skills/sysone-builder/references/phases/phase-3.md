@@ -11,6 +11,7 @@ Every console screen in this phase calls an operation ([management-api.md](../ma
 - [ ] Model picker fed from the registry (`model.list`), showing each model's status, limits and weaknesses
 - [ ] Options editor: choice options (up to 255, "none" suggestion), score levels (2 to 10, ordered), noul true/false criteria. The 255 options and 2 to 10 levels are API-wide rules; other limits come from the model profile.
 - [ ] Policy editor with band sliders and a live preview on sample state
+- [ ] Cost and review-load forecast in the policy preview (ADR-015): replay recent runs or an eval dataset under the proposed policy and return a `forecast` block with counts per effective action, review items per day, escalation spend per day and System One spend per day, next to precision and the false-auto rate ([confidence-policy.md](../confidence-policy.md)) (Billing / Savings, Console UI)
 - [ ] Input schema editor, redact paths, token preflight meter; the adapter picker stays hidden until Phase 5, so sets run on raw JSON state
 - [ ] Publish flow: `If-Match` on the draft ETag, lints (including the model lints and `interface.breaking`, which counts apps with runs until bindings land in Phase 4b), an eval gate that is required when the production pointer is `controlled` or `full` (the same-snapshot regression gate in [effectiveness-loop.md](../effectiveness-loop.md), section 5), changelog, channel choice, and a dry-run preview
 - [ ] Version history, diffs, release events, one-click rollback and promote
@@ -50,6 +51,9 @@ Every console screen in this phase calls an operation ([management-api.md](../ma
 - [ ] Savings and usage dashboards (org, project, set)
 - [ ] Standard reports from [savings-model.md](../savings-model.md) with CSV export and monthly PDF
 - [ ] Model upgrades report and alerts: alias-moved and deprecation alerts here; upgrade candidates with eval deltas arrive in Phase 3b
+- [ ] Escalation rate and escalation spend per day lead set health, the savings report and the org dashboard, per set and per org (ADR-015, [savings-model.md](../savings-model.md))
+- [ ] Daily escalation budget setting: nullable `question_sets.escalation_budget_micro_usd_per_day`, outside the versioned spec, with an operation, audit row and console field (ADR-015)
+- [ ] Escalation budget alert job: raises `alert.raised` with kind `escalation_over_budget` once per set and day when the day's escalation spend crosses the budget; it alerts only and never stops escalating (ADR-015, [events.md](../events.md))
 - [ ] Audit log viewer with filters and CSV export
 
 ## Exit gate

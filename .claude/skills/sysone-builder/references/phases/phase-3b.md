@@ -6,6 +6,7 @@ The loop, its contracts and its rules are in [effectiveness-loop.md](../effectiv
 
 ## Replay and threshold tuning
 - [ ] Policy replay in `packages/core/src/learning`: re-route stored answers under a candidate policy with zero System One calls
+- [ ] Per-question calibration (ADR-014): fit an isotonic map from raw confidence (or raw noul probability) to observed accuracy from counted, weighted labels; propose it as a `ThresholdProposal` of kind `calibration` only with at least 20 counted labels and lower held-out calibration error; re-run the threshold suggester on calibrated values in the same proposal; runs keep the raw value next to the calibrated one
 - [ ] Threshold suggester (`suggestThresholds` returning `ThresholdProposal`), the `policy.suggest` operation (`POST /api/v1/sets/{ref}/policy-suggestions`, a job), "Suggest from labels" in the policy editor (applies to the draft only), MCP `suggest_thresholds` and `sysone tune`
 
 ## Set health

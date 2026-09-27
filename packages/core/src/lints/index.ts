@@ -43,6 +43,7 @@ export const LINT_RULES = [
   "weakness.large_unreferenced_state",
   "weakness.threshold_copied",
   "outage.auto_not_allowed",
+  "outage.fallback_silent",
 ] as const;
 export type LintRule = (typeof LINT_RULES)[number];
 

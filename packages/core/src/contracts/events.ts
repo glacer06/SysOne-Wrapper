@@ -247,6 +247,9 @@ export const ReviewResolvedData = z.object({
 /**
  * `set_silent` (ADR-012): a set that normally produces decisions on a channel produced none, or
  * only errors, for its liveness window.
+ *
+ * `escalation_over_budget` (ADR-015): a set's escalation spend for the day crossed its daily
+ * escalation budget. It alerts only and does not stop escalating.
  */
 export const AlertKind = z.enum([
   "band_drift",
@@ -255,6 +258,7 @@ export const AlertKind = z.enum([
   "rate_headroom",
   "quota",
   "set_silent",
+  "escalation_over_budget",
 ]);
 export type AlertKind = z.infer<typeof AlertKind>;
 

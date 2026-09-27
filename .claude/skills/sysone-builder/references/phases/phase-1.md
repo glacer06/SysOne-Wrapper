@@ -16,6 +16,7 @@
 - [x] Model id mapping through route rows: send `resolveRoute(...).providerModelId`, map the response `model` back with `registryIdForResolved`, warn `model_resolved_unmapped` when no route knows it
 - [x] Preflight from the effective limits (`ModelCatalog.effective(name, provider).limits`): jev-1.13.0 on OpenRouter blocks a request over 32,000 tokens that TypeSafe direct would accept
 - [x] Call cost from `usage.cost` when present (`reportedCostMicroUsd`, stored as `RunCall.providerCostUsd`), else the price book ([savings-model.md](../savings-model.md))
+- [x] Fail closed on outages (ADR-012 Amendment 1): `DEFAULT_ON_UNAVAILABLE` is `review`; the warning lint `outage.fallback_silent` names gating decisions with no `value` or `set` fallback when `onUnavailable` is explicitly `fallback`; `instructions.too_short` says the question id never reaches the model; `AlertKind` gains `escalation_over_budget` for the Phase 3 budget job (ADR-015)
 - [x] `llm-client`: `LlmTransport` over `@anthropic-ai/sdk` (`AnthropicLlmTransport`: explicit key, base URL and log level, so no env var or profile steers it), an optional OpenRouter chat route (`OpenRouterLlmTransport`, including `typesafe/jev-router`) that stays off until the config enables it (ADR-011, proposed), `RoutedLlmTransport` and `createLlmTransport` to pick the route by model id, and `FixtureLlmTransport` as its own subpath `@sysone/llm-client/fixture` that never imports the SDK. Hand-authored LLM fixtures in `packages/llm-client/fixtures/`
 
 ## Integrations

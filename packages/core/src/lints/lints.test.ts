@@ -301,7 +301,63 @@ const cases: Case[] = [
       return { spec: s };
     },
   },
+  {
+    rule: "outage.fallback_silent",
+    build: () => ({ spec: { ...gatingSpec({ kind: "fallback", config: { kind: "noop" } }), onUnavailable: "fallback" } }),
+  },
 ];
+
+/** minimal() with team gating and its low band set to the given action. */
+function gatingSpec(low: NonNullable<QuestionSetSpec["policies"][string]>["actions"]["low"]): QuestionSetSpec {
+  const s = minimal();
+  s.policies["team"] = { type: "choice", gating: true, thresholds: { high: 0.75, medium: 0.45 }, actions: { high: { kind: "auto" }, medium: { kind: "review" }, low } };
+  return s;
+}
+
+describe("outage.fallback_silent (ADR-012 Amendment 1)", () => {
+  const silent = (s: QuestionSetSpec) => lint(s, jev).filter((r) => r.rule === "outage.fallback_silent");
+
+  it("stays quiet on the default rule, even when a gating decision has no fallback value", () => {
+    expect(silent(gatingSpec({ kind: "fallback", config: { kind: "noop" } }))).toEqual([]);
+    expect(silent(gatingSpec({ kind: "review" }))).toEqual([]);
+  });
+
+  it("warns at /onUnavailable when the rule is fallback and a gating decision would do nothing", () => {
+    for (const low of [{ kind: "fallback", config: { kind: "noop" } }, { kind: "fallback" }, { kind: "review" }] as const) {
+      const r = silent({ ...gatingSpec(low), onUnavailable: "fallback" });
+      expect(r).toEqual([
+        {
+          rule: "outage.fallback_silent",
+          severity: "warning",
+          path: "/onUnavailable",
+          message: 'onUnavailable is fallback, but "team" has no fallback value, so an outage would drop them with nobody told; use review or give them a fallback value',
+        },
+      ]);
+    }
+  });
+
+  it("names gating composites too, and skips non-gating decisions", () => {
+    const s: QuestionSetSpec = { ...gatingSpec({ kind: "review" }), onUnavailable: "fallback" };
+    s.composites = [
+      { id: "risk", kind: "weighted", terms: [{ q: "team", weight: 1, option: "billing" }], policy: { type: "composite", gating: true, levelThresholds: { high: 0.7, medium: 0.4 }, actions: { high: { kind: "review" }, medium: { kind: "review" }, low: { kind: "auto" } } } },
+      { id: "soft", kind: "weighted", terms: [{ q: "team", weight: 1, option: "billing" }], policy: { type: "composite", gating: false, levelThresholds: { high: 0.7, medium: 0.4 }, actions: { high: { kind: "review" }, medium: { kind: "review" }, low: { kind: "auto" } } } },
+    ];
+    expect(silent(s)[0]?.message).toContain('"team", "risk" have no fallback value');
+    const quiet = { ...minimal(), onUnavailable: "fallback" as const };
+    expect(silent(quiet)).toEqual([]);
+  });
+
+  it("stays quiet when every gating decision has a value or set fallback", () => {
+    expect(silent({ ...gatingSpec({ kind: "fallback", config: { kind: "value", value: "billing" } }), onUnavailable: "fallback" })).toEqual([]);
+    expect(silent({ ...gatingSpec({ kind: "fallback", config: { kind: "set", setRef: "triage-backup" } }), onUnavailable: "fallback" })).toEqual([]);
+  });
+
+  it("stays quiet on review and escalate_to_llm", () => {
+    for (const onUnavailable of ["review", "escalate_to_llm"] as const) {
+      expect(silent({ ...gatingSpec({ kind: "fallback", config: { kind: "noop" } }), onUnavailable })).toEqual([]);
+    }
+  });
+});
 
 describe("outage.auto_not_allowed (ADR-012)", () => {
   it("passes every allowed outage rule and an omitted one", () => {
@@ -337,6 +393,17 @@ describe("each rule fires on a minimal bad spec", () => {
 });
 
 describe("rule details", () => {
+  it("instructions.too_short says the question id never reaches the model", () => {
+    const s = cases.find((c) => c.rule === "instructions.too_short")?.build().spec as QuestionSetSpec;
+    expect(lint(s, jev).find((r) => r.rule === "instructions.too_short")).toEqual({
+      rule: "instructions.too_short",
+      severity: "warning",
+      path: "/stages/0/questions/team/instructions",
+      message:
+        '"team" has fewer than 8 words of instructions; the question id is never sent to the model, so the requirement has to be in the instructions and option descriptions',
+    });
+  });
+
   it("weakness lints stay quiet when the profile does not list the weakness", () => {
     const counting = cases.find((c) => c.rule === "weakness.counting")?.build().spec as QuestionSetSpec;
     expect(rules(lint(counting, { ...jev, weaknesses: [] }))).not.toContain("weakness.counting");

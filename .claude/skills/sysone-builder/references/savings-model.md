@@ -282,6 +282,8 @@ Each report is available in the org console, as CSV, as a PDF monthly summary, a
 | Model upgrades | `model-upgrades` | Pinned sets behind the latest stable model in their family, with eval deltas; alias sets whose resolved model changed |
 | Rate headroom | `rate-headroom` | Peak RPM and tokens/sec per org against its limit and the per-model global budget |
 
+**Escalation first (ADR-015, accepted).** The System One share of a set's bill stays small at $0.042 per million input tokens. Escalations are where the money goes. So set health, the savings report and the org dashboard lead with escalation rate (escalated decisions over decisions) and escalation spend per day, per set and per org, next to savings. A set can carry a daily escalation budget (`question_sets.escalation_budget_micro_usd_per_day`, outside the versioned spec); crossing it raises an alert and never stops escalating. The report fields, the setting and the alert job land in Phase 3.
+
 **Portfolio view** (`/me/portfolio`): a user who is owner or admin in several orgs (Nick across SGR, Personal, Dallas) sees their savings and usage side by side. It loops over each org with that org's own tenant context. It never bypasses RLS.
 
 **Alerts** raised from these reports:
@@ -296,6 +298,7 @@ Each report is available in the org console, as CSV, as a PDF monthly summary, a
 | Rate headroom above 80% | `alert.raised`, kind `rate_headroom` |
 | Quota near limit | `alert.raised`, kind `quota` |
 | Set silent: no decisions, or only errors, for the liveness window (ADR-012) | `alert.raised`, kind `set_silent` |
+| Escalation over budget: the day's escalation spend crossed the set's daily escalation budget (ADR-015). Alerts only | `alert.raised`, kind `escalation_over_budget` |
 | Org key invalid | `key.invalid` |
 
 Alerts show in the console and go out by email. Alerts are also events: available through the event feed from Phase 3 ([events.md](events.md)) and through org webhooks from Phase 5.

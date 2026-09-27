@@ -83,7 +83,7 @@ describe("QuestionSetSpec", () => {
     expect(parseSpec(minimal).ok).toBe(true);
   });
 
-  it("accepts each onUnavailable rule; omitted means fallback (ADR-012)", () => {
+  it("accepts each onUnavailable rule; omitted means review (ADR-012 Amendment 1)", () => {
     for (const rule of ["fallback", "review", "escalate_to_llm"] as const) {
       const r = parseSpec({ ...minimal, onUnavailable: rule });
       expect(r.ok && r.spec.onUnavailable).toBe(rule);
@@ -92,7 +92,7 @@ describe("QuestionSetSpec", () => {
     const plain = QuestionSetSpec.parse(minimal);
     expect(plain.onUnavailable).toBeUndefined();
     expect(onUnavailableOf(plain)).toBe(DEFAULT_ON_UNAVAILABLE);
-    expect(DEFAULT_ON_UNAVAILABLE).toBe("fallback");
+    expect(DEFAULT_ON_UNAVAILABLE).toBe("review");
   });
 
   it("refuses onUnavailable auto with outage.auto_not_allowed, and other values with spec.invalid", () => {

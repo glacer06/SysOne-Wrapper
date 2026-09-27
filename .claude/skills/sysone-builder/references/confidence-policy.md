@@ -184,6 +184,12 @@ Guidance from the TypeSafe docs:
 - Confidence summarizes the distribution. It is not workflow correctness or permission to act.
 - Don't carry a threshold tuned on a Noul over to a Choice.
 
+### Previewing a threshold change (Phase 3, ADR-015)
+
+The policy preview replays recent runs, or an eval dataset, under the proposed policy. Next to precision it shows a cost and review-load forecast: counts per effective action, review items per day, escalation spend per day and System One spend per day. Moving a threshold changes how much work reaches people and LLMs, so the editor shows that before anyone publishes. The false-auto rate from the auto band's audit sample sits next to it in plain words.
+
+Thresholds today read raw confidence. Calibration per question (an isotonic map from raw confidence to observed accuracy, proposed and never applied silently) comes in Phase 3b under ADR-014.
+
 ## Quality targets
 
 Each goal stores one `QualityTarget` in `goals.quality_target`. This is the only place precision targets are defined.
@@ -232,7 +238,7 @@ Targeted picks (near a threshold, challenger disagreements) feed datasets and th
 
 A System One outage is a separate case from a low band. Nick accepted ADR-012 on 2026-09-27. Core enforces it in `outageEffectiveAction` and `routeOutage`, next to the normative table.
 
-- **Outage rule per set.** `QuestionSetSpec.onUnavailable` is `fallback` (default), `review` or `escalate_to_llm`. It never resolves to `auto`: the schema refuses `auto` with the rule id `outage.auto_not_allowed`, and the lint of the same id catches a spec built in code.
+- **Outage rule per set.** `QuestionSetSpec.onUnavailable` is `review` (default since ADR-012 Amendment 1), `fallback` or `escalate_to_llm`. The default fails closed: an outage becomes work for a person. An explicit `fallback` raises the warning `outage.fallback_silent` when a gating decision has no `value` or `set` fallback, since an outage would then drop it with nobody told. It never resolves to `auto`: the schema refuses `auto` with the rule id `outage.auto_not_allowed`, and the lint of the same id catches a spec built in code.
 - **What counts as an outage.** The run fails with `system_one_unavailable` or `system_one_overloaded` after SDK retries. That includes a spent latency budget and a transport error that is not a `TransportError`. Other failures (`system_one_auth`, `system_one_rate_limited`, `rate_limited`, quota) keep the plain error envelope with no decisions.
 - **Always an instruction.** `runQuestionSet` returns a normal `RunResult` with `status: "error"`, `error.code` set, the warning `system_one_outage`, and one decision per question and composite. Each is band `low`, `value: null`, `relevant: true` (relevance is not evaluated, since the answers it reads are missing), and `action` equal to `effectiveAction`. Questions in a spec stage skipped before the outage stay skipped decisions. Routes do not run, so `route` is null. Raw answers from stages that finished before the outage stay in `answers`.
 - **Savings and metrics.** Outage runs book no savings (`savingsSuppressed: "outage"`, `savingsUsd: 0`), record whatever System One calls did finish, and are left out of calibration, precision, coverage and label sampling (`isOutageRun`).

@@ -393,7 +393,7 @@ QuestionSetSpec = {
   routes?: Array<{ when: Condition, output: string }>,   // first match wins
   defaultRoute?: string,                                  // used when no route matches
   savings?: { comparatorModel?: string, estOutputTokensPerQuestion?: number, kind?: SavingsKind },
-  onUnavailable?: "fallback" | "review" | "escalate_to_llm",  // outage rule (ADR-012); default fallback, never auto
+  onUnavailable?: "fallback" | "review" | "escalate_to_llm",  // outage rule (ADR-012); default review (Amendment 1), never auto
 }
 
 QuestionDef = {
@@ -533,12 +533,13 @@ The operation builds `PublishCtx` from the stores; core never reads them. The ed
 | `policy.per_option_keys` | `perOption` keys are not a subset of the choice's option keys | error |
 | `policy.type_mismatch` | A question has no policy, or its policy type differs from the question type | error |
 | `outage.auto_not_allowed` | `onUnavailable` is `auto` (ADR-012); an outage gives no answer to act on. The strict schema refuses it with the same rule id | error |
+| `outage.fallback_silent` | `onUnavailable` is explicitly `fallback` and a gating decision would do nothing on an outage: its first fallback action (low band first) has no config or `noop`, or it has no fallback action at all (ADR-012 Amendment 1). Path `/onUnavailable`. Use `review` or give those decisions a `value` or `set` fallback | warning |
 | `policy.all_gating_thresholded` | Every question is gating and thresholded; suggest the top-choice preset where only the best option matters | warning |
 | `stage.same_stage_dependency` | Question depends on another answer in the same stage | error |
 | `stage.needless_second_call` | A stage's `when` reads an earlier answer but its `stateFrom` is `input` only; merge into the earlier stage and use `relevantWhen` | warning |
 | `relevance.premise_missing` | A question with `relevantWhen` whose instructions don't state the premise | warning |
 | `tokens.near_limit` | Estimated tokens above 80% of a profile limit | warning |
-| `instructions.too_short` | Instructions shorter than 8 words | warning |
+| `instructions.too_short` | Instructions shorter than 8 words. The question id is never sent to the model, so the requirement has to be in the instructions and option descriptions | warning |
 | `redact.path_unknown` | A `redactPaths` entry does not resolve in `input.schema` | error |
 | `action.handler_unknown` | An action names a handler that is not installed and enabled for the org | error |
 | `fallback.set_invalid` | A set fallback names a missing set, or a set that itself uses a set fallback | error |

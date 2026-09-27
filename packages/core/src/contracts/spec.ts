@@ -125,8 +125,11 @@ export const ON_UNAVAILABLE_ACTIONS = ["fallback", "review", "escalate_to_llm"] 
 export const OnUnavailable = z.enum(ON_UNAVAILABLE_ACTIONS);
 export type OnUnavailable = z.infer<typeof OnUnavailable>;
 
-/** The outage rule when a spec leaves `onUnavailable` out. */
-export const DEFAULT_ON_UNAVAILABLE: OnUnavailable = "fallback";
+/**
+ * The outage rule when a spec leaves `onUnavailable` out. `review` since ADR-012 Amendment 1: an
+ * outage becomes work for a person, never a decision dropped where nobody looks.
+ */
+export const DEFAULT_ON_UNAVAILABLE: OnUnavailable = "review";
 
 /** Rule id when anything maps `onUnavailable` to `auto`. */
 export const OUTAGE_AUTO_NOT_ALLOWED_RULE = "outage.auto_not_allowed";
@@ -164,7 +167,8 @@ const QuestionSetSpecShape = z.strictObject({
   savings: SpecSavings.optional(),
   /**
    * The outage rule (ADR-012): every gating decision's effectiveAction when System One is
-   * unavailable after retries. Default `fallback`. `auto` is not allowed (`outage.auto_not_allowed`).
+   * unavailable after retries. Default `review` (ADR-012 Amendment 1). `auto` is not allowed
+   * (`outage.auto_not_allowed`).
    */
   onUnavailable: OnUnavailable.optional(),
 });

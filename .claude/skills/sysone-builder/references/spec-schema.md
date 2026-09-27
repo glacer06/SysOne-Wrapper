@@ -241,10 +241,10 @@ EscalationConfig = {
 ### Outage rule (ADR-012)
 
 ```ts
-onUnavailable?: "fallback" | "review" | "escalate_to_llm"   // default "fallback"; never "auto"
+onUnavailable?: "fallback" | "review" | "escalate_to_llm"   // default "review" (ADR-012 Amendment 1); never "auto"
 ```
 
-What every gating decision's `effectiveAction` is when System One is unavailable after retries (`system_one_unavailable` or `system_one_overloaded`). The run still returns a `RunResult` with `status: "error"`, the error code, the warning `system_one_outage` and one decision per question and composite, so a caller never gets an empty decision set. `auto` fails the strict schema with the rule id `outage.auto_not_allowed`. The rows by rollout stage are in [confidence-policy.md](confidence-policy.md#outage-behaviour-adr-012-accepted). Pick the path that is safe for the decision: `review` for a payment gate, `fallback` for tagging, `escalate_to_llm` when an LLM answer is acceptable while System One is down.
+What every gating decision's `effectiveAction` is when System One is unavailable after retries (`system_one_unavailable` or `system_one_overloaded`). The run still returns a `RunResult` with `status: "error"`, the error code, the warning `system_one_outage` and one decision per question and composite, so a caller never gets an empty decision set. `auto` fails the strict schema with the rule id `outage.auto_not_allowed`. The rows by rollout stage are in [confidence-policy.md](confidence-policy.md#outage-behaviour-adr-012-accepted). Pick the path that is safe for the decision: `review` for a payment gate, `fallback` for tagging, `escalate_to_llm` when an LLM answer is acceptable while System One is down. Leaving the field out means `review`, so an outage becomes work for a person, never a decision dropped where nobody looks (ADR-012 Amendment 1). An explicit `fallback` raises the warning `outage.fallback_silent` when a gating decision has no `value` or `set` fallback.
 
 ```json
 "onUnavailable": "review"

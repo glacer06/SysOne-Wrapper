@@ -1,6 +1,6 @@
 // Lints that read only the spec (architecture.md, Lints table).
 
-import type { ConfidencePolicy, Thresholds } from "../contracts/policy.js";
+import type { ActionRef, CompositeActionRef, ConfidencePolicy, Thresholds } from "../contracts/policy.js";
 import type { LintResult, QuestionSetSpec } from "../contracts/spec.js";
 import {
   ON_UNAVAILABLE_ACTIONS,
@@ -168,7 +168,7 @@ export function policyLints(spec: QuestionSetSpec): LintResult[] {
       );
     }
     if (wordCount(textOf(question.instructions)) < MIN_INSTRUCTION_WORDS) {
-      out.push(finding("instructions.too_short", "warning", `${path}/instructions`, `"${id}" has fewer than ${MIN_INSTRUCTION_WORDS} words of instructions`));
+      out.push(finding("instructions.too_short", "warning", `${path}/instructions`, `"${id}" has fewer than ${MIN_INSTRUCTION_WORDS} words of instructions; the question id is never sent to the model, so the requirement has to be in the instructions and option descriptions`));
     }
   }
   return out;
@@ -177,11 +177,54 @@ export function policyLints(spec: QuestionSetSpec): LintResult[] {
 /**
  * outage.auto_not_allowed (ADR-012): an outage gives no answer to act on, so the outage rule is
  * never auto. The strict schema already refuses it; this catches a spec built in code without it.
+ * outage.fallback_silent (ADR-012 Amendment 1): see fallbackSilentLints.
  */
 export function outageLints(spec: QuestionSetSpec): LintResult[] {
   const rule: unknown = (spec as { onUnavailable?: unknown }).onUnavailable;
+  if (rule === "fallback") return fallbackSilentLints(spec);
   if (rule === undefined || (ON_UNAVAILABLE_ACTIONS as readonly unknown[]).includes(rule)) return [];
   const message =
     rule === "auto" ? OUTAGE_AUTO_NOT_ALLOWED_MESSAGE : `onUnavailable must be one of ${ON_UNAVAILABLE_ACTIONS.join(", ")}`;
   return [finding(OUTAGE_AUTO_NOT_ALLOWED_RULE, "error", "/onUnavailable", message)];
+}
+
+/**
+ * True when a decision's configured fallback does something: its first fallback action (low band
+ * first, the order an outage escalation reads its config in) has a `value` or `set` config. No
+ * fallback action, an omitted config and `noop` all do nothing.
+ */
+function hasFallbackValue(actions: Record<"high" | "medium" | "low", ActionRef | CompositeActionRef>): boolean {
+  for (const band of ["low", "medium", "high"] as const) {
+    const ref = actions[band];
+    if (ref.kind === "fallback") return ref.config !== undefined && ref.config.kind !== "noop";
+  }
+  return false;
+}
+
+/**
+ * outage.fallback_silent (ADR-012 Amendment 1): onUnavailable is explicitly `fallback` and at least
+ * one gating decision has no fallback value, so an outage would drop that decision with nobody
+ * told. The default (`review`) never raises it.
+ */
+function fallbackSilentLints(spec: QuestionSetSpec): LintResult[] {
+  const silent: string[] = [];
+  for (const { id } of questionEntries(spec)) {
+    const policy = spec.policies[id];
+    if (policy === undefined || policy.type === "composite" || !policy.gating) continue;
+    if (!hasFallbackValue(policy.actions)) silent.push(id);
+  }
+  for (const c of spec.composites ?? []) {
+    if (c.policy?.gating === true && !hasFallbackValue(c.policy.actions)) silent.push(c.id);
+  }
+  if (silent.length === 0) return [];
+  const ids = silent.map((id) => `"${id}"`).join(", ");
+  const verb = silent.length === 1 ? "has" : "have";
+  return [
+    finding(
+      "outage.fallback_silent",
+      "warning",
+      "/onUnavailable",
+      `onUnavailable is fallback, but ${ids} ${verb} no fallback value, so an outage would drop them with nobody told; use review or give them a fallback value`,
+    ),
+  ];
 }
