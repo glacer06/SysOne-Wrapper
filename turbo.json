@@ -84,6 +84,16 @@
       ],
       "outputs": []
     },
+    "@sysone/evals#test": {
+      "dependsOn": [
+        "transit"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/packages/system-one-client/fixtures/**"
+      ],
+      "outputs": []
+    },
     "@sysone/cli#test": {
       "dependsOn": [
         "transit"

@@ -1,0 +1,28 @@
+{
+  "note": "Stand-in, hand-authored from the documented response shape (no TypeSafe key on 2026-09-27). The request is system-one-client's aliasProbeRequest.",
+  "request": {
+    "method": "POST",
+    "url": "https://api.typesafe.ai/v1/systemone",
+    "model": "jev-latest"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json",
+      "x-typesafe-request-id": "req_fx_probe_latest_moved"
+    },
+    "body": {
+      "model": "jev-1.14.0",
+      "answers": {
+        "probe": {
+          "type": "noul",
+          "noul": 0.97
+        }
+      },
+      "usage": {
+        "input_tokens": 41,
+        "output_tokens": 3
+      }
+    }
+  }
+}
