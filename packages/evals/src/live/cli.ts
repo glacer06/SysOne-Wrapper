@@ -48,12 +48,12 @@ function parse(command: string, argv: readonly string[], io: LiveIo): Parsed | n
     ({ values } = parseArgs({ args: [...argv], options: { model: { type: "string" }, provider: { type: "string" } }, allowPositionals: false }));
   } catch (e) {
     io.err(`${command}: ${(e as Error).message}`);
-    io.err(`usage: pnpm ${command} [--model <id>] [--provider typesafe|openrouter]`);
+    io.err(`usage: pnpm ${command} [--model <id>] [--provider ${SystemOneProvider.options.join("|")}]`);
     return 2;
   }
   const provider = SystemOneProvider.safeParse(values.provider ?? "typesafe");
   if (!provider.success) {
-    io.err(`${command}: --provider must be typesafe or openrouter`);
+    io.err(`${command}: --provider must be one of ${SystemOneProvider.options.join(", ")}`);
     return 2;
   }
   const envName = PROVIDER_KEY_ENV[provider.data];

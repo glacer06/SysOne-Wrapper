@@ -20,14 +20,15 @@ export const SYSTEM_ONE_LIMITS = {
 } as const;
 
 // ---------------------------------------------------------------------------
-// Providers (ADR-011)
+// Providers (ADR-011, ADR-013)
 
 /**
  * Who serves a System One call. `typesafe` is TypeSafe's own API. `openrouter` is OpenRouter's
- * System One API, which implements TypeSafe's request and response shapes, so the same SDK calls
- * it with a different base URL and an OpenRouter key.
+ * System One API and `vercel` is Vercel AI Gateway's TypeSafe API (ADR-013). Both implement
+ * TypeSafe's request and response shapes, so the same SDK calls them with a different base URL and
+ * the provider's key.
  */
-export const SystemOneProvider = z.enum(["typesafe", "openrouter"]);
+export const SystemOneProvider = z.enum(["typesafe", "openrouter", "vercel"]);
 export type SystemOneProvider = z.infer<typeof SystemOneProvider>;
 
 /**
@@ -37,6 +38,7 @@ export type SystemOneProvider = z.infer<typeof SystemOneProvider>;
 export const SYSTEM_ONE_PROVIDER_BASE_URLS = {
   typesafe: "https://api.typesafe.ai",
   openrouter: "https://openrouter.ai/api",
+  vercel: "https://ai-gateway.vercel.sh/typesafe",
 } as const satisfies Record<SystemOneProvider, string>;
 
 const OPENROUTER_NAMESPACE = "typesafe/";
@@ -66,13 +68,35 @@ export function fromOpenRouterModelId(id: string): string {
   return id;
 }
 
+const VERCEL_NAMESPACE = "typesafe-ai/";
+
+/**
+ * The model id Vercel AI Gateway is asked for (ADR-013). Vercel documents one id,
+ * `typesafe-ai/jev`, which serves the moving `jev-latest`. No versioned Vercel id is documented, so
+ * any other TypeSafe id only gets the `typesafe-ai/` prefix, and that mapping is unverified. Route
+ * rows (ModelRoute) hold the id we actually send and are authoritative; this is the default when a
+ * row is missing and the seed's cross-check. An id that already has an author prefix is used as is.
+ */
+export function toVercelModelId(id: string): string {
+  if (id.includes("/")) return id;
+  if (id === "jev-latest") return `${VERCEL_NAMESPACE}jev`;
+  return `${VERCEL_NAMESPACE}${id}`;
+}
+
 /** The id to send for a model on a provider when no route row says otherwise. */
 export function defaultProviderModelId(
   provider: SystemOneProvider,
   id: string,
   kind: "versioned" | "alias" | null,
 ): string {
-  return provider === "openrouter" ? toOpenRouterModelId(id, kind) : id;
+  switch (provider) {
+    case "openrouter":
+      return toOpenRouterModelId(id, kind);
+    case "vercel":
+      return toVercelModelId(id);
+    case "typesafe":
+      return id;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -161,6 +185,21 @@ export const SystemOneUsage = z.looseObject({
 });
 export type SystemOneUsage = z.infer<typeof SystemOneUsage>;
 
+/**
+ * What Vercel AI Gateway adds under `provider_metadata.gateway` (ADR-013). Only `cost` is read: the
+ * USD charge for the request, sent as a decimal string such as "0.00001155". The other documented
+ * fields (`marketCost`, `gatewayCost`, routing fields, `generationId`) are kept as sent.
+ */
+export const SystemOneGatewayMetadata = z.looseObject({
+  cost: z.string().min(1).optional(),
+});
+export type SystemOneGatewayMetadata = z.infer<typeof SystemOneGatewayMetadata>;
+
+export const SystemOneProviderMetadata = z.looseObject({
+  gateway: SystemOneGatewayMetadata.optional(),
+});
+export type SystemOneProviderMetadata = z.infer<typeof SystemOneProviderMetadata>;
+
 export const SystemOneResponse = z.looseObject({
   /** OpenRouter's generation id (`gen-dec-...`). The request id when no x-typesafe-request-id header came back. */
   id: z.string().min(1).optional(),
@@ -173,5 +212,7 @@ export const SystemOneResponse = z.looseObject({
   provider: z.string().min(1).optional(),
   answers: z.record(z.string(), SystemOneAnswer),
   usage: SystemOneUsage,
+  /** Vercel AI Gateway's metadata. `gateway.cost` is the provider-reported cost there (ADR-013). */
+  provider_metadata: SystemOneProviderMetadata.optional(),
 });
 export type SystemOneResponse = z.infer<typeof SystemOneResponse>;

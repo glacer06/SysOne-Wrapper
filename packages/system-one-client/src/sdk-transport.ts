@@ -1,10 +1,15 @@
-// SdkTransport: System One calls through @typesafe-ai/sdk, on TypeSafe direct or OpenRouter
-// (ADR-011). This package is the only importer of the SDK.
+// SdkTransport: System One calls through @typesafe-ai/sdk, on TypeSafe direct, OpenRouter
+// (ADR-011) or Vercel AI Gateway (ADR-013). This package is the only importer of the SDK.
 //
 // Every client is built with an explicit baseURL (from core's SYSTEM_ONE_PROVIDER_BASE_URLS, never
 // env), defaultModel, logLevel "warn" and the scrubbing logger, so TYPESAFE_BASE_URL,
 // TYPESAFE_DEFAULT_MODEL and TYPESAFE_LOG_LEVEL can never steer tenant traffic or log its bodies.
 // Retries belong to the SDK: each call passes its timeout and retry budget; there is no second loop.
+//
+// The request body is built field by field from SystemOneRequest (state, model, questions), so no
+// `providerOptions` is ever sent and Vercel's evaluation fallbacks stay off (ADR-013). A response
+// that still shows a fallback is rejected by assertNotEvaluationFallback, which reads the headers
+// the SDK exposes through withResponse().
 
 import {
   APIConnectionError,
@@ -29,6 +34,7 @@ import {
   isTransportError,
 } from "@sysone/core";
 import { ClientCache } from "./client-cache.js";
+import { assertNotEvaluationFallback } from "./fixture/fallback-guard.js";
 import { transportErrorForStatus } from "./fixture/status-map.js";
 import { type LogSink, createScrubbingLogger } from "./logger.js";
 
@@ -109,7 +115,7 @@ export class SdkTransport implements SystemOneTransport {
       createSdkClient(opts.provider, opts.apiKey, req.model, this.options),
     );
     try {
-      const { data, requestId } = await client
+      const { data, requestId, response } = await client
         .systemOne(
           { state: req.state as EntryType, model: req.model, questions: req.questions as unknown as Questions },
           { timeout: opts.timeoutMs, retry: { maxRetries: opts.retry.maxRetries, maxRetryAfterMs: opts.retry.maxRetryAfterMs }, signal: opts.signal },
@@ -122,7 +128,9 @@ export class SdkTransport implements SystemOneTransport {
           `System One on ${opts.provider} returned a response SysOne cannot read`,
         );
       }
-      return { response: parsed.data, requestId: requestId ?? parsed.data.id ?? null };
+      const id = requestId ?? parsed.data.id ?? null;
+      assertNotEvaluationFallback(parsed.data, opts.provider, id, response.headers);
+      return { response: parsed.data, requestId: id };
     } catch (e) {
       throw mapSdkError(e, opts.provider);
     }

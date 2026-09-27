@@ -10,6 +10,7 @@ import {
   TransportError,
 } from "@sysone/core";
 import { type Fixture, fixtureKey } from "./fixture.js";
+import { assertNotEvaluationFallback } from "./fallback-guard.js";
 import { transportErrorForStatus } from "./status-map.js";
 import { syntheticResponse } from "./synthetic.js";
 
@@ -72,6 +73,9 @@ export class FixtureTransport implements SystemOneTransport {
       const requestId = fixture.error.headers?.["x-typesafe-request-id"] ?? fixture.requestId ?? null;
       throw transportErrorForStatus(fixture.error.status, opts.provider, requestId);
     }
-    return { response: fixture.response, requestId: fixture.requestId ?? fixture.response.id ?? null };
+    const requestId = fixture.requestId ?? fixture.response.id ?? null;
+    // Same guard as SdkTransport, so an evaluation fallback fixture fails the way a live one would.
+    assertNotEvaluationFallback(fixture.response, opts.provider, requestId, fixture.responseHeaders);
+    return { response: fixture.response, requestId };
   }
 }

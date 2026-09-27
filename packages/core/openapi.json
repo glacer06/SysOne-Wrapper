@@ -18686,7 +18686,8 @@
             "type": "string",
             "enum": [
               "typesafe",
-              "openrouter"
+              "openrouter",
+              "vercel"
             ]
           },
           "stages": {
@@ -19061,6 +19062,7 @@
                   "rate_limited",
                   "system_one_rate_limited",
                   "system_one_invalid_request",
+                  "system_one_invalid_response",
                   "system_one_forbidden",
                   "system_one_unavailable",
                   "system_one_overloaded",
@@ -19122,7 +19124,8 @@
                         "type": "string",
                         "enum": [
                           "typesafe",
-                          "openrouter"
+                          "openrouter",
+                          "vercel"
                         ]
                       },
                       "providerCostUsd": {

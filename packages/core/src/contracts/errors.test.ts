@@ -103,7 +103,7 @@ describe("ErrorDetail and GateResult", () => {
 
 describe("error codes", () => {
   it("covers every code in the api.md table with its status", () => {
-    expect(ErrorCode.options).toHaveLength(25);
+    expect(ErrorCode.options).toHaveLength(26);
     expect(errorStatus("insufficient_scope")).toBe(403);
     expect(errorStatus("precondition_failed")).toBe(412);
     expect(errorStatus("preflight_too_large")).toBe(413);

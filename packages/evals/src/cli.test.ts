@@ -72,7 +72,7 @@ describe("pnpm eval", () => {
   });
 
   it("rejects bad flags with exit code 2", async () => {
-    for (const args of [[], [...BASE, "--provider", "vercel"], [...BASE, "--version", "zero"], [...BASE, "--bogus"], [...BASE, "--transport", "http"]]) {
+    for (const args of [[], [...BASE, "--provider", "cloudflare"], [...BASE, "--version", "zero"], [...BASE, "--bogus"], [...BASE, "--transport", "http"]]) {
       const t = io();
       expect(await main(args, t.io)).toBe(2);
       expect(t.err.join("\n")).toContain("usage: pnpm eval");

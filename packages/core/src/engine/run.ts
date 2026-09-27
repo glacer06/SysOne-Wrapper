@@ -6,7 +6,7 @@
 // only before a run row exists.
 
 import type { Action, ErrorCode, QuestionId, RunDryRunResult } from "../contracts/index.js";
-import { microFromUsd, reportedCostMicroUsd, usdFromMicro } from "../contracts/run.js";
+import { microFromUsd, responseCostMicroUsd, usdFromMicro } from "../contracts/run.js";
 import type { Decision, RunCall, RunCost, RunResult, RunStage } from "../contracts/run.js";
 import type { EffectiveModel, ModelPrice, RunControl, RunPorts } from "../contracts/ports.js";
 import { isTransportError } from "../contracts/ports.js";
@@ -553,7 +553,7 @@ function recordCall(
   provider: SystemOneProvider,
   routes: readonly ModelRoute[],
 ): CallRecord {
-  const reportedMicro = reportedCostMicroUsd(response.usage);
+  const reportedMicro = responseCostMicroUsd(response);
   const call: RunCall = {
     modelResolved: response.model,
     provider,

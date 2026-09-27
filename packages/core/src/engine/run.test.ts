@@ -438,6 +438,23 @@ describe("OpenRouter route (ADR-011)", () => {
     expect(h.runs.records[0]?.keyMode).toBe("platform");
   });
 
+  it("on Vercel (ADR-013) sends typesafe-ai/jev for jev-latest and prices from provider_metadata.gateway.cost", async () => {
+    const latest: QuestionSetSpec = { ...oneStage, model: "jev-latest" };
+    const transport = scriptedTransport(() => ({
+      model: "typesafe-ai/jev",
+      answers: { team: teamAnswer("technical") },
+      usage: { input_tokens: 275, output_tokens: 20 },
+      provider_metadata: { gateway: { cost: "0.00001155" } },
+    }) as SystemOneResponse);
+    const h = makePorts({ transport });
+    const result = await runQuestionSet(ctx, runRequest({ ticket: "x" }), resolvedRun(latest, { settings: { systemOneProvider: "vercel" } }), h.ports, control());
+    expect(transport.calls[0]?.req.model).toBe("typesafe-ai/jev");
+    expect(transport.calls[0]?.opts).toMatchObject({ provider: "vercel", apiKey: "vg_test_key" });
+    expect(result.stages[0]?.calls[0]).toMatchObject({ provider: "vercel", providerCostUsd: 0.000012 });
+    expect(result.cost.systemOneCostUsd).toBe(0.000012);
+    expect(result.warnings).not.toContain("model_resolved_unmapped");
+  });
+
   it("priceCall reads providerCostUsd first", () => {
     expect(priceCall({ inputTokens: 476, outputTokens: 70, providerCostUsd: 0.00002 }, null)).toBe(20);
     expect(priceCall({ inputTokens: 318, outputTokens: 0 }, { inputPerMtokMicroUsd: 42_000, outputPerMtokMicroUsd: 0 })).toBe(13);
@@ -761,7 +778,7 @@ describe("other run details", () => {
     expect(result.answers["stray"]).toBeUndefined();
   });
 
-  it("uses the seed OpenRouter routes", () => {
-    expect(SEED_MODEL_ROUTES.map((r) => r.providerModelId)).toEqual(["typesafe/jev-1.13", "~typesafe/jev-latest"]);
+  it("uses the seed OpenRouter and Vercel routes", () => {
+    expect(SEED_MODEL_ROUTES.map((r) => r.providerModelId)).toEqual(["typesafe/jev-1.13", "~typesafe/jev-latest", "typesafe-ai/jev"]);
   });
 });

@@ -4,8 +4,10 @@
 // - TypeSafe keys: GET /v1/models through the SDK (system-one-client's listModels).
 // - OpenRouter keys: OpenRouter's Models API for typesafe/* and ~typesafe/* entries, mapped to
 //   registry ids through the route rows. The SDK's models.list() fails there.
-// Unseen TypeSafe names are inserted as unreviewed. An OpenRouter id with no route row alerts the
-// platform admin. The key's reachable registry ids go into org_system_one_keys.models: every listed
+// - Vercel AI Gateway keys (ADR-013): GET /typesafe/v1/models through the SDK, since Vercel
+//   implements TypeSafe's list, then mapped to registry ids through the route rows.
+// Unseen TypeSafe names are inserted as unreviewed. An OpenRouter or Vercel id with no route row
+// alerts the platform admin. The key's reachable registry ids go into org_system_one_keys.models: every listed
 // id, plus the observed target of each listed alias (section 3, Reachability).
 
 import { type SystemOneProvider, registryIdForResolved } from "@sysone/core";
@@ -34,13 +36,14 @@ export interface RegistrySyncResult {
   /** Registry ids written to org_system_one_keys.models. */
   reachable: string[];
   insertedUnreviewed: string[];
-  /** OpenRouter ids with no route row. */
+  /** OpenRouter or Vercel ids with no route row. */
   unmapped: string[];
   error?: string;
 }
 
+/** GET /v1/models in TypeSafe's shape, on TypeSafe or on Vercel AI Gateway's /typesafe base URL. */
 async function listTypesafe(deps: RegistrySyncDeps, input: RegistrySyncInput): Promise<Array<{ id: string; releaseDate: string | null }>> {
-  const cards = await listModels("typesafe", input.apiKey, {
+  const cards = await listModels(input.provider, input.apiKey, {
     fetch: deps.fetch as unknown as NonNullable<Parameters<typeof listModels>[2]>["fetch"],
     timeoutMs: 15_000,
   });
@@ -60,6 +63,24 @@ export async function registrySync(deps: RegistrySyncDeps, input: RegistrySyncIn
         result.listed.push(c.id);
         listedIds.add(c.id);
         if (!known.has(c.id) && (await insertUnseen(deps, c.id, input.now, "list", c.releaseDate))) result.insertedUnreviewed.push(c.id);
+      }
+    } else if (input.provider === "vercel") {
+      // Vercel ids (typesafe-ai/jev) are not TypeSafe ids, so an unknown one alerts and is never
+      // inserted as a profile. Vercel shows no alias target, so no observation is recorded here.
+      const cards = await steps.run("list", () => listTypesafe(deps, input));
+      const routes = await deps.store.routes(input.provider);
+      for (const c of cards) {
+        result.listed.push(c.id);
+        const id = registryIdForResolved(input.provider, c.id, routes);
+        if (id === null) {
+          result.unmapped.push(c.id);
+          await deps.alerts.alert("route_missing", `Vercel AI Gateway lists ${c.id}, but no ${input.provider} route row maps it to a registry model. Add one after review.`, {
+            provider: input.provider,
+            providerModelId: c.id,
+          });
+          continue;
+        }
+        listedIds.add(id);
       }
     } else {
       const entries = await steps.run("list", () => fetchOpenRouterSystemOneModels(deps.fetch));

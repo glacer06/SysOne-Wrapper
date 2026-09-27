@@ -18,18 +18,20 @@ export interface ModelCard {
 }
 
 /**
- * The names a TypeSafe key can send (GET /v1/models). OpenRouter keys use OpenRouter's Models API
- * instead (openRouterSystemOneModelIds), because the SDK's models.list() fails there.
+ * The names a key can send (GET /v1/models in TypeSafe's shape). Works on TypeSafe and on Vercel AI
+ * Gateway, which implements it at /typesafe/v1/models (ADR-013); Vercel names are Vercel ids such
+ * as `typesafe-ai/jev`. OpenRouter keys use OpenRouter's Models API instead
+ * (openRouterSystemOneModelIds), because the SDK's models.list() fails there.
  */
 export async function listModels(
   provider: SystemOneProvider,
   apiKey: string,
   opts: SdkTransportOptions & { signal?: AbortSignal; timeoutMs?: number } = {},
 ): Promise<ModelCard[]> {
-  if (provider !== "typesafe") {
+  if (provider === "openrouter") {
     throw new TransportError(
       { code: "system_one_invalid_request", retryable: false, requestId: null },
-      "models.list() only works on TypeSafe; read OpenRouter's Models API for OpenRouter keys",
+      "models.list() does not work on OpenRouter; read OpenRouter's Models API for OpenRouter keys",
     );
   }
   const client = createSdkClient(provider, apiKey, SEED_PLATFORM_DEFAULT_MODEL, opts);

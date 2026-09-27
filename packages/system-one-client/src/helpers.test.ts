@@ -67,6 +67,19 @@ describe("model helpers", () => {
     ]);
   });
 
+  it("listModels reads GET /typesafe/v1/models on Vercel AI Gateway (ADR-013)", async () => {
+    const seen: string[] = [];
+    const fetch = async (url: string) => {
+      seen.push(url);
+      return new Response(JSON.stringify({ models: [{ name: "typesafe-ai/jev", description: "Jev", release_date: "2026-09-17" }] }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    };
+    expect((await listModels("vercel", "vck", { fetch })).map((c) => c.name)).toEqual(["typesafe-ai/jev"]);
+    expect(seen).toEqual(["https://ai-gateway.vercel.sh/typesafe/v1/models"]);
+  });
+
   it("listModels maps errors and refuses OpenRouter", async () => {
     const fetch = async () => new Response(JSON.stringify({ detail: "no" }), { status: 401 });
     expect(await listModels("typesafe", "k", { fetch }).catch((e: unknown) => e)).toMatchObject({ code: "system_one_auth" });

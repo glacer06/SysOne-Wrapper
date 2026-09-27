@@ -30,7 +30,7 @@ This skill is the rulebook for the agent team building it. This skill is interna
 | **Review item** | A decision waiting for a human: kind `action` (a review action) or kind `label` (a sampled audit or labeling request). Resolving it writes a truth row and can add a labeled case to a dataset. |
 | **System One model** | Any TypeSafe model served by `POST /v1/systemone` and picked by the `model` field. Jev is the first family. |
 | **Model profile** | A registry row in `system_one_models`: limits, question types, status, weaknesses. See `references/system-one-models.md`. |
-| **Provider** | Who serves a System One call: `typesafe` (direct) or `openrouter` (ADR-011, proposed). Picked per org and per set. A `ModelRoute` row says how a model is reached through a provider other than TypeSafe: the id sent, the limits, and whether it is pinned. |
+| **Provider** | Who serves a System One call: `typesafe` (direct), `openrouter` (ADR-011, proposed) or `vercel` (Vercel AI Gateway, ADR-013). Picked per org and per set. A `ModelRoute` row says how a model is reached through a provider other than TypeSafe: the id sent, the limits, and whether it is pinned. |
 | **Pinned model** | A registry ID of kind `versioned` (for example `jev-1.13.0`). Aliases such as `jev-latest`, partial IDs such as `jev` or `jev-1.13`, and unknown names are moving. |
 | **Operation** | One management capability with id `noun.verb` (for example `set.publish`). One handler behind the console, the API, the CLI and MCP. |
 | **Job** | Long-running work started by an operation. Returns `202 { jobId }`; poll `GET /api/v1/jobs/{id}`. |
@@ -88,7 +88,7 @@ packages/core       Pure. Contracts, spec compiler, stage orchestrator, confiden
                     cost + savings, token preflight. src/question-types (one module per type),
                     src/learning (gates, precision intervals, threshold suggester, label selector).
 packages/system-one-client  SystemOneTransport: TypeSafe SDK (default), fixture/replay, per-surface timeouts,
-                    model list and alias probe helpers. Providers: TypeSafe direct, and OpenRouter by baseURL (ADR-011, proposed).
+                    model list and alias probe helpers. Providers: TypeSafe direct, OpenRouter (ADR-011, proposed) and Vercel AI Gateway (ADR-013) by baseURL.
 packages/llm-client Anthropic SDK only: Studio drafting, improve mode, opportunity drafting, escalate_to_llm.
 packages/db         Drizzle schema, RLS policies, migrations, withTenant(), repositories.
 packages/tenancy    TenantContext, key vault, app tokens, agent tokens, rate limits, quotas.
@@ -174,4 +174,4 @@ Details, the run data flow, and caching: `references/architecture.md`.
 - `references/team-playbook.md`: roles, lanes, contracts, handoffs
 - `references/phases/phase-0.md` through `phase-7.md`, plus `phase-3b.md` and `phase-4b.md`: checklists and exit gates
 - `templates/question-set.example.json`, `templates/adr.md`, `templates/plugin.template.ts`
-- ADRs live in the repo at `docs/adr/`: 001 stack; 002 to 006 auth (Better Auth), key vault, cache, jobs runner, billing; 007 to 010 headless parity, model registry, app integration, rollout and the effectiveness loop (all accepted 2026-09-26); 011 OpenRouter route (proposed)
+- ADRs live in the repo at `docs/adr/`: 001 stack; 002 to 006 auth (Better Auth), key vault, cache, jobs runner, billing; 007 to 010 headless parity, model registry, app integration, rollout and the effectiveness loop (all accepted 2026-09-26); 011 OpenRouter route (proposed); 013 Vercel AI Gateway route (accepted 2026-09-27)

@@ -183,7 +183,7 @@ export function makePorts(o: HarnessOptions = {}) {
   const ports: RunPorts = {
     systemOne: transport,
     models: o.models ?? createMemoryModelCatalog(SEED_MODEL_PROFILES, SEED_MODEL_ROUTES),
-    keys: o.keys ?? staticKeyResolver({ typesafe: "ts_test_key", openrouter: "or_test_key" }),
+    keys: o.keys ?? staticKeyResolver({ typesafe: "ts_test_key", openrouter: "or_test_key", vercel: "vg_test_key" }),
     limiter: o.limiter ?? allowAllLimiter,
     quota: o.quota ?? allowAllQuota,
     runs,

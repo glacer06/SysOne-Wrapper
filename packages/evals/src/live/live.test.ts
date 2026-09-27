@@ -26,7 +26,7 @@ describe("pnpm smoke", () => {
   });
 
   it("rejects a bad provider or flag", async () => {
-    expect(await smokeMain(["--provider", "vercel"], io({}).io)).toBe(2);
+    expect(await smokeMain(["--provider", "cloudflare"], io({}).io)).toBe(2);
     expect(await smokeMain(["--fast"], io({}).io)).toBe(2);
   });
 
@@ -58,6 +58,34 @@ describe("pnpm smoke", () => {
     expect(lines).toContain("SKIP jev-preview route: skipped: no openrouter route row for jev-preview");
     expect(lines).toContain("ok   jev-1.13.0 choice.versioned_model: answered by typesafe/jev-1.13-20260917 (jev-1.13.0)");
     expect(lines).toContain("ok   jev-latest score.shape");
+  });
+
+  it("runs the vercel route row for jev-latest only, reads AI_GATEWAY_API_KEY, and reports the unknown build without failing (ADR-013)", async () => {
+    const missing = io({ TYPESAFE_API_KEY: "sk" });
+    expect(await smokeMain(["--provider", "vercel"], missing.io)).toBe(0);
+    expect(missing.out[0]).toContain("AI_GATEWAY_API_KEY is not set");
+
+    expect(smokeList("vercel", SEED_MODEL_PROFILES, SEED_MODEL_ROUTES)).toEqual([
+      { model: "jev-preview", sendAs: null },
+      { model: "jev-latest", sendAs: "typesafe-ai/jev" },
+      { model: "jev-1.13.0", sendAs: null },
+    ]);
+    // Synthetic answers carry no cost; AI Gateway reports one in provider_metadata.gateway.cost.
+    const offline = offlineTransport();
+    const withGatewayCost: SystemOneTransport = {
+      call: async (req, opts) => {
+        const out = await offline.call(req, opts);
+        return { ...out, response: { ...out.response, provider_metadata: { gateway: { cost: "0.00001155" } } } };
+      },
+    };
+    const t = io({ AI_GATEWAY_API_KEY: "vck-test" }, { transport: withGatewayCost });
+    expect(await smokeMain(["--provider", "vercel"], t.io)).toBe(0);
+    const lines = t.out.join("\n");
+    expect(lines).toContain("smoke on vercel: jev-preview, jev-latest, jev-1.13.0");
+    expect(lines).toContain("SKIP jev-1.13.0 route: skipped: no vercel route row for jev-1.13.0");
+    expect(lines).toContain("SKIP jev-latest noul.versioned_model: answered by typesafe-ai/jev; Vercel documents no versioned id");
+    expect(lines).toContain("ok   jev-latest two_stage.run: status ok");
+    expect(lines).toContain("smoke passed");
   });
 
   it("fails when an alias answers as itself, or the call fails", async () => {
@@ -95,20 +123,22 @@ describe("pnpm fixtures:record", () => {
   });
 
   it("re-records every success fixture in place, scrubbed, with the live openapi version", async () => {
-    for (const provider of ["typesafe", "openrouter"] as const) {
+    for (const provider of ["typesafe", "openrouter", "vercel"] as const) {
       const written = new Map<string, Fixture>();
       const t = io(
-        { TYPESAFE_API_KEY: "sk", OPENROUTER_API_KEY: "or" },
+        { TYPESAFE_API_KEY: "sk", OPENROUTER_API_KEY: "or", AI_GATEWAY_API_KEY: "vck" },
         { transport: new FixtureTransport(bundled), fetchOpenapiVersion: async () => "0.2.0", write: (p: string, f: Fixture) => written.set(p, f) },
       );
       expect(await recordMain(["--provider", provider], t.io)).toBe(0);
-      const expected = bundled.filter((f) => f.provider === provider && "response" in f);
+      // The evaluation fallback fixture is rejected by the client, so it is never re-recorded.
+      const expected = bundled.filter((f) => f.provider === provider && "response" in f && f.name !== "evaluation-fallback");
       expect(written.size).toBe(expected.length);
       for (const f of expected) {
         const w = written.get(`${provider}/${f.name}.json`);
         expect(w, f.name).toBeDefined();
         expect(fixtureKey(provider, w?.request ?? f.request)).toBe(fixtureKey(provider, f.request));
         expect(w?.openapiVersion).toBe("0.2.0");
+        expect(w?.source).toBe("recorded");
         if (w !== undefined && "response" in w && w.response.id !== undefined) expect(w.response.id).toBe(`gen-dec-fx-${f.name}`);
       }
       expect(t.out.at(-1)).toContain(`recorded ${expected.length} of ${expected.length} fixtures on ${provider}`);

@@ -19,6 +19,7 @@ describe("console env", () => {
     vi.stubEnv("SYSTEM_ONE_TRANSPORT", "");
     vi.stubEnv("TYPESAFE_API_KEY", "");
     vi.stubEnv("OPENROUTER_API_KEY", "");
+    vi.stubEnv("AI_GATEWAY_API_KEY", "");
   });
 
   afterEach(() => {
@@ -41,6 +42,13 @@ describe("console env", () => {
     vi.stubEnv("OPENROUTER_API_KEY", "sk-or-test");
     const env = await loadEnv();
     expect(env.OPENROUTER_API_KEY).toBe("sk-or-test");
+  });
+
+  it("accepts an AI Gateway key alone for the sdk transport (ADR-013)", async () => {
+    vi.stubEnv("SYSTEM_ONE_TRANSPORT", "sdk");
+    vi.stubEnv("AI_GATEWAY_API_KEY", "vck-test");
+    const env = await loadEnv();
+    expect(env.AI_GATEWAY_API_KEY).toBe("vck-test");
   });
 
   it("requires a platform key when the sdk transport is selected", async () => {

@@ -130,6 +130,27 @@ describe("registry sync", () => {
     expect(store.rows.has("typesafe/jev-2.0")).toBe(false);
   });
 
+  it("Vercel: lists with GET /typesafe/v1/models and maps ids through the routes, never inserting a profile (ADR-013)", async () => {
+    const { store, recorder, deps } = world();
+    const fetch = replayFetch([rec("vercel-models.json")]);
+    const r = await registrySync({ ...deps, fetch }, { orgId: ORG_B, provider: "vercel", apiKey: "vck-test", now: NOW });
+    expect(r.ok).toBe(true);
+    expect(fetch.seen).toEqual(["GET https://ai-gateway.vercel.sh/typesafe/v1/models"]);
+    expect(fetch.auth).toEqual(["Bearer vck-test"]);
+    expect(r.listed).toEqual(["typesafe-ai/jev"]);
+    expect(r.reachable).toEqual(["jev-1.13.0", "jev-latest"]);
+    expect(r.insertedUnreviewed).toEqual([]);
+    expect(store.observations).toEqual([]);
+
+    const body = rec("vercel-models.json");
+    const listing = body.response.body as { models: unknown[] };
+    body.response.body = { models: [...listing.models, { name: "typesafe-ai/jev-2", description: "x", release_date: "2026-12-01" }] };
+    const again = await registrySync({ ...deps, fetch: replayFetch([body]) }, { orgId: ORG_B, provider: "vercel", apiKey: "k", now: NOW });
+    expect(again.unmapped).toEqual(["typesafe-ai/jev-2"]);
+    expect(recorder.alerts.map((a) => a.kind)).toContain("route_missing");
+    expect(store.rows.has("typesafe-ai/jev-2")).toBe(false);
+  });
+
   it("alerts when a stable versioned model has no price row", async () => {
     const store = createMemoryRegistryStore({ profiles: SEED_MODEL_PROFILES, routes: SEED_MODEL_ROUTES, prices: [] });
     const recorder = createRecorder();

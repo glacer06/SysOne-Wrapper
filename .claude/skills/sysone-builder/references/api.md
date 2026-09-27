@@ -147,6 +147,7 @@ A spec error names the field and the lint:
 | 429 | `rate_limited` | yes | Org, token, eval or global limit; `Retry-After` set |
 | 429 | `system_one_rate_limited` | yes | TypeSafe rate-limited the call after SDK retries |
 | 502 | `system_one_invalid_request` | no | TypeSafe rejected the compiled payload (our bug; log the payload hash) |
+| 502 | `system_one_invalid_response` | no | The provider answered with something that is not a System One answer, such as a Vercel AI Gateway evaluation fallback (ADR-013) |
 | 502 | `system_one_forbidden` | no | The org's key cannot use that model |
 | 503 | `system_one_unavailable` | yes | TypeSafe unreachable or timed out after SDK retries |
 | 503 | `system_one_overloaded` | yes | TypeSafe overloaded after SDK retries |

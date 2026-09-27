@@ -3,6 +3,7 @@ import {
   type QuestionSetSpec,
   type RunPorts,
   type SystemOneCallOptions,
+  type SystemOneProvider,
   RunResult,
   SEED_COMPARATOR_PRICES,
   SEED_MODEL_PROFILES,
@@ -29,7 +30,7 @@ import { syntheticResponse } from "./synthetic.js";
 
 const fixtures = loadBundledFixtures();
 const signal = new AbortController().signal;
-const opts = (provider: "typesafe" | "openrouter" = "typesafe"): SystemOneCallOptions => ({
+const opts = (provider: SystemOneProvider = "typesafe"): SystemOneCallOptions => ({
   provider,
   apiKey: "k",
   signal,
@@ -67,10 +68,20 @@ describe("FixtureTransport", () => {
     ["openrouter", "error-402", "system_one_auth", null],
     ["typesafe", "outage-503", "system_one_unavailable", "req_fx_503"],
     ["openrouter", "outage-503", "system_one_unavailable", null],
+    ["vercel", "outage-503", "system_one_unavailable", null],
+    ["vercel", "evaluation-fallback", "system_one_invalid_response", null],
   ] as const)("%s/%s throws %s", async (provider, name, code, requestId) => {
     const err = await transport.call(named(provider, name).request, opts(provider)).catch((e: unknown) => e);
     expect(isTransportError(err)).toBe(true);
     expect(err).toMatchObject({ code, requestId });
+  });
+
+  it("rejects an evaluation fallback by its answer shape even without the header (ADR-013)", async () => {
+    const f = named("vercel", "evaluation-fallback");
+    if (!("response" in f)) throw new Error("evaluation-fallback must be a response fixture");
+    const noHeader = new FixtureTransport([{ ...f, responseHeaders: {} }]);
+    const err = await noHeader.call(f.request, opts("vercel")).catch((e: unknown) => e);
+    expect(err).toMatchObject({ code: "system_one_invalid_response", retryable: false });
   });
 
   it("a request no fixture covers fails unless synthesis is on", async () => {
@@ -100,6 +111,7 @@ describe("FixtureTransport", () => {
   it("loads the bundled set and rejects a bad fixture file", () => {
     expect(new FixtureTransport(fixtures).size).toBe(fixtures.length);
     expect(loadFixturesFromDir(`${BUNDLED_FIXTURES_DIR}openrouter`)).toHaveLength(6);
+    expect(loadFixturesFromDir(`${BUNDLED_FIXTURES_DIR}vercel`)).toHaveLength(5);
     expect(() => loadFixturesFromDir(new URL("../../contract/", import.meta.url).pathname)).toThrow(/invalid fixture/);
   });
 });
@@ -154,7 +166,7 @@ function ports(transport: FixtureTransport): RunPorts {
   return {
     systemOne: transport,
     models: createMemoryModelCatalog(SEED_MODEL_PROFILES, SEED_MODEL_ROUTES),
-    keys: staticKeyResolver({ typesafe: "ts", openrouter: "or" }),
+    keys: staticKeyResolver({ typesafe: "ts", openrouter: "or", vercel: "vg" }),
     limiter: allowAllLimiter,
     quota: allowAllQuota,
     runs: createMemoryRunSink(sequentialIds("00000000-0000-7000-9000-")),
@@ -165,7 +177,7 @@ function ports(transport: FixtureTransport): RunPorts {
   };
 }
 
-function resolved(spec: QuestionSetSpec, provider: "typesafe" | "openrouter" = "typesafe") {
+function resolved(spec: QuestionSetSpec, provider: SystemOneProvider = "typesafe") {
   return {
     spec,
     setId: "01890000-0000-7000-8000-0000000000a1",
@@ -185,6 +197,14 @@ function resolved(spec: QuestionSetSpec, provider: "typesafe" | "openrouter" = "
     },
   };
 }
+
+const refundSpec: QuestionSetSpec = {
+  schemaVersion: 1,
+  model: "jev-latest",
+  input: { schema: { type: "object" } },
+  stages: [{ id: "main", questions: { refund: { type: "noul", instructions: "Is the customer who wrote `ticket` asking for a refund?", criteria: { true: "Asks for money back", false: "No refund request" }, meta: { label: "Refund" } } } }],
+  policies: { refund: { type: "noul", gating: true, noul: { trueAt: 0.85, falseAt: 0.15, reviewMargin: 0.1 }, actions: { high: { kind: "auto" }, medium: { kind: "review" }, low: { kind: "review" } } } },
+};
 
 const twoStage = (() => {
   const parsed = parseSpec(JSON.parse(readFileSync(`${BUNDLED_FIXTURES_DIR}specs/two-stage.json`, "utf8")));
@@ -227,10 +247,39 @@ describe("the engine on recorded fixtures", () => {
     expect(result.warnings).toEqual([]);
   });
 
-  it.each(["typesafe", "openrouter"] as const)("an outage fixture on %s returns the set's outage rule, never an empty decision set (ADR-012)", async (provider) => {
+  it("a Vercel fixture run sends typesafe-ai/jev and prices from provider_metadata.gateway.cost (ADR-013)", async () => {
+    const f = named("vercel", "noul");
+    const transport = new FixtureTransport(fixtures);
+    const result = await runQuestionSet(ctx, { setRef: "s", state: f.request.state, source: "api", options: {} }, resolved(refundSpec, "vercel"), ports(transport), { signal, budgetMs: 8_000 });
+    expect(transport.calls[0]).toMatchObject({ fixture: "noul", provider: "vercel" });
+    expect(transport.calls[0]?.request.model).toBe("typesafe-ai/jev");
+    expect(result.status).toBe("ok");
+    expect(result.modelResolved).toBe("typesafe-ai/jev");
+    expect(result.cost.systemOneCostUsd).toBe(0.000012);
+    expect(result.warnings).not.toContain("model_resolved_unmapped");
+  });
+
+  it("an evaluation fallback on Vercel fails the run with system_one_invalid_response and is never banded (ADR-013)", async () => {
+    const f = named("vercel", "evaluation-fallback");
     const spec: QuestionSetSpec = {
       schemaVersion: 1,
-      model: "jev-1.13.0",
+      model: "jev-latest",
+      input: { schema: { type: "object" } },
+      stages: [{ id: "main", questions: { department: { type: "choice", instructions: "Which team should handle `ticket`?", criteria: { billing: "Payments, refunds", technical: "Bugs, outages", account: "Login and profile", none_of_these: null }, meta: { label: "Department" } } } }],
+      policies: { department: { type: "choice", gating: true, thresholds: { high: 0.75, medium: 0.45 }, actions: { high: { kind: "auto" }, medium: { kind: "review" }, low: { kind: "review" } } } },
+    };
+    const transport = new FixtureTransport(fixtures);
+    const result = await runQuestionSet(ctx, { setRef: "s", state: f.request.state, source: "api", options: {} }, resolved(spec, "vercel"), ports(transport), { signal, budgetMs: 8_000 });
+    expect(transport.calls[0]).toMatchObject({ fixture: "evaluation-fallback", provider: "vercel" });
+    expect(result).toMatchObject({ status: "error", error: { code: "system_one_invalid_response" } });
+    expect(result.decisions["department"]?.value ?? null).toBeNull();
+  });
+
+  it.each(["typesafe", "openrouter", "vercel"] as const)("an outage fixture on %s returns the set's outage rule, never an empty decision set (ADR-012)", async (provider) => {
+    const spec: QuestionSetSpec = {
+      schemaVersion: 1,
+      // Vercel documents only typesafe-ai/jev, which the seed routes to jev-latest (ADR-013).
+      model: provider === "vercel" ? "jev-latest" : "jev-1.13.0",
       input: { schema: { type: "object" } },
       stages: [{ id: "main", questions: { is_urgent: { type: "noul", instructions: "Does `ticket` convey urgency?", criteria: { true: "Explicitly time-sensitive", false: "No urgency expressed" }, meta: { label: "Urgent" } } } }],
       policies: { is_urgent: { type: "noul", gating: true, noul: { trueAt: 0.85, falseAt: 0.15, reviewMargin: 0.1 }, actions: { high: { kind: "auto" }, medium: { kind: "review" }, low: { kind: "review" } } } },

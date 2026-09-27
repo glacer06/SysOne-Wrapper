@@ -29,7 +29,7 @@ describe("parseArgs", () => {
     [["publish"], "unknown command"],
     [["run", "slug"], "needs --local"],
     [["run", "--local", "s.json"], "a spec file and a state file"],
-    [["run", "--local", "a", "b", "--provider", "vercel"], "--provider must be"],
+    [["run", "--local", "a", "b", "--provider", "cloudflare"], "--provider must be"],
     [["run", "--local", "a", "b", "--rollout"], "--rollout must be"],
     [["run", "--local", "a", "b", "--channel", "draft"], "--channel must be"],
     [["run", "--local", "a", "b", "--verbose"], "unknown option"],
@@ -167,5 +167,7 @@ describe("sysone run --local", () => {
     expect(localResolvedModel("typesafe/jev-1.13", "openrouter")).toBe("typesafe/jev-1.13-20260917");
     expect(localResolvedModel("~typesafe/jev-latest", "openrouter")).toBe("typesafe/jev-1.13-20260917");
     expect(localResolvedModel("other/model", "openrouter")).toBe("other/model");
+    // Vercel answers with the id it was sent; no OpenRouter build leaks across providers (ADR-013).
+    expect(localResolvedModel("typesafe-ai/jev", "vercel")).toBe("typesafe-ai/jev");
   });
 });

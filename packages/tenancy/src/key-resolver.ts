@@ -46,7 +46,7 @@ export interface KeyResolverDeps {
   keyMode(ctx: TenantContext): Promise<KeyMode>;
   /** The org's org_system_one_keys row for the provider, read inside withTenant. */
   loadKey(ctx: TenantContext, provider: SystemOneProvider): Promise<StoredKeyRow | null>;
-  /** Platform keys for platform key mode: TYPESAFE_API_KEY, OPENROUTER_API_KEY. */
+  /** Platform keys for platform key mode: TYPESAFE_API_KEY, OPENROUTER_API_KEY, AI_GATEWAY_API_KEY (vercel). */
   platformKeys: Partial<Record<SystemOneProvider, string>>;
   /** The org's key epoch (Redis in Phase 2). key.rotate and key.revoke bump it. Missing: always 0. */
   keyEpoch?(orgId: string): Promise<number>;
