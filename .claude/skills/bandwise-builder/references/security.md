@@ -105,6 +105,14 @@ Always gated, whatever the setting: key rotation or revocation, member role chan
 - Cross-tenant requests return 404. `403 insufficient_scope` applies only to resources in the caller's own org.
 - Sets marked `protected` need an admin to publish. An agent needs an approval on top: an admin ceiling alone is not enough.
 
+## Database roles on Supabase
+
+Production Postgres is Supabase (ADR-018). A fresh project grants `anon`, `authenticated` and `service_role` ALL on every new table, sequence and function in `public` through default privileges owned by `postgres` and `supabase_admin`, plus USAGE on the schema, and `service_role` has BYPASSRLS. Left alone, the Data API keys would be a second way into tenant data around `withTenant` and RLS.
+
+- Migration `0002_close_data_api_roles.sql` revokes every grant those roles hold in `public`, their default privileges where the migrating role may change them, and USAGE on `public` from PUBLIC. It is a no-op for roles that do not exist, so PGlite and plain Postgres run it too.
+- `migrateDrizzle` runs `findDataApiExposure` (`packages/db/src/data-api-roles.ts`) after every run and rolls the run back if any of the three roles can reach the schema or anything in it. `data-api-roles.test.ts` proves both on PGlite with stand-in roles.
+- The Data API stays off, and no Bandwise app holds the anon or service key. The app connects as a login role that is a member of `bandwise_app`; migrations run as the owner. Setup and the login role: `docs/runbooks/database.md`.
+
 ## Rate limits for agents and evals
 
 - Evals, playground compare, Studio calibration, try-model and repeat runs use a separate **eval** limiter bucket. By default it gets 25 percent of the org's RPM and the lowest priority in the global budget, so an agent iterating on a set cannot starve production runs.

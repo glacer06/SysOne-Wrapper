@@ -1,0 +1,70 @@
+name: Database migrate
+
+# Applies packages/db migrations and the platform seed to one environment's database.
+# Manual only. The connection string lives in the GitHub Environment secret DATABASE_URL_MIGRATE
+# (the direct connection as the migrating role, never the transaction pooler). The job prints
+# counts only. See docs/runbooks/database.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Which database to migrate
+        required: true
+        type: choice
+        options:
+          - preview
+          - production
+
+concurrency:
+  group: db-migrate-${{ inputs.environment }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    name: migrate ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: ${{ inputs.environment }}
+    env:
+      TURBO_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Check the secret is set
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_MIGRATE }}
+          TARGET: ${{ inputs.environment }}
+        run: |
+          if [ -z "$DATABASE_URL" ]; then
+            echo "DATABASE_URL_MIGRATE is not set on the $TARGET environment" >&2
+            exit 1
+          fi
+          case "$DATABASE_URL" in
+            *:6543/*|*:6543\?*|*:6543)
+              echo "DATABASE_URL_MIGRATE points at the transaction pooler (port 6543). Use the direct connection." >&2
+              exit 1
+              ;;
+          esac
+
+      - name: Migrate
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL_MIGRATE }}
+          DATABASE_CA_CERT: ${{ secrets.DATABASE_CA_CERT }}
+        run: pnpm db:migrate
