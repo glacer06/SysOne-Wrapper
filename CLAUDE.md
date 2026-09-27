@@ -20,6 +20,7 @@ pnpm smoke [--model <id>] [--provider typesafe|openrouter|vercel]            # l
 pnpm eval --org <slug> --set <slug> --version <n> --dataset <name> [--snapshot <id>] [--model <id>] [--repeats <k>]
 pnpm bandwise run --local spec.json state.json   # local fixture mode of @bandwise/cli
 pnpm bandwise <command> --json   # the same CLI customers install from npm; see references/headless-and-agents.md
+pnpm kit:export [dir]    # generate and scan the public bandwise-kit tree (default dist-kit/); see docs/runbooks/kit-release.md
 ```
 
 ## Golden rules
