@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "description": "Public customer docs site (Fumadocs). Content in content/docs, API reference read from packages/core/openapi.json at build time.",
+  "engines": {
+    "node": ">=22.13.0 <23"
+  },
   "type": "module",
   "scripts": {
     "dev": "next dev --port 3001",
@@ -10,7 +13,8 @@
     "start": "next start --port 3001",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "generate:templates": "BANDWISE_WRITE_GENERATED=1 vitest run test/templates.test.ts"
   },
   "dependencies": {
     "fumadocs-core": "catalog:",
@@ -24,6 +28,7 @@
   "devDependencies": {
     "@bandwise/config": "workspace:*",
     "@bandwise/core": "workspace:*",
+    "@bandwise/templates": "workspace:*",
     "@tailwindcss/postcss": "catalog:",
     "@types/mdx": "catalog:",
     "@types/node": "catalog:",

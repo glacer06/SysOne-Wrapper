@@ -120,6 +120,17 @@
       ],
       "outputs": []
     },
+    "@bandwise/templates#test": {
+      "dependsOn": [
+        "transit"
+      ],
+      "inputs": [
+        "$TURBO_DEFAULT$",
+        "$TURBO_ROOT$/plugins/claude-code/skills/find-decisions/**",
+        "$TURBO_ROOT$/packages/system-one-client/fixtures/**"
+      ],
+      "outputs": []
+    },
     "@bandwise/cli#test": {
       "dependsOn": [
         "transit"

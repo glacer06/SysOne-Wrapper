@@ -1,0 +1,30 @@
+---
+title: "Templates"
+description: "Ready-made question sets for common decisions, with example states and borderline cases."
+---
+
+{/* Generated from the template pack (packages/templates). Do not edit by hand. */}
+
+Each template is a complete spec you can copy, edit and run. It comes with two or three example states and one borderline case per question, so you can test the wording on hard cases before you tune thresholds. Every template sends outages to review.
+
+The template pack is part of the free %product% kit, licensed Apache-2.0. The [find decisions](/docs/find-decisions) skill uses it to draft specs from the LLM calls in your code.
+
+| Template | Pattern | Job |
+| --- | --- | --- |
+| [Email triage](/docs/templates/email-triage) | `composite_scoring` | Decide whether an email needs the recipient soon, and what kind of message it is. |
+| [PR safety gate](/docs/templates/pr-safety-gate) | `composite_scoring` | Decide whether a pull request is safe to merge without a human reviewer. |
+| [Log-line pager](/docs/templates/log-line-pager) | `confidence_routing` | Decide whether one log line needs a human now, so only real problems page someone. |
+| [Context pruner](/docs/templates/context-pruner) | `confidence_routing` | Decide, item by item, whether an agent's context item still matters for the current task, and drop the rest unchanged. |
+| [Wake gate](/docs/templates/wake-gate) | `intent_routing` | Decide whether an event should wake a sleeping agent now, later, or not at all. |
+| [Security finding triage](/docs/templates/security-finding-triage) | `confidence_routing` | Decide whether a static analysis finding is reachable from user input, and how bad it is in context. |
+| [Error triage](/docs/templates/error-triage) | `fan_out` | Decide which team owns a new error tracker issue, how much it hurts users, and whether the latest release caused it. |
+| [Lead and event scoring](/docs/templates/lead-event-scoring) | `confidence_routing` | Score how ready an account is to buy from its recent product events, and pick the next sales action. |
+| [Inbound email routing](/docs/templates/inbound-email-routing) | `intent_routing` | Send each email that reaches a shared address to the right queue, and flag the ones that need a human reply today. |
+
+## Using a template
+
+1. Copy the spec into your repository as `bandwise/sets/<slug>.json`.
+2. Rename the state fields to match your data, and update `input.schema`.
+3. Rewrite the instructions and options for your case. The question id is never sent to the model, so the instructions carry the whole requirement.
+4. Run the example and borderline states with `pnpm bandwise run --local`.
+5. Label real examples and tune the thresholds on them. The thresholds in a template are starting points, not measured values.

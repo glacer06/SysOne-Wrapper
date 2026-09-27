@@ -49,6 +49,8 @@ export const elements = [
   { type: "cli-local", pattern: "packages/cli/src/local" },
   { type: "cli", pattern: "packages/cli" },
   { type: "codegen", pattern: "packages/codegen" },
+  // The template pack (ADR-019 kit): pure data over core.
+  { type: "templates", pattern: "packages/templates" },
   { type: "mcp-server", pattern: "packages/mcp-server" },
   { type: "plugin-sdk", pattern: "packages/plugin-sdk" },
   { type: "plugins-builtin", pattern: "packages/plugins-builtin" },
@@ -85,6 +87,7 @@ export const allowedElementDeps = {
   "cli-local": ["cli", "client", "codegen", "core", "core-contracts", "core-openapi", "system-one-client-fixture"],
   cli: ["cli-local", "client", "codegen", "core-openapi"],
   codegen: ["core-contracts"],
+  templates: ["core", "core-contracts"],
   "mcp-server": ["client", "core-contracts", "core-openapi"],
   "plugin-sdk": ["core", "core-contracts"],
   "plugins-builtin": ["plugin-sdk", "core", "core-contracts"],
@@ -119,11 +122,12 @@ export const allowedElementDeps = {
   "example-embed": ["client", "client-server", "react", "core-contracts", "core-openapi"],
   // The public docs site. Its tests check the documented spec against core's parser; the site
   // itself reads packages/core/openapi.json from disk at build time.
-  docs: ["core", "core-contracts", "core-openapi"],
+  // The Templates pages are rendered from the template pack.
+  docs: ["core", "core-contracts", "core-openapi", "templates"],
   "extension-chrome": ["client", "react", "core-contracts"],
 };
 
-const pureElements = ["core", "core-contracts", "codegen"];
+const pureElements = ["core", "core-contracts", "codegen", "templates"];
 
 /**
  * External packages only one element may import.
@@ -156,6 +160,12 @@ function buildPolicies() {
   policies.push({
     from: { file: { categories: "tooling" } },
     allow: { to: { element: { type: "config" } } },
+  });
+
+  // Template pack tests run every template through the CLI's local mode, as a user would.
+  policies.push({
+    from: { element: { type: "templates" }, file: { categories: "test" } },
+    allow: { to: { element: { type: "cli" } } },
   });
 
   // Exclusive third-party SDKs.

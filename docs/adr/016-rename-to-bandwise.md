@@ -17,7 +17,7 @@ Nothing has been published: no npm package, no customer, no deployed database, n
 1. Rename every product identifier from SysOne to Bandwise, in code, config, docs, skills and ADRs, in one change with the full gate.
 2. Keep `systemOne` and "System One" wherever they name TypeSafe's model class. Code identifiers still say `systemOne`, not `jev` (golden rule 9).
 3. Keep the GitHub repository URL (`glacer06/SysOne-Wrapper`) until Nick renames the repository. GitHub redirects the old URL after a rename.
-4. Domains: `bandwise.ai` for the product (marketing, `app.`, `api.`), `bandwise.dev` for developer docs (`docs.bandwise.dev`).
+4. Domains: `bandwise.ai` for the product (marketing, `app.`, `api.`), `bandwise.dev` for developer docs (`docs.bandwise.dev`). Superseded by ADR-018: everything lives on `bandwise.dev` (`www`, `app`, `docs`), and `bandwise.ai` redirects to `www.bandwise.dev`.
 5. Earlier ADRs are updated in place to the new names so the record reads consistently; this ADR is the record of the change.
 
 ## Options considered
