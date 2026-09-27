@@ -24,5 +24,6 @@ export {
 } from "./schema/classes.js";
 export type * from "./rows.js";
 export { migrateDatabase, MIGRATIONS_DIR } from "./migrate.js";
+export { DATA_API_ROLES, type DataApiExposure } from "./data-api-roles.js";
 export { createRunSink, type LabelSelector, type RunSinkDeps } from "./run-sink.js";
 export { seedOrgs, TWO_ORG_SEED, THREE_ORG_SEED, type OrgSeed, type SeededOrg } from "./seed.js";

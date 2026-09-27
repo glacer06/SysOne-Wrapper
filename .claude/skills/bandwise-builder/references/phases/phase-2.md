@@ -18,6 +18,8 @@
 - [ ] `approval_requests` and the approval step in `runOperation`; approved requests run their stored input unchanged
 - [ ] `agentApprovals` org setting (`required` by default, `production_only`, `off`) with the always-gated list from [security.md](../security.md)
 - [ ] Idempotency middleware on `idempotency_keys` (24 hours, same transaction as the operation)
+- [x] Database hosting (ADR-018): Supabase hardening migration `0002_close_data_api_roles.sql` with the migrator's Data API role guard, the manual `db-migrate` workflow (`DATABASE_URL_MIGRATE` per GitHub Environment) and `docs/runbooks/database.md`
+- [ ] Database hosting: GitHub Environments `preview` and `production` with `DATABASE_URL_MIGRATE`, first migration run on preview then production, Data API off, the app login role (member of `bandwise_app`) created with its password in the vault
 - [ ] Browser token minting route `POST /api/v1/tokens/browser` with ES256 (`BANDWISE_JWT_SIGNING_KEY`, `kid`) and the JWKS at `/api/v1/.well-known/jwks.json`
 - [ ] `org_webhook_secrets`, encrypted like System One keys
 - [ ] Retention settings split: `state_retention_days`, `answers_retention_days`, `dataset_retention_days`

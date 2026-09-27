@@ -222,3 +222,5 @@ The matrix lives in `packages/core/src/authz.ts` as `can(ctx, action, resource)`
 - Generate with `drizzle-kit generate`. Review the SQL. Never edit a migration that has been applied anywhere.
 - Each new tenant table's migration includes its RLS policy and `org_id` index in the same file.
 - The cross-tenant test suite is generated from the repository list; adding a repo without adding it to the suite fails CI.
+- Migrations are listed in `migrations/meta/_journal.json` and applied in that order by `migrateDrizzle`, which records each file's hash in `bandwise_migrations`. A hand-written migration gets a journal entry and a snapshot copy of the previous one, like `drizzle-kit generate --custom`.
+- `0002_close_data_api_roles.sql` closes `public` to Supabase's `anon`, `authenticated` and `service_role`. Supabase's default privileges grant them ALL on every table we create, and `service_role` bypasses RLS. After every run the migrator checks that none of them can reach the schema or anything in it, and fails the run if one can. Never grant them anything ([security.md](security.md#database-roles-on-supabase)). Runbook: `docs/runbooks/database.md`.
