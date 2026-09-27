@@ -41,6 +41,13 @@ cd bandwise-kit
 npx @bandwise/cli run --local examples/email-triage.spec.json examples/email-triage.state.json
 \`\`\`
 
+Until the first release is on npm, build from source instead:
+
+\`\`\`sh
+pnpm install && pnpm -r build
+node packages/cli/dist/bin.js run --local examples/email-triage.spec.json examples/email-triage.state.json
+\`\`\`
+
 The output lists every decision with its value, band and action, the overall action, the route, and what the run would cost. Add \`--json\` to get the full result envelope instead.
 
 Local mode makes no network call and needs no key. It answers from recorded fixtures when one matches the request and from synthetic answers otherwise, and it says which. Synthetic answers are not model output: local mode proves that a spec and a state are valid and shows how the bands and actions play out. It does not tell you whether the answers are right.
