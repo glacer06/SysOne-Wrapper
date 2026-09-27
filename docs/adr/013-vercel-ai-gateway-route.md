@@ -5,7 +5,7 @@
 - **Owner:** Architect / Lead, reviewed by the Security reviewer
 - **Decider:** Nick
 - **Builds on:** ADR-011 (provider routes). It reuses the route mechanism ADR-011 added. ADR-011's own open questions stay open and do not block this ADR.
-- **Contract impact:** additive. `SystemOneProvider` gains `vercel`. `SYSTEM_ONE_PROVIDER_BASE_URLS` gains `vercel: "https://ai-gateway.vercel.sh/typesafe"`. The id helpers gain a Vercel default mapping. `SystemOneResponse` gains an optional `provider_metadata.gateway.cost`. The key and route provider enums gain `vercel`.
+- **Contract impact:** additive. `SystemOneProvider` gains `vercel`. `SYSTEM_ONE_PROVIDER_BASE_URLS` gains `vercel: "https://ai-gateway.vercel.sh/typesafe"`. The id helpers gain a Vercel default mapping. `SystemOneResponse` gains an optional `provider_metadata.gateway.cost`. The key and route provider enums gain `vercel`. The error envelope gains `system_one_invalid_response` (HTTP 502, not retryable), used when a response shows a Gateway evaluation fallback. Fixtures gain an optional `source` field (`recorded`, `hand-authored` or `doc-derived`) and optional `responseHeaders`.
 
 ## Context
 
