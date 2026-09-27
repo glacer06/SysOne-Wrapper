@@ -1,0 +1,12 @@
+{"id":"t01","state":{"ticket":"I was charged twice for my plan this month. Please refund one of the charges."},"expected":{"team":"billing","refund":true}}
+{"id":"t02","state":{"ticket":"The export button throws a 500 error every time I click it."},"expected":{"team":"technical"}}
+{"id":"t03","state":{"ticket":"Can you send me last month's invoice as a PDF? Our accountant needs it."},"expected":{"team":"billing","refund":false}}
+{"id":"t04","state":{"ticket":"Your dashboard has been down for two hours and none of our charts load."},"expected":{"team":"technical"}}
+{"id":"t05","state":{"ticket":"I cancelled on the 3rd but was billed on the 5th. I want that money back."},"expected":{"team":"billing","refund":true}}
+{"id":"t06","state":{"ticket":"Do you have an office in Lisbon? I would like to visit."},"expected":{"team":"none_of_these"}}
+{"id":"t07","state":{"ticket":"Please update the card on file to the new Visa ending in 4242."},"expected":{"team":"billing","refund":false}}
+{"id":"t08","state":{"ticket":"The mobile app crashes on launch since the last update on Android 15."},"expected":{"team":"technical"}}
+{"id":"t09","state":{"ticket":"We were overcharged on the annual plan. A credit on the next invoice would be fine."},"expected":{"team":"billing","refund":true}}
+{"id":"t10","state":{"ticket":"Love the product, just wanted to say thanks to the team!"},"expected":{"team":"none_of_these"}}
+{"id":"t11","state":{"ticket":"Login with Google fails with 'invalid_client' since this morning."},"expected":{"team":"technical"}}
+{"id":"t12","state":{"ticket":"Why did my bill go up from $20 to $35 this month? I did not change plans."},"expected":{"team":"billing","refund":false}}

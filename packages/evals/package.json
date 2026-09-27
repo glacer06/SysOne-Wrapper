@@ -2,7 +2,7 @@
   "name": "@sysone/evals",
   "version": "0.0.0",
   "private": true,
-  "description": "Datasets, metrics, eval CLI, CI gate.",
+  "description": "Datasets, metrics, eval CLI, CI gate, live smoke and fixture recording.",
   "type": "module",
   "exports": {
     ".": {
@@ -12,13 +12,19 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "data"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@sysone/core": "workspace:*",
+    "@sysone/system-one-client": "workspace:*",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@sysone/config": "workspace:*",
