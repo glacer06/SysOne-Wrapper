@@ -460,3 +460,18 @@ Feedback from Python is the same `POST /api/v1/feedback` body as the curl exampl
 - Opportunities hold summaries and file locations, never source code.
 - The server never falls back to an older version to satisfy `SysOne-Interface`.
 - SysOne never writes into a customer repo and never exports a stored TypeSafe key.
+
+## Coding-agent prompt skeleton (for the sysone-integrate skill)
+
+Adapted from the official TypeSafe skill's design order. The customer-facing `sysone-integrate` skill (Phase 7) opens every integration with this:
+
+```
+Use the TypeSafe skill and the sysone-integrate skill. Before writing code:
+1. Read docs.typesafe.ai/llms.txt, then the SDK or HTTP API page and the primitive pages you need.
+2. Behaviour: <what the app shows, selects, changes or hands off>.
+3. List the judgments, one per question, and mark what stays in code (rules, calculations, lookups, execution, policy).
+4. Draft instructions and criteria, with a no-match option on every Choice.
+5. Ask them all over <state> in one request. Split only when one answer decides the next request.
+6. Put questions and thresholds in the SysOne spec file sysone/sets/<slug>.json; thresholds stay TODO until tested on a labeled set.
+Use only fields you have read on the API page.
+```

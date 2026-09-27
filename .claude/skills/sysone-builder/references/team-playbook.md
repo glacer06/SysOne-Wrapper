@@ -96,3 +96,7 @@ The owner replies with accept, counter-proposal, or ADR needed.
 - **The builder skill is internal.** The customer Claude Code plugin ships its own `sysone-operator` and `sysone-integrate` skills (Phase 7).
 - **Long sessions** (optional, unverified): The Code (2026-09-26) describes `tamaratran/fast-jev-compaction`, a plugin that uses Jev to prune stale tool calls on `/compact`. It reportedly needs `CLAUDE_CODE_ENABLE_FUNCTION_HOOKS=1` and Claude Code 2.1.274+. Try it on long agent sessions if you want; don't make the team depend on it.
 - **Connectors**: Stripe, Linear (project SysOne, `P-NSI-36`, in the NSIMS team) and Sentry MCP servers need authorization in claude.ai before an agent can use them.
+
+## Official TypeSafe skill version
+
+The official skill (`typesafe-ai/skills`, plugin manifest 0.5.7 as read on 2026-09-26) is the one agents must install. Update it before any new integration: a stale copy is TypeSafe's documented cause of invented request and response fields. When the manifest version changes, re-read `system-one-api-contract.md` against the live docs in the same PR.

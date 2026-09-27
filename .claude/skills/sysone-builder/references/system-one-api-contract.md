@@ -243,3 +243,9 @@ TypeSafe's SDKs and API are pre-1.0 and changing weekly.
 - Python SDK 0.7.0 (2026-09-18) moved from msgspec to pydantic.
 - The official skill links a v1 migration guide (`docs.typesafe.ai/migrating-to-v1.md`) that returns 404 today.
 - The nightly contract watch job diffs `openapi.json`, `llms.txt` and `models.md` against snapshots committed in `packages/system-one-client`, and alerts on a change ([system-one-models.md](system-one-models.md), detection). Fixtures record the `openapi.json` version they were made against ([testing.md](testing.md)).
+
+## Latency and outages (TypeSafe published figures)
+
+- TypeSafe publishes an end-to-end response time of 70 to 500 ms, with its evals run from the US West Coast. Treat this as a floor to measure against, not a budget: region, state size and question count move it. Record p50 and p95 per set and region in the run metrics.
+- Parallel questions: TypeSafe's own recipe (13 questions over one 53,777-character article, `jev-1.12`, mean of 5 runs) measured one call as 12.2x cheaper and 10.0x faster than thirteen calls, with no change in the answers. The primitives page quotes 11.5x and 9.6x for the same recipe. This is TypeSafe's measurement on its data, filed as an example to evaluate.
+- **An outage is not a decision.** When System One is unreachable after SDK retries (`system_one_unavailable`, `system_one_overloaded`), the run must return a typed result with each decision's `effectiveAction` set by the set's outage rule (ADR-012, proposed), never an empty or missing answer. A caller that treats "no answer" as "block everything" is the documented failure this rule exists to prevent.

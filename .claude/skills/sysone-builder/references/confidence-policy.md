@@ -226,3 +226,11 @@ Targeted picks (near a threshold, challenger disagreements) feed datasets and th
 - Do not copy a noul threshold to a choice.
 - Word noul true criteria positively.
 - If only the best option matters, use the top-choice preset.
+
+## Outage behaviour (ADR-012, proposed)
+
+A System One outage is a separate case from a low band. Proposed rule, pending ADR-012:
+
+- Each set has `onUnavailable`: `fallback` (default), `review` or `escalate_to_llm`. The run returns a normal `RunResult` with `status: "error"`, `error.code` `system_one_unavailable`, and every gating decision's `effectiveAction` set to `onUnavailable`, so callers always get an instruction.
+- `onUnavailable` never resolves to `auto`.
+- A **liveness alert** fires when a set that normally produces decisions has produced none (or only errors) for its configured window, default 15 minutes at production traffic. "Silence" is treated as an incident, not as a safe state.

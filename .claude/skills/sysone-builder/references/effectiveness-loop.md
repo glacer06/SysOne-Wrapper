@@ -323,3 +323,16 @@ QA / Evals owns these, with Quality / Learning. Details in [testing.md](testing.
 - No endpoint returns a test-split case.
 - A challenger never changes `effectiveAction`, dispatches no action and books no savings.
 - Phase 3b exit gate: on a seeded set with 500 labeled fixture runs, an agent using only MCP tools gets a threshold suggestion, applies it to a draft, runs a challenger, and promotes it after admin approval.
+
+## Failure triage
+
+Every missed or disputed decision gets one failure class, set by the reviewer or by the resolver of a feedback report, and stored with the case:
+
+| Class | Meaning | Usual fix |
+|---|---|---|
+| `missing_evidence` | The state did not contain what the question needed | Change the input adapter or `stateFrom` |
+| `model_error` | The evidence was there and the model answered wrong | Rewrite the question, add a no-match option, split the judgment, or try another model |
+| `code_error` | Our code composed, routed or mapped the answer wrong | Fix the spec, composite or route |
+| `service` | Timeout, outage or rate limit | Check the outage rule and limits, not the question |
+
+Proposals and set health group misses by class, so a spike in `missing_evidence` points at the input, not the prompt. The runs explorer shows state, questions and answers together for each miss, which is what the class is judged from. This follows the official TypeSafe skill's instruction to separate missing evidence, model errors, code errors and service failures.
