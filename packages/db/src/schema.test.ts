@@ -51,6 +51,19 @@ describe("migration 0001", () => {
   });
 });
 
+describe("migration 0003", () => {
+  it("pins search_path on every Bandwise function (Supabase advisor lint 0011)", async () => {
+    const fns = await rows<{ proname: string; proconfig: string[] | null }>(
+      `select p.proname, p.proconfig from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+       where n.nspname = 'public' and p.proname like 'bandwise%' order by 1`,
+    );
+    expect(fns.length).toBeGreaterThan(0);
+    for (const fn of fns) {
+      expect(fn.proconfig ?? [], fn.proname).toContain("search_path=pg_catalog, public");
+    }
+  });
+});
+
 describe("row level security", () => {
   it.each([...ALL_TENANT_SCOPED])("%s has RLS enabled and forced", async (table) => {
     const [row] = await rows<{ relrowsecurity: boolean; relforcerowsecurity: boolean }>(

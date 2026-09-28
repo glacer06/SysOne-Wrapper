@@ -9,16 +9,24 @@
 // plain role that owns schema public but is not a member of supabase_admin, which is how the
 // postgres role looks on Supabase, so the NOTICE path for supabase_admin's defaults runs.
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { PGlite } from "@electric-sql/pglite";
 import { drizzle } from "drizzle-orm/pglite";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { DATA_API_ROLES, findDataApiExposure } from "./data-api-roles.js";
 import type { DrizzleDb } from "./internal/drizzle.js";
-import { migrateDrizzle } from "./migrate.js";
+import { migrateDrizzle, MIGRATIONS_DIR } from "./migrate.js";
 import { APP_ROLE, PLATFORM_ROLE } from "./rls.js";
 import * as schema from "./schema/index.js";
 import { pgErrorOf } from "./testing/errors.js";
+
+/** Every migration in the journal, so adding one does not break these counts. */
+const MIGRATION_COUNT = (
+  JSON.parse(readFileSync(join(MIGRATIONS_DIR, "meta", "_journal.json"), "utf8")) as { entries: unknown[] }
+).entries.length;
 
 const ROLES = DATA_API_ROLES.join(", ");
 
@@ -149,7 +157,7 @@ describe("migration 0002, migrating as a superuser", () => {
     await pglite.exec(supabaseDefaults(["postgres", "supabase_admin"]));
     expect((await defaultGrants(pglite)).length).toBe(18);
     db = drizzle(pglite, { schema, casing: "snake_case" });
-    expect(await migrateDrizzle(db)).toBe(2);
+    expect(await migrateDrizzle(db)).toBe(MIGRATION_COUNT);
   });
 
   afterAll(async () => {
@@ -197,7 +205,7 @@ describe("migration 0002, migrating as a schema owner outside supabase_admin", (
     await pglite.exec(supabaseDefaults(["migrator", "supabase_admin"]));
     await pglite.exec("SET ROLE migrator");
     const db: DrizzleDb = drizzle(pglite, { schema, casing: "snake_case" });
-    expect(await migrateDrizzle(db)).toBe(2);
+    expect(await migrateDrizzle(db)).toBe(MIGRATION_COUNT);
     await pglite.exec("RESET ROLE");
   });
 

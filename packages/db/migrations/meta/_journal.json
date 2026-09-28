@@ -15,6 +15,13 @@
       "when": 1790545645807,
       "tag": "0002_close_data_api_roles",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1790593513544,
+      "tag": "0003_pin_function_search_path",
+      "breakpoints": true
     }
   ]
 }
