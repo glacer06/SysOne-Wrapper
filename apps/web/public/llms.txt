@@ -1,0 +1,29 @@
+# Bandwise
+
+> Bandwise runs typed decisions (yes or no, pick one, score against a rubric) on TypeSafe's System One models, starting with Jev. It turns each answer's confidence into an action per band: act on its own, send to a person, fall back to a default, or escalate to a larger LLM. It versions question sets, rolls them out in stages (shadow, controlled, full) and records what every run cost and saved against an LLM.
+
+Bandwise is an independent product built on TypeSafe's System One models. It is not made or endorsed by TypeSafe.
+
+The hosted cloud is in early access and its pricing is not public. The kit below is free and open source under Apache-2.0. Bandwise is headless first: the console, the `bandwise` CLI, the HTTP API and the MCP server share one set of operations.
+
+## Docs
+
+- [Docs home](https://docs.bandwise.dev): concepts, specs, templates and the API reference
+- [Quickstart](https://docs.bandwise.dev/docs/quickstart): run a question set on your machine in local mode
+- [CLI reference](https://docs.bandwise.dev/docs/cli)
+- [Templates](https://docs.bandwise.dev/docs/templates): nine starting specs, each with example and borderline states
+- [Agents and MCP](https://docs.bandwise.dev/docs/agents-and-mcp)
+- [Docs for LLMs](https://docs.bandwise.dev/llms.txt)
+
+## Kit
+
+- [bandwise-kit on GitHub](https://github.com/glacer06/bandwise-kit): spec format, local runner, CLI, templates and a Claude Code skill that finds decisions in a repository
+- [@bandwise/cli](https://www.npmjs.com/package/@bandwise/cli): `npx @bandwise/cli run --local spec.json state.json` runs a spec with fixture answers, no key and no network
+- [@bandwise/core](https://www.npmjs.com/package/@bandwise/core): spec schema, compiler, confidence router, cost and savings math
+- [@bandwise/templates](https://www.npmjs.com/package/@bandwise/templates): the template pack
+
+## Site
+
+- [Home](https://www.bandwise.dev/): how a decision flows, the savings calculator, templates and the early-access form
+- [Privacy](https://www.bandwise.dev/privacy)
+- [Terms](https://www.bandwise.dev/terms)
