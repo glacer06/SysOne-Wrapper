@@ -113,7 +113,7 @@ Details, the run data flow, and caching: `references/architecture.md`.
 
 ## How to work a task
 
-1. **Find your phase.** Open `references/phases/phase-N.md` (phases 0 to 7, plus `phase-3b.md` for the effectiveness loop and `phase-4b.md` for integrate and deploy). Confirm your task is on its checklist and note the exit gate.
+1. **Find your phase.** Open `references/phases/phase-N.md` (phases 0 to 7, plus `phase-3b.md` for the effectiveness loop, `phase-4b.md` for integrate and deploy, and `phase-d.md` for the dogfood track, which comes right after Phase 1 per ADR-020). Confirm your task is on its checklist and note the exit gate.
 2. **Find your lane.** Check `references/team-playbook.md` for which role owns the files you will touch. If it is not yours, open a handoff, don't edit.
 3. **Read the contracts** in `packages/core/src/contracts` (or, before Phase 0 part two lands, the shapes in `references/spec-schema.md`, `references/architecture.md`, `references/confidence-policy.md` and `references/management-api.md`). If your task needs code against contracts that do not exist yet, it is blocked on Phase 0 part two. Tell the Architect; do not invent contract shapes in your own package.
 4. **Operation first.** If you add a console capability, add its operation first (`references/management-api.md`), then the UI.
@@ -174,6 +174,6 @@ Details, the run data flow, and caching: `references/architecture.md`.
 - `references/testing.md`: fixtures, smoke, evals, Playwright
 - `references/security.md`: keys, tokens, agent tokens, approvals, RBAC, audit, PII
 - `references/team-playbook.md`: roles, lanes, contracts, handoffs
-- `references/phases/phase-0.md` through `phase-7.md`, plus `phase-3b.md` and `phase-4b.md`: checklists and exit gates
+- `references/phases/phase-0.md` through `phase-7.md`, plus `phase-3b.md`, `phase-4b.md` and `phase-d.md` (dogfood track, next up): checklists and exit gates
 - `templates/question-set.example.json`, `templates/adr.md`, `templates/plugin.template.ts`
-- ADRs live in the repo at `docs/adr/`: 001 stack; 002 to 006 auth (Better Auth), key vault, cache, jobs runner, billing; 007 to 010 headless parity, model registry, app integration, rollout and the effectiveness loop (all accepted 2026-09-26); 011 OpenRouter route (proposed); 013 Vercel AI Gateway route (accepted 2026-09-27)
+- ADRs live in the repo at `docs/adr/`: 001 stack; 002 to 006 auth (Better Auth), key vault, cache, jobs runner, billing; 007 to 010 headless parity, model registry, app integration, rollout and the effectiveness loop (all accepted 2026-09-26); 011 OpenRouter route (proposed); 013 Vercel AI Gateway route (accepted 2026-09-27); 020 dogfood track and local live mode (accepted 2026-09-28)

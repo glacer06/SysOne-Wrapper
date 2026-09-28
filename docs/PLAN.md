@@ -88,10 +88,13 @@ ADRs are in `docs/adr/`: `002-auth-library.md` to `006-billing-model.md`, `007-h
 
 ## Phases
 
+**Build order since 2026-09-28 (ADR-020):** 0, 1, then the dogfood track **D**, then the rest of 2, then 3 onward. Phase D makes Nick the first user: Claude Code sessions on this repo call Jev through Bandwise, local with his own key first, then hosted for the `internal` org, every set in `shadow` until he moves it. D pulls forward only the pieces of 2 and 3 that single-tenant use needs.
+
 | Phase | What ships | Exit gate (short form) |
 |---|---|---|
 | 0 | Builder skill, plan, scaffold, frozen contracts (operation registry skeleton, error envelope v2, ModelProfile, SetInterface, agent actor), ADRs 002 to 010, CI | Scaffold passes lint, typecheck, test, build |
 | 1 | Core engine with question-type modules and limits from model profiles, system-one-client, llm-client, model registry seed, schema with RLS, fixtures, local CLI | End-to-end run on fixtures; cross-tenant suite passes |
+| D | Dogfood track (ADR-020): D0 prove Jev with a real key; D1 local live mode, receipts, `bandwise report`, the agent pack as Claude Code hooks; D2 hosted run endpoint and headless publish and rollback for the internal org; D3 minimal console (sign-in, editor, threshold sliders, runs, savings, review) | A week of real receipts; one set moved to controlled; a threshold changes live with no redeploy and rolls back |
 | 2 | Auth, orgs, keys, app tokens, agent tokens and device flow, approvals, idempotency, rate limits with an eval bucket, Stripe foundation, platform admin | Three-org switch with no leak; Stripe reconciles within 0.1%; an agent token never exceeds its user's role |
 | 3 | Console and management API with parity, `bandwise` CLI, MCP server (stdio), event feed, feedback API, audit sampling, rollout gates and auto-demote, model registry pages | Publish v2 and roll back from the console or the API with no app redeploy; an agent using only the CLI or MCP runs create to production, waiting for human approval |
 | 3b | Effectiveness loop: threshold suggester and replay, set health, proposals, champion/challenger across versions and models, model upgrades, Studio improve mode | An agent tunes a set from labels and promotes a challenger after admin approval; injected drift auto-demotes |
