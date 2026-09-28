@@ -16,6 +16,9 @@ The template pack is part of the free %product% kit, licensed Apache-2.0. The [f
 | [Log-line pager](/docs/templates/log-line-pager) | `confidence_routing` | Decide whether one log line needs a human now, so only real problems page someone. |
 | [Context pruner](/docs/templates/context-pruner) | `confidence_routing` | Decide, item by item, whether an agent's context item still matters for the current task, and drop the rest unchanged. |
 | [Wake gate](/docs/templates/wake-gate) | `intent_routing` | Decide whether an event should wake a sleeping agent now, later, or not at all. |
+| [Done check](/docs/templates/done-check) | `confidence_routing` | Decide whether a coding agent has really finished the request before it stops, or has work left or an unchecked claim. |
+| [Action risk gate](/docs/templates/action-risk-gate) | `fan_out` | Decide whether a coding agent's shell command or file edit is risky enough that a person should confirm it before it runs. |
+| [Model tier](/docs/templates/model-tier) | `intent_routing` | Decide how hard a new request to a coding agent is, so mechanical work can go to a cheaper model or subagent. |
 | [Security finding triage](/docs/templates/security-finding-triage) | `confidence_routing` | Decide whether a static analysis finding is reachable from user input, and how bad it is in context. |
 | [Error triage](/docs/templates/error-triage) | `fan_out` | Decide which team owns a new error tracker issue, how much it hurts users, and whether the latest release caused it. |
 | [Lead and event scoring](/docs/templates/lead-event-scoring) | `confidence_routing` | Score how ready an account is to buy from its recent product events, and pick the next sales action. |
