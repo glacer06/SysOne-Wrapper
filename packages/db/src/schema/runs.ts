@@ -102,6 +102,8 @@ export const runs = pgTable(
     index("runs_org_id_source_created_at_idx").on(t.orgId, t.source, t.createdAt),
     index("runs_org_id_external_ref_idx").on(t.orgId, t.externalRef),
     index("runs_org_id_experiment_id_idx").on(t.orgId, t.experimentId),
+    // A partitioned index: Postgres builds it on every partition, including ones made later.
+    index("runs_org_id_version_id_idx").on(t.orgId, t.versionId),
     foreignKey({
       name: "runs_set_fk",
       columns: [t.orgId, t.setId],
@@ -243,6 +245,7 @@ export const datasetSnapshots = pgTable(
   },
   (t) => [
     unique("dataset_snapshots_org_id_id_key").on(t.orgId, t.id),
+    index("dataset_snapshots_org_id_dataset_id_idx").on(t.orgId, t.datasetId),
     foreignKey({
       name: "dataset_snapshots_dataset_fk",
       columns: [t.orgId, t.datasetId],
@@ -273,6 +276,8 @@ export const evalRuns = pgTable(
   },
   (t) => [
     unique("eval_runs_org_id_id_key").on(t.orgId, t.id),
+    index("eval_runs_org_id_version_id_idx").on(t.orgId, t.versionId),
+    index("eval_runs_org_id_dataset_id_idx").on(t.orgId, t.datasetId),
     foreignKey({
       name: "eval_runs_version_fk",
       columns: [t.orgId, t.versionId],
@@ -325,6 +330,7 @@ export const studioSessions = pgTable(
   },
   (t) => [
     unique("studio_sessions_org_id_id_key").on(t.orgId, t.id),
+    index("studio_sessions_org_id_goal_id_idx").on(t.orgId, t.goalId),
     foreignKey({
       name: "studio_sessions_goal_fk",
       columns: [t.orgId, t.goalId],
@@ -349,6 +355,7 @@ export const studioExamples = pgTable(
   },
   (t) => [
     unique("studio_examples_org_id_id_key").on(t.orgId, t.id),
+    index("studio_examples_org_id_session_id_idx").on(t.orgId, t.sessionId),
     foreignKey({
       name: "studio_examples_session_fk",
       columns: [t.orgId, t.sessionId],
@@ -442,6 +449,7 @@ export const usageDaily = pgTable(
         t.savingsKind,
       )
       .nullsNotDistinct(),
+    index("usage_daily_org_id_project_id_idx").on(t.orgId, t.projectId),
     foreignKey({
       name: "usage_daily_project_fk",
       columns: [t.orgId, t.projectId],

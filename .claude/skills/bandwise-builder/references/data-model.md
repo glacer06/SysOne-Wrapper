@@ -5,7 +5,7 @@ Tenancy exists from migration `0001`. It is never bolted on later.
 ## Tenancy rules
 
 1. Every tenant table has `org_id uuid not null references organizations(id)`. Platform tables have no `org_id` and are listed under [Platform tables](#platform-tables-no-org_id). One exception: `price_books` is a hybrid table whose platform default rows have `org_id` null ([Billing and usage](#billing-and-usage)).
-2. Every tenant table has an RLS policy (template below, or the hybrid policy on `price_books`) and a composite index that starts with `org_id`.
+2. Every tenant table has an RLS policy (template below, or the hybrid policy on `price_books`) and a composite index that starts with `org_id`. Every foreign key has an index whose leading columns are the key's own columns, so a composite `(org_id, parent_id)` key needs an index on `(org_id, parent_id, ...)`. Postgres does not add one for you, and deletes and joins on the parent scan the child table without it.
 3. App code touches the database only through `withTenant(ctx, tx => repo.method(tx, ...))`. It opens a transaction, runs `select set_config('app.org_id', $1, true)` (transaction-local, safe with pooled connections), and hands back repositories that also add the org filter. Two layers: if the repo forgets, RLS catches it; if RLS is misconfigured, the repo tests catch it.
 4. Raw `db` handles are never exported from `packages/db`.
 5. Cross-tenant access returns **404**, never 403, so existence doesn't leak.
@@ -18,20 +18,29 @@ alter table question_sets enable row level security;
 alter table question_sets force row level security;
 
 create policy tenant_isolation on question_sets
-  using (org_id = nullif(current_setting('app.org_id', true), '')::uuid)
-  with check (org_id = nullif(current_setting('app.org_id', true), '')::uuid);
+  using (org_id = (select nullif((select current_setting('app.org_id', true)), '')::uuid))
+  with check (org_id = (select nullif((select current_setting('app.org_id', true)), '')::uuid));
 ```
 
 `nullif` matters. Once a transaction-local `app.org_id` has been set on a pooled connection, `current_setting('app.org_id', true)` returns `''` (not null) after that transaction ends, and `''::uuid` raises an error. The generated policies in `packages/db/src/rls.ts` always read the setting through `nullif`.
 
-The app connects as a login role that is a member of `bandwise_app` (NOLOGIN, no `BYPASSRLS`, no `SUPERUSER`). Platform rows (`org_id` null in `price_books`, `audit_log` and `events`, and the platform tables) are written by the `bandwise_platform` role, whose policies match only `org_id is null`. The app role is never a member of it. Migration 0001 creates both roles, and its security block is generated from the table classes in `packages/db/src/schema/classes.ts`.
+Both `select`s matter too. A scalar subquery that never touches the row becomes an initplan, which Postgres runs once per statement; a bare `current_setting(...)` in a policy runs once for every row it checks. The outer `select` puts the whole value, `nullif` and the cast included, in the initplan. The inner one is the text Supabase's performance advisor looks for (lint 0003, `auth_rls_initplan` matches `select current_setting(`), so the outer `select` alone runs just as fast but still shows up as a finding.
+
+One permissive policy per role and command. Postgres ORs every permissive policy that applies and evaluates each one, and the advisor flags two on the same table, role and command (lint 0006, where a policy with no `to` counts for every role). So:
+
+- A table with a second read path gets one policy per command, with the extra arm OR'ed into `select` only: `tenant_read`, `tenant_insert`, `tenant_update`, `tenant_delete`. `organizations`, `memberships` and `invitations` do this for the pre-org lookups on `app.user_id` (ADR-002).
+- A table where two roles need different rules names the role on each policy. On `price_books`, `audit_log` and `events` the tenant policies are `to bandwise_app` and `platform_rows` is `to bandwise_platform`.
+
+The app connects as a login role that is a member of `bandwise_app` (NOLOGIN, no `BYPASSRLS`, no `SUPERUSER`), so policies `to bandwise_app` apply to it through membership. Platform rows (`org_id` null in `price_books`, `audit_log` and `events`, and the platform tables) are written by the `bandwise_platform` role, whose policies match only `org_id is null`; since migration 0004 the tenant policies on those tables do not apply to it, so it never reaches an org's rows. The app role is never a member of it. Migration 0001 creates both roles, and its security block is generated from the table classes in `packages/db/src/schema/classes.ts`.
+
+Policies are data in `rls.ts`, one generation per migration that shipped them: generation 1 in `0001_init.sql`, generation 2 (the current set) in `0004_supabase_performance_advisor.sql`, which drops every generation 1 policy and creates generation 2. A shipped generation never changes. To change a policy, add a generation and a block for a new migration. `schema.test.ts` checks each block against its file, checks `pg_policies` against the current generation, and mirrors advisor lints 0001, 0003 and 0006.
 
 ## Tables
 
 Actor columns named `*_user_id` and `*_token_id` come in pairs. A person acting in the console fills only the user column. An agent token fills both: the token and the user it belongs to ([security.md](security.md)). A single actor column is allowed only where no token can act: `approval_requests.decided_by_user_id`, `run_feedback.confirmed_by_user_id`, `dataset_cases.label_confirmed_by`, and the platform admin columns (`entitlement_overrides.set_by`, `audit_log.impersonator_id`).
 
 ### Identity and tenancy
-- `users`, `sessions`, `accounts`, `verification_tokens`: from Better Auth's Drizzle adapter (ADR-002). Add `platform_role` (`null` or `superadmin`). The organization plugin's tables map onto `organizations`, `memberships` and `invitations`, which also get a second RLS policy on `app.user_id` for pre-org lookups (ADR-002).
+- `users`, `sessions`, `accounts`, `verification_tokens`: from Better Auth's Drizzle adapter (ADR-002). Add `platform_role` (`null` or `superadmin`). The organization plugin's tables map onto `organizations`, `memberships` and `invitations`, whose `select` policy also admits pre-org lookups on `app.user_id` (ADR-002).
 - `organizations`: `id, slug (unique), name, status (active|suspended|deleted), key_mode (byo|platform), default_system_one_provider (typesafe|openrouter, default typesafe), state_retention_days (default 30), answers_retention_days (default 180), dataset_retention_days (null = the state retention), pii_mode (off|redact_logs|redact_logs_and_input), settings jsonb, created_at`.
   - Retention rules and the learning retention copy are in [security.md](security.md). Only an admin can raise `dataset_retention_days`, and the change is audited.
   - `settings` keys: `agentApprovals` (`required` (default), `production_only` or `off`; [security.md](security.md)), `allowPreviewModels` (bool, default false; [system-one-models.md](system-one-models.md)), `reviewerHourlyRateUsd` (number, used for the default review cost in [savings-model.md](savings-model.md)).
@@ -75,7 +84,7 @@ Actor columns named `*_user_id` and `*_token_id` come in pairs. A person acting 
 
 `id (uuidv7), org_id, project_id, set_id, version_id, channel, rollout, experiment_id null, arm (champion|challenger) null, source (console|playground|api|embed|extension|mcp|eval|cli|ingest), app_id, actor_user_id, actor_token_id, key_mode, system_one_provider (typesafe|openrouter), parent_run_id uuid null, model_requested, model_resolved, typesafe_request_id, interface_major, external_ref null, state jsonb null, state_hash, stages jsonb, checks jsonb, answers jsonb, decisions jsonb, run_band, overall_action, route, warnings jsonb, input_tokens, output_tokens, system_one_cost_micro_usd null, system_one_calls, cf_input_tokens, cf_output_tokens, counterfactual_micro_usd, counterfactual_mode, comparator_model, savings_micro_usd, savings_kind, savings_suppressed null, escalation_cost_micro_usd, llm_calls_made, llm_calls_avoided, context_tokens_pruned, latency_ms, status (ok|error|rate_limited|quota_exceeded), error_code, created_at`.
 
-- Indexes: `(org_id, set_id, created_at desc)`, `(org_id, source, created_at)`, `(org_id, external_ref)`, `(org_id, experiment_id)`.
+- Indexes: `(org_id, set_id, created_at desc)`, `(org_id, source, created_at)`, `(org_id, external_ref)`, `(org_id, experiment_id)`, `(org_id, version_id)`. They are partitioned indexes, so every partition gets them, including ones `bandwise_ensure_runs_partition` makes later.
 - `rollout` is the rollout stage read from the channel pointer at run time. It is a record of what applied, not a setting.
 - `answers` always holds the full `SystemOneAnswer` JSON, including probabilities. `includeProbabilities` only shapes the response. Policy replay and set health depend on this.
 - `input_tokens` and `output_tokens` are System One tokens. LLM escalation spend is in `escalation_cost_micro_usd`.
@@ -163,7 +172,7 @@ Actor columns named `*_user_id` and `*_token_id` come in pairs. A person acting 
 - `usage_daily`: rollup, see [savings-model.md](savings-model.md).
 - `price_books`: `org_id (null = platform default), model, provider (typesafe|openrouter) null, display_name, input_per_mtok_micro_usd, output_per_mtok_micro_usd, updated_by_user_id, updated_by_token_id, updated_at`. Unique `(org_id, model, provider)` with `nulls not distinct`, so each model has one platform row per provider value and at most one override per org and provider.
   - `provider` null means the price holds on every provider. A row for the run's provider wins over the null row (ADR-011). Provider-reported `usage.cost` wins over both.
-  - Hybrid table, the one exception to tenancy rule 1. Read policy: `using (org_id is null or org_id = nullif(current_setting('app.org_id', true), '')::uuid)`. Write policies: `with check (org_id = nullif(current_setting('app.org_id', true), '')::uuid)`. Platform rows (`org_id` null) are written only by the `bandwise_platform` role.
+  - Hybrid table, the one exception to tenancy rule 1. With `<org>` the setting read from the [template](#rls-policy-template): read policy `tenant_read ... to bandwise_app using ((org_id = <org>) or (org_id is null))`; write policies `to bandwise_app` with `org_id = <org>`. Platform rows (`org_id` null) are written only by the `bandwise_platform` role, through `platform_rows`.
   - The `PriceBook` port runs inside `withTenant`, so it sees the platform rows and the caller's own overrides, and an org row wins over the platform row for the same model.
   - The cross-tenant suite checks that org A cannot read or write org B's override, and that both orgs read the platform rows.
   - `model` is an exact model id. For System One rows it must be a versioned id in `system_one_models`; alias rows are rejected, because they would misprice runs after the alias moves. Comparator rows use the provider's exact model id.
@@ -223,4 +232,7 @@ The matrix lives in `packages/core/src/authz.ts` as `can(ctx, action, resource)`
 - Each new tenant table's migration includes its RLS policy and `org_id` index in the same file.
 - The cross-tenant test suite is generated from the repository list; adding a repo without adding it to the suite fails CI.
 - Migrations are listed in `migrations/meta/_journal.json` and applied in that order by `migrateDrizzle`, which records each file's hash in `bandwise_migrations`. A hand-written migration gets a journal entry and a snapshot copy of the previous one, like `drizzle-kit generate --custom`.
+- Our files start at `0001`, and drizzle-kit numbers from `0000`, so `db:generate` writes its SQL and snapshot one number low and overwrites the newest snapshot. After generating: rename the SQL and the new snapshot up by one, restore the overwritten snapshot with `git checkout`, and fix the tag in `_journal.json`. The new snapshot's `prevId` must be the previous snapshot's `id`.
 - `0002_close_data_api_roles.sql` closes `public` to Supabase's `anon`, `authenticated` and `service_role`. Supabase's default privileges grant them ALL on every table we create, and `service_role` bypasses RLS. After every run the migrator checks that none of them can reach the schema or anything in it, and fails the run if one can. Never grant them anything ([security.md](security.md#database-roles-on-supabase)). Runbook: `docs/runbooks/database.md`.
+- `0003_pin_function_search_path.sql` pins `search_path` on the Bandwise functions (security advisor lint 0011).
+- `0004_supabase_performance_advisor.sql` adds a covering index for 23 foreign keys and replaces the generation 1 policies with generation 2 ([template](#rls-policy-template)). It cleared performance advisor lints 0001, 0003 and 0006.
