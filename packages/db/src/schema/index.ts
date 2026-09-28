@@ -6,3 +6,4 @@ export * from "./decisions.js";
 export * from "./runs.js";
 export * from "./billing-admin.js";
 export * from "./platform.js";
+export * from "./early-access.js";

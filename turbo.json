@@ -51,6 +51,44 @@
       ],
       "outputs": []
     },
+    "@bandwise/console#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**"
+      ],
+      "passThroughEnv": [
+        "SKIP_ENV_VALIDATION",
+        "DATABASE_URL",
+        "AUTH_SECRET",
+        "BANDWISE_KEK",
+        "BANDWISE_JWT_SIGNING_KEY",
+        "SYSTEM_ONE_TRANSPORT",
+        "TYPESAFE_API_KEY",
+        "OPENROUTER_API_KEY",
+        "AI_GATEWAY_API_KEY",
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET",
+        "REDIS_URL",
+        "ANTHROPIC_API_KEY",
+        "VERCEL_ENV"
+      ]
+    },
+    "@bandwise/web#build": {
+      "dependsOn": [
+        "^build"
+      ],
+      "env": [
+        "NEXT_PUBLIC_SITE_URL",
+        "NEXT_PUBLIC_APP_URL"
+      ],
+      "outputs": [
+        ".next/**",
+        "!.next/cache/**"
+      ]
+    },
     "@bandwise/config#test": {
       "dependsOn": [
         "transit"

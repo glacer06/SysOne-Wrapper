@@ -125,8 +125,9 @@ export const allowedElementDeps = {
   // itself reads packages/core/openapi.json from disk at build time.
   // The Templates pages are rendered from the template pack.
   docs: ["core", "core-contracts", "core-openapi", "templates"],
-  // The marketing site (ADR-018) is static and holds no secrets. It imports no workspace package yet.
-  web: [],
+  // The marketing site (ADR-018) is static and holds no secrets. It imports only core, for the
+  // model registry prices and the ADR-015 bill formula behind the savings calculator.
+  web: ["core"],
   "extension-chrome": ["client", "react", "core-contracts"],
 };
 

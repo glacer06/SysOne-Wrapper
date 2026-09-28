@@ -163,9 +163,18 @@ function generation2(): Policy[] {
   ];
 }
 
+/**
+ * Policies on the private platform tables (schema/classes.ts). Each is written by hand in the
+ * migration that creates its table, and touches no tenant table, so it is not a generation.
+ * - early_access_signups: migration 0005 (ADR-018). Only bandwise_platform, and every row.
+ */
+function privatePlatformPolicies(): Policy[] {
+  return [{ table: "early_access_signups", name: "platform_rows", role: PLATFORM_ROLE, using: "true", withCheck: "true" }];
+}
+
 /** The policies a fully migrated database holds. schema.test.ts compares them with pg_policies. */
 export function currentPolicies(): Policy[] {
-  return generation2();
+  return [...generation2(), ...privatePlatformPolicies()];
 }
 
 /** Renders the generation 1 policies on a table, optionally only the named ones, in their order. */

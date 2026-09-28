@@ -9859,6 +9859,142 @@
         }
       }
     },
+    "/api/v1/platform/early-access": {
+      "get": {
+        "operationId": "platform_early_access.list",
+        "summary": "List early-access signups from www.bandwise.dev.",
+        "tags": [
+          "platform_early_access"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformEarlyAccessListResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope (api.md).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "consoleSession": []
+          }
+        ],
+        "x-bandwise-scope": "platform_admin",
+        "x-bandwise-min-role": "superadmin",
+        "x-bandwise-risk": "read",
+        "x-bandwise-actors": [
+          "user"
+        ],
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": []
+      }
+    },
+    "/api/v1/platform/early-access/remove": {
+      "post": {
+        "operationId": "platform_early_access.remove",
+        "summary": "Delete one early-access signup by email, any case. The delete path for a privacy request.",
+        "tags": [
+          "platform_early_access"
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": false,
+            "description": "Required for app and agent tokens on mutations. A replay within 24 hours returns the stored response.",
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlatformEarlyAccessRemoveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlatformEarlyAccessRemoveResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Error envelope (api.md).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "consoleSession": []
+          }
+        ],
+        "x-bandwise-scope": "platform_admin",
+        "x-bandwise-min-role": "superadmin",
+        "x-bandwise-risk": "normal",
+        "x-bandwise-actors": [
+          "user"
+        ],
+        "x-bandwise-phase": "2",
+        "x-bandwise-async": false,
+        "x-bandwise-destructive": false,
+        "x-bandwise-emits": []
+      }
+    },
     "/api/v1/platform/reports/{name}": {
       "get": {
         "operationId": "platform_report.get",
@@ -16475,6 +16611,136 @@
         "required": [
           "slug",
           "name"
+        ],
+        "additionalProperties": false
+      },
+      "PlatformEarlyAccessListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "email": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "company": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "role": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "useCase": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "sourcePage": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "confirmedAt": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "unsubscribedAt": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "email",
+                "name",
+                "company",
+                "role",
+                "useCase",
+                "sourcePage",
+                "createdAt",
+                "confirmedAt",
+                "unsubscribedAt"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextCursor": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "nextCursor"
+        ]
+      },
+      "PlatformEarlyAccessRemoveRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 254
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "email",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "PlatformEarlyAccessRemoveResponse": {
+        "type": "object",
+        "properties": {
+          "removed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "removed"
         ],
         "additionalProperties": false
       },

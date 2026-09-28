@@ -32,6 +32,19 @@ describe("console env", () => {
     expect(env.SYSTEM_ONE_TRANSPORT).toBe("fixture");
   });
 
+  it("runs without the vault and JWT keys, as the pre-Phase 2 deploy does (ADR-018)", async () => {
+    vi.stubEnv("BANDWISE_KEK", "");
+    vi.stubEnv("BANDWISE_JWT_SIGNING_KEY", "");
+    const env = await loadEnv();
+    expect(env.BANDWISE_KEK).toBeUndefined();
+    expect(env.BANDWISE_JWT_SIGNING_KEY).toBeUndefined();
+  });
+
+  it("rejects a short AUTH_SECRET, since it keys the early-access IP hash", async () => {
+    vi.stubEnv("AUTH_SECRET", "too-short");
+    await expect(loadEnv()).rejects.toThrow();
+  });
+
   it("rejects a missing DATABASE_URL", async () => {
     vi.stubEnv("DATABASE_URL", "");
     await expect(loadEnv()).rejects.toThrow();

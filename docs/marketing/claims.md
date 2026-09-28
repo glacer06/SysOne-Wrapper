@@ -9,6 +9,8 @@ ADR-018 allows only claims we can source. Every number on www.bandwise.dev comes
 | Up to 194x faster and 445x cheaper than LLMs on TypeSafe's workflow evaluations | Vercel blog, https://vercel.com/blog/ai-gateway-jev-model-launch (2026-09-27) | Vendor framing; say "TypeSafe reports" |
 | About 13% of Vercel AI Gateway paid teams used Jev within 24 hours of launch, 2x the GPT-5.6 family and more than 6x Fable 5.1 | Vercel blog, same URL (2026-09-27) | Adoption, not proof of quality |
 | Calibration: higher confidence means higher accuracy | TypeSafe docs describe confidence as the spread of the answer distribution, not the chance of being right | Do not claim "0.8 is right 80% of the time". An independent study found raw calibration error of 0.117 on one sentiment task, cut to 0.008 with isotonic calibration (github.com/AnthusAI/Jev-Calibration). Our pitch: we measure your accuracy on your own labels |
+| Calculator comparators: Claude Haiku 4.5 at $1 input and $5 output per million tokens; Claude Fable 5.1 at $10 input and $50 output | Anthropic pricing, https://platform.claude.com/docs/en/about-claude/pricing (2026-09-28) | Base API prices, no caching or batch discount. The calculator reads them from the core price book; update both together |
+| TypeSafe accepts pinned versioned model ids (for example `jev-1.13.0`) next to aliases, so thresholds tuned on one version stay on it | TypeSafe docs, https://docs.typesafe.ai/models.md (2026-09-28) | The site's provider table says the direct route has pinned versions for controlled and full rollout; that pairing is our rule (ADR-008), not TypeSafe's |
 
 ## Things the site must not say
 

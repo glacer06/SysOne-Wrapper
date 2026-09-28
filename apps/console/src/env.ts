@@ -17,10 +17,13 @@ export const serverEnvShape = {
   DATABASE_URL: z.url(),
   // Session signing secret for the auth library (ADR-002).
   AUTH_SECRET: z.string().min(32),
-  // Key encryption key for the tenant key vault (ADR-003).
-  BANDWISE_KEK: z.string().min(1),
-  // ES256 private key that signs short-lived browser tokens.
-  BANDWISE_JWT_SIGNING_KEY: z.string().min(1),
+  // Key encryption key for the tenant key vault (ADR-003). Optional until the vault is wired in
+  // Phase 2: kekFromEnv throws when it is unset, so nothing can store a key without it. The thin
+  // pre-Phase 2 deploy of app.bandwise.dev (ADR-018) runs without it.
+  BANDWISE_KEK: z.string().min(1).optional(),
+  // ES256 private key that signs short-lived browser tokens. Optional until browser tokens ship
+  // (Phase 4); the signer must refuse to run without it.
+  BANDWISE_JWT_SIGNING_KEY: z.string().min(1).optional(),
   // Which SystemOneTransport the server uses. "fixture" never calls the network.
   SYSTEM_ONE_TRANSPORT: z.enum(["sdk", "fixture"]).default("fixture"),
   // Stripe keys. Required once billing lands in Phase 2.
@@ -50,3 +53,6 @@ export const env = createEnv({
   emptyStringAsUndefined: true,
   skipValidation: process.env.SKIP_ENV_VALIDATION === "1",
 });
+
+/** True under `next dev`. The early-access route also accepts the local marketing site then. */
+export const isDevelopment = process.env.NODE_ENV === "development";

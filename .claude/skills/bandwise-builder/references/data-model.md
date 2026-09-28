@@ -199,6 +199,12 @@ These have no tenant RLS policy. The app role can read them; only the audited pl
 - `settings`: platform key/value: the global RPM budget per model, the default comparator, alert thresholds.
 - `stripe_webhook_events`: `event_id (pk), type, processed_at`.
 
+### Private platform tables (no `org_id`, no app grant)
+
+The app role has no privilege on these at all. Only `bandwise_platform` reads and writes them, RLS is forced with one policy for that role, and the app reaches them only through a narrow `SECURITY DEFINER` function.
+
+- `early_access_signups` (ADR-018, migration 0005): `id, email, name, company, role, use_case, source_page, ip_hash, created_at, confirmed_at, unsubscribed_at`. Unique on `lower(email)`. `ip_hash` is an HMAC-SHA256 of the client IP (`hashClientIp` in `packages/tenancy`). The public route calls `bandwise_early_access_submit(...)`, owned by `bandwise_platform`, which applies the limits (5 new signups per IP hash and 300 in total per rolling hour) and an idempotent insert, and returns only `accepted` or `rate_limited`. Platform admins read and delete through `platform_early_access.list` and `platform_early_access.remove`.
+
 ## Roles
 
 | Role | Can |

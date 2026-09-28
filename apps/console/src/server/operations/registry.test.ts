@@ -72,7 +72,7 @@ describe("registry covers the catalog", () => {
   it("has exactly one entry per catalog row, in catalog order", () => {
     expect(Object.keys(OPERATIONS).sort()).toEqual(OPERATION_CATALOG.map((e) => e.id).sort());
     expect(listOperations().map((op) => op.id)).toEqual(OPERATION_CATALOG.map((e) => e.id));
-    expect(OPERATION_CATALOG).toHaveLength(125);
+    expect(OPERATION_CATALOG).toHaveLength(127);
   });
 
   it("knows its own ids", () => {

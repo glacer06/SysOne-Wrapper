@@ -6,22 +6,23 @@ description: Run a question set on your own machine with the CLI in local mode.
 Local mode runs a spec file against a state file on your machine. It uses fixture answers instead of a live model, so it makes no network call and needs no System One key. It is the fastest way to see how questions, bands, actions and routes fit together.
 
 <Callout title="What works today">
-  The `bandwise` CLI is not on npm yet. A published package, and the commands that manage sets
-  through the HTTP API, arrive in Phase 3. Until then, local mode runs from a checkout of the
-  source repository with `pnpm bandwise`.
+  The CLI is on npm as `@bandwise/cli`, and local mode works today. The commands that manage sets
+  through the HTTP API arrive in Phase 3.
 </Callout>
 
-## 1. Get the repository ready
+## 1. Get ready
 
-You need Node.js 22.13 or later and pnpm 10. From the repository root:
+You need Node.js 22.13 or later. Make an empty folder and work in it:
 
 ```bash
-pnpm install
+mkdir bandwise-quickstart && cd bandwise-quickstart
 ```
+
+`npx` downloads the CLI the first time you run it. If you would rather install it, `npm install -g @bandwise/cli` gives you a `bandwise` command, and every `npx @bandwise/cli` below becomes `bandwise`.
 
 ## 2. Write a spec
 
-A spec holds the questions, the policy for each one, and the routes that turn answers into an outcome. This one triages an email with three questions, one of each type. Save it as `spec.json` in the repository root.
+A spec holds the questions, the policy for each one, and the routes that turn answers into an outcome. This one triages an email with three questions, one of each type. Save it as `spec.json` in that folder.
 
 ```json title="spec.json"
 {
@@ -139,7 +140,7 @@ The state is what the questions judge. It must match the spec's input schema. Sa
 ## 4. Run it
 
 ```bash
-pnpm bandwise run --local spec.json state.json
+npx @bandwise/cli run --local spec.json state.json
 ```
 
 The output looks like this:
@@ -171,7 +172,7 @@ Read each decision line from left to right: the question, its value, its band, t
 Local runs default to the `full` stage. Run the same files in `shadow`:
 
 ```bash
-pnpm bandwise run --local spec.json state.json --rollout shadow
+npx @bandwise/cli run --local spec.json state.json --rollout shadow
 ```
 
 ```text
