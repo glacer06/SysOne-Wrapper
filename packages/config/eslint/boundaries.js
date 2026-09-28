@@ -24,8 +24,8 @@ const resolveTsconfig = fileURLToPath(new URL("../tsconfig/resolve.json", import
 
 /**
  * Element types. Order matters: the first matching pattern wins, so narrower
- * folders (core contracts, client server entrypoints, cli local mode, console
- * pages) come before the package that contains them.
+ * folders (core contracts, client server entrypoints, cli local and live mode,
+ * console pages) come before the package that contains them.
  * @type {Array<{ type: string; pattern: string; mode?: "file" | "folder" }>}
  */
 export const elements = [
@@ -47,6 +47,11 @@ export const elements = [
   { type: "react", pattern: "packages/react" },
   { type: "evals", pattern: "packages/evals" },
   { type: "cli-local", pattern: "packages/cli/src/local" },
+  // Live mode (ADR-020). transport.ts is the one CLI file that may load the SDK transport.
+  { type: "cli-live-transport", pattern: "packages/cli/src/live/transport.ts", mode: "file" },
+  { type: "cli-live", pattern: "packages/cli/src/live" },
+  // The run shared by local and live mode. Core only; it never picks a transport.
+  { type: "cli-runner", pattern: "packages/cli/src/runner" },
   { type: "cli", pattern: "packages/cli" },
   { type: "codegen", pattern: "packages/codegen" },
   // The template pack (ADR-019 kit): pure data over core.
@@ -85,8 +90,12 @@ export const allowedElementDeps = {
   react: ["client", "core", "core-contracts"],
   evals: ["core", "core-contracts", "system-one-client", "system-one-client-fixture"],
   // Local mode runs core on the fixture transport only. It never imports the SDK transport.
-  "cli-local": ["cli", "client", "codegen", "core", "core-contracts", "core-openapi", "system-one-client-fixture"],
-  cli: ["cli-local", "client", "codegen", "core-openapi"],
+  "cli-local": ["cli", "cli-runner", "client", "codegen", "core", "core-contracts", "core-openapi", "system-one-client-fixture"],
+  // Live mode reaches the SDK transport only through cli-live-transport (ADR-020).
+  "cli-live": ["cli", "cli-runner", "cli-live-transport", "core", "core-contracts"],
+  "cli-live-transport": ["core", "core-contracts", "system-one-client"],
+  "cli-runner": ["core", "core-contracts"],
+  cli: ["cli-local", "cli-live", "client", "codegen", "core-openapi"],
   codegen: ["core-contracts"],
   templates: ["core", "core-contracts"],
   "mcp-server": ["client", "core-contracts", "core-openapi"],
