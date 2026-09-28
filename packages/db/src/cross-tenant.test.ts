@@ -10,6 +10,7 @@
 // method with no coverage fails the completeness tests, so adding one without a test fails CI.
 
 
+import type { Transaction } from "@electric-sql/pglite";
 import { is, sql } from "drizzle-orm";
 import { PgTable, getTableConfig } from "drizzle-orm/pg-core";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -18,6 +19,7 @@ import { defaultQualityTarget, DEFAULT_LABELING_POLICY } from "@bandwise/core/co
 
 import { drizzleOf, type TenantTx } from "./internal/drizzle.js";
 import { authRepositories, buildRepositories, type Repositories } from "./repos/index.js";
+import { PLATFORM_ROLE } from "./rls.js";
 import { ALL_TENANT_SCOPED } from "./schema/classes.js";
 import * as schema from "./schema/index.js";
 import { SEED_SPEC, seedOrgs, systemContext, TWO_ORG_SEED, type SeededOrg } from "./seed.js";
@@ -641,6 +643,50 @@ describe("hybrid tables", () => {
       return res.rows[0]?.n;
     });
     expect(count).toBe(0);
+  });
+
+  // Until migration 0004 the tenant policies on these tables applied to PUBLIC, so the platform
+  // role also reached the rows of whatever org app.org_id named. Now it reaches org_id null only.
+  // The harness session user is a superuser, so it may SET ROLE to the platform role.
+  const asPlatformInOrgA = <T>(fn: (tx: Transaction) => Promise<T>) =>
+    t.pglite.transaction(async (tx) => {
+      await tx.exec(`SET LOCAL ROLE ${PLATFORM_ROLE}`);
+      await tx.query("select set_config('app.org_id', $1, true)", [A.orgId]);
+      return fn(tx);
+    });
+
+  it("the platform role reads platform rows only, even with an org set", async () => {
+    const counts = await asPlatformInOrgA(async (tx) =>
+      (
+        await tx.query<{ table: string; org: number; platform: number }>(
+          `select t.table, t.org, t.platform from (
+             select 'price_books' as table, count(*) filter (where org_id is not null)::int as org,
+               count(*) filter (where org_id is null)::int as platform from price_books
+             union all select 'audit_log', count(*) filter (where org_id is not null)::int,
+               count(*) filter (where org_id is null)::int from audit_log
+             union all select 'events', count(*) filter (where org_id is not null)::int,
+               count(*) filter (where org_id is null)::int from events) t`,
+        )
+      ).rows,
+    );
+    expect(counts.map((c) => [c.table, c.org])).toEqual([
+      ["price_books", 0],
+      ["audit_log", 0],
+      ["events", 0],
+    ]);
+    expect(counts.find((c) => c.table === "price_books")?.platform).toBeGreaterThan(0);
+  });
+
+  it("the platform role cannot write an org row", async () => {
+    await expect(
+      asPlatformInOrgA((tx) =>
+        tx.query(
+          `insert into audit_log (org_id, actor_type, client, action, target_type, target_id)
+           values ($1, 'system', 'job', 'test.write', 't', 'x')`,
+          [A.orgId],
+        ),
+      ),
+    ).rejects.toThrow();
   });
 });
 

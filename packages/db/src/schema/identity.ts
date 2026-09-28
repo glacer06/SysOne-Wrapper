@@ -82,14 +82,18 @@ export const verificationTokens = pgTable("verification_tokens", {
   updatedAt: createdAt(),
 });
 
-export const twoFactors = pgTable("two_factors", {
-  id: pk(),
-  secret: text().notNull(),
-  backupCodes: text().notNull(),
-  userId: uuid()
-    .notNull()
-    .references(() => users.id, { onDelete: "cascade" }),
-});
+export const twoFactors = pgTable(
+  "two_factors",
+  {
+    id: pk(),
+    secret: text().notNull(),
+    backupCodes: text().notNull(),
+    userId: uuid()
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+  },
+  (t) => [index("two_factors_user_id_idx").on(t.userId)],
+);
 
 /** Device flow (RFC 8628). No tenant RLS: only the /api/v1/auth/device/* handlers read it. */
 export const deviceCodes = pgTable("device_codes", {

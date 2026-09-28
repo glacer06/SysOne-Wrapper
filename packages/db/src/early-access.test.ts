@@ -1,4 +1,4 @@
-// Early-access signups (ADR-018, migration 0004). The app role adds signups only through
+// Early-access signups (ADR-018, migration 0005). The app role adds signups only through
 // bandwise_early_access_submit(): it cannot read the list, a known email is a silent no-op, and
 // the limits live in the function, not in the caller.
 
@@ -125,7 +125,7 @@ describe("platform role", () => {
   });
 });
 
-describe("migration 0004 objects", () => {
+describe("migration 0005 objects", () => {
   it("forces RLS on the table, with one policy for the platform role", async () => {
     const [table] = (
       await t.pglite.query<{ relrowsecurity: boolean; relforcerowsecurity: boolean }>(

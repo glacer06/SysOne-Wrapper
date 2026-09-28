@@ -400,7 +400,7 @@ export const platformRepositories = {
   earlyAccessSignups: {
     table: "early_access_signups",
     /**
-     * Adds a signup through bandwise_early_access_submit() (migration 0004). The app role can call
+     * Adds a signup through bandwise_early_access_submit() (migration 0005). The app role can call
      * it but cannot read the table. A known email is a no-op that still returns "accepted", so the
      * result never reveals whether an address was already on the list.
      */

@@ -65,6 +65,7 @@ export const goals = pgTable(
   },
   (t) => [
     unique("goals_org_id_id_key").on(t.orgId, t.id),
+    index("goals_org_id_project_id_idx").on(t.orgId, t.projectId),
     foreignKey({
       name: "goals_project_fk",
       columns: [t.orgId, t.projectId],
@@ -109,6 +110,10 @@ export const questionSets = pgTable(
   (t) => [
     unique("question_sets_org_id_id_key").on(t.orgId, t.id),
     unique("question_sets_org_id_slug_key").on(t.orgId, t.slug),
+    index("question_sets_org_id_project_id_idx").on(t.orgId, t.projectId),
+    index("question_sets_org_id_goal_id_idx").on(t.orgId, t.goalId),
+    // Covers question_sets_draft_version_fk from the hand-written tail of migration 0001.
+    index("question_sets_org_id_draft_version_id_idx").on(t.orgId, t.draftVersionId),
     foreignKey({
       name: "question_sets_project_fk",
       columns: [t.orgId, t.projectId],
@@ -155,6 +160,7 @@ export const questionSetVersions = pgTable(
   (t) => [
     unique("question_set_versions_org_id_id_key").on(t.orgId, t.id),
     unique("question_set_versions_set_id_version_key").on(t.setId, t.version),
+    index("question_set_versions_org_id_set_id_idx").on(t.orgId, t.setId),
     uniqueIndex("question_set_versions_one_draft_idx")
       .on(t.setId)
       .where(sql`status = 'draft'`),
@@ -181,6 +187,7 @@ export const releasePointers = pgTable(
   (t) => [
     primaryKey({ name: "release_pointers_pkey", columns: [t.setId, t.channel] }),
     unique("release_pointers_org_id_set_id_channel_key").on(t.orgId, t.setId, t.channel),
+    index("release_pointers_org_id_version_id_idx").on(t.orgId, t.versionId),
     foreignKey({
       name: "release_pointers_set_fk",
       columns: [t.orgId, t.setId],
@@ -244,6 +251,9 @@ export const experiments = pgTable(
   },
   (t) => [
     unique("experiments_org_id_id_key").on(t.orgId, t.id),
+    index("experiments_org_id_set_id_idx").on(t.orgId, t.setId),
+    index("experiments_org_id_champion_version_id_idx").on(t.orgId, t.championVersionId),
+    index("experiments_org_id_challenger_version_id_idx").on(t.orgId, t.challengerVersionId),
     uniqueIndex("experiments_one_running_idx")
       .on(t.setId, t.channel)
       .where(sql`status = 'running'`),
@@ -286,6 +296,7 @@ export const proposals = pgTable(
   },
   (t) => [
     unique("proposals_org_id_id_key").on(t.orgId, t.id),
+    index("proposals_org_id_set_id_idx").on(t.orgId, t.setId),
     foreignKey({
       name: "proposals_set_fk",
       columns: [t.orgId, t.setId],

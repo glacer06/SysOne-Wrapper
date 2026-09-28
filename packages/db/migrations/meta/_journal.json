@@ -26,8 +26,15 @@
     {
       "idx": 3,
       "version": "7",
-      "when": 1790600407136,
-      "tag": "0004_early_access_signups",
+      "when": 1790602896773,
+      "tag": "0004_supabase_performance_advisor",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790605097423,
+      "tag": "0005_early_access_signups",
       "breakpoints": true
     }
   ]

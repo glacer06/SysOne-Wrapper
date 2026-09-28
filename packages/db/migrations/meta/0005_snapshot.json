@@ -1,6 +1,6 @@
 {
-  "id": "c1e2c471-9aa8-40f9-86d1-a0e06af1d5a5",
-  "prevId": "e4970371-d1c1-420a-a844-6427d692d835",
+  "id": "64188891-6549-4bb6-97bb-fb59433266b2",
+  "prevId": "c1e2c471-9aa8-40f9-86d1-a0e06af1d5a5",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -7365,6 +7365,148 @@
       "uniqueConstraints": {},
       "policies": {},
       "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.early_access_signups": {
+      "name": "early_access_signups",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "company": {
+          "name": "company",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "use_case": {
+          "name": "use_case",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "source_page": {
+          "name": "source_page",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ip_hash": {
+          "name": "ip_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "confirmed_at": {
+          "name": "confirmed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "unsubscribed_at": {
+          "name": "unsubscribed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "early_access_signups_email_key": {
+          "name": "early_access_signups_email_key",
+          "columns": [
+            {
+              "expression": "lower(\"email\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "early_access_signups_ip_hash_created_at_idx": {
+          "name": "early_access_signups_ip_hash_created_at_idx",
+          "columns": [
+            {
+              "expression": "ip_hash",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "early_access_signups_created_at_idx": {
+          "name": "early_access_signups_created_at_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "early_access_signups_email_check": {
+          "name": "early_access_signups_email_check",
+          "value": "length(\"early_access_signups\".\"email\") between 3 and 254 and position('@' in \"early_access_signups\".\"email\") > 1"
+        },
+        "early_access_signups_lengths_check": {
+          "name": "early_access_signups_lengths_check",
+          "value": "coalesce(length(\"early_access_signups\".\"name\"), 0) <= 100 and coalesce(length(\"early_access_signups\".\"company\"), 0) <= 120 and coalesce(length(\"early_access_signups\".\"role\"), 0) <= 80 and coalesce(length(\"early_access_signups\".\"use_case\"), 0) <= 1000 and coalesce(length(\"early_access_signups\".\"source_page\"), 0) <= 200 and length(\"early_access_signups\".\"ip_hash\") = 64"
+        }
+      },
       "isRLSEnabled": false
     }
   },

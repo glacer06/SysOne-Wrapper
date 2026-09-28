@@ -1,9 +1,15 @@
-// The security half of migration 0001, generated from the table classes in schema/classes.ts:
-// roles, grants, RLS policies, one cross-table constraint, the immutability triggers and the runs
-// partitions.
+// Roles, grants and RLS, generated from the table classes in schema/classes.ts. Two generated blocks
+// live here, one per migration that carries it:
 //
-// `pnpm --filter @bandwise/db rls:sql` prints it. The block is pasted verbatim at the end of
-// migrations/0001_init.sql, and rls.test.ts fails when the two drift apart.
+// - securityBlock(), the security half of migration 0001: roles, grants, RLS, the generation 1
+//   policies, one cross-table constraint, the immutability triggers and the runs partitions.
+// - policyBlock(), migration 0004: drops every generation 1 policy and creates generation 2, the
+//   current set (Supabase performance advisor, 2026-09-28).
+//
+// `pnpm --filter @bandwise/db rls:sql [0001|0004]` prints a block. Each is pasted verbatim into its
+// migration, and schema.test.ts fails when either drifts from its file. Both migrations are applied
+// in production, so a shipped generation never changes. To change a policy, add a generation and a
+// block for a new migration, and point currentPolicies() at it.
 //
 // Setting names: tenant policies read only `app.org_id`; the pre-org policies (ADR-002) read only
 // `app.user_id`. current_setting(..., true) returns '' (not null) once a transaction-local value
@@ -16,6 +22,7 @@ import {
   ORG_TABLE,
   PLATFORM_TABLES,
   TENANT_TABLES,
+  USER_POLICY_TABLES,
 } from "./schema/classes.js";
 
 /** The application role. NOLOGIN; deployments create a login role that is a member of it. */
@@ -28,20 +35,160 @@ export const TENANT_SETTING = "app.org_id";
 export const USER_SETTING = "app.user_id";
 export const ALLOWED_POLICY_SETTINGS = [TENANT_SETTING, USER_SETTING] as const;
 
-const ORG = `nullif(current_setting('${TENANT_SETTING}', true), '')::uuid`;
-const USER = `nullif(current_setting('${USER_SETTING}', true), '')::uuid`;
-
 const q = (name: string) => `"${name}"`;
+
+const BREAKPOINT = "\n--> statement-breakpoint\n";
+
+/** Generation 1 (migration 0001) read the setting for every row a policy checked. */
+const perRow = (setting: string) => `nullif(current_setting('${setting}', true), '')::uuid`;
+
+/**
+ * Generation 2 (migration 0004) reads the same value once per statement. A scalar subquery that
+ * never references the row becomes an initplan, which Postgres runs once instead of per row
+ * (Supabase advisor lint 0003, auth_rls_initplan). The inner select is the text that lint looks for,
+ * `select current_setting(`; the outer one moves nullif and the uuid cast into the initplan as well.
+ */
+const perStatement = (setting: string) =>
+  `(select nullif((select current_setting('${setting}', true)), '')::uuid)`;
+
+type PolicyCommand = "SELECT" | "INSERT" | "UPDATE" | "DELETE";
+
+/** One permissive policy. Postgres ORs every permissive policy that applies to a role and command. */
+export interface Policy {
+  table: string;
+  name: string;
+  /** Omitted: FOR ALL. */
+  command?: PolicyCommand;
+  /** Omitted: PUBLIC. */
+  role?: string;
+  using?: string;
+  withCheck?: string;
+}
+
+function createPolicy(p: Policy): string {
+  const parts = [`CREATE POLICY ${p.name} ON ${q(p.table)}`];
+  if (p.command !== undefined) parts.push(`FOR ${p.command}`);
+  if (p.role !== undefined) parts.push(`TO ${p.role}`);
+  if (p.using !== undefined) parts.push(`USING (${p.using})`);
+  if (p.withCheck !== undefined) parts.push(`WITH CHECK (${p.withCheck})`);
+  return `${parts.join(" ")};`;
+}
+
+/** The tenant rule for every command: the row's org column must equal app.org_id. */
+function tenantIsolation(table: string, org: string, column = "org_id", role?: string): Policy {
+  const own = `${column} = ${org}`;
+  return { table, name: "tenant_isolation", ...(role === undefined ? {} : { role }), using: own, withCheck: own };
+}
+
+/**
+ * The tenant rule as one policy per command, plus an arm that only widens reads. Same access as an
+ * ALL policy next to a SELECT policy for the extra arm, without two permissive policies on SELECT.
+ */
+function tenantPerCommand(table: string, org: string, readAlso: string, column = "org_id", role?: string): Policy[] {
+  const own = `${column} = ${org}`;
+  const to = role === undefined ? {} : { role };
+  return [
+    { table, name: "tenant_read", command: "SELECT", ...to, using: `(${own}) OR (${readAlso})` },
+    { table, name: "tenant_insert", command: "INSERT", ...to, withCheck: own },
+    { table, name: "tenant_update", command: "UPDATE", ...to, using: own, withCheck: own },
+    { table, name: "tenant_delete", command: "DELETE", ...to, using: own },
+  ];
+}
+
+/** Platform rows (org_id null) for the platform role. */
+function platformRows(table: string): Policy {
+  return { table, name: "platform_rows", role: PLATFORM_ROLE, using: "org_id IS NULL", withCheck: "org_id IS NULL" };
+}
+
+/** Pre-org lookups for the signed-in user (ADR-002), by table. */
+const PRE_ORG_READ = {
+  /** The orgs the user belongs to (org switcher). */
+  organizations: (user: string) => `id IN (SELECT m.org_id FROM "memberships" m WHERE m.user_id = ${user})`,
+  memberships: (user: string) => `user_id = ${user}`,
+  invitations: (user: string) => `lower(email) = (SELECT lower(u.email) FROM "users" u WHERE u.id = ${user})`,
+} as const;
+
+const PRE_ORG = new Set<string>(USER_POLICY_TABLES);
+
+/** The policies migration 0001 created, in its order. Frozen: 0001 is applied in production. */
+function generation1(): Policy[] {
+  const org = perRow(TENANT_SETTING);
+  const user = perRow(USER_SETTING);
+  return [
+    tenantIsolation(ORG_TABLE, org, "id"),
+    { table: ORG_TABLE, name: "user_memberships", command: "SELECT", using: PRE_ORG_READ.organizations(user) },
+    ...TENANT_TABLES.map((t) => tenantIsolation(t, org)),
+    { table: "memberships", name: "user_lookup", command: "SELECT", using: PRE_ORG_READ.memberships(user) },
+    { table: "invitations", name: "user_lookup", command: "SELECT", using: PRE_ORG_READ.invitations(user) },
+    // price_books: platform rows (org_id null) are readable by every org and written only by the
+    // platform role. Org rows follow the tenant rule.
+    { table: "price_books", name: "tenant_read", command: "SELECT", using: `org_id IS NULL OR org_id = ${org}` },
+    { table: "price_books", name: "tenant_insert", command: "INSERT", withCheck: `org_id = ${org}` },
+    { table: "price_books", name: "tenant_update", command: "UPDATE", using: `org_id = ${org}`, withCheck: `org_id = ${org}` },
+    { table: "price_books", name: "tenant_delete", command: "DELETE", using: `org_id = ${org}` },
+    platformRows("price_books"),
+    // audit_log and events: org rows follow the tenant rule; platform rows are not readable by any org.
+    ...(["audit_log", "events"] as const).flatMap((t) => [tenantIsolation(t, org), platformRows(t)]),
+  ];
+}
+
+/**
+ * The policies migration 0004 created. Access is what generation 1 gave bandwise_app; the changes
+ * are for the Supabase performance advisor:
+ *
+ * - Every setting read runs once per statement (perStatement), for lint 0003.
+ * - organizations, memberships, invitations: the ALL policy and the pre-org SELECT policy become one
+ *   policy per command, with the pre-org arm OR'ed into SELECT only. Lint 0006 counts two
+ *   permissive policies for one role and command, and PUBLIC counts for every role.
+ * - price_books, audit_log, events: the tenant policies apply to bandwise_app and platform_rows to
+ *   bandwise_platform, so no role holds both. bandwise_platform now reaches only org_id null rows on
+ *   these tables, which is what data-model.md always described; before, the PUBLIC tenant policy
+ *   also let it reach the rows of whatever org app.org_id named.
+ *
+ * Every other tenant table keeps a single PUBLIC tenant_isolation policy.
+ */
+function generation2(): Policy[] {
+  const org = perStatement(TENANT_SETTING);
+  const user = perStatement(USER_SETTING);
+  return [
+    ...tenantPerCommand(ORG_TABLE, org, PRE_ORG_READ.organizations(user), "id"),
+    ...TENANT_TABLES.flatMap((t) =>
+      PRE_ORG.has(t)
+        ? tenantPerCommand(t, org, PRE_ORG_READ[t as keyof typeof PRE_ORG_READ](user))
+        : [tenantIsolation(t, org)],
+    ),
+    ...tenantPerCommand("price_books", org, "org_id IS NULL", "org_id", APP_ROLE),
+    platformRows("price_books"),
+    ...(["audit_log", "events"] as const).flatMap((t) => [tenantIsolation(t, org, "org_id", APP_ROLE), platformRows(t)]),
+  ];
+}
+
+/**
+ * Policies on the private platform tables (schema/classes.ts). Each is written by hand in the
+ * migration that creates its table, and touches no tenant table, so it is not a generation.
+ * - early_access_signups: migration 0005 (ADR-018). Only bandwise_platform, and every row.
+ */
+function privatePlatformPolicies(): Policy[] {
+  return [{ table: "early_access_signups", name: "platform_rows", role: PLATFORM_ROLE, using: "true", withCheck: "true" }];
+}
+
+/** The policies a fully migrated database holds. schema.test.ts compares them with pg_policies. */
+export function currentPolicies(): Policy[] {
+  return [...generation2(), ...privatePlatformPolicies()];
+}
+
+/** Renders the generation 1 policies on a table, optionally only the named ones, in their order. */
+function generation1On(table: string, ...names: string[]): string[] {
+  return generation1()
+    .filter((p) => p.table === table && (names.length === 0 || names.includes(p.name)))
+    .map(createPolicy);
+}
 
 function enableRls(table: string): string[] {
   return [
     `ALTER TABLE ${q(table)} ENABLE ROW LEVEL SECURITY;`,
     `ALTER TABLE ${q(table)} FORCE ROW LEVEL SECURITY;`,
   ];
-}
-
-function tenantPolicy(table: string, column = "org_id"): string {
-  return `CREATE POLICY tenant_isolation ON ${q(table)} USING (${column} = ${ORG}) WITH CHECK (${column} = ${ORG});`;
 }
 
 const APPEND_ONLY = new Set<string>(APPEND_ONLY_TABLES);
@@ -74,40 +221,27 @@ function roles(): string[] {
 function orgTable(): string[] {
   return [
     ...enableRls(ORG_TABLE),
-    tenantPolicy(ORG_TABLE, "id"),
-    // Pre-org lookup: the orgs the signed-in user belongs to (org switcher, ADR-002).
-    `CREATE POLICY user_memberships ON ${q(ORG_TABLE)} FOR SELECT USING (id IN (SELECT m.org_id FROM "memberships" m WHERE m.user_id = ${USER}));`,
+    ...generation1On(ORG_TABLE),
     `GRANT SELECT, INSERT, UPDATE ON ${q(ORG_TABLE)} TO ${APP_ROLE};`,
   ];
 }
 
 function tenantTables(): string[] {
-  return TENANT_TABLES.flatMap((t) => [...enableRls(t), tenantPolicy(t), appGrant(t)]);
+  return TENANT_TABLES.flatMap((t) => [...enableRls(t), ...generation1On(t, "tenant_isolation"), appGrant(t)]);
 }
 
 function userPolicies(): string[] {
-  return [
-    `CREATE POLICY user_lookup ON "memberships" FOR SELECT USING (user_id = ${USER});`,
-    `CREATE POLICY user_lookup ON "invitations" FOR SELECT USING (lower(email) = (SELECT lower(u.email) FROM "users" u WHERE u.id = ${USER}));`,
-  ];
+  return USER_POLICY_TABLES.flatMap((t) => generation1On(t, "user_lookup"));
 }
 
 function hybridTables(): string[] {
   return [
-    // price_books: platform rows (org_id null) are readable by every org and written only by the
-    // platform role. Org rows follow the tenant rule.
     ...enableRls("price_books"),
-    `CREATE POLICY tenant_read ON "price_books" FOR SELECT USING (org_id IS NULL OR org_id = ${ORG});`,
-    `CREATE POLICY tenant_insert ON "price_books" FOR INSERT WITH CHECK (org_id = ${ORG});`,
-    `CREATE POLICY tenant_update ON "price_books" FOR UPDATE USING (org_id = ${ORG}) WITH CHECK (org_id = ${ORG});`,
-    `CREATE POLICY tenant_delete ON "price_books" FOR DELETE USING (org_id = ${ORG});`,
-    `CREATE POLICY platform_rows ON "price_books" TO ${PLATFORM_ROLE} USING (org_id IS NULL) WITH CHECK (org_id IS NULL);`,
+    ...generation1On("price_books"),
     appGrant("price_books"),
-    // audit_log and events: org rows follow the tenant rule; platform rows are not readable by any org.
     ...(["audit_log", "events"] as const).flatMap((t) => [
       ...enableRls(t),
-      tenantPolicy(t),
-      `CREATE POLICY platform_rows ON ${q(t)} TO ${PLATFORM_ROLE} USING (org_id IS NULL) WITH CHECK (org_id IS NULL);`,
+      ...generation1On(t),
       `GRANT SELECT, INSERT ON ${q(t)} TO ${APP_ROLE};`,
     ]),
     `GRANT SELECT, INSERT, UPDATE, DELETE ON "price_books", "audit_log", "events" TO ${PLATFORM_ROLE};`,
@@ -205,7 +339,7 @@ function runPartitions(): string[] {
   ];
 }
 
-/** Every statement of the security block, in order. */
+/** Every statement of the migration 0001 security block, in order. */
 export function securityStatements(): string[] {
   return [
     ...roles(),
@@ -224,9 +358,23 @@ export function securityStatements(): string[] {
 export const SECURITY_BLOCK_START = "-- bandwise:security-block:start (generated by src/rls.ts; do not edit by hand)";
 export const SECURITY_BLOCK_END = "-- bandwise:security-block:end";
 
-/** The block as it appears in the migration, with drizzle's statement breakpoints. */
+/** The block as it appears in migration 0001, with drizzle's statement breakpoints. */
 export function securityBlock(): string {
-  return [SECURITY_BLOCK_START, securityStatements().join("\n--> statement-breakpoint\n"), SECURITY_BLOCK_END].join(
-    "\n",
-  );
+  return [SECURITY_BLOCK_START, securityStatements().join(BREAKPOINT), SECURITY_BLOCK_END].join("\n");
+}
+
+export const POLICY_BLOCK_START = "-- bandwise:policy-block:start (generated by src/rls.ts; do not edit by hand)";
+export const POLICY_BLOCK_END = "-- bandwise:policy-block:end";
+
+/**
+ * Migration 0004: drops every generation 1 policy, then creates generation 2. The migration runs in
+ * one transaction, and with RLS forced a table with no policy returns no rows, so there is no moment
+ * when a table is open.
+ */
+export function policyBlock(): string {
+  const statements = [
+    ...generation1().map((p) => `DROP POLICY ${p.name} ON ${q(p.table)};`),
+    ...generation2().map(createPolicy),
+  ];
+  return [POLICY_BLOCK_START, statements.join(BREAKPOINT), POLICY_BLOCK_END].join("\n");
 }

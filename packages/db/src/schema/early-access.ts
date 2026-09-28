@@ -1,6 +1,6 @@
 // Early-access signups (ADR-018). A platform table with no org_id. Only the bandwise_platform role
 // reads or writes it. The console's public route adds rows through bandwise_early_access_submit()
-// (migration 0004), which runs as that role, so the app role can add a signup but never read the
+// (migration 0005), which runs as that role, so the app role can add a signup but never read the
 // list back.
 
 import { sql } from "drizzle-orm";

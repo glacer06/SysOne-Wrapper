@@ -65,7 +65,7 @@ export const PLATFORM_TABLES = [
 
 /**
  * No org_id and no grant to the app role at all. bandwise_platform owns reads and writes; the app
- * role reaches them only through a narrow SECURITY DEFINER function (migration 0004). RLS is on,
+ * role reaches them only through a narrow SECURITY DEFINER function (migration 0005). RLS is on,
  * with one policy for the platform role, so a stray grant still returns nothing.
  */
 export const PRIVATE_PLATFORM_TABLES = ["early_access_signups"] as const;
@@ -80,7 +80,7 @@ export const AUTH_TABLES = [
   "device_codes",
 ] as const;
 
-/** Tables with a second, pre-org RLS policy on app.user_id (ADR-002). */
+/** Tables whose SELECT policy also admits the pre-org lookup on app.user_id (ADR-002). */
 export const USER_POLICY_TABLES = ["memberships", "invitations"] as const;
 
 /** Append-only for the app role: SELECT and INSERT, no UPDATE or DELETE. */

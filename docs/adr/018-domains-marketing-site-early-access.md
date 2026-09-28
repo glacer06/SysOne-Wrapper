@@ -33,7 +33,7 @@ Nick wants a marketing site at `www.bandwise.dev` and the app at `app.bandwise.d
 
 ## Implementation notes (2026-09-28, NSI-719)
 
-- **How the platform role writes.** The console connects as a member of `bandwise_app`, never `bandwise_platform`. Migration 0004 gives the app role no privilege on `early_access_signups`. It adds `bandwise_early_access_submit(...)`, a `SECURITY DEFINER` function owned by `bandwise_platform` with a pinned `search_path`, executable only by `bandwise_app`. So signups are still written by the platform role, and a leaked app connection can add a signup but never read the list.
+- **How the platform role writes.** The console connects as a member of `bandwise_app`, never `bandwise_platform`. Migration 0005 gives the app role no privilege on `early_access_signups`. It adds `bandwise_early_access_submit(...)`, a `SECURITY DEFINER` function owned by `bandwise_platform` with a pinned `search_path`, executable only by `bandwise_app`. So signups are still written by the platform role, and a leaked app connection can add a signup but never read the list.
 - **Bot check.** A honeypot field plus a minimum fill time of 1.5 seconds. Either one returns the normal 202 and stores nothing. A third-party challenge (Turnstile or Vercel BotID) can be added if spam gets through.
 - **Rate limits** live in the function: 5 new signups per IP hash and 300 in total per rolling hour. Repeat submissions of a known email change nothing, so they need no limit.
 - **Delete path.** `platform_early_access.remove` takes `{ email, reason }` in the body. Until the platform console exists (Phase 2), removal is a `DELETE` run by the migrating role, per `docs/runbooks/early-access.md`.

@@ -4,7 +4,7 @@ The form on `www.bandwise.dev` posts to `POST https://app.bandwise.dev/api/publi
 
 ## Go live (one time)
 
-1. **Migrate.** Merge the PR, then run the Database migrate workflow on `production` ([database.md](database.md)). It applies `0004_early_access_signups`. The log should say `applied 1 migration(s)`.
+1. **Migrate.** Merge the PR, then run the Database migrate workflow on `production` ([database.md](database.md)). It applies `0005_early_access_signups`. Production already has 0001 to 0004, so the log should say `applied 1 migration(s)`.
 2. **App login role.** If `bandwise_console` does not exist yet, create it as described in [database.md](database.md), "The app login role". It must be a member of `bandwise_app` only, never `bandwise_platform`, and must not have BYPASSRLS.
 3. **Vercel project.** In the Vercel team that holds `bandwise-docs` and `bandwise-web`, add a project from `glacer06/SysOne-Wrapper`:
    - Name `bandwise-console`, root directory `apps/console`, framework Next.js. Node 22 comes from `engines` in `apps/console/package.json`.
@@ -65,6 +65,6 @@ One row back means done. Zero rows means that address was never on the list; tel
 
 ## If it breaks
 
-- **500 on every submit:** check the Vercel function log for `early-access <requestId>: <message>`. The usual causes are a wrong `DATABASE_URL` (port 5432 instead of 6543, or the user without `.<project-ref>`) and migration 0004 not applied.
+- **500 on every submit:** check the Vercel function log for `early-access <requestId>: <message>`. The usual causes are a wrong `DATABASE_URL` (port 5432 instead of 6543, or the user without `.<project-ref>`) and migration 0005 not applied.
 - **CORS error in the browser:** the form must be served from exactly `https://www.bandwise.dev`. The apex `bandwise.dev` redirects there, so that is fine; a preview URL of the web project is not allowed.
 - **`permission denied for function bandwise_early_access_submit`:** the login role is not a member of `bandwise_app`. Fix the role; do not grant the function to anyone else.

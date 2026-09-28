@@ -1,4 +1,4 @@
--- Migration 0004: early-access signups (ADR-018).
+-- Migration 0005: early-access signups (ADR-018).
 --
 -- A platform table with no org_id. The app role gets no grant on it. The console's public route
 -- calls bandwise_early_access_submit(), a SECURITY DEFINER function owned by bandwise_platform,
