@@ -63,6 +63,13 @@ export const PLATFORM_TABLES = [
   "stripe_webhook_events",
 ] as const;
 
+/**
+ * No org_id and no grant to the app role at all. bandwise_platform owns reads and writes; the app
+ * role reaches them only through a narrow SECURITY DEFINER function (migration 0004). RLS is on,
+ * with one policy for the platform role, so a stray grant still returns nothing.
+ */
+export const PRIVATE_PLATFORM_TABLES = ["early_access_signups"] as const;
+
 /** Better Auth tables and the device flow: no tenant RLS (data-model.md, ADR-002). */
 export const AUTH_TABLES = [
   "users",
@@ -82,9 +89,10 @@ export const APPEND_ONLY_TABLES = ["audit_log", "dataset_snapshots"] as const;
 export type TenantTableName = (typeof TENANT_TABLES)[number];
 export type HybridTableName = (typeof HYBRID_TABLES)[number];
 export type PlatformTableName = (typeof PLATFORM_TABLES)[number];
+export type PrivatePlatformTableName = (typeof PRIVATE_PLATFORM_TABLES)[number];
 export type AuthTableName = (typeof AUTH_TABLES)[number];
 
 /** Every table that carries an org_id column and tenant RLS, including the org table itself. */
 export const ALL_TENANT_SCOPED = [ORG_TABLE, ...TENANT_TABLES, ...HYBRID_TABLES] as const;
 
-export const ALL_TABLES = [...ALL_TENANT_SCOPED, ...PLATFORM_TABLES, ...AUTH_TABLES] as const;
+export const ALL_TABLES = [...ALL_TENANT_SCOPED, ...PLATFORM_TABLES, ...PRIVATE_PLATFORM_TABLES, ...AUTH_TABLES] as const;

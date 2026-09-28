@@ -401,6 +401,8 @@ Goals carry `qualityTarget` (a `QualityTarget`) and `businessKpi`. See [effectiv
 | GET | `/platform/orgs` | `platform_org.list` | platform admin | superadmin | read | 2 |
 | POST | `/platform/orgs/{id}/suspend` | `platform_org.suspend` | platform admin | superadmin | normal | 2 |
 | PUT | `/platform/orgs/{id}/entitlements` | `platform_org.set_entitlement` | platform admin | superadmin | normal | 2 |
+| GET | `/platform/early-access` | `platform_early_access.list` | platform admin | superadmin | read | 2 |
+| POST | `/platform/early-access/remove` | `platform_early_access.remove` | platform admin | superadmin | normal | 2 |
 | GET | `/platform/reports/{name}` | `platform_report.get` | platform admin | superadmin | read | 3 |
 
 These are session only (`actors: ["user"]`): they need a console session with `platform_role = 'superadmin'` and MFA, and every call that changes something is audited. Org tokens, app tokens and agent tokens get 404. They are still operations, so the platform console calls the registry like the tenant console does.
@@ -409,6 +411,7 @@ These are session only (`actors: ["user"]`): they need a console session with `p
 - `platform_settings.update` changes the platform `settings` keys: `modelBudgets` (`{ [modelId]: rpm }`, the global limiter budget per model), `defaultComparator`, `defaultModel` and `alertThresholds`.
 - `platform_org.suspend` takes `{ suspended: boolean, reason }`. Suspending blocks the org's runs within 30 seconds ([security.md](security.md)).
 - `platform_org.set_entitlement` takes `{ key, value, reason }` and writes `entitlement_overrides`.
+- `platform_early_access.list` pages the early-access signups (ADR-018). `platform_early_access.remove` takes `{ email, reason }` and deletes that signup, any case; it is the delete path for a privacy request. The email goes in the body, never the path, so it stays out of access logs. Signups arrive through `POST /api/public/early-access`, a plain route outside `/api/v1` and outside the registry, like the device flow.
 - `platform_report.get` returns the reports in [savings-model.md](savings-model.md) across all orgs, with an org column.
 
 ### Auth (device flow)

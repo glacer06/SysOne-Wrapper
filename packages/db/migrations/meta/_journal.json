@@ -22,6 +22,13 @@
       "when": 1790593513544,
       "tag": "0003_pin_function_search_path",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790600407136,
+      "tag": "0004_early_access_signups",
+      "breakpoints": true
     }
   ]
 }

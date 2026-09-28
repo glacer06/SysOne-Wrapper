@@ -397,6 +397,42 @@ export const platformRepositories = {
       return rows[0] ?? null;
     },
   },
+  earlyAccessSignups: {
+    table: "early_access_signups",
+    /**
+     * Adds a signup through bandwise_early_access_submit() (migration 0004). The app role can call
+     * it but cannot read the table. A known email is a no-op that still returns "accepted", so the
+     * result never reveals whether an address was already on the list.
+     */
+    async submit(tx: AnyTx, signup: EarlyAccessSubmission): Promise<EarlyAccessOutcome> {
+      const result = (await drizzleOf(tx).execute(
+        sql`select bandwise_early_access_submit(${signup.email}, ${signup.name ?? null}, ${signup.company ?? null}, ${signup.role ?? null}, ${signup.useCase ?? null}, ${signup.sourcePage ?? null}, ${signup.ipHash}) as outcome`,
+      )) as { rows: Array<{ outcome?: unknown }> };
+      const outcome = result.rows[0]?.outcome;
+      if (outcome !== "accepted" && outcome !== "rate_limited") {
+        throw new Error(`bandwise_early_access_submit returned ${String(outcome)}`);
+      }
+      return outcome;
+    },
+    /** Every signup, paged in id order. Platform role only: the app role has no grant and gets an error. */
+    async list(tx: AnyTx, page: PageReq) {
+      const t = s.earlyAccessSignups;
+      return pageBy(
+        (where, limit) => drizzleOf(tx).select().from(t).where(where).orderBy(asc(t.id)).limit(limit),
+        t.id,
+        page,
+      );
+    },
+    /** Deletes a signup by email, any case. Platform role only. Returns true when a row was removed. */
+    async removeByEmail(tx: AnyTx, email: string): Promise<boolean> {
+      const t = s.earlyAccessSignups;
+      const rows = await drizzleOf(tx)
+        .delete(t)
+        .where(sql`lower(${t.email}) = lower(${email})`)
+        .returning({ id: t.id });
+      return rows.length > 0;
+    },
+  },
   stripeWebhookEvents: {
     table: "stripe_webhook_events",
     /** True when the event id is new. A duplicate delivery is a no-op. */
@@ -410,6 +446,19 @@ export const platformRepositories = {
     },
   },
 };
+
+export interface EarlyAccessSubmission {
+  email: string;
+  name?: string | null;
+  company?: string | null;
+  role?: string | null;
+  useCase?: string | null;
+  sourcePage?: string | null;
+  /** 64 hex characters: HMAC-SHA256 of the client IP. */
+  ipHash: string;
+}
+
+export type EarlyAccessOutcome = "accepted" | "rate_limited";
 
 /** The repositories the app uses. Always org-filtered. */
 export const repos: Repositories = buildRepositories({ orgFilter: true });

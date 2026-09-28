@@ -3,6 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "description": "Tenant console, platform admin and /api/v1. The only place with DB and TypeSafe keys.",
+  "engines": {
+    "node": ">=22.13.0 <23"
+  },
   "type": "module",
   "scripts": {
     "dev": "next dev",

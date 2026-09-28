@@ -9,6 +9,11 @@
       "@bandwise/source": "./src/index.ts",
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./migrate": {
+      "@bandwise/source": "./src/migrate.ts",
+      "types": "./dist/migrate.d.ts",
+      "import": "./dist/migrate.js"
     }
   },
   "files": [

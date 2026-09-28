@@ -5,7 +5,21 @@ import { JsonValue, OrgId } from "@bandwise/core";
 import { z } from "zod";
 
 import { defineOperation, operationGroup, placeholderInput, placeholderOutput } from "./define";
-import { ModelName, Reason, ReportFormat, listInput, placeholderListOutput } from "./schemas";
+import { ModelName, Reason, ReportFormat, listInput, listOutput, placeholderListOutput } from "./schemas";
+
+/** One early-access signup as platform admins see it (ADR-018). The IP hash never leaves the database. */
+const EarlyAccessSignup = z.strictObject({
+  id: z.uuid(),
+  email: z.string(),
+  name: z.string().nullable(),
+  company: z.string().nullable(),
+  role: z.string().nullable(),
+  useCase: z.string().nullable(),
+  sourcePage: z.string().nullable(),
+  createdAt: z.iso.datetime(),
+  confirmedAt: z.iso.datetime().nullable(),
+  unsubscribedAt: z.iso.datetime().nullable(),
+});
 
 export const platformOperations = operationGroup(
   defineOperation("platform_model.list", {
@@ -80,6 +94,18 @@ export const platformOperations = operationGroup(
     input: z.strictObject({ id: OrgId, key: z.string().min(1), value: JsonValue, reason: Reason }),
     // shape: Phase 2, owner Platform / Tenancy
     output: placeholderOutput(),
+  }),
+
+  defineOperation("platform_early_access.list", {
+    summary: "List early-access signups from www.bandwise.dev.",
+    input: listInput({}),
+    output: listOutput(EarlyAccessSignup),
+  }),
+
+  defineOperation("platform_early_access.remove", {
+    summary: "Delete one early-access signup by email, any case. The delete path for a privacy request.",
+    input: z.strictObject({ email: z.string().min(3).max(254), reason: Reason }),
+    output: z.strictObject({ removed: z.boolean() }),
   }),
 
   defineOperation("platform_report.get", {

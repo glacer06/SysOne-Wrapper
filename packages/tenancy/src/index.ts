@@ -41,3 +41,4 @@ export {
   type InMemoryQuotaGuard,
   type InMemoryQuotaGuardOptions,
 } from "./limits/quota-guard.js";
+export { hashClientIp } from "./ip-hash.js";
