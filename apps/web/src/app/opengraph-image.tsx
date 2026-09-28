@@ -1,3 +1,6 @@
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+
 import { ImageResponse } from "next/og";
 import { productName } from "~/site";
 
@@ -12,20 +15,13 @@ const ink = "rgb(37, 30, 22)";
 const ink3 = "rgb(107, 97, 87)";
 const signal = "rgb(249, 173, 38)";
 
-/** The display face, fetched at build time. Falls back to the renderer's default face offline. */
-async function loadDisplayFont(): Promise<ArrayBuffer | null> {
-  try {
-    const css = await (
-      await fetch("https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600&display=swap", {
-        headers: { "User-Agent": "Mozilla/5.0 (compatible; bandwise-og)" },
-      })
-    ).text();
-    const url = /src: url\(([^)]+)\) format\('(?:truetype|opentype)'\)/.exec(css)?.[1];
-    if (url === undefined) return null;
-    return await (await fetch(url)).arrayBuffer();
-  } catch {
-    return null;
-  }
+/**
+ * The display face, read from the repo so the image builds offline and never depends on a font
+ * CDN. Barlow Semi Condensed 600, from @fontsource (SIL Open Font License 1.1, license next to it).
+ */
+async function loadDisplayFont(): Promise<ArrayBuffer> {
+  const file = await readFile(join(process.cwd(), "assets/fonts/barlow-semi-condensed-latin-600-normal.woff"));
+  return file.buffer.slice(file.byteOffset, file.byteOffset + file.byteLength) as ArrayBuffer;
 }
 
 // The log-line pager bands: 0 to 0.2 high, 0.2 to 0.3 medium, 0.3 to 0.7 low, 0.7 to 0.8 medium, 0.8 to 1 high.
@@ -52,7 +48,7 @@ export default async function Image() {
           flexDirection: "column",
           justifyContent: "space-between",
           padding: "72px 80px",
-          ...(font ? { fontFamily: "Display" } : {}),
+          fontFamily: "Display",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 18, fontSize: 40 }}>
@@ -88,7 +84,7 @@ export default async function Image() {
     ),
     {
       ...size,
-      fonts: font ? [{ name: "Display", data: font, style: "normal", weight: 600 }] : [],
+      fonts: [{ name: "Display", data: font, style: "normal", weight: 600 }],
     },
   );
 }

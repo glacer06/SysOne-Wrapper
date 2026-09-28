@@ -1,20 +1,28 @@
 ---
 title: CLI reference
-description: The bandwise command line. Local mode works today; the rest arrives in Phase 3.
+description: The bandwise command line, on npm as @bandwise/cli. Local mode works today; the rest arrives in Phase 3.
 ---
 
 <Callout type="warn" title="Coming in Phase 3">
-  The published `bandwise` CLI, with commands to manage sets, publish versions, change rollout
-  stages and run evals over the HTTP API, arrives in Phase 3. This page will list every command
-  then.
+  The commands that manage sets, publish versions, change rollout stages and run evals over the
+  HTTP API arrive in Phase 3. This page will list every command then.
 </Callout>
+
+## Install
+
+The CLI is published on npm as `@bandwise/cli` and needs Node.js 22.13 or later. Run it with `npx`, or install it once:
+
+```bash
+npx @bandwise/cli run --local spec.json state.json
+npm install -g @bandwise/cli    # then: bandwise run --local spec.json state.json
+```
 
 ## What works today
 
-One command works now, from a checkout of the source repository:
+One command works now:
 
 ```bash
-pnpm bandwise run --local <spec.json> <state.json> [--json]
+bandwise run --local <spec.json> <state.json> [--json]
   [--rollout shadow|controlled|full|paused]
   [--channel production|staging]
   [--provider typesafe|openrouter|vercel]
