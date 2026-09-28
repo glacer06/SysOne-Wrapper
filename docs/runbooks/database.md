@@ -34,7 +34,7 @@ Re-running is safe. Applied migrations are recorded by hash in `bandwise_migrati
 
 ## After a production run: re-run the advisors
 
-Open the Supabase dashboard, then Advisors, and check Performance and Security (or ask an agent to run the Supabase MCP `get_advisors` for the project, type `performance`, then `security`). After 0004, `unindexed_foreign_keys`, `auth_rls_initplan` and `multiple_permissive_policies` should be gone. `unused_index` grows by the 23 new indexes and stays until real traffic uses them; ignore it until then, and ignore `auth_db_connections_absolute`. Anything else new is a finding: open an issue before the next migration.
+Open the Supabase dashboard, then Advisors, and check Performance and Security (or ask an agent to run the Supabase MCP `get_advisors` for the project, type `performance`, then `security`). After 0004, `unindexed_foreign_keys`, `auth_rls_initplan` and `multiple_permissive_policies` should be gone. `unused_index` grows by 26 findings for 0004's 23 indexes, because the advisor reports the partitioned `runs (org_id, version_id)` index once per partition (4 today), and they stay until real traffic uses them; ignore it until then, and ignore `auth_db_connections_absolute`. Anything else new is a finding: open an issue before the next migration.
 
 ## The app login role
 
