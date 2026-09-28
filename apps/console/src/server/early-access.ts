@@ -66,8 +66,11 @@ export interface EarlyAccessSignup {
 export interface EarlyAccessDeps {
   /** Stores the signup. Resolves "rate_limited" when a database limit is hit. */
   submit(signup: EarlyAccessSignup): Promise<"accepted" | "rate_limited">;
-  /** AUTH_SECRET. The IP hash key is derived from it. */
-  secret: string;
+  /**
+   * AUTH_SECRET. The IP hash key is derived from it. Read only when a signup is stored, so a
+   * missing secret fails that request with the error envelope, not the build or the preflight.
+   */
+  getSecret(): string;
   allowedOrigins: readonly string[];
   /** Server-side error log. Never receives the email or the IP. */
   logError(message: string, requestId: string): void;
@@ -171,7 +174,7 @@ export async function handleEarlyAccess(input: EarlyAccessInput, deps: EarlyAcce
       role: form.role,
       useCase: form.useCase,
       sourcePage: form.sourcePage,
-      ipHash: hashClientIp(deps.secret, input.clientIp),
+      ipHash: hashClientIp(deps.getSecret(), input.clientIp),
     });
     if (outcome === "rate_limited") {
       return {

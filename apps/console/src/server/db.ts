@@ -4,11 +4,11 @@ import "server-only";
 
 import { createDatabase, type BandwiseDb } from "@bandwise/db";
 
-import { env } from "~/env";
+import { getEnv } from "~/env";
 
 let db: BandwiseDb | undefined;
 
 export function getDb(): BandwiseDb {
-  db ??= createDatabase({ connectionString: env.DATABASE_URL, max: 3 });
+  db ??= createDatabase({ connectionString: getEnv().DATABASE_URL, max: 3 });
   return db;
 }

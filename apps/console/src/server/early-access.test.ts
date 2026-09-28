@@ -25,7 +25,7 @@ function makeDeps(outcome: "accepted" | "rate_limited" | Error = "accepted") {
       submitted.push(signup);
       return outcome;
     }),
-    secret: SECRET,
+    getSecret: () => SECRET,
     allowedOrigins: EARLY_ACCESS_ORIGINS,
     logError: (message) => logged.push(message),
   };
