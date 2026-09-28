@@ -73,7 +73,7 @@ The release workflow has no npm token. It authenticates with GitHub's OIDC token
    - repository: `bandwise-kit`
    - workflow filename: `release.yml`
    - environment: leave empty (the workflow uses none)
-3. npm sets trusted publishers per package. If it does not let you add one for a package that was never published, publish that package's first version once by hand from your machine (`pnpm pack` in the package folder, then `npm publish <tarball> --access public`, confirming with your security key), then add the trusted publisher. The workflow skips versions already on npm.
+3. npm sets trusted publishers per package. If it does not let you add one for a package that was never published, publish that package's first version once by hand from your machine (`pnpm pack` in the package folder, then `npm publish <tarball> --access public --provenance=false`, confirming with your security key), then add the trusted publisher. `--provenance=false` is needed because the packages ask for provenance, which npm can only generate in CI. This is how 0.1.0 went out on 2026-09-28. The workflow skips versions already on npm.
 4. Once a tagged release has published through the workflow, set each package's publishing access to **Require two-factor authentication and disallow tokens**, and revoke any npm tokens you created. From then on only `release.yml` in `glacer06/bandwise-kit` can publish.
 
 ## 6. If something goes wrong
