@@ -10,7 +10,7 @@ const validEnv = {
 async function loadEnv() {
   vi.resetModules();
   const mod = await import("./env");
-  return mod.env;
+  return mod.getEnv();
 }
 
 describe("console env", () => {
@@ -43,6 +43,14 @@ describe("console env", () => {
   it("rejects a short AUTH_SECRET, since it keys the early-access IP hash", async () => {
     vi.stubEnv("AUTH_SECRET", "too-short");
     await expect(loadEnv()).rejects.toThrow();
+  });
+
+  it("does not validate on import, only on the first getEnv() call", async () => {
+    vi.stubEnv("DATABASE_URL", "");
+    vi.stubEnv("AUTH_SECRET", "");
+    vi.resetModules();
+    const mod = await import("./env");
+    expect(() => mod.getEnv()).toThrow();
   });
 
   it("rejects a missing DATABASE_URL", async () => {

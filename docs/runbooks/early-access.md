@@ -12,7 +12,8 @@ The form on `www.bandwise.dev` posts to `POST https://app.bandwise.dev/api/publi
      - `DATABASE_URL`: the Supavisor **transaction** pooler string (port 6543) with user `bandwise_console.<project-ref>` and the password from the team vault. Paste it into Vercel only.
      - `AUTH_SECRET`: at least 32 random characters, for example the output of `openssl rand -base64 48`, generated on your machine and pasted into Vercel. It keys the IP hash; changing it later only resets the rate-limit window.
      - Leave `BANDWISE_KEK`, `BANDWISE_JWT_SIGNING_KEY` and every API key unset. Nothing in this deploy uses them.
-   - **Preview**: set only `SKIP_ENV_VALIDATION=1`. Previews have no database, so a preview form submit returns 500. That is on purpose: previews never touch production data (ADR-018).
+   - **Preview**: set no database or secret variables. Previews have no database, so a preview form submit returns 500. That is on purpose: previews never touch production data (ADR-018). `SKIP_ENV_VALIDATION=1` is no longer needed but does no harm.
+   - The build never needs these variables. The console reads them on the first signup, so a missing one fails that request, not the deploy.
 4. **Domain.** Add `app.bandwise.dev` to the project. At GoDaddy, add the CNAME record Vercel shows for `app` (it is usually `cname.vercel-dns.com`). Wait for Vercel to show the domain as valid.
 
 ## Check it
@@ -65,6 +66,6 @@ One row back means done. Zero rows means that address was never on the list; tel
 
 ## If it breaks
 
-- **500 on every submit:** check the Vercel function log for `early-access <requestId>: <message>`. The usual causes are a wrong `DATABASE_URL` (port 5432 instead of 6543, or the user without `.<project-ref>`) and migration 0005 not applied.
+- **500 on every submit:** check the Vercel function log for `early-access <requestId>: <message>`. `Invalid environment variables` means `DATABASE_URL` or `AUTH_SECRET` is missing or wrong in Production; set it and redeploy. Other usual causes are a wrong `DATABASE_URL` (port 5432 instead of 6543, or the user without `.<project-ref>`) and migration 0005 not applied.
 - **CORS error in the browser:** the form must be served from exactly `https://www.bandwise.dev`. The apex `bandwise.dev` redirects there, so that is fine; a preview URL of the web project is not allowed.
 - **`permission denied for function bandwise_early_access_submit`:** the login role is not a member of `bandwise_app`. Fix the role; do not grant the function to anyone else.

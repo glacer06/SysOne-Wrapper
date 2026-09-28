@@ -3,7 +3,7 @@
 
 import { platformRepositories } from "@bandwise/db";
 
-import { env, isDevelopment } from "~/env";
+import { getEnv, isDevelopment } from "~/env";
 import { getDb } from "~/server/db";
 import {
   clientIpFrom,
@@ -21,7 +21,7 @@ export const dynamic = "force-dynamic";
 function deps(): EarlyAccessDeps {
   return {
     submit: (signup) => getDb().withNoTenant((tx) => platformRepositories.earlyAccessSignups.submit(tx, signup)),
-    secret: env.AUTH_SECRET,
+    getSecret: () => getEnv().AUTH_SECRET,
     allowedOrigins: isDevelopment ? [...EARLY_ACCESS_ORIGINS, ...DEVELOPMENT_ORIGINS] : EARLY_ACCESS_ORIGINS,
     logError: (message, requestId) => console.error(`early-access ${requestId}: ${message}`),
   };

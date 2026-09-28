@@ -1,5 +1,10 @@
 // All env access in the console goes through this module (references/conventions.md, Env).
 // It is server only: importing it from a Client Component fails the build.
+//
+// Validation runs on the first getEnv() call, not on import. `next build` loads every route module
+// to read its config, and a module that validated on import failed the whole build when one
+// secret was missing (the first bandwise-console deploy, 2026-09-28). Now a missing variable fails
+// only the request that needs it, and the build and every page that does not need it still work.
 import "server-only";
 import { createEnv } from "@t3-oss/env-nextjs";
 import { z } from "zod";
@@ -35,24 +40,36 @@ export const serverEnvShape = {
   ANTHROPIC_API_KEY: z.string().min(1).optional(),
 };
 
-export const env = createEnv({
-  server: serverEnvShape,
-  client: {},
-  // Server-only variables are read from process.env at runtime. Only client variables need listing.
-  experimental__runtimeEnv: {},
-  createFinalSchema: (shape) =>
-    z.object(shape).superRefine((value, ctx) => {
-      if (value.SYSTEM_ONE_TRANSPORT === "sdk" && !value.TYPESAFE_API_KEY && !value.OPENROUTER_API_KEY && !value.AI_GATEWAY_API_KEY) {
-        ctx.addIssue({
-          code: "custom",
-          path: ["TYPESAFE_API_KEY"],
-          message: "TYPESAFE_API_KEY, OPENROUTER_API_KEY or AI_GATEWAY_API_KEY is required when SYSTEM_ONE_TRANSPORT is sdk",
-        });
-      }
-    }),
-  emptyStringAsUndefined: true,
-  skipValidation: process.env.SKIP_ENV_VALIDATION === "1",
-});
+function loadEnv() {
+  return createEnv({
+    server: serverEnvShape,
+    client: {},
+    // Server-only variables are read from process.env at runtime. Only client variables need listing.
+    experimental__runtimeEnv: {},
+    createFinalSchema: (shape) =>
+      z.object(shape).superRefine((value, ctx) => {
+        if (value.SYSTEM_ONE_TRANSPORT === "sdk" && !value.TYPESAFE_API_KEY && !value.OPENROUTER_API_KEY && !value.AI_GATEWAY_API_KEY) {
+          ctx.addIssue({
+            code: "custom",
+            path: ["TYPESAFE_API_KEY"],
+            message: "TYPESAFE_API_KEY, OPENROUTER_API_KEY or AI_GATEWAY_API_KEY is required when SYSTEM_ONE_TRANSPORT is sdk",
+          });
+        }
+      }),
+    emptyStringAsUndefined: true,
+    skipValidation: process.env.SKIP_ENV_VALIDATION === "1",
+  });
+}
+
+export type ServerEnv = ReturnType<typeof loadEnv>;
+
+let cached: ServerEnv | undefined;
+
+/** The validated server env. Throws "Invalid environment variables" on first use if any is wrong. */
+export function getEnv(): ServerEnv {
+  cached ??= loadEnv();
+  return cached;
+}
 
 /** True under `next dev`. The early-access route also accepts the local marketing site then. */
 export const isDevelopment = process.env.NODE_ENV === "development";
