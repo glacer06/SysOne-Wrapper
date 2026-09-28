@@ -67,6 +67,8 @@ export const agentTokens = pgTable(
   (t) => [
     unique("agent_tokens_org_id_id_key").on(t.orgId, t.id),
     index("agent_tokens_org_id_user_id_idx").on(t.orgId, t.userId),
+    // The users foreign key is on user_id alone, so the (org_id, user_id) index cannot cover it.
+    index("agent_tokens_user_id_idx").on(t.userId),
   ],
 );
 
@@ -124,6 +126,7 @@ export const appTokens = pgTable(
   },
   (t) => [
     unique("app_tokens_org_id_id_key").on(t.orgId, t.id),
+    index("app_tokens_org_id_app_id_idx").on(t.orgId, t.appId),
     foreignKey({ name: "app_tokens_app_fk", columns: [t.orgId, t.appId], foreignColumns: [apps.orgId, apps.id] }),
   ],
 );
@@ -150,6 +153,8 @@ export const appOpportunities = pgTable(
   },
   (t) => [
     unique("app_opportunities_org_id_id_key").on(t.orgId, t.id),
+    index("app_opportunities_org_id_app_id_idx").on(t.orgId, t.appId),
+    index("app_opportunities_org_id_set_id_idx").on(t.orgId, t.setId),
     foreignKey({
       name: "app_opportunities_app_fk",
       columns: [t.orgId, t.appId],
@@ -184,6 +189,7 @@ export const appSetBindings = pgTable(
   },
   (t) => [
     unique("app_set_bindings_org_id_id_key").on(t.orgId, t.id),
+    index("app_set_bindings_org_id_app_id_idx").on(t.orgId, t.appId),
     index("app_set_bindings_org_id_set_id_idx").on(t.orgId, t.setId),
     foreignKey({
       name: "app_set_bindings_app_fk",

@@ -73,7 +73,7 @@ export const AUTH_TABLES = [
   "device_codes",
 ] as const;
 
-/** Tables with a second, pre-org RLS policy on app.user_id (ADR-002). */
+/** Tables whose SELECT policy also admits the pre-org lookup on app.user_id (ADR-002). */
 export const USER_POLICY_TABLES = ["memberships", "invitations"] as const;
 
 /** Append-only for the app role: SELECT and INSERT, no UPDATE or DELETE. */

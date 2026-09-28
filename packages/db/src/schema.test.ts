@@ -1,5 +1,6 @@
 // Schema scan against the migrated database: table classes, RLS, policies, setting names,
-// org_id-leading indexes, role attributes and grants.
+// org_id-leading indexes, role attributes and grants, and the three Supabase performance advisor
+// lints migration 0004 cleared.
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -8,7 +9,14 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { MIGRATIONS_DIR } from "./migrate.js";
 import { repos } from "./repos/index.js";
-import { ALLOWED_POLICY_SETTINGS, APP_ROLE, securityBlock, TENANT_SETTING } from "./rls.js";
+import {
+  ALLOWED_POLICY_SETTINGS,
+  APP_ROLE,
+  currentPolicies,
+  policyBlock,
+  securityBlock,
+  TENANT_SETTING,
+} from "./rls.js";
 import {
   ALL_TABLES,
   ALL_TENANT_SCOPED,
@@ -61,6 +69,102 @@ describe("migration 0003", () => {
     for (const fn of fns) {
       expect(fn.proconfig ?? [], fn.proname).toContain("search_path=pg_catalog, public");
     }
+  });
+});
+
+describe("migration 0004", () => {
+  it("ends with the generated policy block, unchanged", () => {
+    const sql = readFileSync(join(MIGRATIONS_DIR, "0004_supabase_performance_advisor.sql"), "utf8");
+    expect(sql).toContain(policyBlock());
+  });
+
+  it("leaves exactly the current policy set", async () => {
+    const found = await rows<{ table: string; name: string; command: string; roles: string[]; qual: boolean; check: boolean }>(
+      `select tablename as table, policyname as name, cmd as command, roles::text[] as roles,
+       qual is not null as qual, with_check is not null as check
+       from pg_policies where schemaname = 'public' and permissive = 'PERMISSIVE'`,
+    );
+    const expected = currentPolicies().map((p) => ({
+      table: p.table,
+      name: p.name,
+      command: p.command ?? "ALL",
+      roles: [p.role ?? "public"],
+      qual: p.using !== undefined,
+      check: p.withCheck !== undefined,
+    }));
+    const key = (p: { table: string; name: string }) => `${p.table}.${p.name}`;
+    const byKey = (a: { table: string; name: string }, b: { table: string; name: string }) => key(a).localeCompare(key(b));
+    expect(found.sort(byKey)).toEqual(expected.sort(byKey));
+    const [restrictive] = await rows<{ n: number }>(
+      "select count(*)::int as n from pg_policies where schemaname = 'public' and permissive <> 'PERMISSIVE'",
+    );
+    expect(restrictive?.n).toBe(0);
+  });
+});
+
+// Each test mirrors one lint from Supabase's splinter (github.com/supabase/splinter, lints/), the
+// source of the dashboard's performance advisor, so a new table or policy cannot bring one back.
+describe("Supabase performance advisor", () => {
+  it("covers every foreign key with an index on its leading columns (lint 0001)", async () => {
+    const unindexed = await rows<{ table: string; fk: string }>(
+      `select c.relname as table, ct.conname as fk
+       from pg_constraint ct
+       join pg_class c on c.oid = ct.conrelid
+       join pg_namespace n on n.oid = c.relnamespace
+       where ct.contype = 'f' and n.nspname = 'public'
+         and not exists (
+           select 1 from pg_index i
+           where i.indrelid = ct.conrelid and i.indisvalid
+             and (string_to_array(i.indkey::text, ' ')::smallint[])[1:array_length(ct.conkey, 1)] = ct.conkey
+         )
+       order by 1, 2`,
+    );
+    expect(unindexed).toEqual([]);
+  });
+
+  it("wraps every setting read in a policy in a select (lint 0003)", async () => {
+    const policies = await rows<{ table: string; name: string; qual: string | null; with_check: string | null }>(
+      "select tablename as table, policyname as name, qual, with_check from pg_policies where schemaname = 'public'",
+    );
+    for (const p of policies) {
+      for (const text of [p.qual ?? "", p.with_check ?? ""]) {
+        // The lint passes a policy once one read is wrapped; this asks for every read.
+        const reads = text.match(/current_setting\(/g)?.length ?? 0;
+        const wrapped = text.toLowerCase().match(/select current_setting\(/g)?.length ?? 0;
+        expect(wrapped, `${p.table}.${p.name}`).toBe(reads);
+      }
+    }
+  });
+
+  it.each([...ALL_TENANT_SCOPED])("%s: the plan reads settings in an initplan, never per row", async (table) => {
+    const plan = (await rows<{ "QUERY PLAN": string }>(`explain (costs off) select * from "${table}"`))
+      .map((r) => r["QUERY PLAN"])
+      .join("\n");
+    expect(plan).toContain("InitPlan");
+    expect(plan).not.toContain("current_setting");
+  });
+
+  it("gives no role two permissive policies for one table and command (lint 0006)", async () => {
+    // PUBLIC policies count once for every role, as in the lint. Roles with BYPASSRLS never see
+    // policies, so the lint skips them; here that is the harness superuser.
+    const overlaps = await rows<{ table: string; role: string; command: string; policies: string[] }>(
+      `select c.relname as table, r.rolname as role, a.command,
+         array_agg(p.polname::text order by p.polname) as policies
+       from pg_policy p
+       join pg_class c on c.oid = p.polrelid
+       join pg_namespace n on n.oid = c.relnamespace
+       join pg_roles r on p.polroles @> array[r.oid] or p.polroles = array[0::oid]
+       cross join lateral unnest(case p.polcmd
+         when 'r' then array['SELECT'] when 'a' then array['INSERT']
+         when 'w' then array['UPDATE'] when 'd' then array['DELETE']
+         else array['SELECT', 'INSERT', 'UPDATE', 'DELETE'] end) as a(command)
+       where n.nspname = 'public' and p.polpermissive
+         and r.rolname not like 'pg\\_%' and not r.rolbypassrls
+       group by 1, 2, 3
+       having count(*) > 1
+       order by 1, 2, 3`,
+    );
+    expect(overlaps).toEqual([]);
   });
 });
 
