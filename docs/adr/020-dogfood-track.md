@@ -1,6 +1,6 @@
 # ADR-020: Dogfood track: use Bandwise on Bandwise first, local then hosted
 
-- **Status:** accepted (Nick, 2026-09-28: first app "Claude Code on Bandwise", Jev key "TypeSafe direct", "Yes, local then hosted", autonomy "Shadow first"). Amendment 1 (launch profiles): proposed, 2026-09-29
+- **Status:** accepted (Nick, 2026-09-28: first app "Claude Code on Bandwise", Jev key "TypeSafe direct", "Yes, local then hosted", autonomy "Shadow first"). Amendment 1 (launch profiles): accepted (Nick, 2026-09-29: "Merge it whole")
 - **Date:** 2026-09-28
 - **Owner:** Architect / Lead, reviewed by the Security reviewer
 - **Decider:** Nick
@@ -34,7 +34,7 @@ Two rules stood in the way:
    - `wake-gate` for scheduled check-ins and PR events: does this event need action now?
    - `context-pruner` stays a template for Nick's own apps; Claude Code manages its own context.
 
-### Amendment 1: launch profiles (proposed, 2026-09-29, for NSI-727)
+### Amendment 1: launch profiles (accepted, Nick, 2026-09-29, for NSI-727)
 
 `model-tier` can only advise, because a hook cannot change the model of a session that is already running. A host that starts the session can. Claude Code takes `--model` and `--effort` at launch (https://code.claude.com/docs/en/cli-reference). This amendment lets the CLI make that pick before a session starts. It is the first time the CLI starts another program, so it gets its own rules.
 
@@ -76,5 +76,5 @@ Two rules stood in the way:
 1. D0 as soon as the key exists. D1 in one PR per piece: live mode, receipts and report, the agent pack templates, the hooks and their install command.
 2. Hooks install into this repo's `.claude/settings.json` only after Nick approves, all sets in `shadow`.
 3. After a week of receipts, Nick picks which sets move to `controlled`.
-4. Amendment 1, once accepted: build `--print` first, then the launch, in one PR with the spawn rule and its test (NSI-727). Run it in `shadow` for two weeks while NSI-729 measures. Only then does Nick decide on `controlled`.
+4. Amendment 1: build `--print` first, then the launch, in one PR with the spawn rule and its test (NSI-727). Run it in `shadow` for two weeks while NSI-729 measures. Only then does Nick decide on `controlled`.
 Reversal: remove the hooks from `.claude/settings.json`; live mode stays opt-in behind `--live` and an env key. For Amendment 1: stop using `bandwise launch` and start `claude` directly. Nothing else depends on it.
