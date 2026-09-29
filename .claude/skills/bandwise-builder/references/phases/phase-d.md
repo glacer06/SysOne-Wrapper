@@ -21,6 +21,12 @@ Use Bandwise on Bandwise before anyone else does: Claude Code sessions on this r
 - [ ] Kit 0.2.0 release (live mode, receipts, report, agent pack) through the automated release workflow. `KIT_VERSION` is 0.2.0 and the export scans clean; the push and tag to the public repo wait for Nick (`docs/runbooks/kit-release.md` steps 2 to 4)
 - [x] `docs/runbooks/dogfood.md`: install, read the report, move a set from `shadow` to `controlled`, remove the hooks
 
+## D1b: Launch profiles (backlog, from the 2026-09-28 review of @Av1dlive's post)
+`model-tier` stays advisory inside a session, because a hook cannot change a running session's model. A host that starts the session can, since Claude Code takes `--model` and `--effort` at launch. These items move the pick to launch time. Each one starts in `shadow`.
+- [ ] NSI-727 `launch-profile` template, `.bandwise/profiles.json` host allowlist (one or two sessions, each with `model` and `effort`, plus a default), and `bandwise launch --set --profiles [--print] -- <claude args>`. It picks only from the allowlist. In shadow and on any error or timeout it uses the default. Permissions and approvals stay with the host. Nick decides whether starting a process from the CLI needs an ADR-020 amendment.
+- [ ] NSI-728 `done-check` gets an `overreach` outcome for unrequested work, logged only, and `unverified` counts a named missing check as honest.
+- [ ] NSI-729 Measure it: session fields on receipts (time to first stop, turns, tool calls, done-check outcome, profile used and picked), and `bandwise report --compare profile`. No speed claim goes public until two weeks of our own numbers back it.
+
 ## D2: Hosted, internal only
 - [ ] `POST /api/v1/sets/{ref}/run` with the standard envelope, platform key on the server, served only for the `internal` org
 - [ ] App tokens (`sk_live_`) minted by a platform script for the internal org, stored hashed, scoped to a set allowlist
