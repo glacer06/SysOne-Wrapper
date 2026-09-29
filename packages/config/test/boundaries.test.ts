@@ -38,6 +38,14 @@ describe("boundary lint fixture", () => {
     expect(errors[0]).toContain("cli-local may not import system-one-client");
   });
 
+  it("reports the deliberate SDK transport import in packages/cli/src/live outside transport.ts", async () => {
+    const eslint = makeEslint(at("packages/cli"));
+    const results = await eslint.lintFiles([at("packages/cli/src/live/__fixtures__/bad-sdk-import.ts")]);
+    const errors = boundaryErrors(results);
+    expect(errors).toHaveLength(1);
+    expect(errors[0]).toContain("cli-live may not import system-one-client");
+  });
+
   it("skips __fixtures__ in the normal lint run", async () => {
     const eslint = new ESLint({ cwd: at("packages/react") });
     expect(await eslint.isPathIgnored(at("packages/react/src/__fixtures__/bad-import.ts"))).toBe(true);
@@ -105,6 +113,23 @@ const cases: Case[] = [
   { name: "cli local -> system-one-client fixture", file: "packages/cli/src/local/x.ts", code: `import "@bandwise/system-one-client/fixture";`, violates: false },
   { name: "cli local -> @typesafe-ai/sdk", file: "packages/cli/src/local/x.ts", code: `import "@typesafe-ai/sdk";`, violates: true },
   { name: "cli -> system-one-client fixture", file: "packages/cli/src/x.ts", code: `import "@bandwise/system-one-client/fixture";`, violates: true },
+  // Live mode (ADR-020): only live/transport.ts loads the SDK transport, and only live/ reaches it.
+  { name: "cli live transport -> system-one-client", file: "packages/cli/src/live/transport.ts", code: `import "@bandwise/system-one-client";`, violates: false },
+  { name: "cli live transport -> @typesafe-ai/sdk", file: "packages/cli/src/live/transport.ts", code: `import "@typesafe-ai/sdk";`, violates: true },
+  { name: "cli live -> system-one-client", file: "packages/cli/src/live/x.ts", code: `import "@bandwise/system-one-client";`, violates: true },
+  { name: "cli live -> @typesafe-ai/sdk", file: "packages/cli/src/live/x.ts", code: `import "@typesafe-ai/sdk";`, violates: true },
+  { name: "cli live -> its transport", file: "packages/cli/src/live/x.ts", code: `import "./transport.js";`, violates: false },
+  { name: "cli live -> core", file: "packages/cli/src/live/x.ts", code: `import "@bandwise/core";`, violates: false },
+  { name: "cli live -> runner", file: "packages/cli/src/live/x.ts", code: `import "../runner/index.js";`, violates: false },
+  { name: "cli live -> receipts", file: "packages/cli/src/live/x.ts", code: `import "../receipts/index.js";`, violates: false },
+  { name: "cli local -> live transport", file: "packages/cli/src/local/x.ts", code: `import "../live/transport.js";`, violates: true },
+  { name: "cli local -> live", file: "packages/cli/src/local/x.ts", code: `import "../live/index.js";`, violates: true },
+  { name: "cli -> live transport", file: "packages/cli/src/x.ts", code: `import "./live/transport.js";`, violates: true },
+  { name: "cli -> live", file: "packages/cli/src/x.ts", code: `import "./live/index.js";`, violates: false },
+  { name: "cli runner -> core", file: "packages/cli/src/runner/x.ts", code: `import "@bandwise/core";`, violates: false },
+  { name: "cli runner -> system-one-client", file: "packages/cli/src/runner/x.ts", code: `import "@bandwise/system-one-client";`, violates: true },
+  { name: "cli runner -> system-one-client fixture", file: "packages/cli/src/runner/x.ts", code: `import "@bandwise/system-one-client/fixture";`, violates: true },
+  { name: "cli runner -> receipts", file: "packages/cli/src/runner/x.ts", code: `import "../receipts/index.js";`, violates: true },
   { name: "system-one-client fixture -> @typesafe-ai/sdk", file: "packages/system-one-client/src/fixture/x.ts", code: `import "@typesafe-ai/sdk";`, violates: true },
   { name: "system-one-client fixture -> SDK transport", file: "packages/system-one-client/src/fixture/x.ts", code: `import "../sdk-transport.js";`, violates: true },
   { name: "system-one-client -> its fixture folder", file: "packages/system-one-client/src/x.ts", code: `import "./fixture/index.js";`, violates: false },

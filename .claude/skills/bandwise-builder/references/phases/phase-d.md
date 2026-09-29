@@ -7,19 +7,25 @@ Use Bandwise on Bandwise before anyone else does: Claude Code sessions on this r
 ## D0: Prove Jev
 - [ ] `TYPESAFE_API_KEY` in the team vault, the GitHub `preview` and `production` environments, and Nick's shell. Never in chat, an issue or the repo.
 - [ ] Record the Phase 1 fixture minimum set with `pnpm fixtures:record` and close the Phase 1 fixture item
-- [ ] `pnpm smoke` passes on `jev-1.13.0`; note latency and cost per call in `docs/runbooks/dogfood.md`
+- [ ] `pnpm smoke` passes on `jev-1.13.0`; note latency and cost per call in `docs/runbooks/dogfood.md`. One direct call is noted there; the SDK path returned 401 through the cloud proxy, so fixtures and smoke still need a run from Nick's shell
 
 ## D1: Fast pass, local
-- [ ] Live transport in the CLI: one module, the only CLI code allowed to import the SDK transport; boundary rule and test like the fixture-only rule
-- [ ] `bandwise run --live spec.json state.json [--provider typesafe|openrouter|vercel]`: key from the matching env var only, never from a flag, spec, profile or file; error names the missing variable, never a value
-- [ ] Receipts: `Receipt` type (set, version or spec hash, rollout stage, decisions with value, band and action, effective action, System One cost, counterfactual LLM cost, latency, time). No prompts, state or tool inputs. Appended to `~/.bandwise/receipts.jsonl` with `--receipts [path]`
-- [ ] `bandwise report [--since 7d] [--set <slug>]`: decisions, band mix, System One spend, counterfactual spend and estimated savings per set, from receipts; Claude Code figures labeled as estimates
+- [x] Live transport in the CLI: one module, the only CLI code allowed to import the SDK transport; boundary rule and test like the fixture-only rule
+- [x] `bandwise run --live spec.json state.json [--provider typesafe|openrouter|vercel]`: key from the matching env var only, never from a flag, spec, profile or file; error names the missing variable, never a value
+- [x] Receipts: `Receipt` type (set, version or spec hash, rollout stage, decisions with value, band and action, effective action, System One cost, counterfactual LLM cost, latency, time). No prompts, state or tool inputs. Appended to `~/.bandwise/receipts.jsonl` with `--receipts [path]`
+- [x] `bandwise report [--since 7d] [--set <slug>]`: decisions, band mix, System One spend, counterfactual spend and estimated savings per set, from receipts; Claude Code figures labeled as estimates
 - [ ] Agent pack templates in `packages/templates`, each with example states and a borderline case: `done-check`, `action-risk-gate`, `model-tier`, `wake-gate` (the existing wake gate, adapted to PR events and check-ins)
-- [ ] `bandwise hook <event> --set <path>`: reads Claude Code hook JSON on stdin, maps it to the set's input schema (only the fields the schema names, redact paths applied), runs live, writes a receipt, and prints hook JSON. In `shadow` it never blocks, denies or adds context; in `controlled` only a high-band answer acts. Any error or timeout (default 3 seconds) exits 0 with no output, so a hook never breaks a session
-- [ ] Dogfood sets in `.bandwise/sets/` for this repo, all `shadow`, validated by `bandwise run --local` in CI
-- [ ] `bandwise hooks install` prints the `.claude/settings.json` entries for review; nothing is written without the owner's approval
-- [ ] Kit 0.2.0 release (live mode, receipts, report, agent pack) through the automated release workflow
-- [ ] `docs/runbooks/dogfood.md`: install, read the report, move a set from `shadow` to `controlled`, remove the hooks
+- [x] `bandwise hook <event> --set <path>`: reads Claude Code hook JSON on stdin, maps it to the set's input schema (only the fields the schema names, redact paths applied), runs live, writes a receipt, and prints hook JSON. In `shadow` it never blocks, denies or adds context; in `controlled` only a high-band answer acts. Any error or timeout (default 3 seconds) exits 0 with no output, so a hook never breaks a session
+- [x] Dogfood sets in `.bandwise/sets/` for this repo, all `shadow`, validated by `bandwise run --local` in CI
+- [x] `bandwise hooks install` prints the `.claude/settings.json` entries for review; nothing is written without the owner's approval
+- [ ] Kit 0.2.0 release (live mode, receipts, report, agent pack) through the automated release workflow. `KIT_VERSION` is 0.2.0 and the export scans clean; the push and tag to the public repo wait for Nick (`docs/runbooks/kit-release.md` steps 2 to 4)
+- [x] `docs/runbooks/dogfood.md`: install, read the report, move a set from `shadow` to `controlled`, remove the hooks
+
+## D1b: Launch profiles (backlog, from the 2026-09-28 review of @Av1dlive's post)
+`model-tier` stays advisory inside a session, because a hook cannot change a running session's model. A host that starts the session can, since Claude Code takes `--model` and `--effort` at launch. These items move the pick to launch time. Each one starts in `shadow`.
+- [ ] NSI-727 `launch-profile` template, `.bandwise/profiles.json` host allowlist (one or two sessions, each with `model` and `effort`, plus a default), and `bandwise launch --set --profiles [--print] -- <claude args>`. It picks only from the allowlist. In shadow and on any error or timeout it uses the default. Permissions and approvals stay with the host. Nick decides whether starting a process from the CLI needs an ADR-020 amendment.
+- [ ] NSI-728 `done-check` gets an `overreach` outcome for unrequested work, logged only, and `unverified` counts a named missing check as honest.
+- [ ] NSI-729 Measure it: session fields on receipts (time to first stop, turns, tool calls, done-check outcome, profile used and picked), and `bandwise report --compare profile`. No speed claim goes public until two weeks of our own numbers back it.
 
 ## D2: Hosted, internal only
 - [ ] `POST /api/v1/sets/{ref}/run` with the standard envelope, platform key on the server, served only for the `internal` org

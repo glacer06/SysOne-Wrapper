@@ -88,8 +88,9 @@ function textRules(internalDocNames: readonly string[]): TextRule[] {
     { rule: "ref.linear-id", re: /\bNSI-\d+\b/g },
     { rule: "ref.linear-link", re: /linear\.app/gi },
     { rule: "ref.adr", re: /\bADR-?\d+\b/g },
-    // Installing a skill into a project's .claude/skills/ is fine; any other .claude path is not.
-    { rule: "ref.claude-dir", re: /\.claude\/(?!skills\/?(?:find-decisions\/?)?(?![\w/.-]))/g },
+    // Installing a skill into a project's .claude/skills/ is fine, and so is Claude Code's own
+    // .claude/settings.json, where hooks go. Any other .claude path is not.
+    { rule: "ref.claude-dir", re: /\.claude\/(?!skills\/?(?:find-decisions\/?)?(?![\w/.-]))(?!settings\.json(?![\w/-]))/g },
     { rule: "ref.docs-adr", re: /docs\/adr\b/g },
     { rule: "ref.phase-doc", re: /\bphase-\d+b?\.md\b/g },
     { rule: "ref.internal-skill", re: /\bbandwise-builder\b/g },

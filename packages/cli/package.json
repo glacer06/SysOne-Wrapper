@@ -2,7 +2,7 @@
   "name": "@bandwise/cli",
   "version": "0.0.0",
   "private": true,
-  "description": "@bandwise/cli (bin bandwise): management commands over /api/v1, plus --local fixture mode. Phase 3.",
+  "description": "@bandwise/cli (bin bandwise): management commands over /api/v1 (Phase 3), --local fixture mode, and live mode with your own key (ADR-020).",
   "type": "module",
   "bin": {
     "bandwise": "./dist/bin.js"

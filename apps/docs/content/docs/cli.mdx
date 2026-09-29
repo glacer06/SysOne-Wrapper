@@ -1,6 +1,6 @@
 ---
 title: CLI reference
-description: The bandwise command line, on npm as @bandwise/cli. Local mode works today; the rest arrives in Phase 3.
+description: The bandwise command line, on npm as @bandwise/cli. Local and live runs, receipts and Claude Code hooks work today; the rest arrives in Phase 3.
 ---
 
 <Callout type="warn" title="Coming in Phase 3">
@@ -30,9 +30,48 @@ bandwise run --local <spec.json> <state.json> [--json]
 
 It runs a spec on a state with fixture answers. It makes no network call and needs no key. See the [quickstart](/docs/quickstart).
 
+## Live runs with your own key
+
+From version 0.2.0 the CLI can call the real model with your own key:
+
+```bash
+bandwise run --live <spec.json> <state.json> [same options as --local] [--receipts[=<path>]]
+```
+
+The key comes only from your environment: `TYPESAFE_API_KEY`, or `OPENROUTER_API_KEY` with `--provider openrouter`, or `AI_GATEWAY_API_KEY` with `--provider vercel`. The CLI never reads a key from a flag, a spec, a profile or a file, never prints it, and sends it only to that provider's API. When the variable is missing, the error names it.
+
+`--receipts` appends one line per run to `~/.bandwise/receipts.jsonl`, or to the path you give with `--receipts=<path>`. A receipt holds the set, a hash of the spec, each decision's value, band and action, the rollout stage, the System One cost, the counterfactual LLM cost and the latency. It never holds the state.
+
+```bash
+bandwise report [--since 7d] [--set <slug>] [--receipts <path>] [--json]
+```
+
+`report` sums the receipts per set: runs, decisions, the band mix, how often the set would have acted, System One spend, counterfactual spend and estimated savings. The savings are estimates. The counterfactual prices one comparator LLM call per decision from the price book.
+
+## Claude Code hooks
+
+```bash
+bandwise hook <Stop|PreToolUse|UserPromptSubmit> --set <spec.json>
+  [--rollout shadow|controlled|full] [--provider typesafe|openrouter|vercel]
+  [--timeout-ms 3000] [--receipts <path>] [--drop <field>]
+bandwise hooks install [--sets-dir .bandwise/sets] [--command bandwise] [--rollout shadow]
+```
+
+`hook` reads Claude Code's hook input on stdin, keeps only the fields the set's input schema names, redacts secret-shaped text, runs the set live and writes a receipt. It prints hook output only when the set may act:
+
+| Rollout | What the hook does |
+|---|---|
+| `shadow` (default) | Runs and writes a receipt. Never blocks, denies or adds context. |
+| `controlled` | Acts only on a high band answer: `done-check` sends the agent back, `action-risk-gate` turns the call into a permission prompt, `model-tier` adds advice for mechanical tasks. |
+| `full` | Acts on any answer whose action is `auto`. |
+
+Any error, a missing key or a timeout (3 seconds by default) ends the hook with exit code 0 and no output, so a hook never breaks a session. The risk gate skips plain read commands such as `git status` and `ls`, and tools other than Bash, Edit, Write, MultiEdit and NotebookEdit.
+
+`hooks install` prints the `.claude/settings.json` entries for the agent pack sets in a folder (`done-check`, `action-risk-gate`, `model-tier`), each with `--rollout shadow`. It writes nothing: review the output and paste it in yourself.
+
 ## Conventions the full CLI will follow
 
 - Every command supports `--json` for scripts and agents.
 - It never prompts when input is not a terminal. A command that needs confirmation then fails and asks for `--yes`.
 - Exit codes: `0` ok, `1` error, `2` a diff or drift was found, `3` an approval is pending.
-- It reads `BANDWISE_TOKEN` and `BANDWISE_BASE_URL`, or a named profile. It never holds a TypeSafe, OpenRouter or AI Gateway key.
+- It reads `BANDWISE_TOKEN` and `BANDWISE_BASE_URL`, or a named profile. Cloud commands never hold a TypeSafe, OpenRouter or AI Gateway key. Only `run --live` and `hook` read your own key, from your environment.

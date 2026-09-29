@@ -62,6 +62,28 @@ npx @bandwise/cli run --local \\
 
 Other options: \`--provider typesafe|openrouter|vercel\`, \`--rollout shadow|controlled|full|paused\` and \`--channel production|staging\`. Run \`npx @bandwise/cli --help\` for the full usage.
 
+## Run live with your own key
+
+\`--live\` runs the same spec against the real model. The key comes only from your environment: \`TYPESAFE_API_KEY\`, or \`OPENROUTER_API_KEY\` or \`AI_GATEWAY_API_KEY\` with \`--provider openrouter\` or \`--provider vercel\`. The CLI never reads a key from a flag, a spec or a file, never prints it, and sends it only to the provider's own API.
+
+\`\`\`sh
+export TYPESAFE_API_KEY=...   # your own key
+npx @bandwise/cli run --live examples/email-triage.spec.json examples/email-triage.state.json --receipts
+npx @bandwise/cli report --since 7d
+\`\`\`
+
+\`--receipts\` appends one line per run to \`~/.bandwise/receipts.jsonl\`: the set, the spec hash, each decision's value, band and action, the System One cost, the counterfactual LLM cost and the latency. Never the state. \`bandwise report\` sums them per set. Savings are estimates: the counterfactual prices one comparator LLM call per decision.
+
+## Claude Code hooks
+
+The agent pack runs as Claude Code hooks: \`done-check\` on \`Stop\`, \`action-risk-gate\` on \`PreToolUse\` and \`model-tier\` on \`UserPromptSubmit\`. The specs and example states are in \`.bandwise/\`.
+
+\`\`\`sh
+npx @bandwise/cli hooks install --sets-dir .bandwise/sets --command "npx @bandwise/cli"
+\`\`\`
+
+That prints the entries for \`.claude/settings.json\` and writes nothing. Every entry starts with \`--rollout shadow\`: the hook runs, writes a receipt and never blocks, denies or adds context. Change one entry to \`--rollout controlled\` after reading its receipts, and only a high band answer acts. A hook sends only the fields the set's input schema names, with secret-shaped text redacted. Any error, a missing key or a 3 second timeout ends the hook with exit 0 and no output, so it never breaks a session.
+
 ## How a question set works
 
 A question set is one JSON spec. It names the model, describes the input state with a JSON Schema, asks questions in one or more stages, and sets a policy for every question. Later stages can read earlier answers. Routes turn the answers into one output your app branches on, such as \`urgent\` or \`read_later\`.
@@ -150,7 +172,7 @@ const PACKAGE_BLURBS: Record<string, string> = {
   "system-one-client":
     "Transports for Bandwise runs: `SdkTransport` calls a System One model through TypeSafe, OpenRouter or the Vercel AI Gateway with your own key, and `FixtureTransport` (from `@bandwise/system-one-client/fixture`) answers from recorded fixtures with no network.",
   templates: "The Bandwise template pack: ready question set specs, each with example states and a borderline case per question.",
-  cli: "The `bandwise` command. `bandwise run --local spec.json state.json` runs a question set spec on a state with no network and no key.",
+  cli: "The `bandwise` command. `bandwise run --local spec.json state.json` runs a question set spec on a state with no network and no key. `bandwise run --live`, `bandwise hook` and `bandwise report` run it against the real model with your own key and sum the receipts.",
 };
 
 /** The short README npm shows on a package page. */
@@ -159,7 +181,7 @@ export function packageReadme(dir: string, name: string): string {
   if (blurb === undefined) throw new Error(`kit export: no README blurb for packages/${dir}`);
   const usage =
     dir === "cli"
-      ? "\n```sh\nnpx @bandwise/cli run --local spec.json state.json\nnpx @bandwise/cli --help\n```\n"
+      ? "\n```sh\nnpx @bandwise/cli run --local spec.json state.json\nTYPESAFE_API_KEY=... npx @bandwise/cli run --live spec.json state.json\nnpx @bandwise/cli --help\n```\n"
       : `\n\`\`\`sh\nnpm install ${name}\n\`\`\`\n`;
   return `# ${name}
 
