@@ -11,7 +11,7 @@ import { kitReadme, packageReadme, type ReadmeTemplate } from "./readme.js";
 import { type RewriteCounts, dropTests, rewriteComments, rewriteTestTitles } from "./rewrite.js";
 import { DEFAULT_INTERNAL_DOC_NAMES, type ScanFinding, scanTree } from "./scan.js";
 
-export const KIT_VERSION = "0.2.0";
+export const KIT_VERSION = "0.2.1";
 export const KIT_REPO = "glacer06/bandwise-kit";
 export const KIT_HOMEPAGE = "https://docs.bandwise.dev";
 
