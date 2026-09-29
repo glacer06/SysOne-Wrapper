@@ -51,7 +51,13 @@ pnpm bandwise hooks install --command 'pnpm -s --dir "$CLAUDE_PROJECT_DIR" bandw
 
 It prints JSON for `.claude/settings.json` and writes nothing. Read it, then merge the `hooks` block into `.claude/settings.json` yourself. Every command ends in `--rollout shadow`. Start a new Claude Code session so the hooks load.
 
-What the hook sends to TypeSafe: only the fields the set's input schema names. For `done-check` that is your last request and Claude's final message, read from the session transcript. For `action-risk-gate` it is the tool name, command, file path, the first 2000 characters of new content, and the description. For `model-tier` it is your prompt. Secret-shaped text (API keys, tokens, private keys, `NAME=value` pairs whose name says key, token, secret or password) is replaced before the call. Add `--drop <field>` to a hook command to never send a field at all.
+What the hook sends to TypeSafe: only the fields the set's input schema names. For `done-check` that is your last request and Claude's final message, read from the session transcript. For `action-risk-gate` it is the tool name, command, file path, the first 2000 characters of new content, and the description. For `model-tier` it is your prompt. Secret-shaped text is replaced before the call:
+- API keys, tokens and private keys
+- `Authorization` headers of any scheme
+- passwords in URLs such as `postgres://user:pass@host`
+- values after a name that says key, token, secret, password or credential, in `NAME=value`, JSON, YAML and `--flag value` form
+
+That redaction is pattern based. It catches the common shapes but cannot promise that every private value is gone, so treat whatever a hook reads as something TypeSafe may see. Add `--drop <field>` to a hook command to never send a field at all. For example, `--drop content_preview` keeps file contents on the machine for the risk gate.
 
 What it never does: block or change anything in `shadow`, print the key, write a prompt or tool input into a receipt, or fail a session. A missing key turns the hook off. Any error or a 3 second timeout exits 0 with no output.
 

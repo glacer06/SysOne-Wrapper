@@ -1,6 +1,6 @@
 # ADR-020: Dogfood track: use Bandwise on Bandwise first, local then hosted
 
-- **Status:** accepted (Nick, 2026-09-28: first app "Claude Code on Bandwise", Jev key "TypeSafe direct", "Yes, local then hosted", autonomy "Shadow first")
+- **Status:** accepted (Nick, 2026-09-28: first app "Claude Code on Bandwise", Jev key "TypeSafe direct", "Yes, local then hosted", autonomy "Shadow first"). Amendment 1 (launch profiles): accepted (Nick, 2026-09-29: "Merge it whole")
 - **Date:** 2026-09-28
 - **Owner:** Architect / Lead, reviewed by the Security reviewer
 - **Decider:** Nick
@@ -34,6 +34,26 @@ Two rules stood in the way:
    - `wake-gate` for scheduled check-ins and PR events: does this event need action now?
    - `context-pruner` stays a template for Nick's own apps; Claude Code manages its own context.
 
+### Amendment 1: launch profiles (accepted, Nick, 2026-09-29, for NSI-727)
+
+`model-tier` can only advise, because a hook cannot change the model of a session that is already running. A host that starts the session can. Claude Code takes `--model` and `--effort` at launch (https://code.claude.com/docs/en/cli-reference). This amendment lets the CLI make that pick before a session starts. It is the first time the CLI starts another program, so it gets its own rules.
+
+6. **One program, two flags.** `bandwise launch --set <spec> --profiles <file> [--rollout] -- <agent args>` may start exactly one program: the agent CLI named in the profiles file (`claude` for Claude Code). It passes the arguments after `--` through unchanged and adds only `--model <m>` and `--effort <e>`. It never adds, drops or rewrites any other flag. In particular it never touches permission flags (`--permission-mode`, `--dangerously-skip-permissions`, `--allowedTools`, `--settings`): permissions and approvals stay with the host and the person. The program is started with an argument array and no shell, inherits the terminal, and `bandwise launch` exits with its exit code.
+7. **The allowlist is a reviewed file.** `.bandwise/profiles.json` names the agent program, a `default` profile id, and each profile as one or two sessions, each with `model` and `effort`. It lives in the repo and changes by commit, like a spec. The profiles file can hold only a program name from a fixed list (`claude` today), model ids and effort levels (`low`, `medium`, `high`, `xhigh`, `max`). No free-form flags, paths or commands. A profiles file that fails that schema stops the launch with an error that names the field. That is the one case where `bandwise launch` refuses rather than falling back, because it means the reviewed file is wrong.
+8. **The set can only pick an id.** The `launch-profile` set answers with a choice key. The CLI maps it to a profile id in the file; an answer that is not a profile id resolves to `default`. The set never supplies a model name, an effort level or a flag.
+9. **Shadow first, fail to the default.** In `shadow` the launch always uses `default` and the receipt records what the set would have picked. In `controlled` only a high band pick is used, as everywhere else. A missing key, an error or a timeout (3 seconds) launches with `default` and prints one line to stderr saying so. A Bandwise problem never stops the person from starting a session.
+10. **One session per launch.** `bandwise launch` starts one session. A profile's second session (research or a review the person asked for) is recorded in the receipt and printed by `--print`, for a host that starts its own workers. `bandwise launch` does not start it. Starting a second agent is a bigger step and needs its own decision.
+11. **`--print` starts nothing.** `bandwise launch --print` runs the same pick and prints the chosen profile as JSON (`{"profile", "sessions": [{"model", "effort"}], "picked", "rollout"}`) for other hosts: the Agent SDK, CI, cloud sessions. It is the first thing to build and the safe way to try the set.
+12. **Same data rule as hooks.** The task text goes to TypeSafe only through the input schema's fields, with the redaction `bandwise hook` applies. The key rule of point 2 is unchanged.
+13. **One module starts programs.** Only `packages/cli/src/live/spawn.ts` may import `node:child_process`. A boundary rule and a test enforce it, like the SDK transport rule. The kit export carries the same rule in its ESLint config.
+14. **No claim without our numbers.** Speed or cost claims about launch profiles go on www or in the docs only after NSI-729 has two weeks of receipts comparing the pick with the default.
+
+| Option for the amendment | Pros | Cons |
+|---|---|---|
+| Print only, no process started | Nothing new to trust; the person wraps it in a shell alias | Every host writes its own wrapper; easy to skip the fallback |
+| Start the agent with only `--model` and `--effort` added (chosen, with `--print`) | One command; fallback and receipts built in; flags fixed by a reviewed file | The CLI starts a program for the first time; needs its own rule and test |
+| Let the set return flags or a command | Most flexible | Model output would shape a command line. Rejected |
+
 ## Options considered
 
 | Option | Pros | Cons |
@@ -49,10 +69,12 @@ Two rules stood in the way:
 - Receipts live in `~/.bandwise/receipts.jsonl` on the developer's machine. They hold decisions, bands, cost and savings, not prompts or tool inputs.
 - Measuring honestly: savings in Claude Code come from fewer wasted turns and fewer risky actions, which are smaller and harder to price than replacing an LLM call in an app. `bandwise report` shows System One cost, decisions made, and the counterfactual LLM cost from the price book, and marks the Claude Code figures as estimates.
 - The marketing site still describes only what works. Live management goes on www once D2 runs for real.
+- Amendment 1: the CLI starts a program for the first time. The risk is bounded by points 6 to 8. The program name and every flag value come from a reviewed file, model output can only choose among its ids, and permission flags are never touched. The Security reviewer signs off on `live/spawn.ts` and the profiles schema before NSI-727 merges. `profiles.json` is a local CLI file format, not a core contract. D2 can serve the same pick from the hosted endpoint later without changing it.
 
 ## Rollout
 
 1. D0 as soon as the key exists. D1 in one PR per piece: live mode, receipts and report, the agent pack templates, the hooks and their install command.
 2. Hooks install into this repo's `.claude/settings.json` only after Nick approves, all sets in `shadow`.
 3. After a week of receipts, Nick picks which sets move to `controlled`.
-Reversal: remove the hooks from `.claude/settings.json`; live mode stays opt-in behind `--live` and an env key.
+4. Amendment 1: build `--print` first, then the launch, in one PR with the spawn rule and its test (NSI-727). Run it in `shadow` for two weeks while NSI-729 measures. Only then does Nick decide on `controlled`.
+Reversal: remove the hooks from `.claude/settings.json`; live mode stays opt-in behind `--live` and an env key. For Amendment 1: stop using `bandwise launch` and start `claude` directly. Nothing else depends on it.

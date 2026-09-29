@@ -57,7 +57,7 @@ bandwise hook <Stop|PreToolUse|UserPromptSubmit> --set <spec.json>
 bandwise hooks install [--sets-dir .bandwise/sets] [--command bandwise] [--rollout shadow]
 ```
 
-`hook` reads Claude Code's hook input on stdin, keeps only the fields the set's input schema names, redacts secret-shaped text, runs the set live and writes a receipt. It prints hook output only when the set may act:
+`hook` reads Claude Code's hook input on stdin, keeps only the fields the set's input schema names, redacts secret-shaped text, runs the set live and writes a receipt. Redaction is pattern based: it covers keys, tokens, auth headers, URL passwords and secret-named values, but cannot promise every private value is gone. Use `--drop <field>` for any field that must never leave your machine. It prints hook output only when the set may act:
 
 | Rollout | What the hook does |
 |---|---|
