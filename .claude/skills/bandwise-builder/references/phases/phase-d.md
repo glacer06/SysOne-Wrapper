@@ -23,7 +23,7 @@ Use Bandwise on Bandwise before anyone else does: Claude Code sessions on this r
 
 ## D1b: Launch profiles (backlog, from the 2026-09-28 review of @Av1dlive's post)
 `model-tier` stays advisory inside a session, because a hook cannot change a running session's model. A host that starts the session can, since Claude Code takes `--model` and `--effort` at launch. These items move the pick to launch time. Each one starts in `shadow`.
-- [ ] NSI-727 `launch-profile` template, `.bandwise/profiles.json` host allowlist (one or two sessions, each with `model` and `effort`, plus a default), and `bandwise launch --set --profiles [--print] -- <claude args>`. It picks only from the allowlist. In shadow and on any error or timeout it uses the default. Permissions and approvals stay with the host. Nick decides whether starting a process from the CLI needs an ADR-020 amendment.
+- [ ] NSI-727 `launch-profile` template, `.bandwise/profiles.json` host allowlist (one or two sessions, each with `model` and `effort`, plus a default), and `bandwise launch --set --profiles [--print] -- <claude args>`. It picks only from the allowlist. In shadow and on any error or timeout it uses the default. Permissions and approvals stay with the host. Waits on ADR-020 Amendment 1 (proposed 2026-09-29), which sets the rules for the CLI starting a program.
 - [ ] NSI-728 `done-check` gets an `overreach` outcome for unrequested work, logged only, and `unverified` counts a named missing check as honest.
 - [ ] NSI-729 Measure it: session fields on receipts (time to first stop, turns, tool calls, done-check outcome, profile used and picked), and `bandwise report --compare profile`. No speed claim goes public until two weeks of our own numbers back it.
 
