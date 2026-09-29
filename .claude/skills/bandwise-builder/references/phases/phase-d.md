@@ -18,7 +18,7 @@ Use Bandwise on Bandwise before anyone else does: Claude Code sessions on this r
 - [x] `bandwise hook <event> --set <path>`: reads Claude Code hook JSON on stdin, maps it to the set's input schema (only the fields the schema names, redact paths applied), runs live, writes a receipt, and prints hook JSON. In `shadow` it never blocks, denies or adds context; in `controlled` only a high-band answer acts. Any error or timeout (default 3 seconds) exits 0 with no output, so a hook never breaks a session
 - [x] Dogfood sets in `.bandwise/sets/` for this repo, all `shadow`, validated by `bandwise run --local` in CI
 - [x] `bandwise hooks install` prints the `.claude/settings.json` entries for review; nothing is written without the owner's approval
-- [ ] Kit 0.2.0 release (live mode, receipts, report, agent pack) through the automated release workflow. `KIT_VERSION` is 0.2.0 and the export scans clean; the push and tag to the public repo wait for Nick (`docs/runbooks/kit-release.md` steps 2 to 4)
+- [x] Kit 0.2.0 release (live mode, receipts, report, agent pack) through the automated release workflow. Tagged `v0.2.0` on kit commit `09781bf` and published to npm on 2026-09-29 (NSI-734)
 - [x] `docs/runbooks/dogfood.md`: install, read the report, move a set from `shadow` to `controlled`, remove the hooks
 
 ## D1b: Launch profiles (backlog, from the 2026-09-28 review of @Av1dlive's post)
