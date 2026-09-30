@@ -13,7 +13,8 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "mint-token": "tsx --conditions=@bandwise/source scripts/mint-token.ts"
   },
   "dependencies": {
     "@bandwise/billing": "workspace:*",

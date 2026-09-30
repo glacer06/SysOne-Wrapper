@@ -22,7 +22,10 @@ This section covers every System One key: TypeSafe keys, and OpenRouter keys onc
 App tokens are for host apps only: their servers and their browsers. Agents, the CLI and the MCP server use agent tokens.
 
 - Formats: `sk_live_`, `sk_test_` (secret, server only), `pk_live_` (publishable, browser).
-- Stored as sha256 with a server pepper. Shown once at creation.
+- A token is `<prefix><org>_<secret>`: the org id as 32 hex characters, then 32 random bytes as base64url. The org part is not secret; it lets the server look the token up inside that org's tenant scope (RLS on `app.org_id`), so no pre-org query ever reads every org's tokens. Rewriting the org part only moves the lookup to an org where the hash matches nothing. Code: `packages/tenancy/src/tokens.ts`, `apps/console/src/server/auth/bearer.ts`.
+- Stored as HMAC-SHA256 keyed by the server pepper (`BANDWISE_TOKEN_PEPPER`, at least 32 characters). Shown once at creation. Changing the pepper invalidates every token.
+- Every failure (unknown, wrong org, revoked, expired, a changed prefix, a user who left the org) is the same `401 unauthenticated`, so the response never says which it was. `last_used_at` is written at most once a minute per token.
+- Until the console mints tokens (D3), a platform operator mints them with `pnpm --filter @bandwise/console mint-token`, which writes the hashed row and an audit row and prints the token once.
 - Each token has a `channel` (`production` or `staging`, default `production`). Runs use it; a token cannot request another channel.
 - Scopes: `run`, `sets:read`, `runs:read`, `runs:write` (standalone ingest), `feedback:write` (`sk_` only, never `pk_`), `review:read`, `review:write`, `usage:read`. Plus a set allowlist, RPM limit, expiry, revocation and `last_used_at`.
 - Publishable tokens: origin allowlist enforced with CORS and an `Origin` check, run scope only, low RPM.

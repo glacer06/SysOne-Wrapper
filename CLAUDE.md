@@ -42,7 +42,7 @@ pnpm kit:export [dir]    # generate and scan the public bandwise-kit tree (defau
 
 ## Env vars
 
-`TYPESAFE_API_KEY`, `OPENROUTER_API_KEY` (platform key for the OpenRouter route, ADR-011, and `--provider openrouter` smoke and fixtures), `AI_GATEWAY_API_KEY` (platform key for the Vercel AI Gateway route, ADR-013, and `--provider vercel` smoke and fixtures), `DATABASE_URL`, `AUTH_SECRET`, `BANDWISE_KEK`, `BANDWISE_JWT_SIGNING_KEY` (ES256 key for browser tokens), `SYSTEM_ONE_TRANSPORT` (`sdk` or `fixture`), `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `REDIS_URL`, `ANTHROPIC_API_KEY`. Never commit `.env*` files with values.
+`TYPESAFE_API_KEY`, `OPENROUTER_API_KEY` (platform key for the OpenRouter route, ADR-011, and `--provider openrouter` smoke and fixtures), `AI_GATEWAY_API_KEY` (platform key for the Vercel AI Gateway route, ADR-013, and `--provider vercel` smoke and fixtures), `DATABASE_URL`, `AUTH_SECRET`, `BANDWISE_KEK`, `BANDWISE_JWT_SIGNING_KEY` (ES256 key for browser tokens), `BANDWISE_TOKEN_PEPPER` (HMAC pepper for app and agent token hashes, at least 32 characters), `SYSTEM_ONE_TRANSPORT` (`sdk` or `fixture`), `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `REDIS_URL`, `ANTHROPIC_API_KEY`. Never commit `.env*` files with values.
 
 System One base URLs are constants in core (`SYSTEM_ONE_PROVIDER_BASE_URLS`), never env, so no env var can send an org key to another host. The provider is picked per org and per set, not per deployment.
 
