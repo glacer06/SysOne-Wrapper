@@ -4,6 +4,7 @@
 // The launch profile variables below are not secrets; they live here so one file owns every read.
 
 import type { SystemOneProvider } from "@bandwise/core";
+import { PROFILE_ID } from "./profiles.js";
 
 /** The environment variable that holds each provider's key. */
 export const PROVIDER_KEY_ENV: Readonly<Record<SystemOneProvider, string>> = Object.freeze({
@@ -24,12 +25,10 @@ export function readProviderKey(provider: SystemOneProvider, env: Readonly<Recor
   return { ok: true, apiKey: value.trim() };
 }
 
-/** Set by `bandwise launch` (not in this release yet) for the agent it starts, so hooks can record the profile. */
+/** For the agent `bandwise launch` starts, so its hooks can record the profile. A host that runs `--print` can set them itself. */
 export const LAUNCH_PROFILE_ENV = "BANDWISE_LAUNCH_PROFILE";
 export const LAUNCH_PICKED_ENV = "BANDWISE_LAUNCH_PICKED";
 
-/** A profile id from the reviewed profiles file: short, no spaces, nothing that could carry text. */
-const PROFILE_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 
 /** The launch profile a session started with and the one picked. Anything that is not a profile id reads as null. */
 export function readLaunchProfile(env: Readonly<Record<string, string | undefined>> = process.env): { profile: string | null; picked: string | null } {

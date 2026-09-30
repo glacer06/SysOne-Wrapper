@@ -421,6 +421,14 @@ describe("the key rule", () => {
     expect(readFileSync(join(src, "main.ts"), "utf8")).not.toContain("process.env");
   });
 
+  it("no CLI module starts a program until live/spawn.ts exists (ADR-020 Amendment 1, point 13)", () => {
+    const src = at("../");
+    const files = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? files(join(dir, e.name)) : e.name.endsWith(".ts") && !e.name.endsWith(".test.ts") ? [join(dir, e.name)] : []));
+    const importers = files(src).filter((f) => /["'](?:node:)?child_process["']/.test(readFileSync(f, "utf8")));
+    expect(importers.map((f) => f.slice(src.length)).filter((f) => f !== "live/spawn.ts")).toEqual([]);
+  });
+
   it("only live/transport.ts imports system-one-client outside local mode's fixture subpath", () => {
     const src = at("../");
     const files = (dir: string): string[] =>

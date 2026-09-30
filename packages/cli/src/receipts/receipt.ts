@@ -68,6 +68,8 @@ export interface Receipt {
   latencyMs: number;
   /** Only on Stop receipts from `bandwise hook`. Receipts from older CLIs have none. */
   session?: ReceiptSession;
+  /** Only on receipts from `bandwise launch`: the profile used and the one the set picked (null for none). */
+  launch?: { profile: string; picked: string | null };
 }
 
 /** Where receipts go when no path is given. */

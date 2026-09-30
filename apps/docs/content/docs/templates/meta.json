@@ -10,6 +10,7 @@
     "done-check",
     "action-risk-gate",
     "model-tier",
+    "launch-profile",
     "security-finding-triage",
     "error-triage",
     "lead-event-scoring",

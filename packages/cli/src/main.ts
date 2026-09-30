@@ -22,6 +22,9 @@ export const USAGE = `Usage:
   bandwise hook <Stop|PreToolUse|UserPromptSubmit> --set <spec.json> [--rollout shadow|controlled|full]
                      [--provider typesafe|openrouter|vercel] [--timeout-ms 3000] [--receipts <path>] [--drop <field>]
   bandwise hooks install [--sets-dir .bandwise/sets] [--command bandwise] [--rollout shadow|controlled|full]
+  bandwise launch --print [--task <text>] [--set .bandwise/sets/launch-profile.json]
+                     [--profiles .bandwise/profiles.json] [--rollout shadow|controlled|full]
+                     [--provider typesafe|openrouter|vercel] [--timeout-ms 3000] [--receipts <path>]
 
   --local   Run the spec with the fixture transport: no network call and no System One key.
             Recorded fixtures answer the requests they cover; others get synthetic answers.
@@ -34,6 +37,11 @@ export const USAGE = `Usage:
             Any error or a timeout exits 0 with no output.
   hooks install
             Print the .claude/settings.json entries for the sets in the folder. Writes nothing.
+  launch --print
+            Pick a launch profile for a task (from --task, or stdin) and print it as JSON:
+            {"profile", "sessions": [{"model", "effort"}], "picked", "rollout"}. Starts nothing.
+            In shadow it always prints the default. Without a key, or on an error or a timeout,
+            it prints the default and says why on stderr.
 
 Management commands (sets, publish, rollout, evals and more) work against Bandwise Cloud and
 are not in this release. Nothing here needs a Bandwise account.`;
@@ -70,7 +78,17 @@ type Parsed =
       receiptsPath?: string;
       drop: string[];
     }
-  | { kind: "hooks-install"; setsDir: string; command: string; rollout: (typeof HOOK_ROLLOUTS)[number] };
+  | { kind: "hooks-install"; setsDir: string; command: string; rollout: (typeof HOOK_ROLLOUTS)[number] }
+  | {
+      kind: "launch";
+      setPath: string;
+      profilesPath: string;
+      rollout: (typeof HOOK_ROLLOUTS)[number];
+      provider: Provider;
+      timeoutMs: number;
+      receiptsPath?: string;
+      task?: string;
+    };
 
 function oneOf<T extends string>(allowed: readonly T[], value: string | undefined): value is T {
   return value !== undefined && (allowed as readonly string[]).includes(value);
@@ -188,7 +206,34 @@ export function parseArgs(argv: readonly string[]): Parsed {
     return { kind: "hooks-install", setsDir: f["--sets-dir"]?.[0] ?? ".bandwise/sets", command: f["--command"]?.[0] ?? "bandwise", rollout };
   }
 
-  return err(`unknown command "${command}"; this release has run, report, hook and hooks install`);
+  if (command === "launch") {
+    const f = flags(rest, ["--set", "--profiles", "--rollout", "--provider", "--timeout-ms", "--receipts", "--task"], ["--print"]);
+    if (typeof f === "string") return err(f);
+    if (f["--print"] === undefined) {
+      return err("this release has only bandwise launch --print, which prints the profile and starts nothing. Starting the agent comes in a later release.");
+    }
+    const rollout = f["--rollout"]?.[0] ?? "shadow";
+    if (!oneOf(HOOK_ROLLOUTS, rollout)) return err(`--rollout must be one of ${HOOK_ROLLOUTS.join(", ")}`);
+    const provider = f["--provider"]?.[0] ?? "typesafe";
+    if (!oneOf(PROVIDERS, provider)) return err(`--provider must be one of ${PROVIDERS.join(", ")}`);
+    const timeoutMs = Number(f["--timeout-ms"]?.[0] ?? "3000");
+    if (!Number.isInteger(timeoutMs) || timeoutMs < 100 || timeoutMs > 60_000) return err("--timeout-ms must be a whole number from 100 to 60000");
+    const out: Extract<Parsed, { kind: "launch" }> = {
+      kind: "launch",
+      setPath: f["--set"]?.[0] ?? ".bandwise/sets/launch-profile.json",
+      profilesPath: f["--profiles"]?.[0] ?? ".bandwise/profiles.json",
+      rollout,
+      provider,
+      timeoutMs,
+    };
+    const receipts = f["--receipts"]?.[0];
+    if (receipts !== undefined) out.receiptsPath = receipts;
+    const task = f["--task"]?.[0];
+    if (task !== undefined) out.task = task;
+    return out;
+  }
+
+  return err(`unknown command "${command}"; this release has run, report, hook, hooks install and launch --print`);
 }
 
 export interface MainIo {
@@ -264,6 +309,23 @@ export async function main(argv: readonly string[], io: MainIo = {}): Promise<Co
       return SILENT_HOOK;
     }
   }
+  if (parsed.kind === "launch") {
+    const { kind: _kind, receiptsPath, task, ...rest } = parsed;
+    const cmd = { ...rest, receiptsPath: receiptsPath ?? defaultReceiptsPath(), task: task ?? (io.stdin !== undefined ? await io.stdin() : "") };
+    try {
+      const live = await loadLive();
+      const launchIo: Parameters<typeof live.runLaunchCommand>[1] = {};
+      if (io.env !== undefined) launchIo.env = io.env;
+      if (io.now !== undefined) launchIo.now = io.now;
+      if (io.fetch !== undefined) launchIo.fetch = io.fetch;
+      return await live.runLaunchCommand(cmd, launchIo);
+    } catch {
+      // A live module that cannot load still prints the default, so a launch is never blocked.
+      const { launchFallbackFromFile } = await import("./live/profiles.js");
+      return launchFallbackFromFile(cmd.profilesPath, cmd.rollout, "live mode could not load");
+    }
+  }
+
   const live = await loadLive();
   const { kind: _kind, ...cmd } = parsed;
   const liveIo: Parameters<typeof live.runLiveCommand>[1] = {};

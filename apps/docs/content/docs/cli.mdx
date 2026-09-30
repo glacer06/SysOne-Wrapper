@@ -71,6 +71,34 @@ Any error, a missing key or a timeout (3 seconds by default) ends the hook with 
 
 `hooks install` prints the `.claude/settings.json` entries for the agent pack sets in a folder (`done-check`, `action-risk-gate`, `model-tier`), each with `--rollout shadow`. It writes nothing: review the output and paste it in yourself.
 
+## Launch profiles
+
+```bash
+bandwise launch --print [--task <text>] [--set .bandwise/sets/launch-profile.json]
+  [--profiles .bandwise/profiles.json] [--rollout shadow|controlled|full]
+  [--provider typesafe|openrouter|vercel] [--timeout-ms 3000] [--receipts <path>]
+```
+
+A running Claude Code session cannot change its own model, but whoever starts it can pass `--model` and `--effort`. `launch --print` makes that pick before a session starts. It runs the `launch-profile` set on the task (from `--task`, or stdin) and prints one line of JSON:
+
+```json
+{"profile":"standard","sessions":[{"model":"sonnet","effort":"medium"}],"picked":"deep","rollout":"shadow"}
+```
+
+It starts nothing. Your host, script or CI job reads `sessions` and starts the agent itself.
+
+The profiles file is an allowlist you review like code. It names the agent program (`claude`), a `default` profile, and each profile as one or two sessions with a `model` and an `effort` (`low`, `medium`, `high`, `xhigh` or `max`). Nothing else is allowed in it: no flags, paths or commands. A file that breaks that shape stops the command with an error that names the field.
+
+The set can only pick a profile id from that file. An answer that is not a profile id counts as no pick.
+
+| Rollout | Profile printed |
+|---|---|
+| `shadow` (default) | Always the default. `picked` shows what the set would have chosen. |
+| `controlled` | The pick, but only on a high band answer. Otherwise the default. |
+| `full` | The pick whenever its action is `auto`. |
+
+A missing key, a set that will not load, an error or a timeout prints the default, with one line on stderr saying why. The task goes to the model with the same redaction as the hooks. The receipt records the profile used and the one picked, never the task.
+
 ## Conventions the full CLI will follow
 
 - Every command supports `--json` for scripts and agents.

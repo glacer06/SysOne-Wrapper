@@ -125,6 +125,20 @@ One set at a time, after about a week of receipts, and only when you say so.
 
 To step back, change it to `--rollout shadow` again. That is never gated.
 
+## Launch profiles (NSI-727, `--print` only)
+
+`model-tier` can only advise inside a session. `bandwise launch --print` picks before one starts. It runs `.bandwise/sets/launch-profile.json` on the task and prints the profile from `.bandwise/profiles.json` to start with:
+
+```sh
+pnpm -s bandwise launch --print --task "Rename getUser to fetchUser everywhere"
+# {"profile":"standard","sessions":[{"model":"sonnet","effort":"medium"}],"picked":"light","rollout":"shadow"}
+```
+
+- `.bandwise/profiles.json` is the allowlist: `light` (sonnet, low), `standard` (sonnet, medium, the default), `deep` (opus, high) and `deep_review` (opus, high, plus a sonnet review session). Change a model or an effort here, by commit, like a spec.
+- In `shadow` it always prints the default, and the receipt records the pick. Read the pick mix with `pnpm bandwise report --since 7d --set launch-profile`.
+- To try a pick by hand, start Claude Code with the printed values: `claude --model <model> --effort <effort>`. For NSI-729 to count the session under that profile, set `BANDWISE_LAUNCH_PROFILE` and `BANDWISE_LAUNCH_PICKED` in the same shell first.
+- It never starts a program. The part that starts `claude` itself waits for the Security reviewer to sign off on `live/spawn.ts` and the profiles schema (ADR-020 Amendment 1, point 13). Until then, no CLI module may import `node:child_process`, and a test checks that.
+
 ## 4. Remove the hooks
 
 Delete the Bandwise entries from `.claude/settings.json` (or the whole `hooks` block if nothing else is in it) and start a new session. Live mode stays opt-in behind `--live` and an environment key, so nothing else runs.
