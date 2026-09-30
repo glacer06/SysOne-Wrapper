@@ -104,7 +104,7 @@ The set can only pick a profile id from that file. An answer that is not a profi
 | `controlled` | The pick, but only on a high band answer. Otherwise the default. |
 | `full` | The pick whenever its action is `auto`. |
 
-A missing key, a set that will not load, an error or a timeout uses the default, with one line on stderr saying why, so a launch is never blocked. The task goes to the model with the same redaction as the hooks. The receipt records the profile used and the one picked, never the task. The session gets `BANDWISE_LAUNCH_PROFILE` and `BANDWISE_LAUNCH_PICKED`, so its hooks can record the profile for `report --compare profile`.
+A missing key, a set that will not load, an error or a timeout uses the default, with one line on stderr saying why, so a launch is never blocked. The task goes to the model with the same redaction as the hooks. The receipt records the profile used and the one picked, never the task. The session gets `BANDWISE_LAUNCH_PROFILE` and `BANDWISE_LAUNCH_PICKED`, so its hooks can record the profile for `report --compare profile`. Apart from those two, it gets the same environment `claude` would get if you started it from the same shell: `launch` adds no key and removes none. If your key is in that shell, the session inherits it, which the hooks inside the session need. Notices print before the session starts.
 
 ## Conventions the full CLI will follow
 

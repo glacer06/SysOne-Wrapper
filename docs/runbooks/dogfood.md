@@ -137,6 +137,8 @@ pnpm -s bandwise launch -- -p "Rename getUser to fetchUser everywhere"
 - Everything after `--` goes to `claude` unchanged. The task for the pick is `--task`, or else the last argument after `--` that is not an option.
 - It adds only `--model` and `--effort`, and only if you did not pass them yourself. It never touches a permission flag.
 - It sets `BANDWISE_LAUNCH_PROFILE` and `BANDWISE_LAUNCH_PICKED` for the session, so its Stop receipts land in `bandwise report --compare profile` (NSI-729).
+- Otherwise the session gets exactly the environment `claude` would get if you started it from the same shell. If `TYPESAFE_API_KEY` is set there, the session inherits it, and it has to: the hooks inside the session read it. `bandwise launch` never adds a key and never removes one. Anything the agent's own tools can read in that shell, they can read either way. Taking the key out of the shell entirely, with the hooks reading it from the Keychain, is NSI-742.
+- Notices such as "using the default profile" print before the session starts, not when it ends.
 - `.bandwise/profiles.json` is the allowlist: `light` (sonnet, low), `standard` (sonnet, medium, the default), `deep` (opus, high) and `deep_review` (opus, high, plus a sonnet review session). Change a model or an effort here, by commit, like a spec. `deep_review`'s second session is reported, never started.
 - In `shadow` it always starts the default, and the receipt records the pick. Read the pick mix with `pnpm bandwise report --since 7d --set launch-profile`.
 - No key, an error, a timeout or a broken install still starts the session, on the default, with one line on stderr saying why. Only an invalid profiles file stops it.

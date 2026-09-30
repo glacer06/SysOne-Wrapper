@@ -266,9 +266,13 @@ async function startDefaultWithoutLive(
   const { launchEnv, LAUNCH_PICKED_ENV, LAUNCH_PROFILE_ENV } = await import("./live/key.js");
   const env = launchEnv({ [LAUNCH_PROFILE_ENV]: pick.profile, [LAUNCH_PICKED_ENV]: "none" }, io.env);
   const start = io.start ?? (await import("./live/spawn.js")).startProgram;
+  // Say it before the agent takes the terminal.
+  const held: string[] = [];
+  if (io.warn !== undefined) io.warn(fallback.stderr);
+  else held.push(fallback.stderr);
   const started = await start(profiles.value.program, args, env);
-  const notes = [fallback.stderr, ...(started.ok ? [] : [`bandwise launch: ${started.message}`])];
-  return { exitCode: started.ok ? started.exitCode : 127, stdout: "", stderr: notes.join("\n") };
+  if (!started.ok) held.push(`bandwise launch: ${started.message}`);
+  return { exitCode: started.ok ? started.exitCode : 127, stdout: "", stderr: held.join("\n") };
 }
 
 export interface MainIo {
@@ -281,6 +285,8 @@ export interface MainIo {
   fetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
   /** Starts the agent for `bandwise launch`. Tests pass a fake; the default is live/spawn.ts. */
   start?: (program: "claude", args: readonly string[], env: Readonly<Record<string, string | undefined>>) => Promise<{ ok: true; exitCode: number } | { ok: false; message: string }>;
+  /** Notices `bandwise launch` shows before the agent starts. bin.ts writes them to stderr at once. */
+  warn?: (line: string) => void;
   /** Loads live mode. Tests replace it to prove a failed load stays silent in a hook. */
   loadLive?: () => Promise<typeof LiveModule>;
 }
@@ -358,6 +364,7 @@ export async function main(argv: readonly string[], io: MainIo = {}): Promise<Co
       if (io.now !== undefined) launchIo.now = io.now;
       if (io.fetch !== undefined) launchIo.fetch = io.fetch;
       if (io.start !== undefined) launchIo.start = io.start;
+      if (io.warn !== undefined) launchIo.warn = io.warn;
       return await live.runLaunchCommand(cmd, launchIo);
     } catch {
       // A live module that cannot load still uses the default, so a launch is never blocked.

@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { main } from "../main.js";
 import { readReceipts } from "../receipts/index.js";
-import { type LaunchCommand, type SpawnFn, launchArgs, loadProfiles, parseProfiles, runLaunchPrint, runLaunchStart, startProgram, taskFromArgs } from "./index.js";
+import { type LaunchCommand, type SpawnFn, launchArgs, launchEnv, loadProfiles, parseProfiles, runLaunchPrint, runLaunchStart, startProgram, taskFromArgs } from "./index.js";
 import { liveTransport } from "./transport.js";
 
 const at = (relative: string): string => fileURLToPath(new URL(relative, import.meta.url));
@@ -260,6 +260,64 @@ describe("bandwise launch (starts the agent)", () => {
     });
     expect(out.exitCode).toBe(0);
     expect(calls[0]?.args).toEqual(["--model", "sonnet", "--effort", "medium", "--help"]);
+  });
+
+  it("picks from the prompt after -- when there is no --task", async () => {
+    const { start, calls } = recorder();
+    const picker = answering("light", 0.95);
+    const out = await main(
+      ["launch", "--profiles", PROFILES, "--set", SET, "--rollout", "controlled", "--timeout-ms", "20000", "--receipts", join(tmp(), "r.jsonl"), "--", "-p", "Rename getUser to fetchUser everywhere"],
+      { env: ENV, fetch: picker.fetch, start },
+    );
+    expect(out.exitCode).toBe(0);
+    expect(picker.sent[0]?.state).toEqual({ task: "Rename getUser to fetchUser everywhere" });
+    expect(calls[0]?.args).toEqual(["--model", "sonnet", "--effort", "low", "-p", "Rename getUser to fetchUser everywhere"]);
+    expect(calls[0]?.env).toMatchObject({ BANDWISE_LAUNCH_PROFILE: "light", BANDWISE_LAUNCH_PICKED: "light" });
+  });
+
+  it("shows its notices before the agent starts, not when it ends", async () => {
+    const events: string[] = [];
+    let release: (() => void) | undefined;
+    const start = (_program: "claude", _args: readonly string[]) => {
+      events.push("start");
+      // The session stays open until the test lets it end.
+      return new Promise<{ ok: true; exitCode: number }>((resolve) => {
+        release = () => resolve({ ok: true, exitCode: 0 });
+      });
+    };
+    const running = main(["launch", "--profiles", PROFILES, "--set", SET, "--rollout", "controlled", "--timeout-ms", "20000", "--receipts", join(tmp(), "r.jsonl"), "--", "hi"], {
+      env: {},
+      start,
+      warn: (line) => events.push(`warn: ${line}`),
+    });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(events).toEqual(['warn: bandwise launch: TYPESAFE_API_KEY is not set; using the default profile "standard".', "start"]);
+    release?.();
+    const out = await running;
+    expect(out.stderr).toBe("");
+
+    // The second-session note, too.
+    const seen: string[] = [];
+    await runLaunchStart(cmd({ rollout: "controlled" }), [], {
+      env: ENV,
+      transport: () => liveTransport({ fetch: answering("deep_review", 0.95).fetch }),
+      warn: (line) => seen.push(line),
+      start: async () => {
+        seen.push("start");
+        return { ok: true, exitCode: 0 };
+      },
+    });
+    expect(seen[seen.length - 1]).toBe("start");
+    expect(seen[0]).toContain("names a second session");
+  });
+
+  it("gives the agent the environment it would get from the same shell, plus the two profile variables", () => {
+    // A key in the shell is inherited, as it is when claude starts directly, so hooks in the session work.
+    const withKey = launchEnv({ BANDWISE_LAUNCH_PROFILE: "standard", BANDWISE_LAUNCH_PICKED: "none" }, { PATH: "/bin", TYPESAFE_API_KEY: KEY });
+    expect(withKey).toEqual({ PATH: "/bin", TYPESAFE_API_KEY: KEY, BANDWISE_LAUNCH_PROFILE: "standard", BANDWISE_LAUNCH_PICKED: "none" });
+    // No key in the shell means none in the session: launch never adds one.
+    const without = launchEnv({ BANDWISE_LAUNCH_PROFILE: "standard", BANDWISE_LAUNCH_PICKED: "none" }, { PATH: "/bin" });
+    expect(Object.keys(without).sort()).toEqual(["BANDWISE_LAUNCH_PICKED", "BANDWISE_LAUNCH_PROFILE", "PATH"]);
   });
 
   it("starts the default when live mode cannot load", async () => {

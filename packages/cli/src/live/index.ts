@@ -81,11 +81,15 @@ export async function runHookCommand(cmd: HookCommand, io: Omit<HookDeps, "trans
  */
 export async function runLaunchCommand(
   cmd: LaunchCommand & { print: boolean; passthrough: readonly string[] },
-  io: Omit<LaunchDeps, "transport"> & Pick<LiveIo, "fetch"> & { start?: Parameters<typeof runLaunchStart>[2]["start"] },
+  io: Omit<LaunchDeps, "transport"> & Pick<LiveIo, "fetch"> & { start?: Parameters<typeof runLaunchStart>[2]["start"]; warn?: (line: string) => void },
 ): Promise<CommandOutput> {
-  const { fetch, start, ...rest } = io;
+  const { fetch, start, warn, ...rest } = io;
   const { print, passthrough, ...launch } = cmd;
   const deps = { ...rest, transport: () => liveTransport(fetch !== undefined ? { fetch } : {}) };
   if (print) return runLaunchPrint(launch, deps);
-  return runLaunchStart(launch, passthrough, { ...deps, start: start ?? ((program, args, env) => startProgram(program, args, env)) });
+  return runLaunchStart(launch, passthrough, {
+    ...deps,
+    ...(warn !== undefined ? { warn } : {}),
+    start: start ?? ((program, args, env) => startProgram(program, args, env)),
+  });
 }

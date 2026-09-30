@@ -175,6 +175,11 @@ export function taskFromArgs(passthrough: readonly string[]): string {
 
 export interface StartDeps extends LaunchDeps {
   start: (program: LaunchProgram, args: readonly string[], env: Readonly<Record<string, string | undefined>>) => Promise<StartResult>;
+  /**
+   * Writes a notice to the person before the agent starts, so "using the default" is seen before
+   * the session and not when it ends. bin.ts writes to stderr. Without it, notices are returned.
+   */
+  warn?: (line: string) => void;
 }
 
 /**
@@ -183,17 +188,25 @@ export interface StartDeps extends LaunchDeps {
  * launch; a profile's second session is only reported. Exits with the agent's exit code.
  */
 export async function runLaunchStart(cmd: LaunchCommand, passthrough: readonly string[], deps: StartDeps): Promise<CommandOutput> {
-  const choice = await chooseProfile(cmd, deps);
+  // The prompt the person gives the agent is the task, unless --task says otherwise.
+  const task = cmd.task.trim() !== "" ? cmd.task : taskFromArgs(passthrough);
+  const choice = await chooseProfile({ ...cmd, task }, deps);
   if (!choice.ok) return { exitCode: 1, stdout: "", stderr: choice.message };
-  const notes = choice.note === null ? [] : [choice.note];
+  const before = choice.note === null ? [] : [choice.note];
   const { args, skipped } = launchArgs(choice.pick, passthrough);
-  if (skipped.length > 0) notes.push(`bandwise launch: you passed ${skipped.join(" and ")}, so the profile's value was not added.`);
+  if (skipped.length > 0) before.push(`bandwise launch: you passed ${skipped.join(" and ")}, so the profile's value was not added.`);
   const second = choice.pick.sessions[1];
   if (second !== undefined) {
-    notes.push(`bandwise launch: profile "${choice.pick.profile}" names a second session (${second.model}, ${second.effort}); bandwise launch starts one session, so start it yourself if you want it.`);
+    before.push(`bandwise launch: profile "${choice.pick.profile}" names a second session (${second.model}, ${second.effort}); bandwise launch starts one session, so start it yourself if you want it.`);
+  }
+  // Notices go out before the agent takes the terminal.
+  const held: string[] = [];
+  for (const line of before) {
+    if (deps.warn !== undefined) deps.warn(line);
+    else held.push(line);
   }
   const env = launchEnv({ [LAUNCH_PROFILE_ENV]: choice.pick.profile, [LAUNCH_PICKED_ENV]: choice.pick.picked ?? "none" }, deps.env);
   const started = await deps.start(choice.profiles.program, args, env);
-  if (!started.ok) notes.push(`bandwise launch: ${started.message}`);
-  return { exitCode: started.ok ? started.exitCode : 127, stdout: "", stderr: notes.join("\n") };
+  if (!started.ok) held.push(`bandwise launch: ${started.message}`);
+  return { exitCode: started.ok ? started.exitCode : 127, stdout: "", stderr: held.join("\n") };
 }
