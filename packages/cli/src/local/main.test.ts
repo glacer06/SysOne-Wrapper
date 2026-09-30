@@ -81,8 +81,8 @@ describe("bandwise run --local", () => {
     const out = await main(["run", "--local", DEMO_SPEC, DEMO_STATE, "--json"]);
     expect(out.exitCode).toBe(0);
     const result = RunResult.parse(JSON.parse(out.stdout));
-    expect(result).toMatchObject({ status: "ok", route: "urgent", overallAction: "auto", runBand: "high", typesafeRequestId: "req_fx_email_triage" });
-    expect(result.cost.systemOneCostUsd).toBe(0.000026);
+    expect(result).toMatchObject({ status: "ok", route: "urgent", overallAction: "auto", runBand: "high", typesafeRequestId: "req_fx_email_triage_demo" });
+    expect(result.cost.systemOneCostUsd).toBe(0.000038);
     expect(result.cost.savingsUsd).toBeGreaterThan(0);
     expect(out.stderr).toBe("");
   });

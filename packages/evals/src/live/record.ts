@@ -31,9 +31,14 @@ export function planRecording(
   model?: string,
 ): RecordTarget[] {
   // A fixture the client must reject (an evaluation fallback, ADR-013) cannot be re-recorded: the
-  // live answer to its request is a normal one. It stays as committed.
+  // live answer to its request is a normal one. A hand-authored fixture pins an answer the model
+  // does not give on demand (noul-near-half sits on the band edge). Both stay as committed.
   const sources = fixtures.filter(
-    (f) => f.provider === provider && "response" in f && evaluationFallbackReason(f.response, f.responseHeaders) === null,
+    (f) =>
+      f.provider === provider &&
+      "response" in f &&
+      f.source !== "hand-authored" &&
+      evaluationFallbackReason(f.response, f.responseHeaders) === null,
   );
   if (model === undefined) {
     return sources.map((f) => ({ name: f.name, path: join(provider, `${f.name}.json`), request: f.request }));

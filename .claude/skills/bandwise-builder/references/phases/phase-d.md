@@ -5,9 +5,9 @@
 Use Bandwise on Bandwise before anyone else does: Claude Code sessions on this repo first, local with Nick's own key, then hosted for the `internal` org only. Every dogfood set starts in `shadow`. This phase runs before the rest of Phase 2; D3 pulls the few Phase 2 and 3 items it needs forward and marks them done in those files too.
 
 ## D0: Prove Jev
-- [ ] `TYPESAFE_API_KEY` in the team vault, the GitHub `preview` and `production` environments, and Nick's shell. Never in chat, an issue or the repo.
-- [ ] Record the Phase 1 fixture minimum set with `pnpm fixtures:record` and close the Phase 1 fixture item
-- [ ] `pnpm smoke` passes on `jev-1.13.0`; note latency and cost per call in `docs/runbooks/dogfood.md`. One direct call is noted there; the SDK path returned 401 through the cloud proxy, so fixtures and smoke still need a run from Nick's shell
+- [ ] `TYPESAFE_API_KEY` in the team vault, the GitHub `preview` and `production` environments, and Nick's shell. Never in chat, an issue or the repo. Nick's shell holds it as of 2026-09-30; the vault and GitHub environments are still to confirm
+- [x] Record the Phase 1 fixture minimum set with `pnpm fixtures:record` and close the Phase 1 fixture item. 9 of 9 typesafe fixtures recorded from Nick's shell on 2026-09-30 (NSI-730); `noul-near-half` stays hand-authored because live Jev does not answer near 0.5 on demand
+- [x] `pnpm smoke` passes on `jev-1.13.0`; latency and cost are in `docs/runbooks/dogfood.md` (36 checks, $0.000074 per model, 287 ms for a live `done-check` run)
 
 ## D1: Fast pass, local
 - [x] Live transport in the CLI: one module, the only CLI code allowed to import the SDK transport; boundary rule and test like the fixture-only rule
