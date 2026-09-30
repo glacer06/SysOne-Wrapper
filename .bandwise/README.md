@@ -4,7 +4,7 @@ These are the question sets that run as Claude Code hooks on this repository. Ea
 
 | Set | Hook event | What it decides |
 |---|---|---|
-| `sets/done-check.json` | `Stop` | Is the request finished, or is work left or a claim unchecked? |
+| `sets/done-check.json` | `Stop` | Is the request finished, or is work left, a claim unchecked or work nobody asked for (logged only)? |
 | `sets/action-risk-gate.json` | `PreToolUse` (Bash, Edit, Write) | Should a person confirm this command or file change first? |
 | `sets/model-tier.json` | `UserPromptSubmit` | Is the task mechanical, standard or hard? |
 | `sets/launch-profile.json` | none: `bandwise launch` | Which profile in `profiles.json` should a new session start with? |
