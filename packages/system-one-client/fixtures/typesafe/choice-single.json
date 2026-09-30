@@ -32,10 +32,10 @@
         "type": "choice",
         "choice": "billing",
         "probabilities": {
-          "technical": 0,
-          "billing": 1,
           "account": 0,
-          "none_of_these": 0
+          "billing": 1,
+          "none_of_these": 0,
+          "technical": 0
         },
         "confidence": 1
       }

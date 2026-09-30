@@ -80,6 +80,17 @@
   "response": {
     "model": "jev-1.13.0",
     "answers": {
+      "work_type": {
+        "type": "choice",
+        "choice": "decision",
+        "probabilities": {
+          "review": 0,
+          "information": 0,
+          "none_of_these": 0,
+          "decision": 1
+        },
+        "confidence": 1
+      },
       "real_person": {
         "type": "noul",
         "noul": 0.9
@@ -111,21 +122,10 @@
         "probabilities": {
           "transactional": 0,
           "personal": 0,
-          "work_request": 1,
-          "scheduling": 0,
           "none_of_these": 0,
-          "newsletter": 0
-        },
-        "confidence": 1
-      },
-      "work_type": {
-        "type": "choice",
-        "choice": "decision",
-        "probabilities": {
-          "information": 0,
-          "review": 0,
-          "decision": 1,
-          "none_of_these": 0
+          "work_request": 1,
+          "newsletter": 0,
+          "scheduling": 0
         },
         "confidence": 1
       }

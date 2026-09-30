@@ -28,9 +28,9 @@
         "type": "choice",
         "choice": "billing",
         "probabilities": {
-          "billing": 1,
+          "technical": 0,
           "none_of_these": 0,
-          "technical": 0
+          "billing": 1
         },
         "confidence": 1
       }
