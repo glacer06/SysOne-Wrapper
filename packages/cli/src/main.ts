@@ -4,7 +4,7 @@
 // land in Phase 3 (headless-and-agents.md). Every command supports --json where it prints data and
 // never prompts. Exit codes: 0 ok, 1 error, 2 diff or drift, 3 approval pending.
 
-import { formatReport, buildReport, defaultReceiptsPath, parseSince, readReceipts } from "./receipts/index.js";
+import { buildCompare, buildReport, defaultReceiptsPath, formatCompare, formatReport, parseSince, readReceipts } from "./receipts/index.js";
 import { planHooksFromDir } from "./hooks-install.js";
 import type * as LiveModule from "./live/index.js";
 
@@ -18,7 +18,7 @@ export const USAGE = `Usage:
   bandwise run --local <spec.json> <state.json> [--json] [--provider typesafe|openrouter|vercel]
                      [--rollout shadow|controlled|full|paused] [--channel production|staging]
   bandwise run --live <spec.json> <state.json> [same options] [--receipts[=<path>]]
-  bandwise report [--since 7d] [--set <slug>] [--receipts <path>] [--json]
+  bandwise report [--since 7d] [--set <slug>] [--receipts <path>] [--compare profile] [--json]
   bandwise hook <Stop|PreToolUse|UserPromptSubmit> --set <spec.json> [--rollout shadow|controlled|full]
                      [--provider typesafe|openrouter|vercel] [--timeout-ms 3000] [--receipts <path>] [--drop <field>]
   bandwise hooks install [--sets-dir .bandwise/sets] [--command bandwise] [--rollout shadow|controlled|full]
@@ -28,6 +28,8 @@ export const USAGE = `Usage:
   --live    Run the spec against the real model with your own key, read only from
             TYPESAFE_API_KEY (or OPENROUTER_API_KEY, AI_GATEWAY_API_KEY with --provider).
   report    Sum the receipts in ~/.bandwise/receipts.jsonl per set. Savings are estimates.
+            --compare profile groups Stop receipts by launch profile: time to stop, turns,
+            tool calls and done-check outcomes, with the sample size on every row.
   hook      A Claude Code hook: reads the hook JSON on stdin. In shadow it never changes anything.
             Any error or a timeout exits 0 with no output.
   hooks install
@@ -57,7 +59,7 @@ type Parsed =
   | { kind: "error"; message: string }
   | ({ kind: "run-local" } & RunFlags)
   | ({ kind: "run-live"; receiptsPath?: string } & RunFlags)
-  | { kind: "report"; since?: string; set?: string; receiptsPath?: string; json: boolean }
+  | { kind: "report"; since?: string; set?: string; receiptsPath?: string; compare?: "profile"; json: boolean }
   | {
       kind: "hook";
       event: (typeof EVENTS)[number];
@@ -140,7 +142,7 @@ export function parseArgs(argv: readonly string[]): Parsed {
   if (command === "run") return parseRun(rest);
 
   if (command === "report") {
-    const f = flags(rest, ["--since", "--set", "--receipts"], ["--json"]);
+    const f = flags(rest, ["--since", "--set", "--receipts", "--compare"], ["--json"]);
     if (typeof f === "string") return err(f);
     const since = f["--since"]?.[0];
     if (since !== undefined && parseSince(since) === null) return err("--since takes a number and m, h or d, for example 7d");
@@ -150,6 +152,9 @@ export function parseArgs(argv: readonly string[]): Parsed {
     if (set !== undefined) out.set = set;
     const receipts = f["--receipts"]?.[0];
     if (receipts !== undefined) out.receiptsPath = receipts;
+    const compare = f["--compare"]?.[0];
+    if (compare !== undefined && compare !== "profile") return err("--compare takes profile");
+    if (compare !== undefined) out.compare = compare;
     return out;
   }
 
@@ -210,12 +215,17 @@ export async function main(argv: readonly string[], io: MainIo = {}): Promise<Co
   if (parsed.kind === "report") {
     const path = parsed.receiptsPath ?? defaultReceiptsPath();
     const { receipts, skipped } = readReceipts(path);
-    const report = buildReport(receipts, {
+    const window = {
       now: (io.now ?? Date.now)(),
       sinceMs: parsed.since === undefined ? null : parseSince(parsed.since),
       sinceText: parsed.since ?? null,
       set: parsed.set ?? null,
-    });
+    };
+    if (parsed.compare === "profile") {
+      const compare = buildCompare(receipts, window);
+      return parsed.json ? { exitCode: 0, stdout: JSON.stringify({ ...compare, path, skipped }, null, 2), stderr: "" } : { exitCode: 0, stdout: formatCompare(compare, path, skipped), stderr: "" };
+    }
+    const report = buildReport(receipts, window);
     return parsed.json ? { exitCode: 0, stdout: JSON.stringify({ ...report, path, skipped }, null, 2), stderr: "" } : { exitCode: 0, stdout: formatReport(report, path, skipped), stderr: "" };
   }
 

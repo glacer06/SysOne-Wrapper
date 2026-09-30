@@ -101,6 +101,20 @@ Read the savings as estimates. The counterfactual prices one comparator LLM call
 
 Receipts live in `~/.bandwise/receipts.jsonl`, one JSON line per run. Delete the file to start over.
 
+### Compare launch profiles (NSI-729)
+
+```sh
+pnpm bandwise report --since 14d --compare profile
+```
+
+Each `Stop` receipt carries the task behind it: time from your request to the stop, agent turns, tool calls (subagent turns not counted), a hash of the session id, and the launch profile used and picked. Counts only, never the prompt or the reply. `--compare profile` groups those receipts by profile used and profile picked. Per group it shows the task count, the median time to stop, turns and tool calls, and how often done-check said `finished`.
+
+How to read it:
+- Look at the task count before any time. Medians over a handful of tasks swing a lot.
+- Until `bandwise launch` exists (NSI-727), every group reads `profile none, pick none`. That row is the baseline for this repo.
+- In `shadow` the session always runs the default, so a row marked "pick differs" shows what the set would have chosen, not what the choice would have changed. Only a stretch in `controlled` can show that.
+- No speed or cost claim about launch profiles goes on www or in the docs until two weeks of these numbers back it (ADR-020 Amendment 1, point 14). Write the decision here, next to the numbers.
+
 ## 3. Move a set from shadow to controlled
 
 One set at a time, after about a week of receipts, and only when you say so.
