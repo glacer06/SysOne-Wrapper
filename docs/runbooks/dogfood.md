@@ -31,6 +31,10 @@ pnpm smoke                    # checks jev-preview, jev-latest and jev-1.13.0; p
 git diff --stat packages/system-one-client/fixtures
 ```
 
+## Status (2026-09-30)
+
+The three dogfood hooks are wired in this repo's `.claude/settings.json`, all in `shadow`: `done-check` on Stop, `action-risk-gate` on PreToolUse, and `model-tier` on UserPromptSubmit. The risk gate runs with `--drop content_preview`, so file contents stay on the machine. Nick approved them on 2026-09-30. The week of receipts before any set moves to `controlled` (section 3) starts then.
+
 ## 1. Install
 
 You need Node 22, `pnpm install` done in this repo, and your key in the shell Claude Code starts from. On a Mac, keep the key in the Keychain and load it in `~/.zshrc`, so it never sits in a plain file:
