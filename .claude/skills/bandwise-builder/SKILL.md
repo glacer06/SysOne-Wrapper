@@ -176,4 +176,5 @@ Details, the run data flow, and caching: `references/architecture.md`.
 - `references/team-playbook.md`: roles, lanes, contracts, handoffs
 - `references/phases/phase-0.md` through `phase-7.md`, plus `phase-3b.md`, `phase-4b.md` and `phase-d.md` (dogfood track, next up): checklists and exit gates
 - `templates/question-set.example.json`, `templates/adr.md`, `templates/plugin.template.ts`
+- `docs/parked-tools.md` in the repo: tools we looked at and parked (Fly.io first), with what would bring each back. Check it before proposing a new vendor.
 - ADRs live in the repo at `docs/adr/`: 001 stack; 002 to 006 auth (Better Auth), key vault, cache, jobs runner, billing; 007 to 010 headless parity, model registry, app integration, rollout and the effectiveness loop (all accepted 2026-09-26); 011 OpenRouter route (proposed); 013 Vercel AI Gateway route (accepted 2026-09-27); 020 dogfood track and local live mode (accepted 2026-09-28)
