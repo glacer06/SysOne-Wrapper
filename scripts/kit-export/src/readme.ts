@@ -86,7 +86,7 @@ That prints the entries for \`.claude/settings.json\` and writes nothing. Every 
 
 ## Launch profiles
 
-\`bandwise launch --print --task "..."\` picks a launch profile for a new Claude Code session from \`.bandwise/profiles.json\`, an allowlist of models and effort levels you review like code, and prints it as JSON. It starts nothing. In \`shadow\` it always prints the default and records what it would have picked. Any error, a missing key or a 3 second timeout prints the default.
+\`bandwise launch -- <claude args>\` picks a launch profile for a new Claude Code session from \`.bandwise/profiles.json\`, an allowlist of models and effort levels you review like code, and starts \`claude\` with that profile's \`--model\` and \`--effort\`. Your own arguments pass through unchanged and permission flags are never touched. \`--print\` prints the pick as JSON and starts nothing. In \`shadow\` the default is always used and the receipt records the pick. Any error, a missing key or a 3 second timeout uses the default, so a launch is never blocked.
 
 ## How a question set works
 

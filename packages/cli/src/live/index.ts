@@ -8,13 +8,15 @@ import type { CommandOutput } from "../main.js";
 import { appendReceipt } from "../receipts/index.js";
 import { formatLiveRun } from "./format.js";
 import { type HookCommand, type HookDeps, runHook } from "./hook.js";
-import { type LaunchCommand, type LaunchDeps, runLaunchPrint } from "./launch.js";
+import { type LaunchCommand, type LaunchDeps, runLaunchPrint, runLaunchStart } from "./launch.js";
+import { startProgram } from "./spawn.js";
 import { runLive } from "./run-live.js";
 import { type LiveFetch, liveTransport } from "./transport.js";
 
 export { DEFAULT_HOOK_TIMEOUT_MS, GATED_TOOLS, HOOK_EVENTS, HOOK_ROLLOUTS, type HookCommand, type HookEvent, type HookRollout, hookResponse, isTrustedCommand, lastExchange, mapHookInput, runHook, type TaskStats, taskStats } from "./hook.js";
-export { LAUNCH_PICKED_ENV, LAUNCH_PROFILE_ENV, PROVIDER_KEY_ENV, readLaunchProfile, readProviderKey } from "./key.js";
-export { DEFAULT_LAUNCH_TIMEOUT_MS, LAUNCH_QUESTION, LAUNCH_ROLLOUTS, type LaunchCommand, type LaunchPick, type LaunchRollout, runLaunchPrint } from "./launch.js";
+export { LAUNCH_PICKED_ENV, LAUNCH_PROFILE_ENV, PROVIDER_KEY_ENV, launchEnv, readLaunchProfile, readProviderKey } from "./key.js";
+export { DEFAULT_LAUNCH_TIMEOUT_MS, LAUNCH_QUESTION, LAUNCH_ROLLOUTS, type LaunchChoice, type LaunchCommand, type LaunchPick, type LaunchRollout, chooseProfile, launchArgs, runLaunchPrint, runLaunchStart, taskFromArgs } from "./launch.js";
+export { type SpawnFn, type StartResult, startProgram } from "./spawn.js";
 export { EFFORTS, LAUNCH_PROGRAMS, type LaunchSession, type Profiles, launchFallback, loadProfiles, parseProfiles } from "./profiles.js";
 export { redactSecrets, shapeState } from "./redact.js";
 export { runLive, runLiveSpec, setSlug } from "./run-live.js";
@@ -73,8 +75,17 @@ export async function runHookCommand(cmd: HookCommand, io: Omit<HookDeps, "trans
   return { exitCode: out.exitCode, stdout: out.stdout, stderr: "" };
 }
 
-/** `bandwise launch --print`. Exit 0 with a profile, or 1 when the profiles file is invalid. */
-export async function runLaunchCommand(cmd: LaunchCommand, io: Omit<LaunchDeps, "transport"> & Pick<LiveIo, "fetch">): Promise<CommandOutput> {
-  const { fetch, ...rest } = io;
-  return runLaunchPrint(cmd, { ...rest, transport: () => liveTransport(fetch !== undefined ? { fetch } : {}) });
+/**
+ * `bandwise launch`. With `print`, the profile as JSON (exit 0, or 1 when the profiles file is
+ * invalid). Otherwise it starts the agent and returns its exit code.
+ */
+export async function runLaunchCommand(
+  cmd: LaunchCommand & { print: boolean; passthrough: readonly string[] },
+  io: Omit<LaunchDeps, "transport"> & Pick<LiveIo, "fetch"> & { start?: Parameters<typeof runLaunchStart>[2]["start"] },
+): Promise<CommandOutput> {
+  const { fetch, start, ...rest } = io;
+  const { print, passthrough, ...launch } = cmd;
+  const deps = { ...rest, transport: () => liveTransport(fetch !== undefined ? { fetch } : {}) };
+  if (print) return runLaunchPrint(launch, deps);
+  return runLaunchStart(launch, passthrough, { ...deps, start: start ?? ((program, args, env) => startProgram(program, args, env)) });
 }

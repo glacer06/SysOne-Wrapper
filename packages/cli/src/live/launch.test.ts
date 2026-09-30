@@ -1,3 +1,4 @@
+import { EventEmitter } from "node:events";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -5,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { main } from "../main.js";
 import { readReceipts } from "../receipts/index.js";
-import { type LaunchCommand, loadProfiles, parseProfiles, runLaunchPrint } from "./index.js";
+import { type LaunchCommand, type SpawnFn, launchArgs, loadProfiles, parseProfiles, runLaunchPrint, runLaunchStart, startProgram, taskFromArgs } from "./index.js";
 import { liveTransport } from "./transport.js";
 
 const at = (relative: string): string => fileURLToPath(new URL(relative, import.meta.url));
@@ -153,10 +154,10 @@ describe("bandwise launch --print", () => {
     expect(out.stderr).toContain("profiles.a.sessions[0].effort");
   });
 
-  it("from the command line: --print only, the task from --task or stdin", async () => {
-    const noPrint = await main(["launch", "--task", "x"]);
-    expect(noPrint.exitCode).toBe(1);
-    expect(noPrint.stderr).toContain("only bandwise launch --print");
+  it("from the command line: --print takes the task from --task or stdin, and no agent arguments", async () => {
+    const extra = await main(["launch", "--print", "--task", "x", "--", "fix it"]);
+    expect(extra.exitCode).toBe(1);
+    expect(extra.stderr).toContain("takes no agent arguments");
 
     const base = ["launch", "--print", "--set", SET, "--profiles", PROFILES, "--rollout", "controlled", "--timeout-ms", "20000", "--receipts", join(tmp(), "r.jsonl")];
     const flag = await main([...base, "--task", "Rename foo to bar everywhere"], { env: ENV, fetch: answering("light", 0.95).fetch });
@@ -177,5 +178,151 @@ describe("bandwise launch --print", () => {
     expect(out.exitCode).toBe(0);
     expect(JSON.parse(out.stdout)).toMatchObject({ profile: "standard", picked: null });
     expect(out.stderr).toContain("live mode could not load");
+  });
+});
+
+type Started = { program: string; args: readonly string[]; env: Readonly<Record<string, string | undefined>> };
+
+/** A start function that records what it was asked to run and returns an exit code. */
+function recorder(exitCode = 0) {
+  const calls: Started[] = [];
+  const start = async (program: "claude", args: readonly string[], env: Readonly<Record<string, string | undefined>>) => {
+    calls.push({ program, args, env });
+    return { ok: true as const, exitCode };
+  };
+  return { start, calls };
+}
+
+describe("bandwise launch (starts the agent)", () => {
+  it("adds only --model and --effort and passes every other argument through unchanged", () => {
+    const pick = { profile: "deep", sessions: [{ model: "opus", effort: "high" as const }], picked: "deep", rollout: "controlled" as const };
+    const passthrough = ["--permission-mode", "plan", "--allowedTools", "Bash(git *)", "--disallowedTools", "Edit", "--settings", "s.json", "--dangerously-skip-permissions", "-p", "fix the flaky test; rm -rf / $(whoami)"];
+    const { args, skipped } = launchArgs(pick, passthrough);
+    expect(args).toEqual(["--model", "opus", "--effort", "high", ...passthrough]);
+    expect(skipped).toEqual([]);
+    // A flag the person passed wins; the profile's value is not added.
+    expect(launchArgs(pick, ["--model", "sonnet", "hi"])).toEqual({ args: ["--effort", "high", "--model", "sonnet", "hi"], skipped: ["--model"] });
+    expect(launchArgs(pick, ["--effort=low"]).args).toEqual(["--model", "opus", "--effort=low"]);
+  });
+
+  it("takes the task from --task, else from the last argument that is not an option", () => {
+    expect(taskFromArgs(["-p", "Rename foo"])).toBe("Rename foo");
+    expect(taskFromArgs(["--continue"])).toBe("");
+    expect(taskFromArgs([])).toBe("");
+  });
+
+  it("in shadow starts claude on the default, with the profile variables and the exit code back", async () => {
+    const { start, calls } = recorder(3);
+    const out = await runLaunchStart(cmd(), ["-p", "hello"], { env: { ...ENV, HOME: "/home/nick" }, transport: () => liveTransport({ fetch: answering("deep", 0.95).fetch }), start });
+    expect(out.exitCode).toBe(3);
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.program).toBe("claude");
+    expect(calls[0]?.args).toEqual(["--model", "sonnet", "--effort", "medium", "-p", "hello"]);
+    expect(calls[0]?.env).toMatchObject({ HOME: "/home/nick", BANDWISE_LAUNCH_PROFILE: "standard", BANDWISE_LAUNCH_PICKED: "deep" });
+  });
+
+  it("in controlled starts one session on a high band pick and reports the second", async () => {
+    const { start, calls } = recorder();
+    const out = await runLaunchStart(cmd({ rollout: "controlled" }), [], { env: ENV, transport: () => liveTransport({ fetch: answering("deep_review", 0.95).fetch }), start });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.args).toEqual(["--model", "opus", "--effort", "high"]);
+    expect(out.stderr).toContain('profile "deep_review" names a second session (sonnet, medium)');
+  });
+
+  it("still starts the session on the default when Bandwise fails, and refuses a bad profiles file", async () => {
+    const { start, calls } = recorder();
+    const noKey = await runLaunchStart(cmd({ rollout: "controlled" }), ["hi"], { env: {}, transport: () => liveTransport({ fetch: answering("deep", 0.95).fetch }), start });
+    expect(noKey.exitCode).toBe(0);
+    expect(calls[0]?.args).toEqual(["--model", "sonnet", "--effort", "medium", "hi"]);
+    expect(noKey.stderr).toContain("TYPESAFE_API_KEY is not set");
+
+    const path = join(tmp(), "profiles.json");
+    writeFileSync(path, JSON.stringify({ program: "bash", default: "a", profiles: { a: { sessions: [{ model: "sonnet", effort: "low" }] } } }));
+    const bad = await runLaunchStart(cmd({ profilesPath: path }), ["hi"], { env: ENV, transport: () => liveTransport({ fetch: answering("deep", 0.95).fetch }), start });
+    expect(bad.exitCode).toBe(1);
+    expect(bad.stderr).toContain("program");
+    expect(calls).toHaveLength(1);
+  });
+
+  it("says so when claude is not installed", async () => {
+    const start = async () => ({ ok: false as const, message: "claude was not found on your PATH" });
+    const out = await runLaunchStart(cmd(), [], { env: {}, transport: () => liveTransport({ fetch: answering("deep", 0.95).fetch }), start });
+    expect(out.exitCode).toBe(127);
+    expect(out.stderr).toContain("claude was not found on your PATH");
+  });
+
+  it("from the command line: everything after -- goes to the agent, --help there included", async () => {
+    const { start, calls } = recorder();
+    const out = await main(["launch", "--profiles", PROFILES, "--set", SET, "--timeout-ms", "20000", "--receipts", join(tmp(), "r.jsonl"), "--", "--help"], {
+      env: ENV,
+      fetch: answering("deep", 0.95).fetch,
+      start,
+    });
+    expect(out.exitCode).toBe(0);
+    expect(calls[0]?.args).toEqual(["--model", "sonnet", "--effort", "medium", "--help"]);
+  });
+
+  it("starts the default when live mode cannot load", async () => {
+    const { start, calls } = recorder(0);
+    const out = await main(["launch", "--profiles", PROFILES, "--", "hi"], {
+      start,
+      loadLive: async () => {
+        throw new Error("Cannot find package '@typesafe-ai/sdk'");
+      },
+    });
+    expect(out.exitCode).toBe(0);
+    expect(calls[0]?.args).toEqual(["--model", "sonnet", "--effort", "medium", "hi"]);
+    expect(calls[0]?.env).toMatchObject({ BANDWISE_LAUNCH_PROFILE: "standard", BANDWISE_LAUNCH_PICKED: "none" });
+    expect(out.stderr).toContain("live mode could not load");
+  });
+});
+
+describe("live/spawn.ts", () => {
+  /** A fake child process and the options it was started with. */
+  function fakeSpawn(finish: (child: EventEmitter & { kill: (s: string) => boolean; killed: string[] }) => void) {
+    const seen: Array<{ command: string; args: readonly string[]; options: unknown }> = [];
+    const spawn: SpawnFn = (command, args, options) => {
+      seen.push({ command, args, options });
+      const child = Object.assign(new EventEmitter(), { killed: [] as string[], kill: (s: string) => (child.killed.push(s), true) });
+      setImmediate(() => finish(child));
+      return child as unknown as ReturnType<SpawnFn>;
+    };
+    return { spawn, seen };
+  }
+  const signals = () => {
+    const handlers = new Map<string, () => void>();
+    return {
+      handlers,
+      on: ((e: string, h: () => void) => (handlers.set(e, h), process)) as NodeJS.Process["on"],
+      off: ((e: string) => (handlers.delete(e), process)) as NodeJS.Process["off"],
+    };
+  };
+
+  it("starts the program with an argument array, no shell, the terminal and the given env", async () => {
+    const { spawn, seen } = fakeSpawn((c) => c.emit("exit", 0, null));
+    const out = await startProgram("claude", ["--model", "opus", "a; rm -rf /"], { A: "1" }, { spawn, signals: signals() });
+    expect(out).toEqual({ ok: true, exitCode: 0 });
+    expect(seen[0]).toEqual({ command: "claude", args: ["--model", "opus", "a; rm -rf /"], options: { stdio: "inherit", shell: false, env: { A: "1" } } });
+  });
+
+  it("returns the exit code, 128 plus the signal number, or a clear error", async () => {
+    expect(await startProgram("claude", [], {}, { spawn: fakeSpawn((c) => c.emit("exit", 7, null)).spawn, signals: signals() })).toEqual({ ok: true, exitCode: 7 });
+    expect(await startProgram("claude", [], {}, { spawn: fakeSpawn((c) => c.emit("exit", null, "SIGTERM")).spawn, signals: signals() })).toEqual({ ok: true, exitCode: 143 });
+    const missing = await startProgram("claude", [], {}, { spawn: fakeSpawn((c) => c.emit("error", Object.assign(new Error("spawn claude ENOENT"), { code: "ENOENT" }))).spawn, signals: signals() });
+    expect(missing).toEqual({ ok: false, message: "claude was not found on your PATH" });
+  });
+
+  it("leaves Ctrl-C to the agent, passes SIGTERM on, and cleans up its handlers", async () => {
+    const sig = signals();
+    let child: { killed: string[] } | undefined;
+    const { spawn } = fakeSpawn((c) => {
+      child = c;
+      sig.handlers.get("SIGINT")?.();
+      sig.handlers.get("SIGTERM")?.();
+      c.emit("exit", 130, null);
+    });
+    await startProgram("claude", [], {}, { spawn, signals: sig });
+    expect(child?.killed).toEqual(["SIGTERM"]);
+    expect(sig.handlers.size).toBe(0);
   });
 });

@@ -7,6 +7,7 @@
 import { buildCompare, buildReport, defaultReceiptsPath, formatCompare, formatReport, parseSince, readReceipts } from "./receipts/index.js";
 import { planHooksFromDir } from "./hooks-install.js";
 import type * as LiveModule from "./live/index.js";
+import type { LaunchPick } from "./live/launch.js";
 
 export interface CommandOutput {
   exitCode: number;
@@ -22,9 +23,10 @@ export const USAGE = `Usage:
   bandwise hook <Stop|PreToolUse|UserPromptSubmit> --set <spec.json> [--rollout shadow|controlled|full]
                      [--provider typesafe|openrouter|vercel] [--timeout-ms 3000] [--receipts <path>] [--drop <field>]
   bandwise hooks install [--sets-dir .bandwise/sets] [--command bandwise] [--rollout shadow|controlled|full]
-  bandwise launch --print [--task <text>] [--set .bandwise/sets/launch-profile.json]
+  bandwise launch [--task <text>] [--set .bandwise/sets/launch-profile.json]
                      [--profiles .bandwise/profiles.json] [--rollout shadow|controlled|full]
                      [--provider typesafe|openrouter|vercel] [--timeout-ms 3000] [--receipts <path>]
+                     [--print | -- <agent args>]
 
   --local   Run the spec with the fixture transport: no network call and no System One key.
             Recorded fixtures answer the requests they cover; others get synthetic answers.
@@ -37,11 +39,15 @@ export const USAGE = `Usage:
             Any error or a timeout exits 0 with no output.
   hooks install
             Print the .claude/settings.json entries for the sets in the folder. Writes nothing.
-  launch --print
-            Pick a launch profile for a task (from --task, or stdin) and print it as JSON:
-            {"profile", "sessions": [{"model", "effort"}], "picked", "rollout"}. Starts nothing.
-            In shadow it always prints the default. Without a key, or on an error or a timeout,
-            it prints the default and says why on stderr.
+  launch    Pick a launch profile for a task and start the agent the profiles file names
+            (claude) with --model and --effort added. Arguments after -- go to the agent
+            unchanged. The task is --task, or else the last argument after -- that is not an
+            option. It exits with the agent's exit code.
+            --print prints the pick as JSON instead and starts nothing:
+            {"profile", "sessions": [{"model", "effort"}], "picked", "rollout"}. With --print the
+            task is --task or stdin.
+            In shadow the default is always used. Without a key, or on an error or a timeout,
+            the default is used and stderr says why.
 
 Management commands (sets, publish, rollout, evals and more) work against Bandwise Cloud and
 are not in this release. Nothing here needs a Bandwise account.`;
@@ -88,6 +94,9 @@ type Parsed =
       timeoutMs: number;
       receiptsPath?: string;
       task?: string;
+      print: boolean;
+      /** Everything after `--`, for the agent. */
+      passthrough: string[];
     };
 
 function oneOf<T extends string>(allowed: readonly T[], value: string | undefined): value is T {
@@ -155,7 +164,9 @@ function flags(rest: readonly string[], known: readonly string[], booleans: read
 
 /** Parse argv (without node and the script path). */
 export function parseArgs(argv: readonly string[]): Parsed {
-  if (argv.length === 0 || argv.includes("--help") || argv.includes("-h")) return { kind: "help" };
+  // Arguments after `--` belong to the agent `bandwise launch` starts, so --help there is not ours.
+  const ours = argv.includes("--") ? argv.slice(0, argv.indexOf("--")) : argv;
+  if (argv.length === 0 || ours.includes("--help") || ours.includes("-h")) return { kind: "help" };
   const [command, ...rest] = argv;
   if (command === "run") return parseRun(rest);
 
@@ -207,11 +218,13 @@ export function parseArgs(argv: readonly string[]): Parsed {
   }
 
   if (command === "launch") {
-    const f = flags(rest, ["--set", "--profiles", "--rollout", "--provider", "--timeout-ms", "--receipts", "--task"], ["--print"]);
+    const sep = rest.indexOf("--");
+    const own = sep < 0 ? rest : rest.slice(0, sep);
+    const passthrough = sep < 0 ? [] : rest.slice(sep + 1);
+    const f = flags(own, ["--set", "--profiles", "--rollout", "--provider", "--timeout-ms", "--receipts", "--task"], ["--print"]);
     if (typeof f === "string") return err(f);
-    if (f["--print"] === undefined) {
-      return err("this release has only bandwise launch --print, which prints the profile and starts nothing. Starting the agent comes in a later release.");
-    }
+    const print = f["--print"] !== undefined;
+    if (print && passthrough.length > 0) return err("bandwise launch --print starts nothing, so it takes no agent arguments after --");
     const rollout = f["--rollout"]?.[0] ?? "shadow";
     if (!oneOf(HOOK_ROLLOUTS, rollout)) return err(`--rollout must be one of ${HOOK_ROLLOUTS.join(", ")}`);
     const provider = f["--provider"]?.[0] ?? "typesafe";
@@ -225,6 +238,8 @@ export function parseArgs(argv: readonly string[]): Parsed {
       rollout,
       provider,
       timeoutMs,
+      print,
+      passthrough,
     };
     const receipts = f["--receipts"]?.[0];
     if (receipts !== undefined) out.receiptsPath = receipts;
@@ -233,7 +248,27 @@ export function parseArgs(argv: readonly string[]): Parsed {
     return out;
   }
 
-  return err(`unknown command "${command}"; this release has run, report, hook, hooks install and launch --print`);
+  return err(`unknown command "${command}"; this release has run, report, hook, hooks install and launch`);
+}
+
+/** Start the agent on the default profile when live mode itself failed to load. */
+async function startDefaultWithoutLive(
+  cmd: { profilesPath: string; passthrough: readonly string[] },
+  fallback: CommandOutput,
+  io: MainIo,
+): Promise<CommandOutput> {
+  const { loadProfiles } = await import("./live/profiles.js");
+  const profiles = loadProfiles(cmd.profilesPath);
+  if (!profiles.ok) return fallback;
+  const pick = JSON.parse(fallback.stdout) as LaunchPick;
+  const { launchArgs } = await import("./live/launch.js");
+  const { args } = launchArgs(pick, cmd.passthrough);
+  const { launchEnv, LAUNCH_PICKED_ENV, LAUNCH_PROFILE_ENV } = await import("./live/key.js");
+  const env = launchEnv({ [LAUNCH_PROFILE_ENV]: pick.profile, [LAUNCH_PICKED_ENV]: "none" }, io.env);
+  const start = io.start ?? (await import("./live/spawn.js")).startProgram;
+  const started = await start(profiles.value.program, args, env);
+  const notes = [fallback.stderr, ...(started.ok ? [] : [`bandwise launch: ${started.message}`])];
+  return { exitCode: started.ok ? started.exitCode : 127, stdout: "", stderr: notes.join("\n") };
 }
 
 export interface MainIo {
@@ -244,6 +279,8 @@ export interface MainIo {
   now?: () => number;
   /** Tests pass a fetch so live mode sends nothing. */
   fetch?: (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
+  /** Starts the agent for `bandwise launch`. Tests pass a fake; the default is live/spawn.ts. */
+  start?: (program: "claude", args: readonly string[], env: Readonly<Record<string, string | undefined>>) => Promise<{ ok: true; exitCode: number } | { ok: false; message: string }>;
   /** Loads live mode. Tests replace it to prove a failed load stays silent in a hook. */
   loadLive?: () => Promise<typeof LiveModule>;
 }
@@ -311,18 +348,23 @@ export async function main(argv: readonly string[], io: MainIo = {}): Promise<Co
   }
   if (parsed.kind === "launch") {
     const { kind: _kind, receiptsPath, task, ...rest } = parsed;
-    const cmd = { ...rest, receiptsPath: receiptsPath ?? defaultReceiptsPath(), task: task ?? (io.stdin !== undefined ? await io.stdin() : "") };
+    // --print reads the task from stdin when --task is absent. A real launch leaves stdin to the agent.
+    const fromStdin = async (): Promise<string> => (rest.print && io.stdin !== undefined ? await io.stdin() : "");
+    const cmd = { ...rest, receiptsPath: receiptsPath ?? defaultReceiptsPath(), task: task ?? (rest.print ? await fromStdin() : "") };
     try {
       const live = await loadLive();
       const launchIo: Parameters<typeof live.runLaunchCommand>[1] = {};
       if (io.env !== undefined) launchIo.env = io.env;
       if (io.now !== undefined) launchIo.now = io.now;
       if (io.fetch !== undefined) launchIo.fetch = io.fetch;
+      if (io.start !== undefined) launchIo.start = io.start;
       return await live.runLaunchCommand(cmd, launchIo);
     } catch {
-      // A live module that cannot load still prints the default, so a launch is never blocked.
+      // A live module that cannot load still uses the default, so a launch is never blocked.
       const { launchFallbackFromFile } = await import("./live/profiles.js");
-      return launchFallbackFromFile(cmd.profilesPath, cmd.rollout, "live mode could not load");
+      const fallback = launchFallbackFromFile(cmd.profilesPath, cmd.rollout, "live mode could not load");
+      if (cmd.print || fallback.exitCode !== 0) return fallback;
+      return startDefaultWithoutLive(cmd, fallback, io);
     }
   }
 

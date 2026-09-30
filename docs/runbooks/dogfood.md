@@ -125,19 +125,23 @@ One set at a time, after about a week of receipts, and only when you say so.
 
 To step back, change it to `--rollout shadow` again. That is never gated.
 
-## Launch profiles (NSI-727, `--print` only)
+## Launch profiles (NSI-727, NSI-741)
 
-`model-tier` can only advise inside a session. `bandwise launch --print` picks before one starts. It runs `.bandwise/sets/launch-profile.json` on the task and prints the profile from `.bandwise/profiles.json` to start with:
+`model-tier` can only advise inside a session. `bandwise launch` picks before one starts, from `.bandwise/profiles.json`, and starts Claude Code with that profile's `--model` and `--effort`:
 
 ```sh
-pnpm -s bandwise launch --print --task "Rename getUser to fetchUser everywhere"
-# {"profile":"standard","sessions":[{"model":"sonnet","effort":"medium"}],"picked":"light","rollout":"shadow"}
+pnpm -s bandwise launch --task "Rename getUser to fetchUser everywhere" --
+pnpm -s bandwise launch -- -p "Rename getUser to fetchUser everywhere"
 ```
 
-- `.bandwise/profiles.json` is the allowlist: `light` (sonnet, low), `standard` (sonnet, medium, the default), `deep` (opus, high) and `deep_review` (opus, high, plus a sonnet review session). Change a model or an effort here, by commit, like a spec.
-- In `shadow` it always prints the default, and the receipt records the pick. Read the pick mix with `pnpm bandwise report --since 7d --set launch-profile`.
-- To try a pick by hand, start Claude Code with the printed values: `claude --model <model> --effort <effort>`. For NSI-729 to count the session under that profile, set `BANDWISE_LAUNCH_PROFILE` and `BANDWISE_LAUNCH_PICKED` in the same shell first.
-- It never starts a program. The part that starts `claude` itself waits for the Security reviewer to sign off on `live/spawn.ts` and the profiles schema (ADR-020 Amendment 1, point 13). Until then, no CLI module may import `node:child_process`, and a test checks that.
+- Everything after `--` goes to `claude` unchanged. The task for the pick is `--task`, or else the last argument after `--` that is not an option.
+- It adds only `--model` and `--effort`, and only if you did not pass them yourself. It never touches a permission flag.
+- It sets `BANDWISE_LAUNCH_PROFILE` and `BANDWISE_LAUNCH_PICKED` for the session, so its Stop receipts land in `bandwise report --compare profile` (NSI-729).
+- `.bandwise/profiles.json` is the allowlist: `light` (sonnet, low), `standard` (sonnet, medium, the default), `deep` (opus, high) and `deep_review` (opus, high, plus a sonnet review session). Change a model or an effort here, by commit, like a spec. `deep_review`'s second session is reported, never started.
+- In `shadow` it always starts the default, and the receipt records the pick. Read the pick mix with `pnpm bandwise report --since 7d --set launch-profile`.
+- No key, an error, a timeout or a broken install still starts the session, on the default, with one line on stderr saying why. Only an invalid profiles file stops it.
+- `bandwise launch --print` does the pick and prints it as JSON instead, for hosts that start sessions themselves.
+- Only `packages/cli/src/live/spawn.ts` may start a program. A boundary rule, a CLI test and the kit's ESLint config enforce it. PJ is the Security reviewer for this path (NSI-741).
 
 ## 4. Remove the hooks
 
