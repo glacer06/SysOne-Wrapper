@@ -38,3 +38,11 @@ export function readLaunchProfile(env: Readonly<Record<string, string | undefine
   };
   return { profile: id(LAUNCH_PROFILE_ENV), picked: id(LAUNCH_PICKED_ENV) };
 }
+
+/**
+ * The environment for the agent `bandwise launch` starts: the person's own, as the agent would get
+ * it anyway, plus the launch profile variables. Nothing is taken out and no key is added.
+ */
+export function launchEnv(extra: Readonly<Record<string, string>>, env: Readonly<Record<string, string | undefined>> = process.env): Record<string, string | undefined> {
+  return { ...env, ...extra };
+}

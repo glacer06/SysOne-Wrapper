@@ -87,10 +87,15 @@ export function loadProfiles(path: string): ProfilesResult {
   return parseProfiles(raw);
 }
 
-/** The default profile as `--print` JSON, with one stderr line that says why the set was not used. */
+/** The one stderr line that says why the set was not used. */
+export function fallbackNote(profiles: Profiles, reason: string): string {
+  return `bandwise launch: ${reason}; using the default profile "${profiles.default}".`;
+}
+
+/** The default profile as `--print` JSON, with the note on stderr. */
 export function launchFallback(profiles: Profiles, rollout: string, reason: string): CommandOutput {
   const pick = { profile: profiles.default, sessions: profiles.profiles[profiles.default]?.sessions ?? [], picked: null, rollout };
-  return { exitCode: 0, stdout: JSON.stringify(pick), stderr: `bandwise launch: ${reason}; using the default profile "${profiles.default}".` };
+  return { exitCode: 0, stdout: JSON.stringify(pick), stderr: fallbackNote(profiles, reason) };
 }
 
 /** The default from a profiles file, for when live mode itself cannot load. */

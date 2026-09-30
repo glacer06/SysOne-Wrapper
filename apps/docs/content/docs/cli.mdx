@@ -74,30 +74,37 @@ Any error, a missing key or a timeout (3 seconds by default) ends the hook with 
 ## Launch profiles
 
 ```bash
-bandwise launch --print [--task <text>] [--set .bandwise/sets/launch-profile.json]
+bandwise launch [--task <text>] [--set .bandwise/sets/launch-profile.json]
   [--profiles .bandwise/profiles.json] [--rollout shadow|controlled|full]
   [--provider typesafe|openrouter|vercel] [--timeout-ms 3000] [--receipts <path>]
+  [--print | -- <claude args>]
 ```
 
-A running Claude Code session cannot change its own model, but whoever starts it can pass `--model` and `--effort`. `launch --print` makes that pick before a session starts. It runs the `launch-profile` set on the task (from `--task`, or stdin) and prints one line of JSON:
+A running Claude Code session cannot change its own model, but whoever starts it can pass `--model` and `--effort`. `launch` makes that pick before a session starts. It runs the `launch-profile` set on the task, then starts `claude` with the chosen profile's `--model` and `--effort`:
+
+```bash
+bandwise launch -- -p "Rename getUser to fetchUser everywhere"
+```
+
+Everything after `--` goes to `claude` unchanged. The task is `--task`, or else the argument right after `-p`, or else the only argument after `--` (as in `claude "prompt"`). Any other form, such as `--resume abc` or options before a bare prompt, has no task, so `launch` starts the default profile and tells you to pass `--task`. It never guesses which of `claude`'s options take a value. `launch` adds only `--model` and `--effort`, and not when you passed them yourself. It never adds or changes a permission flag. It starts `claude` with an argument list and no shell, hands it your terminal, and exits with its exit code.
+
+`--print` makes the same pick and prints it as one line of JSON instead. It starts nothing, so your own host, script or CI job can start the agent:
 
 ```json
 {"profile":"standard","sessions":[{"model":"sonnet","effort":"medium"}],"picked":"deep","rollout":"shadow"}
 ```
 
-It starts nothing. Your host, script or CI job reads `sessions` and starts the agent itself.
-
-The profiles file is an allowlist you review like code. It names the agent program (`claude`), a `default` profile, and each profile as one or two sessions with a `model` and an `effort` (`low`, `medium`, `high`, `xhigh` or `max`). Nothing else is allowed in it: no flags, paths or commands. A file that breaks that shape stops the command with an error that names the field.
+The profiles file is an allowlist you review like code. It names the agent program (`claude`), a `default` profile, and each profile as one or two sessions with a `model` and an `effort` (`low`, `medium`, `high`, `xhigh` or `max`). Nothing else is allowed in it: no flags, paths or commands. A file that breaks that shape stops the command with an error that names the field. `launch` starts only a profile's first session; a second one is reported on stderr for you to start if you want it.
 
 The set can only pick a profile id from that file. An answer that is not a profile id counts as no pick.
 
-| Rollout | Profile printed |
+| Rollout | Profile used |
 |---|---|
-| `shadow` (default) | Always the default. `picked` shows what the set would have chosen. |
+| `shadow` (default) | Always the default. The receipt, and `picked` with `--print`, show what the set would have chosen. |
 | `controlled` | The pick, but only on a high band answer. Otherwise the default. |
 | `full` | The pick whenever its action is `auto`. |
 
-A missing key, a set that will not load, an error or a timeout prints the default, with one line on stderr saying why. The task goes to the model with the same redaction as the hooks. The receipt records the profile used and the one picked, never the task.
+A missing key, a set that will not load, an error or a timeout uses the default, with one line on stderr saying why, so a launch is never blocked. The task goes to the model with the same redaction as the hooks. The receipt records the profile used and the one picked, never the task. The session gets `BANDWISE_LAUNCH_PROFILE` and `BANDWISE_LAUNCH_PICKED`, so its hooks can record the profile for `report --compare profile`. Apart from those two, it gets the same environment `claude` would get if you started it from the same shell: `launch` adds no key and removes none. If your key is in that shell, the session inherits it, which the hooks inside the session need. Notices print before the session starts.
 
 ## Conventions the full CLI will follow
 

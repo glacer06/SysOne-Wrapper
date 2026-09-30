@@ -49,6 +49,8 @@ export const elements = [
   { type: "cli-local", pattern: "packages/cli/src/local" },
   // Live mode (ADR-020). transport.ts is the one CLI file that may load the SDK transport.
   { type: "cli-live-transport", pattern: "packages/cli/src/live/transport.ts", mode: "file" },
+  // ADR-020 Amendment 1, point 13: spawn.ts is the one CLI file that may start another program.
+  { type: "cli-live-spawn", pattern: "packages/cli/src/live/spawn.ts", mode: "file" },
   { type: "cli-live", pattern: "packages/cli/src/live" },
   // The run shared by local and live mode. Core only; it never picks a transport.
   { type: "cli-runner", pattern: "packages/cli/src/runner" },
@@ -92,10 +94,12 @@ export const allowedElementDeps = {
   // Local mode runs core on the fixture transport only. It never imports the SDK transport.
   "cli-local": ["cli", "cli-runner", "client", "codegen", "core", "core-contracts", "core-openapi", "system-one-client-fixture"],
   // Live mode reaches the SDK transport only through cli-live-transport (ADR-020).
-  "cli-live": ["cli", "cli-runner", "cli-live-transport", "core", "core-contracts"],
+  "cli-live": ["cli", "cli-runner", "cli-live-transport", "cli-live-spawn", "core", "core-contracts"],
+  // spawn.ts takes the profile program type from live/ and nothing else.
+  "cli-live-spawn": ["cli-live"],
   "cli-live-transport": ["core", "core-contracts", "system-one-client"],
   "cli-runner": ["core", "core-contracts"],
-  cli: ["cli-local", "cli-live", "client", "codegen", "core-openapi"],
+  cli: ["cli-local", "cli-live", "cli-live-spawn", "client", "codegen", "core-openapi"],
   codegen: ["core-contracts"],
   templates: ["core", "core-contracts"],
   "mcp-server": ["client", "core-contracts", "core-openapi"],
@@ -189,6 +193,13 @@ function buildPolicies() {
       message: `Only ${owner} may import {{to.module.source}} (references/architecture.md).`,
     });
   }
+
+  // Only the CLI's live/spawn.ts starts programs (ADR-020 Amendment 1, point 13).
+  policies.push({
+    from: { element: { type: "!cli-live-spawn" } },
+    disallow: { to: { module: { origin: "core", source: ["child_process", "node:child_process"] } } },
+    message: "Only packages/cli/src/live/spawn.ts may import {{to.module.source}} (ADR-020 Amendment 1).",
+  });
 
   // Only tenancy touches crypto and KMS.
   policies.push({
