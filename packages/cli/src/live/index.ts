@@ -10,8 +10,8 @@ import { type HookCommand, type HookDeps, runHook } from "./hook.js";
 import { runLive } from "./run-live.js";
 import { type LiveFetch, liveTransport } from "./transport.js";
 
-export { DEFAULT_HOOK_TIMEOUT_MS, GATED_TOOLS, HOOK_EVENTS, HOOK_ROLLOUTS, type HookCommand, type HookEvent, type HookRollout, hookResponse, isTrustedCommand, lastExchange, mapHookInput, runHook } from "./hook.js";
-export { PROVIDER_KEY_ENV, readProviderKey } from "./key.js";
+export { DEFAULT_HOOK_TIMEOUT_MS, GATED_TOOLS, HOOK_EVENTS, HOOK_ROLLOUTS, type HookCommand, type HookEvent, type HookRollout, hookResponse, isTrustedCommand, lastExchange, mapHookInput, runHook, type TaskStats, taskStats } from "./hook.js";
+export { LAUNCH_PICKED_ENV, LAUNCH_PROFILE_ENV, PROVIDER_KEY_ENV, readLaunchProfile, readProviderKey } from "./key.js";
 export { redactSecrets, shapeState } from "./redact.js";
 export { runLive, runLiveSpec, setSlug } from "./run-live.js";
 

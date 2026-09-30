@@ -8,9 +8,9 @@
 
 import { closeSync, fstatSync, openSync, readSync } from "node:fs";
 import type { RunResult, SystemOneProvider, SystemOneTransport } from "@bandwise/core";
-import { type Receipt, appendReceipt, specHash } from "../receipts/index.js";
+import { type Receipt, type ReceiptSession, appendReceipt, fnv1a64, specHash } from "../receipts/index.js";
 import { loadSpec } from "../runner/index.js";
-import { readProviderKey } from "./key.js";
+import { readLaunchProfile, readProviderKey } from "./key.js";
 import { failureReceipt } from "./receipt-from-result.js";
 import { shapeState } from "./redact.js";
 import { runLiveSpec, setSlug } from "./run-live.js";
@@ -122,7 +122,52 @@ export function lastExchange(transcript: string): { request: string | undefined;
   return { request, lastReply };
 }
 
-type Mapped = { kind: "skip" } | { kind: "run"; candidate: Record<string, unknown> };
+/** Counts for the task behind a Stop: since the user's last typed request. */
+export interface TaskStats {
+  /** Epoch ms of the request, from the transcript's timestamp. Null when it has none. */
+  requestAt: number | null;
+  turns: number;
+  toolCalls: number;
+}
+
+/**
+ * Turns and tool calls since the last typed request in a Claude Code transcript. A turn is
+ * one assistant message; Claude Code writes a line per content block, so lines that share a
+ * message id count once. Subagent (sidechain) lines are not counted. Null when no request is in
+ * the text read.
+ */
+export function taskStats(transcript: string): TaskStats | null {
+  let stats: TaskStats | null = null;
+  let ids = new Set<string>();
+  let unnamed = 0;
+  for (const line of transcript.split("\n")) {
+    if (line.trim() === "") continue;
+    let entry: unknown;
+    try {
+      entry = JSON.parse(line);
+    } catch {
+      continue;
+    }
+    if (!isObj(entry) || !isObj(entry["message"]) || entry["isMeta"] === true || entry["isSidechain"] === true) continue;
+    const content = entry["message"]["content"];
+    if (entry["type"] === "user") {
+      if (textOf(content).trim() === "") continue; // A tool result, not a request.
+      const at = typeof entry["timestamp"] === "string" ? Date.parse(entry["timestamp"]) : Number.NaN;
+      stats = { requestAt: Number.isNaN(at) ? null : at, turns: 0, toolCalls: 0 };
+      ids = new Set();
+      unnamed = 0;
+    } else if (entry["type"] === "assistant" && stats !== null) {
+      const id = str(entry["message"]["id"]);
+      if (id === undefined) unnamed++;
+      else ids.add(id);
+      stats.turns = ids.size + unnamed;
+      if (Array.isArray(content)) stats.toolCalls += content.filter((b) => isObj(b) && b["type"] === "tool_use").length;
+    }
+  }
+  return stats;
+}
+
+type Mapped = { kind: "skip" } | { kind: "run"; candidate: Record<string, unknown>; task?: TaskStats };
 
 /** Map Claude Code's hook input to candidate fields for the set. The schema filter runs after. */
 export function mapHookInput(event: HookEvent, input: Record<string, unknown>, readTranscript: (path: string) => string): Mapped {
@@ -153,10 +198,12 @@ export function mapHookInput(event: HookEvent, input: Record<string, unknown>, r
   if (input["stop_hook_active"] === true) return { kind: "skip" };
   const direct = str(input["last_assistant_message"]);
   const path = str(input["transcript_path"]);
-  const fromTranscript = path === undefined ? { request: undefined, lastReply: undefined } : lastExchange(readTranscript(path));
+  const text = path === undefined ? "" : readTranscript(path);
+  const fromTranscript = lastExchange(text);
   const lastReply = direct ?? fromTranscript.lastReply;
   if (fromTranscript.request === undefined || lastReply === undefined) return { kind: "skip" };
-  return { kind: "run", candidate: { request: fromTranscript.request, last_reply: lastReply } };
+  const task = taskStats(text);
+  return { kind: "run", candidate: { request: fromTranscript.request, last_reply: lastReply }, ...(task !== null ? { task } : {}) };
 }
 
 /** The hook JSON for a result that may act, or null. Only a set that is not in shadow ever acts. */
@@ -209,6 +256,8 @@ export async function runHook(cmd: HookCommand, deps: HookDeps): Promise<HookOut
     }
   };
   let meta: { set: string; specHash: string; modelRequested: string } | null = null;
+  let session: ReceiptSession | undefined;
+  const withSession = (r: Receipt): Receipt => (session === undefined ? r : { ...r, session });
 
   const work = async (): Promise<HookOutput> => {
     // No key, no call and no receipt: the hook is simply off.
@@ -220,17 +269,28 @@ export async function runHook(cmd: HookCommand, deps: HookDeps): Promise<HookOut
     if (!isObj(raw)) return SILENT;
     const mapped = mapHookInput(cmd.event, raw, deps.readTranscript ?? readTail);
     if (mapped.kind === "skip") return SILENT;
+    if (mapped.task !== undefined) {
+      const launch = readLaunchProfile(deps.env);
+      session = {
+        key: fnv1a64(str(raw["session_id"]) ?? ""),
+        taskMs: mapped.task.requestAt === null ? null : Math.max(0, started - mapped.task.requestAt),
+        turns: mapped.task.turns,
+        toolCalls: mapped.task.toolCalls,
+        profile: launch.profile,
+        profilePicked: launch.picked,
+      };
+    }
     const state = shapeState(mapped.candidate, loaded.value.spec.input.schema, cmd.drop);
     const outcome = await runLiveSpec(
       { spec: loaded.value, set: meta.set, state, provider: cmd.provider, rollout: cmd.rollout, source: cmd.event, signal: controller.signal },
       { ...(deps.env !== undefined ? { env: deps.env } : {}), transport: deps.transport(), now },
     );
     if (!outcome.ok) {
-      record(failureReceipt({ ...meta, source: cmd.event, provider: cmd.provider, at: new Date(now()).toISOString(), acted: false, rollout: cmd.rollout, status: outcome.code, latencyMs: now() - started }));
+      record(withSession(failureReceipt({ ...meta, source: cmd.event, provider: cmd.provider, at: new Date(now()).toISOString(), acted: false, rollout: cmd.rollout, status: outcome.code, latencyMs: now() - started })));
       return SILENT;
     }
     const response = hookResponse(cmd.event, cmd.rollout, outcome.result);
-    record(outcome.receipt(response !== null));
+    record(withSession(outcome.receipt(response !== null)));
     return response === null ? SILENT : { exitCode: 0, stdout: JSON.stringify(response) };
   };
 
@@ -239,7 +299,7 @@ export async function runHook(cmd: HookCommand, deps: HookDeps): Promise<HookOut
     if (winner === "timeout") {
       const m = meta as { set: string; specHash: string; modelRequested: string } | null;
       if (m !== null) {
-        record(failureReceipt({ ...m, source: cmd.event, provider: cmd.provider, at: new Date(now()).toISOString(), acted: false, rollout: cmd.rollout, status: "timeout", latencyMs: now() - started }));
+        record(withSession(failureReceipt({ ...m, source: cmd.event, provider: cmd.provider, at: new Date(now()).toISOString(), acted: false, rollout: cmd.rollout, status: "timeout", latencyMs: now() - started })));
       }
       settled = true;
       return SILENT;

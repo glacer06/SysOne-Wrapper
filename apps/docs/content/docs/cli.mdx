@@ -43,10 +43,12 @@ The key comes only from your environment: `TYPESAFE_API_KEY`, or `OPENROUTER_API
 `--receipts` appends one line per run to `~/.bandwise/receipts.jsonl`, or to the path you give with `--receipts=<path>`. A receipt holds the set, a hash of the spec, each decision's value, band and action, the rollout stage, the System One cost, the counterfactual LLM cost and the latency. It never holds the state.
 
 ```bash
-bandwise report [--since 7d] [--set <slug>] [--receipts <path>] [--json]
+bandwise report [--since 7d] [--set <slug>] [--receipts <path>] [--compare profile] [--json]
 ```
 
 `report` sums the receipts per set: runs, decisions, the band mix, how often the set would have acted, System One spend, counterfactual spend and estimated savings. The savings are estimates. The counterfactual prices one comparator LLM call per decision from the price book.
+
+A receipt from the `Stop` hook also records the task behind it, as counts only: time from your request to the stop, agent turns, tool calls, a hash of the session id, and the launch profile when one was set (`BANDWISE_LAUNCH_PROFILE` and `BANDWISE_LAUNCH_PICKED`). `--compare profile` groups those receipts by the profile used and the profile picked, and shows the median time to stop, turns, tool calls and done-check outcomes per group. Every row shows how many tasks it covers. Read that count first: a median over five tasks says very little.
 
 ## Claude Code hooks
 
