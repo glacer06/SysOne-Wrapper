@@ -14,19 +14,22 @@ Three sets from the agent pack, in `.bandwise/sets/`:
 
 In `shadow` none of that happens. The hook runs the set, writes a receipt, and prints nothing.
 
-## D0 status (2026-09-28)
+## D0 status (2026-09-30): done
 
-- The key saved in the cloud environment works for plain HTTPS: one `noul` call on `jev-1.13.0` answered in 0.32 s with 308 input and 20 output tokens, about $0.000013 at the seed price ($0.042 per million input tokens, output free).
-- `pnpm fixtures:record` and `pnpm smoke` did not run live from the cloud session. The SDK path sends its own `Authorization` header, the environment proxy did not replace the placeholder, and every call came back 401. Nothing was recorded, so the committed fixtures are unchanged.
-- To close D0, run both from your own shell with `TYPESAFE_API_KEY` set:
+Nick ran D0 from his own shell on Node 22 with his TypeSafe key (NSI-730).
+
+- `pnpm fixtures:record` recorded 9 of 9 typesafe success fixtures against TypeSafe's openapi.json 0.2.0. `noul-near-half` stays hand-authored: live Jev scored its ticket 0.07, not near 0.5, and the fixture exists to test the band edge. The recorder skips any fixture marked `"source": "hand-authored"`.
+- `pnpm smoke` passed all 36 checks. `jev-preview` and `jev-latest` both resolved to `jev-1.13.0`. Each model cost $0.000074 (cap $0.001), so the whole smoke cost about $0.0002.
+- `bandwise run --live` on `done-check` answered `unverified` in the high band for the turn that claims success without a check, which is the answer the set wants. System One cost $0.000029 for 681 input tokens, latency 287 ms, and the receipt counted $0.000575 saved against claude-haiku-4-5.
+- Earlier, the cloud session could not run the SDK path live: its proxy did not replace the placeholder `Authorization` header and every call came back 401. Live runs belong in a shell that holds the key.
+
+To re-record later, from your shell with `TYPESAFE_API_KEY` set:
 
 ```sh
-pnpm fixtures:record          # rewrites the success fixtures in packages/system-one-client/fixtures/typesafe
+pnpm fixtures:record          # rewrites the recorded success fixtures in packages/system-one-client/fixtures/typesafe
 pnpm smoke                    # checks jev-preview, jev-latest and jev-1.13.0; prints cost per model
 git diff --stat packages/system-one-client/fixtures
 ```
-
-Commit the recorded fixtures, then note the smoke cost and a latency from `bandwise run --live` here.
 
 ## 1. Install
 

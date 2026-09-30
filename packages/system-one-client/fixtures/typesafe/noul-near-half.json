@@ -2,6 +2,8 @@
   "name": "noul-near-half",
   "provider": "typesafe",
   "openapiVersion": "0.2.0",
+  "source": "hand-authored",
+  "requestId": "req_fx_noul_half",
   "request": {
     "state": {
       "ticket": {
@@ -21,19 +23,17 @@
       }
     }
   },
-  "requestId": "req_fx_noul_near_half",
-  "source": "recorded",
   "response": {
     "model": "jev-1.13.0",
     "answers": {
       "is_urgent": {
         "type": "noul",
-        "noul": 0.07
+        "noul": 0.51
       }
     },
     "usage": {
-      "input_tokens": 330,
-      "output_tokens": 23
+      "input_tokens": 80,
+      "output_tokens": 3
     }
   }
 }

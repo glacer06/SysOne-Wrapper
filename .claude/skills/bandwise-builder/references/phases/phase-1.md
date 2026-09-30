@@ -33,14 +33,14 @@
 - [x] Dev implementations: local KEK vault, in-memory limiter and quota
 
 ## QA
-- [ ] Recorded fixtures (see [testing.md](../testing.md) minimum set), including a response whose `model` differs from the requested alias. Hand-authored stand-ins from the documented shapes are committed in `packages/system-one-client/fixtures/` (no key was available); re-record them once a key is available. `pnpm fixtures:record` is built and tested offline; it needs `TYPESAFE_API_KEY` to run.
+- [x] Recorded fixtures (see [testing.md](../testing.md) minimum set), including a response whose `model` differs from the requested alias. Recorded live on `jev-1.13.0` on 2026-09-30 (D0, NSI-730). `noul-near-half` stays hand-authored (`"source": "hand-authored"`), and `pnpm fixtures:record` skips hand-authored fixtures.
 - [ ] OpenRouter fixtures, recorded with `pnpm fixtures:record --provider openrouter` (needs `OPENROUTER_API_KEY`): a noul, choice and score response with `id`, `provider` and `usage.cost`, one through `~typesafe/jev-latest`, and a 402 error. Hand-authored stand-ins from the documented shapes are committed in `packages/system-one-client/fixtures/` (no key was available); re-record them once a key is available.
 - [ ] Vercel AI Gateway fixtures, recorded with `pnpm fixtures:record --provider vercel` (needs `AI_GATEWAY_API_KEY`): noul, choice and score with `provider_metadata.gateway.cost`. The committed ones are doc-derived (`"source": "doc-derived"`) from Vercel's documented example. `evaluation-fallback` stays hand-made and is never re-recorded. A live call should also confirm whether Vercel accepts a versioned id, which would allow a pinned Vercel route
 - [x] Fixture contract test against zod; each fixture records TypeSafe's `openapi.json` version
 - [x] Pinned-classification table test (registry `kind` only), on the `typesafe` and `openrouter` routes: `apps/console/src/jobs/registry/pinned-classification.test.ts`
 - [x] `packages/evals` CLI: `pnpm eval --org <slug> --set <slug> --version <n> --dataset <name> [--snapshot <id>] [--model <id>] [--repeats <k>]`. Offline by default on the fixture transport and a folder store (`packages/evals/data`, demo org `demo`, set `ticket-routing`, dataset `tickets`); `--transport sdk` runs live with the provider key. The Postgres eval store lands with the `eval.run` job in Phase 3
 - [x] Cross-tenant suite generator
-- [x] Live smoke script across the models in the smoke list per [testing.md](../testing.md), with `--provider openrouter` when `OPENROUTER_API_KEY` is set (`packages/evals/src/live`). Without the key it prints why it skipped and exits 0. It has not yet run against a live key
+- [x] Live smoke script across the models in the smoke list per [testing.md](../testing.md), with `--provider openrouter` when `OPENROUTER_API_KEY` is set (`packages/evals/src/live`). Without the key it prints why it skipped and exits 0. It passed against a live TypeSafe key on 2026-09-30 (36 checks)
 
 ## Platform / Tenancy: registry jobs
 
