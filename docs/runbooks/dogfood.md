@@ -33,11 +33,21 @@ git diff --stat packages/system-one-client/fixtures
 
 ## 1. Install
 
-You need Node 22, `pnpm install` done in this repo, and your key in the shell Claude Code starts from:
+You need Node 22, `pnpm install` done in this repo, and your key in the shell Claude Code starts from. On a Mac, keep the key in the Keychain and load it in `~/.zshrc`, so it never sits in a plain file:
 
 ```sh
-export TYPESAFE_API_KEY=...        # in ~/.zshrc or your secret manager, never in the repo
+security add-generic-password -a "$USER" -s TYPESAFE_API_KEY -w     # prompts for the key; add -U to replace an old one
 ```
+
+Then add this line to `~/.zshrc`:
+
+```sh
+export TYPESAFE_API_KEY="$(security find-generic-password -a "$USER" -s TYPESAFE_API_KEY -w 2>/dev/null)"
+```
+
+Open a new terminal window and run the live check below. If it answers, the key the hooks will see is the right one. If you only need the key for one window, `read -s "TYPESAFE_API_KEY?TypeSafe key: " && export TYPESAFE_API_KEY` loads it without echoing it or writing it to your shell history.
+
+Paste commands without `#` comment lines. zsh does not treat them as comments at an interactive prompt unless `setopt interactivecomments` is on.
 
 Check one set live before wiring any hook:
 
@@ -53,6 +63,16 @@ pnpm bandwise hooks install --command 'pnpm -s --dir "$CLAUDE_PROJECT_DIR" bandw
 ```
 
 It prints JSON for `.claude/settings.json` and writes nothing. Read it, then merge the `hooks` block into `.claude/settings.json` yourself. Every command ends in `--rollout shadow`. Start a new Claude Code session so the hooks load.
+
+The command runs the CLI from this repo's source, so the hooks use whatever is on `main` and need no global install. One hook run takes under a second before the System One call. Sessions without the key, such as cloud sessions, run the hooks and get a silent no-op.
+
+To confirm the hooks work, send one prompt in a new session and run:
+
+```sh
+pnpm bandwise report --since 1h
+```
+
+A `model-tier` row means the `UserPromptSubmit` hook ran live. `done-check` appears after Claude's first reply.
 
 What the hook sends to TypeSafe: only the fields the set's input schema names. For `done-check` that is your last request and Claude's final message, read from the session transcript. For `action-risk-gate` it is the tool name, command, file path, the first 2000 characters of new content, and the description. For `model-tier` it is your prompt. Secret-shaped text is replaced before the call:
 - API keys, tokens and private keys
