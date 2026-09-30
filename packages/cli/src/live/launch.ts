@@ -78,7 +78,7 @@ export async function chooseProfile(cmd: LaunchCommand, deps: LaunchDeps): Promi
   if (!key.ok) return fallback(`${key.envName} is not set`);
   const loaded = loadSpec(cmd.setPath);
   if (!loaded.ok) return fallback(`the set ${cmd.setPath} could not be loaded (${loaded.code})`);
-  if (cmd.task.trim() === "") return fallback("no task was given");
+  if (cmd.task.trim() === "") return fallback("no task was given (pass --task, or put the prompt right after -p)");
 
   const now = deps.now ?? Date.now;
   const started = now();
@@ -167,10 +167,20 @@ export function launchArgs(pick: LaunchPick, passthrough: readonly string[]): { 
   return { args: [...own, ...passthrough], skipped };
 }
 
-/** The task for the pick when `--task` is not given: the last argument that is not an option. */
+/**
+ * The task for the pick when `--task` is not given. Only two forms count, because guessing which of
+ * the agent's options take a value would one day mistake a value for the prompt: the argument right
+ * after `-p` or `--print`, or a single argument that is the whole passthrough (`claude "prompt"`).
+ * Anything else is no task, so the default is used with a notice to pass `--task`.
+ */
 export function taskFromArgs(passthrough: readonly string[]): string {
-  const last = passthrough[passthrough.length - 1];
-  return last !== undefined && !last.startsWith("-") ? last : "";
+  const at = passthrough.findIndex((a) => a === "-p" || a === "--print");
+  if (at !== -1) {
+    const next = passthrough[at + 1];
+    return next !== undefined && !next.startsWith("-") ? next : "";
+  }
+  const only = passthrough.length === 1 ? passthrough[0] : undefined;
+  return only !== undefined && !only.startsWith("-") ? only : "";
 }
 
 export interface StartDeps extends LaunchDeps {

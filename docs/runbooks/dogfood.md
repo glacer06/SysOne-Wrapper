@@ -134,7 +134,7 @@ pnpm -s bandwise launch --task "Rename getUser to fetchUser everywhere" --
 pnpm -s bandwise launch -- -p "Rename getUser to fetchUser everywhere"
 ```
 
-- Everything after `--` goes to `claude` unchanged. The task for the pick is `--task`, or else the last argument after `--` that is not an option.
+- Everything after `--` goes to `claude` unchanged. The task for the pick is `--task`, or else the argument right after `-p`, or else the only argument after `--`. Any other form has no task and starts the default with a notice, so pass `--task` when the prompt is somewhere else.
 - It adds only `--model` and `--effort`, and only if you did not pass them yourself. It never touches a permission flag.
 - It sets `BANDWISE_LAUNCH_PROFILE` and `BANDWISE_LAUNCH_PICKED` for the session, so its Stop receipts land in `bandwise report --compare profile` (NSI-729).
 - Otherwise the session gets exactly the environment `claude` would get if you started it from the same shell. If `TYPESAFE_API_KEY` is set there, the session inherits it, and it has to: the hooks inside the session read it. `bandwise launch` never adds a key and never removes one. Anything the agent's own tools can read in that shell, they can read either way. Taking the key out of the shell entirely, with the hooks reading it from the Keychain, is NSI-742.

@@ -86,7 +86,7 @@ A running Claude Code session cannot change its own model, but whoever starts it
 bandwise launch -- -p "Rename getUser to fetchUser everywhere"
 ```
 
-Everything after `--` goes to `claude` unchanged. The task is `--task`, or else the last argument after `--` that is not an option. `launch` adds only `--model` and `--effort`, and not when you passed them yourself. It never adds or changes a permission flag. It starts `claude` with an argument list and no shell, hands it your terminal, and exits with its exit code.
+Everything after `--` goes to `claude` unchanged. The task is `--task`, or else the argument right after `-p`, or else the only argument after `--` (as in `claude "prompt"`). Any other form, such as `--resume abc` or options before a bare prompt, has no task, so `launch` starts the default profile and tells you to pass `--task`. It never guesses which of `claude`'s options take a value. `launch` adds only `--model` and `--effort`, and not when you passed them yourself. It never adds or changes a permission flag. It starts `claude` with an argument list and no shell, hands it your terminal, and exits with its exit code.
 
 `--print` makes the same pick and prints it as one line of JSON instead. It starts nothing, so your own host, script or CI job can start the agent:
 

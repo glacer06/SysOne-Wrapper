@@ -205,8 +205,21 @@ describe("bandwise launch (starts the agent)", () => {
     expect(launchArgs(pick, ["--effort=low"]).args).toEqual(["--model", "opus", "--effort=low"]);
   });
 
-  it("takes the task from --task, else from the last argument that is not an option", () => {
+  it("takes the task only from right after -p, or from a lone argument, never from an option's value", () => {
     expect(taskFromArgs(["-p", "Rename foo"])).toBe("Rename foo");
+    expect(taskFromArgs(["--print", "Rename foo"])).toBe("Rename foo");
+    // Options after the prompt, with a value or without one.
+    expect(taskFromArgs(["-p", "Rename foo", "--output-format", "json"])).toBe("Rename foo");
+    expect(taskFromArgs(["-p", "Rename foo", "--verbose"])).toBe("Rename foo");
+    // Options before -p.
+    expect(taskFromArgs(["--output-format", "json", "-p", "Rename foo"])).toBe("Rename foo");
+    // Interactive `claude "prompt"`.
+    expect(taskFromArgs(["Rename foo"])).toBe("Rename foo");
+    // Anything else is no task, so an option's value is never taken for the prompt.
+    expect(taskFromArgs(["--resume", "abc"])).toBe("");
+    expect(taskFromArgs(["--model", "opus", "Rename foo"])).toBe("");
+    expect(taskFromArgs(["-p", "--verbose"])).toBe("");
+    expect(taskFromArgs(["-p"])).toBe("");
     expect(taskFromArgs(["--continue"])).toBe("");
     expect(taskFromArgs([])).toBe("");
   });
@@ -273,6 +286,36 @@ describe("bandwise launch (starts the agent)", () => {
     expect(picker.sent[0]?.state).toEqual({ task: "Rename getUser to fetchUser everywhere" });
     expect(calls[0]?.args).toEqual(["--model", "sonnet", "--effort", "low", "-p", "Rename getUser to fetchUser everywhere"]);
     expect(calls[0]?.env).toMatchObject({ BANDWISE_LAUNCH_PROFILE: "light", BANDWISE_LAUNCH_PICKED: "light" });
+  });
+
+  it("picks from the prompt, not from an option after it, and passes every argument through", async () => {
+    const base = ["launch", "--profiles", PROFILES, "--set", SET, "--rollout", "controlled", "--timeout-ms", "20000", "--receipts", join(tmp(), "r.jsonl"), "--"];
+    for (const after of [["--output-format", "json"], ["--verbose"]]) {
+      const { start, calls } = recorder();
+      const picker = answering("light", 0.95);
+      const passthrough = ["-p", "Rename getUser to fetchUser everywhere", ...after];
+      await main([...base, ...passthrough], { env: ENV, fetch: picker.fetch, start });
+      expect(picker.sent[0]?.state).toEqual({ task: "Rename getUser to fetchUser everywhere" });
+      expect(calls[0]?.args).toEqual(["--model", "sonnet", "--effort", "low", ...passthrough]);
+    }
+  });
+
+  it("uses --task over the prompt after -p", async () => {
+    const { start, calls } = recorder();
+    const picker = answering("deep", 0.95);
+    await runLaunchStart(cmd({ task: "Design the billing schema" }), ["-p", "Rename foo", "--output-format", "json"], { env: ENV, transport: () => liveTransport({ fetch: picker.fetch }), start });
+    expect(picker.sent[0]?.state).toEqual({ task: "Design the billing schema" });
+    expect(calls[0]?.args).toEqual(["--model", "sonnet", "--effort", "medium", "-p", "Rename foo", "--output-format", "json"]);
+  });
+
+  it("with no prompt it can find, starts the default and says to pass --task", async () => {
+    const { start, calls } = recorder();
+    const picker = answering("light", 0.95);
+    const warned: string[] = [];
+    await runLaunchStart(cmd({ task: "", rollout: "controlled" }), ["--resume", "abc"], { env: ENV, transport: () => liveTransport({ fetch: picker.fetch }), start, warn: (l) => warned.push(l) });
+    expect(picker.sent).toHaveLength(0);
+    expect(calls[0]?.args).toEqual(["--model", "sonnet", "--effort", "medium", "--resume", "abc"]);
+    expect(warned.join("\n")).toContain("no task was given (pass --task, or put the prompt right after -p)");
   });
 
   it("shows its notices before the agent starts, not when it ends", async () => {

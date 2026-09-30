@@ -41,8 +41,9 @@ export const USAGE = `Usage:
             Print the .claude/settings.json entries for the sets in the folder. Writes nothing.
   launch    Pick a launch profile for a task and start the agent the profiles file names
             (claude) with --model and --effort added. Arguments after -- go to the agent
-            unchanged. The task is --task, or else the last argument after -- that is not an
-            option. It exits with the agent's exit code.
+            unchanged. The task is --task, or else the argument right after -p, or else a lone
+            argument after --. Other forms have no task and start the default, so pass --task.
+            It exits with the agent's exit code.
             --print prints the pick as JSON instead and starts nothing:
             {"profile", "sessions": [{"model", "effort"}], "picked", "rollout"}. With --print the
             task is --task or stdin.
