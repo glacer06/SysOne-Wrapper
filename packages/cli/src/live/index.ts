@@ -1,17 +1,21 @@
-// Live mode of @bandwise/cli (ADR-020): `bandwise run --live` and `bandwise hook`. The only CLI
-// folder that may import @bandwise/system-one-client, and only through transport.ts. main.ts loads
-// it with a dynamic import, so local mode and `bandwise report` never load the SDK.
+// Live mode of @bandwise/cli (ADR-020): `bandwise run --live`, `bandwise hook` and
+// `bandwise launch --print`. The only CLI folder that may import @bandwise/system-one-client, and
+// only through transport.ts. main.ts loads it with a dynamic import, so local mode and
+// `bandwise report` never load the SDK.
 
 import type { RolloutStage, SystemOneProvider } from "@bandwise/core";
 import type { CommandOutput } from "../main.js";
 import { appendReceipt } from "../receipts/index.js";
 import { formatLiveRun } from "./format.js";
 import { type HookCommand, type HookDeps, runHook } from "./hook.js";
+import { type LaunchCommand, type LaunchDeps, runLaunchPrint } from "./launch.js";
 import { runLive } from "./run-live.js";
 import { type LiveFetch, liveTransport } from "./transport.js";
 
 export { DEFAULT_HOOK_TIMEOUT_MS, GATED_TOOLS, HOOK_EVENTS, HOOK_ROLLOUTS, type HookCommand, type HookEvent, type HookRollout, hookResponse, isTrustedCommand, lastExchange, mapHookInput, runHook, type TaskStats, taskStats } from "./hook.js";
 export { LAUNCH_PICKED_ENV, LAUNCH_PROFILE_ENV, PROVIDER_KEY_ENV, readLaunchProfile, readProviderKey } from "./key.js";
+export { DEFAULT_LAUNCH_TIMEOUT_MS, LAUNCH_QUESTION, LAUNCH_ROLLOUTS, type LaunchCommand, type LaunchPick, type LaunchRollout, runLaunchPrint } from "./launch.js";
+export { EFFORTS, LAUNCH_PROGRAMS, type LaunchSession, type Profiles, launchFallback, loadProfiles, parseProfiles } from "./profiles.js";
 export { redactSecrets, shapeState } from "./redact.js";
 export { runLive, runLiveSpec, setSlug } from "./run-live.js";
 
@@ -67,4 +71,10 @@ export async function runHookCommand(cmd: HookCommand, io: Omit<HookDeps, "trans
   const { fetch, ...rest } = io;
   const out = await runHook(cmd, { ...rest, transport: () => liveTransport(fetch !== undefined ? { fetch } : {}) });
   return { exitCode: out.exitCode, stdout: out.stdout, stderr: "" };
+}
+
+/** `bandwise launch --print`. Exit 0 with a profile, or 1 when the profiles file is invalid. */
+export async function runLaunchCommand(cmd: LaunchCommand, io: Omit<LaunchDeps, "transport"> & Pick<LiveIo, "fetch">): Promise<CommandOutput> {
+  const { fetch, ...rest } = io;
+  return runLaunchPrint(cmd, { ...rest, transport: () => liveTransport(fetch !== undefined ? { fetch } : {}) });
 }

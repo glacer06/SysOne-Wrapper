@@ -84,6 +84,10 @@ npx @bandwise/cli hooks install --sets-dir .bandwise/sets --command "npx @bandwi
 
 That prints the entries for \`.claude/settings.json\` and writes nothing. Every entry starts with \`--rollout shadow\`: the hook runs, writes a receipt and never blocks, denies or adds context. Change one entry to \`--rollout controlled\` after reading its receipts, and only a high band answer acts. A hook sends only the fields the set's input schema names, with secret-shaped text redacted. Any error, a missing key or a 3 second timeout ends the hook with exit 0 and no output, so it never breaks a session.
 
+## Launch profiles
+
+\`bandwise launch --print --task "..."\` picks a launch profile for a new Claude Code session from \`.bandwise/profiles.json\`, an allowlist of models and effort levels you review like code, and prints it as JSON. It starts nothing. In \`shadow\` it always prints the default and records what it would have picked. Any error, a missing key or a 3 second timeout prints the default.
+
 ## How a question set works
 
 A question set is one JSON spec. It names the model, describes the input state with a JSON Schema, asks questions in one or more stages, and sets a policy for every question. Later stages can read earlier answers. Routes turn the answers into one output your app branches on, such as \`urgent\` or \`read_later\`.
