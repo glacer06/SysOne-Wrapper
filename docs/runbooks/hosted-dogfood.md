@@ -11,7 +11,7 @@ No secret value goes into this file, a ticket, chat, a commit or a shell history
 
 ## 0. Before you start
 
-- [ ] **PJ.** Security review signed off and merged on `main`: D2a (merged, PR #20), D2b run endpoint (PR #21), D2c management operations, D2d CLI remote mode, and this D2e bootstrap script.
+- [x] **PJ.** Security review and merge on `main`: D2a (PR #20), and D2b to D3 with this bootstrap script (PR #21, merged 2026-10-01 on Nick's go after PJ's three review passes).
 - [x] **Hook token, decided 2026-10-01 (Nick).** The hooks get a run-only `sa_live_` agent token: scope `run` only, role ceiling `viewer`, the four dogfood sets, 90 days. It follows `security.md` (the CLI uses agent tokens only), it dies when Nick's membership goes, and it can do nothing but run those four sets. The Claude Code session can read every variable the hooks see, so this is the only Bandwise token that shell ever holds.
 - [ ] **Nick.** The `bandwise-console` Vercel project and the `bandwise_console` login role exist from the early-access go-live ([early-access.md](early-access.md)). If not, do that runbook first.
 - [ ] **Nick.** `jq` installed (`brew install jq`) for the checks below.
@@ -20,12 +20,14 @@ No secret value goes into this file, a ticket, chat, a commit or a shell history
 
 Migrations run from the Database migrate workflow, never from a laptop ([database.md](database.md)). `pnpm db:migrate` is the same migrator; the workflow runs it with `DATABASE_URL` set to the `DATABASE_URL_MIGRATE` secret of the GitHub environment, which is the direct connection as `postgres`.
 
-1. **Nick.** Actions, Database migrate, Run workflow, `preview` first: `gh workflow run db-migrate.yml -f environment=preview`. The log line is `applied N migration(s), seeded M platform row(s)`.
-2. **Nick** starts the same workflow on `production`; **PJ** approves the run as the required reviewer, so no one moves production alone.
+There is one database today, production. The `preview` GitHub environment has no `DATABASE_URL_MIGRATE`, so a preview run stops at "Check the secret is set" without connecting. Skip it until a preview database exists.
+
+1. **Nick** starts the workflow on `production`: `gh workflow run db-migrate.yml -f environment=production`. **PJ** approves the run as the required reviewer, so no one moves production alone. The log line is `applied N migration(s), seeded M platform row(s)`.
+2. Done 2026-10-01: run #7 applied 0006 and 0007 after PJ's approval, and the checks below passed (7 rows, the seed, the role check, no security advisors). The follow-up PR adds 0008 (`run_limits`); run the workflow again when it merges and expect 8 rows.
 3. **Nick.** Verify in the Supabase SQL editor (it runs as `postgres`):
 
    ```sql
-   -- One row per file in packages/db/migrations on main: 7 once PR #21 merges (0006 two-factor columns, 0007 sign-in limits and enrollment codes).
+   -- One row per file in packages/db/migrations on main: 7 on 2026-10-01, 8 once 0008 run_limits merges.
    select count(*) from bandwise_migrations;
    -- The model registry seed is there: expect jev-1.13.0 among the rows.
    select id, kind, status from system_one_models order by id;
