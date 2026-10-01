@@ -608,6 +608,15 @@ const PROBES: Record<string, Probe> = {
     expect(await inA((tx) => r.runs.totalsBySet(tx, { ...range, setIds: [B.setId] }))).toEqual([]);
     expect((await inA((tx) => r.runs.totalsBySet(tx, range))).map((x) => x.setId)).not.toContain(B.setId);
   },
+  "runs.totalsByDay": async (r) => {
+    const range = { from: new Date(0), to: new Date(Date.now() + 86_400_000) };
+    const sum = (days: { runs: number }[]) => days.reduce((n, d) => n + d.runs, 0);
+    expect(sum(await inB((tx) => r.runs.totalsByDay(tx, { ...range, setIds: [B.setId] })))).toBeGreaterThan(0);
+    expect(await inA((tx) => r.runs.totalsByDay(tx, { ...range, setIds: [B.setId] }))).toEqual([]);
+    // Without a set filter, org A's days add up to org A's own runs only.
+    const own = (await inA((tx) => r.runs.totalsBySet(tx, range))).reduce((n, x) => n + x.runs, 0);
+    expect(sum(await inA((tx) => r.runs.totalsByDay(tx, range)))).toBe(own);
+  },
   "runFeedback.getByIdempotencyKey": async (r) => {
     const key = await inB(async (tx) => (await r.runFeedback.get(tx, created["runFeedback"]?.b ?? ""))?.idempotencyKey);
     expect(key).toBeTruthy();
@@ -615,6 +624,15 @@ const PROBES: Record<string, Probe> = {
   },
   "reviewItems.listByRun": async (r) => {
     expect(await inA((tx) => r.reviewItems.listByRun(tx, B.runId))).toEqual([]);
+  },
+  "reviewItems.listPage": async (r) => {
+    const id = created["reviewItems"]?.b ?? "";
+    const first = { limit: 200, cursor: null };
+    expect((await inB((tx) => r.reviewItems.listPage(tx, { setId: B.setId }, first))).data.map((x) => x.id)).toContain(id);
+    expect((await inA((tx) => r.reviewItems.listPage(tx, { setId: B.setId }, first))).data).toEqual([]);
+    expect((await inA((tx) => r.reviewItems.listPage(tx, {}, first))).data.map((x) => x.id)).not.toContain(id);
+    // A cursor that names org B's item reads nothing of it.
+    expect((await inA((tx) => r.reviewItems.listPage(tx, {}, { limit: 200, cursor: id }))).data).toEqual([]);
   },
   "reviewItems.countLabelItemsSince": async (r) => {
     expect(await inB((tx) => r.reviewItems.countLabelItemsSince(tx, B.setId, new Date(0)))).toBeGreaterThan(0);

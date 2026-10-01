@@ -3777,6 +3777,28 @@
             }
           },
           {
+            "name": "set",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "band",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "high",
+                "medium",
+                "low"
+              ]
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -3799,7 +3821,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Shape lands in Phase 3.",
+            "description": "OK.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3839,11 +3861,7 @@
         "x-bandwise-async": false,
         "x-bandwise-destructive": false,
         "x-bandwise-emits": [],
-        "x-bandwise-mcp-tool": "list_review_items",
-        "x-bandwise-placeholder": {
-          "input": false,
-          "output": true
-        }
+        "x-bandwise-mcp-tool": "list_review_items"
       }
     },
     "/api/v1/review/{id}/assign": {
@@ -3970,10 +3988,12 @@
         },
         "responses": {
           "200": {
-            "description": "Shape lands in Phase 3.",
+            "description": "OK.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResolveResponse"
+                }
               }
             }
           },
@@ -4010,17 +4030,13 @@
         "x-bandwise-emits": [
           "review.resolved"
         ],
-        "x-bandwise-mcp-tool": "resolve_review_item",
-        "x-bandwise-placeholder": {
-          "input": false,
-          "output": true
-        }
+        "x-bandwise-mcp-tool": "resolve_review_item"
       }
     },
     "/api/v1/review/{id}/dismiss": {
       "post": {
         "operationId": "review.dismiss",
-        "summary": "Dismiss a review item.",
+        "summary": "Dismiss a review item. Agents cannot; they resolve with a proposed answer instead.",
         "tags": [
           "review"
         ],
@@ -4045,22 +4061,14 @@
             }
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReviewDismissRequest"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
-            "description": "Shape lands in Phase 3.",
+            "description": "OK.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResolveResponse"
+                }
               }
             }
           },
@@ -4096,11 +4104,7 @@
         "x-bandwise-destructive": false,
         "x-bandwise-emits": [
           "review.resolved"
-        ],
-        "x-bandwise-placeholder": {
-          "input": true,
-          "output": true
-        }
+        ]
       }
     },
     "/api/v1/review/{id}/confirm": {
@@ -4143,10 +4147,12 @@
         },
         "responses": {
           "200": {
-            "description": "Shape lands in Phase 3.",
+            "description": "OK.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResolveResponse"
+                }
               }
             }
           },
@@ -4177,11 +4183,7 @@
         "x-bandwise-destructive": false,
         "x-bandwise-emits": [
           "review.resolved"
-        ],
-        "x-bandwise-placeholder": {
-          "input": false,
-          "output": true
-        }
+        ]
       }
     },
     "/api/v1/feedback": {
@@ -18899,17 +18901,14 @@
         },
         "additionalProperties": false
       },
-      "ReviewDismissRequest": {
-        "type": "object",
-        "properties": {},
-        "additionalProperties": {}
-      },
       "ReviewListResponse": {
         "type": "object",
         "properties": {
           "data": {
             "type": "array",
-            "items": {}
+            "items": {
+              "$ref": "#/components/schemas/ReviewResolveResponse"
+            }
           },
           "nextCursor": {
             "type": [
@@ -18946,6 +18945,171 @@
           "resolution"
         ],
         "additionalProperties": false
+      },
+      "ReviewResolveResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "runId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "setId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "decisionId": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "action",
+              "label"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "action",
+              "audit",
+              "near_threshold",
+              "challenger_diff",
+              "studio"
+            ]
+          },
+          "sampleRate": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "band": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "suggested": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "pending_confirmation",
+              "resolved",
+              "dismissed"
+            ]
+          },
+          "assigneeId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resolution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resolvedBy": {
+            "type": "object",
+            "properties": {
+              "userId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tokenId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "userId",
+              "tokenId"
+            ]
+          },
+          "resolvedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "addToDataset": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "runId",
+          "setId",
+          "decisionId",
+          "kind",
+          "reason",
+          "sampleRate",
+          "band",
+          "suggested",
+          "status",
+          "assigneeId",
+          "resolution",
+          "resolvedBy",
+          "resolvedAt",
+          "addToDataset",
+          "createdAt"
+        ]
       },
       "RolloutChangeRequest": {
         "type": "object",
@@ -21926,13 +22090,65 @@
               "savingsMicroUsd",
               "llmCallsAvoided"
             ]
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "day": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "runs": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "errors": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "systemOneCostMicroUsd": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "counterfactualMicroUsd": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "savingsMicroUsd": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "llmCallsAvoided": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "day",
+                "runs",
+                "errors",
+                "systemOneCostMicroUsd",
+                "counterfactualMicroUsd",
+                "savingsMicroUsd",
+                "llmCallsAvoided"
+              ]
+            }
           }
         },
         "required": [
           "from",
           "to",
           "sets",
-          "totals"
+          "totals",
+          "days"
         ]
       },
       "VersionGetResponse": {
