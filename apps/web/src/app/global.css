@@ -221,47 +221,40 @@ picture {
   flex-shrink: 0;
 }
 
-/* The header pairing: the unloaded ant facing right, then the typed wordmark. The full marks with
-   the B appear at size in the hero, the brand moment and the footer. */
-.wordmark-pair {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.3em;
-  font-size: 23px;
+/* The header logo: the supplied primary lockup (mark A with the wordmark, kit v1.7), one file per
+   theme. At 190px wide the lockup's wordmark stands about 17px from the top of the b to the
+   baseline, the same as the 23px typed wordmark it replaced. The art stays above its 160px minimum
+   and inside the 44px link, so the header keeps its height. */
+.header-lockup {
+  display: block;
+  width: 190px;
 }
 
-/* The ant's body sits between the wordmark's x-height and cap height, and its feet stand on the
-   baseline. The box crops the supplied drawing (1400 units square) to the ant, 1014 by 357 units,
-   which leaves the trail out. */
-.header-ant {
-  --ant-h: 0.57em; /* 40% smaller than the first cut (Nick, 2026-10-01). */
-  position: relative;
-  display: inline-block;
-  flex-shrink: 0;
-  overflow: hidden;
-  width: calc(var(--ant-h) * 1014 / 357);
-  height: var(--ant-h);
-}
-
-.header-ant img {
-  position: absolute;
-  left: calc(var(--ant-h) * -236 / 357);
-  top: calc(var(--ant-h) * -518 / 357);
-  width: calc(var(--ant-h) * 1400 / 357);
-  max-width: none;
+.header-lockup img {
+  display: block;
+  width: 100%;
   height: auto;
 }
 
-/* The typed wordmark. */
-.wordmark {
-  font-family: var(--bw-font-display);
-  font-stretch: 125%;
-  font-weight: 800;
-  letter-spacing: var(--bw-track-display);
-  font-size: 23px;
-  line-height: 1;
-  color: var(--bw-text);
-  text-transform: lowercase;
+.header-lockup .header-lockup-dark {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .header-lockup .header-lockup-light {
+    display: none;
+  }
+  :root:not([data-theme="light"]) .header-lockup .header-lockup-dark {
+    display: block;
+  }
+}
+
+[data-theme="dark"] .header-lockup .header-lockup-light {
+  display: none;
+}
+
+[data-theme="dark"] .header-lockup .header-lockup-dark {
+  display: block;
 }
 
 .home-link {

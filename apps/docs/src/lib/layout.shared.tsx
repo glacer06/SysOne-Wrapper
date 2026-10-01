@@ -2,20 +2,18 @@ import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 import { githubUrl, productName } from "~/site";
 
 /**
- * The nav title is the header pairing (Nick, 2026-10-01): the unloaded side-view ant facing right
- * (brand/unloaded, one file per theme, cropped above its trail in global.css), then the typed
- * wordmark, lowercase Archivo expanded 800. The ant is decorative.
+ * The nav title is the header logo (Nick, 2026-10-01): the supplied primary lockup, mark A (the
+ * loaded ant on its trail, carrying the B) with the lowercase wordmark, kit v1.7. One file per
+ * theme, switched with the docs `dark` class in global.css. The viewBox is 1798 by 408. The hidden
+ * image is out of the accessibility tree, so the shown one's alt names the home link.
  */
-function Wordmark() {
+function HeaderLogo() {
   return (
-    <span className="bw-wordmark-pair" aria-label={`${productName} docs`}>
-      <span className="bw-header-ant" aria-hidden="true">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="bw-header-ant-light" src="/brand/bandwise-ant-unloaded-A-r4-right-light.svg" alt="" width={64} height={64} />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="bw-header-ant-dark" src="/brand/bandwise-ant-unloaded-A-r4-right-dark.svg" alt="" width={64} height={64} />
-      </span>
-      <span className="bw-wordmark">bandwise</span>
+    <span className="bw-header-logo">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="bw-header-logo-light" src="/brand/bandwise-lockup-horizontal-A-light.svg" alt={`${productName} docs`} width={1798} height={408} />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="bw-header-logo-dark" src="/brand/bandwise-lockup-horizontal-A-dark.svg" alt={`${productName} docs`} width={1798} height={408} />
     </span>
   );
 }
@@ -23,7 +21,7 @@ function Wordmark() {
 export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
-      title: <Wordmark />,
+      title: <HeaderLogo />,
     },
     ...(githubUrl === null ? {} : { githubUrl }),
   };
