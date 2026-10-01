@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { fillDays, layoutBars, niceScale } from "./chart";
 import { hrefWith, reviewListInput, runListInput } from "./filters";
-import { formatLatency, formatShare, formatUsd, formatValue, formatWhen } from "./format";
+import { formatDollars, formatLatency, formatShare, formatUsd, formatValue, formatWhen } from "../format";
 
 const NOW = new Date("2026-10-01T12:00:00.000Z");
 
@@ -15,6 +15,9 @@ describe("format", () => {
     expect(formatUsd(1234)).toBe("$0.0012");
     expect(formatUsd(12_345_678)).toBe("$12.35");
     expect(formatUsd(-5_000_000)).toBe("-$5.00");
+    expect(formatDollars(0.000123)).toBe("$0.00012");
+    expect(formatDollars(1.5)).toBe("$1.50");
+    expect(formatDollars(null)).toBe("Not priced");
   });
 
   it("formats latency, shares, values and times", () => {

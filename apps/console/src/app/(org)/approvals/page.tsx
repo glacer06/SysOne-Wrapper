@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { OperationFailed } from "~/components/shell/coming-soon";
+import { OperationFailed } from "~/components/shell/operation-failed";
 import { EmptyState, PageHeader } from "~/components/ui";
 import { consoleOperation } from "~/server/console-operation";
 

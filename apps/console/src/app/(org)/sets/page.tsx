@@ -1,11 +1,11 @@
 import Link from "next/link";
 
-import { OperationFailed } from "~/components/shell/coming-soon";
+import { formatWhen } from "~/components/format";
+import { OperationFailed } from "~/components/shell/operation-failed";
 import { EmptyState, PageHeader, Table, Td, Th } from "~/components/ui";
 import { consoleOperation } from "~/server/console-operation";
 
 import { ChannelStage } from "./_components/channel-stages";
-import { timeAgo } from "./_components/format";
 
 export const dynamic = "force-dynamic";
 
@@ -22,6 +22,7 @@ export default async function SetsPage() {
     );
   }
   const rows = sets.output.data;
+  const now = new Date();
   // One newest run per set. D2 has a handful of sets, so a call each is cheap and exact.
   const lastRuns = await Promise.all(
     rows.map(async (s) => {
@@ -71,8 +72,8 @@ export default async function SetsPage() {
                     {last === null ? (
                       <span className="text-ink-3">No runs yet</span>
                     ) : (
-                      <time dateTime={last} title={new Date(last).toUTCString()}>
-                        {timeAgo(last)}
+                      <time dateTime={last} title={last}>
+                        {formatWhen(last, now)}
                       </time>
                     )}
                   </Td>

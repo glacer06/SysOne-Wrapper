@@ -2,7 +2,7 @@
 export { InlineAlert } from "./alert";
 export { Badge, BandBadge, RolloutBadge } from "./badge";
 export { Button, buttonClasses, type ButtonVariant } from "./button";
-export { Card, EmptyState, PageHeader } from "./card";
+export { Card, type Crumb, EmptyState, PageHeader } from "./card";
 export { CodeEditor } from "./code-editor";
 export { checkJson, type JsonCheck } from "./json-check";
 export { cx } from "./cx";

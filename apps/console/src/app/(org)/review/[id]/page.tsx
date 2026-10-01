@@ -3,10 +3,10 @@ import Link from "next/link";
 import { Facts, JsonBlock } from "~/components/observe/bits";
 import { choicesOf, confidenceOf, decisionsOf, DecisionsTable } from "~/components/observe/decisions";
 import { param, type SearchParams } from "~/components/observe/filters";
-import { ACTION_LABEL, formatUtc, formatValue, REASON_LABEL, REVIEW_STATUS_LABEL } from "~/components/observe/format";
+import { ACTION_LABEL, formatUtc, formatValue, REASON_LABEL, REVIEW_STATUS_LABEL } from "~/components/format";
 import { loadSets, SetLabel } from "~/components/observe/sets";
-import { OperationFailed } from "~/components/shell/coming-soon";
-import { Badge, BandBadge, buttonClasses, Card, InlineAlert, PageHeader, RolloutBadge } from "~/components/ui";
+import { OperationFailed } from "~/components/shell/operation-failed";
+import { Badge, BandBadge, Card, InlineAlert, PageHeader, RolloutBadge } from "~/components/ui";
 import { consoleOperation } from "~/server/console-operation";
 import type { RunDetail } from "~/server/operations/views";
 
@@ -20,15 +20,11 @@ function valueOf(resolution: unknown): unknown {
 export default async function ReviewItemPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<SearchParams> }) {
   const { id } = await params;
   const runId = param(await searchParams, "run");
-  const back = (
-    <Link href="/review" className={buttonClasses("ghost", "sm")}>
-      Back to the queue
-    </Link>
-  );
+  const crumbs = [{ href: "/review", label: "Review" }];
   if (runId === undefined) {
     return (
       <>
-        <PageHeader title="Review" actions={back} />
+        <PageHeader crumbs={crumbs} title="Review" />
         <InlineAlert kind="info" title="Open this item from the queue">
           This link is missing the run it belongs to. Open the item from the review queue or from its run.
         </InlineAlert>
@@ -41,7 +37,7 @@ export default async function ReviewItemPage({ params, searchParams }: { params:
   if (res.status !== "ok" || item === undefined) {
     return (
       <>
-        <PageHeader title="Review" actions={back} />
+        <PageHeader crumbs={crumbs} title="Review" />
         <OperationFailed message={res.status === "error" ? res.message : "No review item with this id is visible to you."} />
       </>
     );
@@ -58,7 +54,7 @@ export default async function ReviewItemPage({ params, searchParams }: { params:
       <PageHeader
         title={`Review: ${item.decisionId}`}
         description={<SetLabel sets={sets} setId={run.setId} />}
-        actions={back}
+        crumbs={crumbs}
       />
       <div className="flex flex-col gap-6">
         <Card title="Is this answer right?" description={REASON_LABEL[item.reason]}>

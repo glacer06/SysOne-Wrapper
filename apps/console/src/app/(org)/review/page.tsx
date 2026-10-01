@@ -2,9 +2,9 @@ import Link from "next/link";
 
 import { FilterForm, optionsOf } from "~/components/observe/filter-form";
 import { hasFilters, hrefWith, param, reviewListInput, type SearchParams } from "~/components/observe/filters";
-import { formatValue, formatWhen, REASON_LABEL, REVIEW_STATUS_LABEL } from "~/components/observe/format";
+import { formatValue, formatWhen, REASON_LABEL, REVIEW_STATUS_LABEL } from "~/components/format";
 import { loadSets, SetLabel, setOptions } from "~/components/observe/sets";
-import { OperationFailed } from "~/components/shell/coming-soon";
+import { OperationFailed } from "~/components/shell/operation-failed";
 import { BandBadge, buttonClasses, cx, EmptyState, InlineAlert, PageHeader, Table, Td, Th } from "~/components/ui";
 import { consoleOperation } from "~/server/console-operation";
 import type { ReviewItemView } from "~/server/operations/views";

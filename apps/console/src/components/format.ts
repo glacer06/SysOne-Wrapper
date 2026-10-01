@@ -1,4 +1,4 @@
-// Plain-text formatting for the runs, savings and review pages. Pure, so it is unit tested.
+// Plain-text formatting for every console page. Pure, so it is unit tested.
 
 import type { Action, ReviewItemReason, ReviewItemStatus, RunRecordSource, RunStatus } from "@bandwise/core";
 
@@ -14,6 +14,11 @@ export function formatUsd(micro: number | null): string {
   if (abs === 0) return "$0.00";
   if (abs >= 0.01) return `${sign}$${abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
   return `${sign}$${abs.toPrecision(2).replace(/0+$/, "")}`;
+}
+
+/** Dollars as the run envelope reports them, formatted like formatUsd. */
+export function formatDollars(usd: number | null): string {
+  return formatUsd(usd === null ? null : Math.round(usd * 1_000_000));
 }
 
 export function formatCount(n: number): string {

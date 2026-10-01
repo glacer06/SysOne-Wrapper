@@ -1,11 +1,11 @@
 "use client";
 
-import type { Action, RunDryRunResult, RunResult } from "@bandwise/core";
+import type { RunDryRunResult, RunResult } from "@bandwise/core";
 import { useEffect, useState, useTransition } from "react";
 
+import { ACTION_LABEL, formatDollars, formatWhen } from "~/components/format";
 import { Badge, BandBadge, Button, Card, checkJson, CodeEditor, InlineAlert, RolloutBadge, Select, cx } from "~/components/ui";
 
-import { money, timeAgo } from "../../_components/format";
 import { previewDraftAction, runStateAction } from "../actions";
 import { answerSummary, reband, type Rebanded, skeletonState, type Spec, toJsonText } from "./spec-edit";
 
@@ -22,7 +22,6 @@ export type LastPreview =
   | { kind: "run"; result: RunResult; spec: Spec; state: unknown; at: string }
   | { kind: "dry"; result: RunDryRunResult; at: string };
 
-const ACTION_LABEL: Record<Action, string> = { auto: "Auto", review: "Review", fallback: "Fallback", escalate_to_llm: "Escalate to LLM" };
 
 function storageKey(slug: string) {
   return `bandwise:preview-state:${slug}`;
@@ -137,7 +136,7 @@ function RunView({ preview, spec }: { preview: Extract<LastPreview, { kind: "run
         </table>
       </div>
       <p className="text-xs text-ink-3">
-        System One cost {money(result.cost.systemOneCostUsd)}, estimated savings {money(result.cost.savingsUsd)}, {result.cost.latencyMs} ms
+        System One cost {formatDollars(result.cost.systemOneCostUsd)}, estimated savings {formatDollars(result.cost.savingsUsd)}, {result.cost.latencyMs} ms
         {result.modelResolved === null ? "" : ` on ${result.modelResolved}`}. Logged as a console run in shadow.
       </p>
     </div>
@@ -265,7 +264,7 @@ export function PreviewPanel({ slug, inputSchema, recentRuns, synthetic, dirty, 
   const options = [
     { value: "manual", label: "My JSON below" },
     { value: "skeleton", label: "Empty state from the input schema" },
-    ...recentRuns.map((r) => ({ value: `run:${r.id}`, label: `Run ${timeAgo(r.createdAt)}, ${r.runBand} band, ${r.source}${r.status === "ok" ? "" : `, ${r.status}`}` })),
+    ...recentRuns.map((r) => ({ value: `run:${r.id}`, label: `Run ${formatWhen(r.createdAt, new Date())}, ${r.runBand} band, ${r.source}${r.status === "ok" ? "" : `, ${r.status}`}` })),
   ];
   const needsSave = dirty && canSave;
 

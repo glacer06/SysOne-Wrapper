@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { cx } from "./cx";
@@ -36,14 +37,39 @@ export function EmptyState({ title, children, action }: { title: string; childre
   );
 }
 
-export function PageHeader({ title, description, actions }: { title: string; description?: ReactNode; actions?: ReactNode }) {
+export interface Crumb {
+  href: string;
+  label: string;
+}
+
+/**
+ * The top of every page. `crumbs` are the pages above this one, so a detail page always links
+ * back the same way.
+ */
+export function PageHeader({ title, description, actions, crumbs }: { title: string; description?: ReactNode; actions?: ReactNode; crumbs?: readonly Crumb[] }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-4">
-      <div className="min-w-0">
-        <h1 className="text-2xl font-semibold tracking-tight text-ink">{title}</h1>
-        {description === undefined ? null : <p className="mt-1 max-w-prose text-sm text-ink-2">{description}</p>}
+    <div className="mb-6">
+      {crumbs === undefined || crumbs.length === 0 ? null : (
+        <nav aria-label="Breadcrumb" className="mb-2 text-sm text-ink-3">
+          <ol className="flex flex-wrap items-center gap-1">
+            {crumbs.map((c, i) => (
+              <li key={c.href} className="flex items-center gap-1">
+                {i === 0 ? null : <span aria-hidden>/</span>}
+                <Link href={c.href} className="underline-offset-2 hover:text-ink hover:underline">
+                  {c.label}
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </nav>
+      )}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold tracking-tight text-ink">{title}</h1>
+          {description === undefined ? null : <div className="mt-1 max-w-prose text-sm text-ink-2">{description}</div>}
+        </div>
+        {actions === undefined ? null : <div className="flex gap-2">{actions}</div>}
       </div>
-      {actions === undefined ? null : <div className="flex gap-2">{actions}</div>}
     </div>
   );
 }

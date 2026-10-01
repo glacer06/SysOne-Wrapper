@@ -2,7 +2,7 @@ import type { Action, Band } from "@bandwise/core";
 
 import { BandBadge, Table, Td, Th } from "~/components/ui";
 
-import { ACTION_LABEL, formatValue } from "./format";
+import { ACTION_LABEL, formatValue } from "../format";
 
 /** The parts of a Decision the pages read. Runs store the full RunResult decision. */
 export interface DecisionLike {

@@ -4,8 +4,8 @@
 
 import type { PointerChannel, RolloutStage } from "@bandwise/core";
 
-import { OperationFailed } from "~/components/shell/coming-soon";
-import { Card, EmptyState } from "~/components/ui";
+import { OperationFailed } from "~/components/shell/operation-failed";
+import { Card } from "~/components/ui";
 import { requireConsole } from "~/server/auth/console";
 import { consoleOperation } from "~/server/console-operation";
 
@@ -13,7 +13,7 @@ import { type ChannelRow, Channels } from "./channels";
 import { VersionHistory, type VersionRow } from "./history";
 import { PublishDraft } from "./publish";
 
-interface SetOut {
+export interface ReleasesSet {
   slug: string;
   draft: { version: number; etag: string } | null;
   channels: { channel: PointerChannel; version: number; stage: RolloutStage; updatedAt: string }[];
@@ -30,14 +30,10 @@ interface VersionOut {
 
 const EDIT_ROLES = new Set(["owner", "admin", "editor"]);
 
-export async function ReleasesPanel({ setRef }: { setRef: string }) {
+/** `set` is the set.get output the page already read for its header. */
+export async function ReleasesPanel({ setRef, set: s }: { setRef: string; set: ReleasesSet }) {
   const { ctx } = await requireConsole();
-  const [set, versions] = await Promise.all([consoleOperation("set.get", { ref: setRef }), consoleOperation("version.list", { ref: setRef, limit: 50 })]);
-  if (set.status === "error" && set.code === "not_found") {
-    return <EmptyState title="No such set">There is no set {setRef} in this org, or your account cannot see it.</EmptyState>;
-  }
-  if (set.status !== "ok") return <OperationFailed message={set.status === "error" ? set.message : "The set could not load."} />;
-  const s = set.output as SetOut;
+  const versions = await consoleOperation("version.list", { ref: setRef, limit: 50 });
 
   const channels: ChannelRow[] = await Promise.all(
     s.channels.map(async (c) => {

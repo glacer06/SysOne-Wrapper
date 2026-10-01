@@ -1,5 +1,5 @@
 import { PageSkeleton } from "~/components/shell/page-skeleton";
 
 export default function Loading() {
-  return <PageSkeleton title="Review" />;
+  return <PageSkeleton title="Approvals" />;
 }

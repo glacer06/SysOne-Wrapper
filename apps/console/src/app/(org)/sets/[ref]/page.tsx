@@ -1,13 +1,12 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { OperationFailed } from "~/components/shell/coming-soon";
+import { OperationFailed } from "~/components/shell/operation-failed";
 import { EmptyState, PageHeader } from "~/components/ui";
 import { requireConsole } from "~/server/auth/console";
 import { consoleOperation } from "~/server/console-operation";
 import { usesFixtureTransport } from "~/server/run/deps";
 
-import { ChannelStages } from "../_components/channel-stages";
+import { SetHeader } from "../_components/set-header";
 import { DraftEditor } from "./editor/draft-editor";
 import type { Finding } from "./editor/spec-edit";
 
@@ -23,35 +22,13 @@ export default async function SetPage({ params }: { params: Promise<{ ref: strin
   if (set.status !== "ok") {
     return (
       <>
-        <PageHeader title={ref} />
+        <PageHeader crumbs={[{ href: "/sets", label: "Sets" }]} title={ref} />
         <OperationFailed message={set.status === "error" ? set.message : "This set is not available yet."} />
       </>
     );
   }
   const s = set.output;
-  const back = (
-    <Link href="/sets" className="text-sm text-ink-2 underline-offset-2 hover:text-ink hover:underline">
-      All sets
-    </Link>
-  );
-  const header = (
-    <>
-      <PageHeader
-        title={s.name}
-        description={
-          <>
-            <span className="font-mono">{s.slug}</span>
-            {s.draft === null ? "" : `, draft v${s.draft.version}`}
-            {s.description === null ? null : <span className="mt-1 block">{s.description}</span>}
-          </>
-        }
-        actions={back}
-      />
-      <div className="mb-6 rounded-md border border-rule bg-paper-raised px-5 py-3">
-        <ChannelStages channels={s.channels} />
-      </div>
-    </>
-  );
+  const header = <SetHeader set={s} />;
 
   if (s.draft === null) {
     return (

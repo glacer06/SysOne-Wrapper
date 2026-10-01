@@ -2,9 +2,9 @@ import Link from "next/link";
 
 import { FilterForm, optionsOf } from "~/components/observe/filter-form";
 import { hasFilters, hrefWith, param, RANGES, runListInput, type SearchParams } from "~/components/observe/filters";
-import { ACTION_LABEL, formatLatency, formatUsd, formatWhen, SOURCE_LABEL, STATUS_LABEL } from "~/components/observe/format";
+import { ACTION_LABEL, formatLatency, formatUsd, formatWhen, SOURCE_LABEL, STATUS_LABEL } from "~/components/format";
 import { loadSets, SetLabel, setOptions } from "~/components/observe/sets";
-import { OperationFailed } from "~/components/shell/coming-soon";
+import { OperationFailed } from "~/components/shell/operation-failed";
 import { Badge, BandBadge, buttonClasses, EmptyState, PageHeader, RolloutBadge, Table, Td, Th } from "~/components/ui";
 import { consoleOperation } from "~/server/console-operation";
 import type { RunSummary } from "~/server/operations/views";

@@ -2,25 +2,21 @@ import Link from "next/link";
 
 import { Facts, JsonBlock, Stat } from "~/components/observe/bits";
 import { DecisionsTable } from "~/components/observe/decisions";
-import { ACTION_LABEL, formatCount, formatLatency, formatUsd, formatUtc, REASON_LABEL, REVIEW_STATUS_LABEL, SOURCE_LABEL, STATUS_LABEL } from "~/components/observe/format";
+import { ACTION_LABEL, formatCount, formatLatency, formatUsd, formatUtc, REASON_LABEL, REVIEW_STATUS_LABEL, SOURCE_LABEL, STATUS_LABEL } from "~/components/format";
 import { loadSets, SetLabel } from "~/components/observe/sets";
-import { OperationFailed } from "~/components/shell/coming-soon";
-import { Badge, BandBadge, buttonClasses, Card, InlineAlert, PageHeader, RolloutBadge, Table, Td, Th } from "~/components/ui";
+import { OperationFailed } from "~/components/shell/operation-failed";
+import { Badge, BandBadge, Card, InlineAlert, PageHeader, RolloutBadge, Table, Td, Th } from "~/components/ui";
 import { consoleOperation } from "~/server/console-operation";
 import type { RunDetail } from "~/server/operations/views";
 
 export default async function RunPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [sets, res] = await Promise.all([loadSets(), consoleOperation("run.get", { id })]);
-  const back = (
-    <Link href="/runs" className={buttonClasses("ghost", "sm")}>
-      All runs
-    </Link>
-  );
+  const crumbs = [{ href: "/runs", label: "Runs" }];
   if (res.status !== "ok") {
     return (
       <>
-        <PageHeader title="Run" actions={back} />
+        <PageHeader crumbs={crumbs} title="Run" />
         <OperationFailed message={res.status === "error" ? res.message : "Runs are not served yet."} />
       </>
     );
@@ -30,7 +26,7 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
 
   return (
     <>
-      <PageHeader title="Run" description={<span className="font-mono text-xs">{run.id}</span>} actions={back} />
+      <PageHeader crumbs={crumbs} title="Run" description={<span className="font-mono text-xs">{run.id}</span>} />
 
       {run.status === "ok" ? null : (
         <InlineAlert kind="error" title={`This run ended with ${STATUS_LABEL[run.status].toLowerCase()}`} className="mb-4">
