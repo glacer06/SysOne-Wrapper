@@ -217,7 +217,7 @@ The last command exits 0 when the server draft matches the file again. Publishin
 Every step above can be undone without touching data:
 
 - **Hooks back to local live mode (Nick, seconds).** Remove the `BANDWISE_TOKEN` export from `~/.zshrc`, `unset BANDWISE_TOKEN`, start a new session. The hooks call TypeSafe with `TYPESAFE_API_KEY` again, exactly as before D2e.
-- **A bad version (Nick or PJ).** `bwa rollback <set>` points production back at the previous version. Rollback is a move toward safety and is never gated.
+- **A bad version (Nick or PJ).** `bwa rollback <set>` points production back at the previous version. Rollback is a move toward safety and is never gated. It only steps back, to an older version this channel has served before. That includes a version that was itself rolled back for being bad, so read the version number it prints, and pass `--to <n>` when the one right before is not the one you want.
 - **A set misbehaving.** `bwa rollout <set> paused --reason "..."`. Paused never acts and is never gated.
 - **A leaked token (Nick or PJ, at once).** Until the console can revoke tokens (D3), revoke it in the SQL editor with its audit row, then mint a new one (section 4). The token id is the mint's stderr line or the `target_id` of its `app_token.create` audit row. The server refuses a revoked token within a minute.
 
@@ -231,5 +231,9 @@ Every step above can be undone without touching data:
   ```
 - **The pepper leaked.** Generate a new one, set it in Vercel and the vault, redeploy, and mint every token again. Every old token stops working.
 - **Turn hosted runs off entirely.** Remove `BANDWISE_TOKEN_PEPPER` from Vercel Production and redeploy: every run answers 503 and nothing reaches TypeSafe. Keep the pepper in the vault; putting it back restores every token. Hooks fail open, so sessions keep working. Do not turn it off by removing `SYSTEM_ONE_TRANSPORT`: the server would then answer from synthetic fixtures.
+
+## Known limits for dogfood
+
+- **Sign-in attempt limits are per instance.** The per-email and per-IP password limits live in memory, so on Vercel each instance counts on its own and password guessing is not bounded across instances. TOTP codes are bounded by the database lockout (10 tries, then 15 minutes). `clientIp` trusts the first `x-forwarded-for` entry, which only Vercel's edge sets reliably. Accepted for one-user dogfood after PJ's review on 2026-10-01; a shared store comes before anyone outside the internal org signs in. Keep long, unique passwords from the vault for every console account.
 
 When this runbook is done, tick the D2e items in `.claude/skills/bandwise-builder/references/phases/phase-d.md` and note the date in [dogfood.md](dogfood.md).

@@ -177,6 +177,8 @@ async function visibleApproval(env: OperationEnv, id: string): Promise<ApprovalR
   const row = await repos.approvalRequests.get(env.tx, id);
   const actor = env.ctx.actor;
   if (row === null || (actor.type === "agent" && row.requestedByTokenId !== actor.tokenId)) throw new OperationError("not_found", notFound);
+  // The same rule as approval.list: a person sees only the requests their role can decide.
+  if (actor.type === "user" && !roleAtLeast(actor.role, await requiredRoleFor(env.tx, row))) throw new OperationError("not_found", notFound);
   return row;
 }
 

@@ -363,6 +363,9 @@ describe("approvals", () => {
     expect(run).toMatchObject({ actorType: "agent", actorTokenId: bot.tokenId, actorRole: "editor" });
     expect((await auditRows(internal, "approval.decide")).some((r) => r.targetId === approvalId)).toBe(true);
     expect((await ok<{ status: string }>(op("approval.get", bot.ctx, { id: approvalId }))).status).toBe("executed");
+    // A role that cannot decide it cannot read it either, the same 404 as a missing id.
+    expect((await refused(op("approval.get", session(internal, VIC, "viewer"), { id: approvalId }))).code).toBe("not_found");
+    expect((await ok<{ status: string }>(op("approval.get", owner(), { id: approvalId }))).status).toBe("executed");
     expect((await refused(op("approval.decide", owner(), { id: approvalId, decision: "approved" }))).code).toBe("invalid_request");
   });
 
