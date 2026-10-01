@@ -134,8 +134,8 @@ const PHRASES: ReadonlyArray<{ find: string; replace: string }> = [
   },
   { find: "effectiveness-loop.md section 9 makes samplePct above 0.25 high", replace: "samplePct above 0.25 is high" },
   {
-    find: "\n// The management commands over /api/v1\n// land in Phase 3 (headless-and-agents.md).",
-    replace: "\n// Management commands over /api/v1 need Bandwise Cloud and are not part of this package.",
+    find: "\n// The other management commands over /api/v1\n// land in Phase 3 (headless-and-agents.md).",
+    replace: "\n// Other management commands over /api/v1 land in a later release.",
   },
   {
     find: "// @bandwise/cli (bin bandwise): management commands over /api/v1 (Phase 3), plus `run --local`.",

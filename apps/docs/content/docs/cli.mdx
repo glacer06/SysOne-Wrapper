@@ -1,11 +1,12 @@
 ---
 title: CLI reference
-description: The bandwise command line, on npm as @bandwise/cli. Local and live runs, receipts and Claude Code hooks work today; the rest arrives in Phase 3.
+description: The bandwise command line, on npm as @bandwise/cli. Local and live runs, receipts, Claude Code hooks and the first hosted commands work today; the rest arrives in Phase 3.
 ---
 
-<Callout type="warn" title="Coming in Phase 3">
-  The commands that manage sets, publish versions, change rollout stages and run evals over the
-  HTTP API arrive in Phase 3. This page will list every command then.
+<Callout type="warn" title="Hosted commands are in early access">
+  The hosted commands below (spec, publish, rollback, rollout and report --remote) work for orgs
+  in the hosted early access. Sets, evals, approvals and the other management commands arrive in
+  Phase 3. This page will list every command then.
 </Callout>
 
 ## Install
@@ -106,9 +107,46 @@ The set can only pick a profile id from that file. An answer that is not a profi
 
 A missing key, a set that will not load, an error or a timeout uses the default, with one line on stderr saying why, so a launch is never blocked. The task goes to the model with the same redaction as the hooks. The receipt records the profile used and the one picked, never the task. The session gets `BANDWISE_LAUNCH_PROFILE` and `BANDWISE_LAUNCH_PICKED`, so its hooks can record the profile for `report --compare profile`. Apart from those two, it gets the same environment `claude` would get if you started it from the same shell: `launch` adds no key and removes none. If your key is in that shell, the session inherits it, which the hooks inside the session need. Notices print before the session starts.
 
+## Hosted Bandwise
+
+With a Bandwise token, the CLI manages sets on hosted Bandwise over the HTTP API. It reads the token from `BANDWISE_TOKEN` and the address from `BANDWISE_BASE_URL` (default `https://app.bandwise.dev`). In this mode it never holds a TypeSafe, OpenRouter or AI Gateway key: the server runs the model. The token goes only into the `Authorization: Bearer` header, over https (plain http only to your own machine). It never appears in output, errors or receipts.
+
+```bash
+bandwise spec pull <set> [--out <file>] [--json]
+bandwise spec push <file> [--set <slug>] [--goal <goalId> [--name <text>]] [--if-match <etag>] [--json]
+bandwise spec diff <file> [--set <slug>] [--version <n>] [--json]
+bandwise publish <set> [--channel production|staging] [--changelog <text>] [--if-match <etag>] [--json]
+bandwise rollback <set> [--channel production|staging] [--to <n>] [--json]
+bandwise rollout <set> <inactive|shadow|controlled|full|paused> [--channel production|staging] [--reason <text>] [--json]
+bandwise report --remote [--since 7d] [--set <slug>] [--json]
+```
+
+| Command | What it does |
+|---|---|
+| `spec pull` | Prints the set's draft spec, or writes it to `--out`. The draft ETag goes to stderr. |
+| `spec push` | Replaces the draft with the file, then prints the lint errors and warnings. The set slug is the file name without `.json`, or `--set`. When the set does not exist yet, `--goal` creates it first. The CLI reads the draft ETag from the server and sends it as `If-Match`; pass `--if-match` to use the ETag from your last pull instead, so a change someone made since then is refused. |
+| `spec diff` | Compares the file with the server draft, or with a published `--version`. Each change shows its JSON Pointer, the server value and the file value. |
+| `publish` | Publishes the draft as the next version on a channel (default `production`). |
+| `rollback` | Points a channel back at its previous version, or at `--to`. Never waits for an approval. |
+| `rollout` | Sets a channel's rollout stage, with `--reason` recorded in the audit log. |
+| `report --remote` | Runs per set from the server, with the band mix, System One cost and savings, plus the org's usage rollup. |
+
+When a person must approve a change, `publish`, `rollback` and `rollout` print the approval id and the console link, and exit `3`. A failed gate prints each gate with what it needs and what it measured. Errors print one line with the code, the HTTP status, the message and the request id, then each detail, then what to do next. For example, a draft that changed since you read it:
+
+```text
+error precondition_failed (HTTP 412): The draft changed. [request req_01J...]
+  the draft changed on the server (now 9f2c...). Run bandwise spec diff, merge, then push again
+```
+
+Writes send an `Idempotency-Key`, so a retry after a network error, a `429` or a retryable `503` happens once.
+
+### Hooks on hosted Bandwise
+
+With `BANDWISE_TOKEN` set, `bandwise hook` calls `POST /api/v1/sets/<slug>/run` instead of the model. The slug is the `--set` file name without `.json`, or `--remote-set`. The local spec still decides which fields leave your machine, with the same redaction and `--drop`. The set's rollout stage on the server decides whether the hook may act, so `--rollout` and `--provider` do nothing in this mode, and a set moves from `shadow` to `controlled` without editing `.claude/settings.json`. The timeout and the rule that any error exits 0 with no output stay the same. Receipts are still written, with `provider: "bandwise"` and a `remote` field holding the host, version, channel and run id. Without `BANDWISE_TOKEN`, hooks run live with your own key as before.
+
 ## Conventions the full CLI will follow
 
 - Every command supports `--json` for scripts and agents.
 - It never prompts when input is not a terminal. A command that needs confirmation then fails and asks for `--yes`.
 - Exit codes: `0` ok, `1` error, `2` a diff or drift was found, `3` an approval is pending.
-- It reads `BANDWISE_TOKEN` and `BANDWISE_BASE_URL`, or a named profile. Cloud commands never hold a TypeSafe, OpenRouter or AI Gateway key. Only `run --live` and `hook` read your own key, from your environment.
+- It reads `BANDWISE_TOKEN` and `BANDWISE_BASE_URL` today, and a named profile later. Hosted commands never hold a TypeSafe, OpenRouter or AI Gateway key. Only `run --live`, `launch` and `hook` without a token read your own key, from your environment.
