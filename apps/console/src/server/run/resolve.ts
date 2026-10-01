@@ -93,6 +93,12 @@ export async function resolveRun(tx: TenantTx, ctx: TenantContext, target: RunTa
     systemOneProvider: set.systemOneProvider ?? org.defaultSystemOneProvider,
   };
 
+  // The channel a run is logged under (the Channel contract): a draft run is "draft", and a pinned
+  // production run is "pinned", so the Runs page tells previews and pins apart from live traffic.
+  // A pinned staging run stays "staging", which keeps its savings suppressed.
+  const ranOn: ResolvedRun["channel"] =
+    parsed.selector.kind === "draft" ? "draft" : parsed.selector.kind === "version" && channel === "production" ? "pinned" : channel;
+
   return {
     spec: spec.data,
     setId: set.id,
@@ -100,7 +106,7 @@ export async function resolveRun(tx: TenantTx, ctx: TenantContext, target: RunTa
     versionId: versionRow.id,
     interfaceMajor: versionRow.interfaceMajor,
     interfaceHash: versionRow.interfaceHash,
-    channel,
+    channel: ranOn,
     rollout,
     settings,
   };

@@ -68,11 +68,14 @@ async function feedbackFor(org: SeededOrg, itemId: string) {
   return t.db.withTenant(sys(org.orgId), (tx) => repos.runFeedback.getByIdempotencyKey(tx, `review:${itemId}`));
 }
 
-/** The first of this UTC month: the runs partitions cover this month and the next two. */
-const monthStart = () => {
+/**
+ * The first of this UTC month: the runs partitions cover this month and the next two. Read once,
+ * so setup and the test agree even when the month turns mid-run.
+ */
+const MONTH_START = (() => {
   const now = new Date();
   return Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1);
-};
+})();
 
 async function insertRun(org: SeededOrg, createdAt: Date, cost: number) {
   const id = crypto.randomUUID();
@@ -145,7 +148,7 @@ beforeAll(async () => {
     },
     { slug: "acme", name: "Acme", members: [{ email: "ada@acme.test", name: "Ada", role: "owner" }] },
   ])) as [SeededOrg, SeededOrg];
-  const start = monthStart();
+  const start = MONTH_START;
   runId = await insertRun(internal, new Date(start + 10 * 3_600_000), 4);
   await insertRun(internal, new Date(start + 11 * 3_600_000), 6);
   await insertRun(internal, new Date(start + 86_400_000 + 23.5 * 3_600_000), 10);
@@ -158,7 +161,7 @@ afterAll(async () => {
 
 describe("usage.get per day", () => {
   it("sums runs per UTC day, oldest first, for this org only", async () => {
-    const start = monthStart();
+    const start = MONTH_START;
     const range = { from: new Date(start).toISOString(), to: new Date(start + 3 * 86_400_000).toISOString() };
     const usage = await ok<UsageView>(op("usage.get", owner(), range));
     const day = (offset: number) => new Date(start + offset * 86_400_000).toISOString().slice(0, 10);

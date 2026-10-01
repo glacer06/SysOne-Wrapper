@@ -12,6 +12,10 @@ export default defineBandwiseVitestConfig({
     },
   },
   test: {
+    // PGlite transactions and password hashing run inside tests, and slow down a lot under a
+    // parallel turbo run. Same budget as packages/db.
+    hookTimeout: 120_000,
+    testTimeout: 60_000,
     server: {
       deps: {
         // The auth library loads this package's ESM build, which uses directory imports that

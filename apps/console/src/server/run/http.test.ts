@@ -100,7 +100,7 @@ describe("POST /api/v1/sets/{ref}/run", () => {
   it("runs by set id and by a pinned published version", async () => {
     const raw = await token(internal);
     expect((await call(raw, { ref: internal.setId })).status).toBe(200);
-    expect((await call(raw, { ref: "inbox-triage@1" })).body).toMatchObject({ version: 1 });
+    expect((await call(raw, { ref: "inbox-triage@1" })).body).toMatchObject({ version: 1, channel: "pinned" });
     // Version 2 is the open draft: a pinned number must be published.
     expect(code(await call(raw, { ref: "inbox-triage@2" }))).toBe("not_found");
     expect(code(await call(raw, { ref: "inbox-triage@99" }))).toBe("not_found");
@@ -208,7 +208,10 @@ describe("POST /api/v1/sets/{ref}/run", () => {
     expect(code(await call(await token(internal), { ref: "inbox-triage@draft" }))).toBe("insufficient_scope");
     const res = await call(await token(internal, { prefix: "sk_test_" }), { ref: "inbox-triage@draft" });
     expect(res.status).toBe(200);
-    expect(res.body).toMatchObject({ version: 2, rollout: "shadow" });
+    expect(res.body).toMatchObject({ version: 2, rollout: "shadow", channel: "draft" });
+    // Stored as a draft run, so the Runs page never shows a preview as production traffic.
+    const row = await t.db.withTenant(sys(internal.orgId), (tx) => repos.runs.get(tx, (res.body as { runId: string }).runId));
+    expect(row?.channel).toBe("draft");
   });
 
   it("refuses a bad body, a body too large, and a state the schema rejects", async () => {

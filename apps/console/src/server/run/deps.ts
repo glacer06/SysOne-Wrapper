@@ -17,6 +17,27 @@ export function usesFixtureTransport(): boolean {
   return getEnv().SYSTEM_ONE_TRANSPORT !== "sdk";
 }
 
+/** The fixture transport never sends a key, so fixture mode needs no real one. */
+export const FIXTURE_PLACEHOLDER_KEY = "fixture-mode-sends-no-key";
+
+type KeyEnv = Pick<ReturnType<typeof getEnv>, "SYSTEM_ONE_TRANSPORT" | "TYPESAFE_API_KEY" | "OPENROUTER_API_KEY" | "AI_GATEWAY_API_KEY">;
+
+/**
+ * The platform keys per provider. In fixture mode a missing key becomes a placeholder, so a local
+ * preview does not fail with "the org's System One key was rejected" for a key it never sends.
+ */
+export function platformKeysFor(env: KeyEnv): RunSetDeps["platformKeys"] {
+  const fill = env.SYSTEM_ONE_TRANSPORT === "sdk" ? undefined : FIXTURE_PLACEHOLDER_KEY;
+  const typesafe = env.TYPESAFE_API_KEY ?? fill;
+  const openrouter = env.OPENROUTER_API_KEY ?? fill;
+  const vercel = env.AI_GATEWAY_API_KEY ?? fill;
+  return {
+    ...(typesafe !== undefined ? { typesafe } : {}),
+    ...(openrouter !== undefined ? { openrouter } : {}),
+    ...(vercel !== undefined ? { vercel } : {}),
+  };
+}
+
 /** Throws when the env is incomplete; callers turn that into a generic failure. */
 export function serverRunDeps(): RunSetDeps {
   const env = getEnv();
@@ -26,10 +47,6 @@ export function serverRunDeps(): RunSetDeps {
   return {
     db: getDb(),
     transport,
-    platformKeys: {
-      ...(env.TYPESAFE_API_KEY !== undefined ? { typesafe: env.TYPESAFE_API_KEY } : {}),
-      ...(env.OPENROUTER_API_KEY !== undefined ? { openrouter: env.OPENROUTER_API_KEY } : {}),
-      ...(env.AI_GATEWAY_API_KEY !== undefined ? { vercel: env.AI_GATEWAY_API_KEY } : {}),
-    },
+    platformKeys: platformKeysFor(env),
   };
 }
