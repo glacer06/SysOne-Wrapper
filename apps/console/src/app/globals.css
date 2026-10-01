@@ -107,7 +107,34 @@ body {
     color: var(--bw-text);
   }
 
-  /* The typed wordmark, top-left in the sidebar and the phone header. Size comes from the caller. */
+  /* The header pairing, top-left in the sidebar and the phone header: the unloaded ant facing
+     right, then the typed wordmark. Size comes from the caller. The ant's body sits between the
+     wordmark's x-height and cap height and its feet stand on the baseline. The box crops the
+     supplied drawing (1400 units square) to the ant, 1014 by 357 units, which leaves the trail out. */
+  .bw-wordmark-pair {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.3em;
+  }
+  .bw-header-ant {
+    --ant-h: 0.95em;
+    position: relative;
+    display: inline-block;
+    flex-shrink: 0;
+    overflow: hidden;
+    width: calc(var(--ant-h) * 1014 / 357);
+    height: var(--ant-h);
+  }
+  .bw-header-ant img {
+    position: absolute;
+    left: calc(var(--ant-h) * -236 / 357);
+    top: calc(var(--ant-h) * -518 / 357);
+    width: calc(var(--ant-h) * 1400 / 357);
+    max-width: none;
+    height: auto;
+  }
+
+  /* The typed wordmark. Size comes from the caller. */
   .bw-wordmark {
     font-family: var(--font-display);
     font-stretch: 125%;

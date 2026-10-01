@@ -150,6 +150,41 @@ pre {
   color: var(--bw-text-muted);
 }
 
+/* The nav title: the unloaded ant facing right, then the typed wordmark. The ant's body sits
+   between the wordmark's x-height and cap height and its feet stand on the baseline. The box crops
+   the supplied drawing (1400 units square) to the ant, 1014 by 357 units, which leaves the trail
+   out. One file per theme, switched with the docs `dark` class like the hero mark. */
+.bw-wordmark-pair {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3em;
+  font-size: 20px;
+}
+.bw-header-ant {
+  --ant-h: 0.95em;
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  overflow: hidden;
+  width: calc(var(--ant-h) * 1014 / 357);
+  height: var(--ant-h);
+}
+.bw-header-ant img {
+  position: absolute;
+  left: calc(var(--ant-h) * -236 / 357);
+  top: calc(var(--ant-h) * -518 / 357);
+  width: calc(var(--ant-h) * 1400 / 357);
+  max-width: none;
+  height: auto;
+}
+.bw-header-ant-dark,
+.dark .bw-header-ant-light {
+  display: none;
+}
+.dark .bw-header-ant-dark {
+  display: block;
+}
+
 /* The nav wordmark, typed. */
 .bw-wordmark {
   font-family: var(--font-heading), "Helvetica Neue", Arial, sans-serif;

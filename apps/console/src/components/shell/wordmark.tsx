@@ -11,11 +11,22 @@ import { cx } from "../ui/cx";
 /** Mark A's viewBox is 1104.72 by 1044.77. */
 const MARK_A_RATIO = 1044.77 / 1104.72;
 
-/** The lowercase "bandwise" in Archivo display, as a link to the console home. */
+/**
+ * The header pairing (Nick, 2026-10-01): the unloaded side-view ant facing right, from
+ * brand/unloaded, then the lowercase "bandwise" in Archivo display, as a link to the console home.
+ * The ant box crops the supplied drawing to the ant above its trail (globals.css, .bw-header-ant).
+ * The ant is decorative; the link's label carries the name.
+ */
 export function Wordmark({ href = "/sets", size = "md", label = "Bandwise console home" }: { href?: string; size?: "sm" | "md"; label?: string }) {
   return (
     <Link href={href} aria-label={label} className="inline-flex min-h-10 items-center rounded-sm max-md:min-h-11">
-      <span className={cx("bw-wordmark", size === "sm" ? "text-[1.125rem]" : "text-[1.25rem]")}>bandwise</span>
+      <span className={cx("bw-wordmark-pair", size === "sm" ? "text-[1.125rem]" : "text-[1.25rem]")}>
+        <span className="bw-header-ant" aria-hidden="true">
+          <Image src="/brand/bandwise-ant-unloaded-A-r4-right-light.svg" width={64} height={64} alt="" unoptimized priority className="bw-for-light" />
+          <Image src="/brand/bandwise-ant-unloaded-A-r4-right-dark.svg" width={64} height={64} alt="" unoptimized priority className="bw-for-dark" />
+        </span>
+        <span className="bw-wordmark">bandwise</span>
+      </span>
     </Link>
   );
 }

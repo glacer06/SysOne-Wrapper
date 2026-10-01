@@ -2,6 +2,7 @@ import type { Band } from "@bandwise/core";
 import type { ReactNode } from "react";
 import { segments } from "~/lib/decision-example";
 import { CarryScene } from "./carry-scene";
+import { UNLOADED_ANT_DARK, UNLOADED_ANT_LIGHT } from "./unloaded-ant-art";
 
 const pct = (x: number) => `${(x * 100).toFixed(2)}%`;
 
@@ -33,13 +34,26 @@ export function BandLegend() {
   );
 }
 
-/** The supplied Scout layers (brand/layers/bandwise-mark-C-*-{ant,load}.svg): the ant and its load as separate files. */
-function Layer({ part }: { part: "ant" | "load" }) {
+/**
+ * The carry: the supplied unloaded side-view ant (brand/unloaded, A, facing right), inlined so CSS
+ * can swing its six leg groups, with the supplied B monogram (brand/marks) on its back. Nothing is
+ * redrawn: the ant markup comes unchanged from the brand files (see lib/unloaded-ant.ts), and the B
+ * is the file itself, only scaled and placed. Each theme has its own file; CSS shows the one in force.
+ */
+function Carry() {
   return (
-    <picture className={`carry-${part}`}>
-      <source srcSet={`/brand/bandwise-mark-C-dark-${part}.svg`} media="(prefers-color-scheme: dark)" />
-      <img src={`/brand/bandwise-mark-C-light-${part}.svg`} alt="" width={72} height={110} />
-    </picture>
+    <div className="carry">
+      <span className="carry-ant">
+        <span className="carry-art carry-art-light" dangerouslySetInnerHTML={{ __html: UNLOADED_ANT_LIGHT }} />
+        <span className="carry-art carry-art-dark" dangerouslySetInnerHTML={{ __html: UNLOADED_ANT_DARK }} />
+      </span>
+      <span className="carry-load">
+        <picture className="carry-b">
+          <source srcSet="/brand/bandwise-b-monogram-dark.svg" media="(prefers-color-scheme: dark)" />
+          <img src="/brand/bandwise-b-monogram-light.svg" alt="" width={14} height={21} />
+        </picture>
+      </span>
+    </div>
   );
 }
 
@@ -47,8 +61,8 @@ function Layer({ part }: { part: "ant" | "load" }) {
  * The confidence ruler: the noul axis from 0 (surely no) to 1 (surely yes), split into the
  * policy's bands. Thresholds come from the policy passed in, never from constants here.
  *
- * With `carry`, the signature motion plays once: the ant walks to the score, the band lights up,
- * the load sets down, then the readout fades in. The rest state is the end frame, and reduced
+ * With `carry`, the signature motion plays once: the ant walks the ruler with the B on its back,
+ * the band lights up, the B sets down at the score, then the readout fades in. The rest state is the end frame, and reduced
  * motion shows only that.
  */
 export function ConfidenceRuler({
@@ -78,10 +92,7 @@ export function ConfidenceRuler({
       {carry ? (
         <div className="carry-lane" aria-hidden="true">
           <div className="carry-track">
-            <div className="carry">
-              <Layer part="ant" />
-              <Layer part="load" />
-            </div>
+            <Carry />
           </div>
         </div>
       ) : null}

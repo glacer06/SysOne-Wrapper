@@ -1,9 +1,24 @@
 import Link from "next/link";
 import { docsUrl, kitUrl, productName } from "~/site";
 
-/** The typed wordmark: lowercase Archivo display. The ant marks appear at size elsewhere. */
+/**
+ * The header pairing (Nick, 2026-10-01): the unloaded side-view ant facing right, then the typed
+ * wordmark in lowercase Archivo display. The ant is the supplied file for light or dark, cropped by
+ * its box to the ant above its trail (the drawing's units 236 to 1250 across, 518 to 875 down).
+ * It is decorative: the home link carries the name.
+ */
 export function Wordmark() {
-  return <span className="wordmark">bandwise</span>;
+  return (
+    <span className="wordmark-pair">
+      <span className="header-ant" aria-hidden="true">
+        <picture>
+          <source srcSet="/brand/bandwise-ant-unloaded-A-r4-right-dark.svg" media="(prefers-color-scheme: dark)" />
+          <img src="/brand/bandwise-ant-unloaded-A-r4-right-light.svg" alt="" width={74} height={74} />
+        </picture>
+      </span>
+      <span className="wordmark">bandwise</span>
+    </span>
+  );
 }
 
 /** Mark A (Ascent), the supplied file for light or dark. Its viewBox is 1104.72 by 1044.77. */

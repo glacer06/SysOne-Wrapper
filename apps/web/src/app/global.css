@@ -221,7 +221,38 @@ picture {
   flex-shrink: 0;
 }
 
-/* The typed wordmark. The ant marks appear at size in the hero, the brand moment and the footer. */
+/* The header pairing: the unloaded ant facing right, then the typed wordmark. The full marks with
+   the B appear at size in the hero, the brand moment and the footer. */
+.wordmark-pair {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3em;
+  font-size: 23px;
+}
+
+/* The ant's body sits between the wordmark's x-height and cap height, and its feet stand on the
+   baseline. The box crops the supplied drawing (1400 units square) to the ant, 1014 by 357 units,
+   which leaves the trail out. */
+.header-ant {
+  --ant-h: 0.95em;
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  overflow: hidden;
+  width: calc(var(--ant-h) * 1014 / 357);
+  height: var(--ant-h);
+}
+
+.header-ant img {
+  position: absolute;
+  left: calc(var(--ant-h) * -236 / 357);
+  top: calc(var(--ant-h) * -518 / 357);
+  width: calc(var(--ant-h) * 1400 / 357);
+  max-width: none;
+  height: auto;
+}
+
+/* The typed wordmark. */
 .wordmark {
   font-family: var(--bw-font-display);
   font-stretch: 125%;
@@ -871,19 +902,47 @@ picture {
   display: none;
 }
 
-/* The carry: the signature motion from brand/bandwise-motion-demo.html.
-   Rest state is the end frame: the ant stands at the score, the band is lit, the load is down,
-   the readout shows. `.is-playing` runs it once from the start. */
+/* The carry: the signature motion from brand/bandwise-motion-demo.html, with the unloaded
+   side-view ant (brand kit v1.5) carrying the B on its back (Nick, 2026-10-01).
+   Rest state is the end frame: the ant stands at the score, the B is down on the lit band, the
+   readout shows. `.is-playing` runs it once from the start: the ant walks in from the left with
+   its legs in an alternating tripod gait, the band lights up, the B sets down, the readout fades in.
+
+   The walk drives one number, --walk, from 0 to 1 on the walk's own easing. The legs and the
+   small body bob are sines of it with a whole number of steps, so both are at rest exactly at 0
+   and at 1, the leg rhythm follows the ant's speed, and nothing moves once the ant stops. */
+
+@property --walk {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1;
+}
 
 .ruler-carry {
-  /* 25% smaller than the first cut (Nick, 2026-10-01). */
+  /* The ant is 54px wide, 25% smaller than the first cut (Nick, 2026-10-01). Its box is the
+     crop of the supplied drawing above the trail: 1014 by 357 units. */
   --carry-w: 54px;
+  --carry-h: calc(var(--carry-w) * 357 / 1014);
+  /* The supplied B monogram, scaled only. Its viewBox is 203.33 by 306.67. */
+  --load-h: 21px;
+  --load-w: calc(var(--load-h) * 203.33 / 306.67);
+  --load-gap: 3px;
+  /* The lit band rises by two thirds of the ruler height (see .is-lit). The B sets down on it. */
+  --lit-rise: calc(var(--ruler-h) * 0.67);
+  /* Where the B rides: centered on the thorax (x 785 of the drawing), resting on its top (y 590). */
+  --back-dx: calc((var(--load-w) / 2 + var(--load-gap) + var(--carry-w) * 465 / 1014) * -1);
+  --back-dy: calc(var(--lit-rise) - var(--carry-w) * 285 / 1014);
+  /* Gait: whole steps over the walk, and the swing of each leg about its shoulder. */
+  --steps: 7;
+  --stride: 9deg;
 }
 
 .carry-lane {
   position: relative;
-  /* Room above the ant for the lifted load. */
-  height: 96px;
+  /* Above the lit band, so the ant's feet stay in front of it. */
+  z-index: 1;
+  /* Room for the B riding on the ant's back. */
+  height: 56px;
   overflow: clip;
 }
 
@@ -892,19 +951,91 @@ picture {
   inset: 0;
 }
 
+/* A zero-width anchor at the score. The B lands centered on it, the ant stands just behind. */
 .carry {
   position: absolute;
   bottom: 0;
   left: var(--x);
-  width: var(--carry-w);
-  height: 83px;
-  margin-left: calc(var(--carry-w) / -2);
+  width: 0;
+  height: 0;
+  transform: translateY(calc((1 - cos(var(--walk) * var(--steps) * 720deg)) * -0.4px));
 }
 
-.carry picture,
-.carry img {
+.carry-ant {
   position: absolute;
-  inset: 0;
+  bottom: 0;
+  right: calc(var(--load-w) / 2 + var(--load-gap));
+  width: var(--carry-w);
+  height: var(--carry-h);
+}
+
+.carry-art,
+.carry-art svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.carry-art svg {
+  /* Swinging legs may pass the crop by a hair. */
+  overflow: visible;
+}
+
+.carry-art .trail {
+  display: none;
+}
+
+.carry-art-dark {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .carry-art-light {
+    display: none;
+  }
+  :root:not([data-theme="light"]) .carry-art-dark {
+    display: block;
+  }
+}
+
+[data-theme="dark"] .carry-art-light {
+  display: none;
+}
+
+[data-theme="dark"] .carry-art-dark {
+  display: block;
+}
+
+/* Each leg turns about its supplied shoulder pivot (the inline transform-origin). The front legs
+   turn inside their resting-pose wrappers, which keep their own transforms. Tripod one:
+   front-near, middle-far, rear-near. Tripod two swings opposite. */
+.carry-art [class^="leg-"] {
+  transform-box: view-box;
+}
+
+.carry-art .leg-front-near,
+.carry-art .leg-middle-far,
+.carry-art .leg-rear-near {
+  transform: rotate(calc(sin(var(--walk) * var(--steps) * 360deg) * var(--stride)));
+}
+
+.carry-art .leg-front-far,
+.carry-art .leg-middle-near,
+.carry-art .leg-rear-far {
+  transform: rotate(calc(sin(var(--walk) * var(--steps) * 360deg) * var(--stride) * -1));
+}
+
+.carry-load {
+  position: absolute;
+  bottom: var(--lit-rise);
+  left: calc(var(--load-w) / -2);
+  width: var(--load-w);
+  height: var(--load-h);
+}
+
+.carry-b,
+.carry-b img {
+  display: block;
   width: 100%;
   height: 100%;
 }
@@ -925,12 +1056,14 @@ picture {
   animation: carry-walk var(--bw-dur-walk) var(--bw-ease-walk) 300ms both;
 }
 
-.is-playing .carry-ant {
-  animation: carry-bob 350ms steps(2, jump-none) 300ms 4;
+/* The B rides on the back for the walk, then sets down forward onto the lit band: across on the
+   standard easing, down with the settle's one small overshoot. */
+.is-playing .carry-load {
+  animation: carry-set-x var(--bw-dur-slow) var(--bw-ease-standard) 1700ms both;
 }
 
-.is-playing .carry-load {
-  animation: carry-set var(--bw-dur-slow) var(--bw-ease-settle) 1700ms both;
+.is-playing .carry-b {
+  animation: carry-set-y var(--bw-dur-slow) var(--bw-ease-settle) 1700ms both;
 }
 
 .is-playing .is-lit {
@@ -944,19 +1077,23 @@ picture {
 
 @keyframes carry-walk {
   from {
-    transform: translateX(calc(var(--carry-w) / 2 - var(--x)));
+    transform: translateX(calc(var(--load-w) / 2 + var(--load-gap) + var(--carry-w) - var(--x)));
+    --walk: 0;
+  }
+  to {
+    --walk: 1;
   }
 }
 
-@keyframes carry-bob {
-  50% {
-    transform: translateY(-3px);
-  }
-}
-
-@keyframes carry-set {
+@keyframes carry-set-x {
   from {
-    transform: translateY(-14px);
+    transform: translateX(var(--back-dx));
+  }
+}
+
+@keyframes carry-set-y {
+  from {
+    transform: translateY(var(--back-dy));
   }
 }
 
@@ -974,8 +1111,8 @@ picture {
 
 @media (prefers-reduced-motion: reduce) {
   .is-playing .carry-track,
-  .is-playing .carry-ant,
   .is-playing .carry-load,
+  .is-playing .carry-b,
   .is-playing .is-lit,
   .is-playing .ruler-marker-carry,
   .is-playing .ruler-readout {

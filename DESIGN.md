@@ -32,7 +32,7 @@ Personality: calm, candid, street-smart. It should feel like a tool crib, with s
 5. **Marks are supplied files.**
    - Never redraw, recolor or regenerate the ant.
    - Use the SVGs in `brand/marks/` and `brand/icons/`, and the split ant and load files in `brand/layers/` for motion.
-   - Use the unloaded ants in `brand/unloaded/` where the B would be too much: small trail moments, walking motion, progress. They are never a logo; the logo always carries the B.
+   - Use the unloaded ants in `brand/unloaded/` where the B would be too much: small trail moments, walking motion, progress, and the header pairing. The header pairing (the unloaded A ant facing right beside the typed wordmark) is the one allowed lockup-like use. Every other logo use is the full art, which carries the B.
    - The faceted B may be used as a graphic: see "The faceted B as a graphic" below.
 6. **Accessibility floor.**
    - Every text pair passes WCAG 2.2 AA.
@@ -121,7 +121,7 @@ Reference CSS is in `brand/tokens/bandwise-components.css`. The apps rebuild the
   - `bandwise-b-monogram-*` is the B, for the favicon and small sizes;
   - lockups come horizontal and stacked, each with A or C.
 - **Wordmark.** In logo art the wordmark is lowercase "bandwise" in Archivo Expanded 800, and in the lockup files it sits with the ant (A or C).
-- **Headers use the typed wordmark** (Nick, 2026-10-01). Site and app headers set "bandwise" as live text in Archivo, font-stretch 125%, weight 800, tracking -0.02em, with no ant beside it. At header size the lockup reads small and cramped. The ant goes where it has room: heroes, footers, sign-in, empty states and brand moments.
+- **Headers use the unloaded ant plus the typed wordmark** (Nick, 2026-10-01). Site and app headers (www, the console sidebar and phone header, the docs nav) set "bandwise" as live text in Archivo, font-stretch 125%, weight 800, tracking -0.02em, with the unloaded side-view ant facing right (`brand/unloaded/bandwise-ant-unloaded-A-r4-right-*`) just left of it. The ant is cropped to its box above the trail, so the trail never shows; its body sits between the wordmark's x-height and cap height, its feet on the baseline. It is decorative inside the home link, which keeps its name. This pairing is the one allowed lockup-like use of an unloaded ant. The lockup files read small and cramped at header size, so they stay out of headers. The full logo art, which carries the B, goes where it has room: heroes, footers, sign-in, empty states and brand moments.
 - **Clear space:** half the height of the B block.
 - **Minimum sizes:**
   - horizontal lockup 160px wide;
@@ -151,9 +151,9 @@ Limits:
 
 Motion is purposeful, never constant. When a decision resolves:
 
-1. The ant walks the ruler (1400ms, `--bw-ease-walk`) and stops at the score. Use the split files in `brand/layers/`, so the ant and its load move separately.
+1. The ant walks the ruler (1400ms, `--bw-ease-walk`) and stops at the score. On www this is the unloaded side-view ant facing right with the supplied B on its back, its six leg groups swinging in an alternating tripod gait about their supplied pivots, only while it walks (Nick, 2026-10-01). The split files in `brand/layers/` also work, so the ant and its load move separately.
 2. The band lights up.
-3. The B sets down with one small overshoot (480ms, `--bw-ease-settle`).
+3. The B sets down at the score with one small overshoot (480ms, `--bw-ease-settle`).
 4. The score and the cost fade in.
 
 Rules:
@@ -180,7 +180,7 @@ Do:
 - Put the cost in exact digits.
 - Use one chamfered element per region.
 - Draw thresholds from the set's spec.
-- Use supplied mark files at or above their minimum size, and the typed wordmark in headers.
+- Use supplied mark files at or above their minimum size, and the unloaded ant plus the typed wordmark in headers.
 
 Don't:
 
