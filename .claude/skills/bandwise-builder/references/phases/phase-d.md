@@ -35,7 +35,7 @@ Built in five slices, one PR each:
 - D2b: `POST /api/v1/sets/{ref}/run` for the `internal` org: ref and channel resolution, the rollout stage, platform key mode, the run engine with the fixture and SDK transports, and the run sink. Built 2026-10-01: `apps/console/src/server/run/` (resolve, run-set, http) and the route. Any org other than `internal` gets 404. The model registry and prices come from the seed, and the limiter and quota are open until Phase 2. The server imports the transports from `@bandwise/system-one-client/server`, which loads no fixture or contract folders, so the Next build can bundle it.
 - D2c: handlers and routes for the management operations the CLI needs, each with its audit row.
 - D2d: the CLI's remote commands (`spec push|pull|diff`, `publish`, `rollback`, `rollout`, `report --remote`) and `bandwise hook` calling the hosted endpoint when `BANDWISE_TOKEN` is set.
-- D2e: operations. Migrations on the Supabase database, the env on Vercel (`TYPESAFE_API_KEY`, `DATABASE_URL`, `BANDWISE_TOKEN_PEPPER`), the `internal` org and its members, the imported `.bandwise/sets/`, minted tokens, and one live publish and rollback. Needs Nick and PJ.
+- D2e: operations. Migrations on the Supabase database, the env on Vercel (`TYPESAFE_API_KEY`, `DATABASE_URL`, `BANDWISE_TOKEN_PEPPER`, `SYSTEM_ONE_TRANSPORT=sdk`), the `internal` org and its members, the imported `.bandwise/sets/`, minted tokens, and one live publish and rollback. Needs Nick and PJ. Prep built 2026-10-01: `pnpm --filter @bandwise/console bootstrap-internal` (`apps/console/src/server/bootstrap/internal-org.ts`) creates the org in platform key mode with its members, project, goal and hook app, and imports each spec as version 1 on production at `shadow`, in one transaction with an audit row per step; a second run writes nothing. The ordered checklist, with the PJ steps marked, is `docs/runbooks/hosted-dogfood.md`. The hooks get a run-only `sk_live_` app token and the CLI an agent token; PJ confirms that split before the mint.
 
 - [x] `POST /api/v1/sets/{ref}/run` with the standard envelope, platform key on the server, served only for the `internal` org (D2b; live once D2e sets the env)
 - [x] App tokens (`sk_live_`) minted by a platform script for the internal org, stored hashed, scoped to a set allowlist (D2a)
@@ -43,7 +43,7 @@ Built in five slices, one PR each:
 - [ ] `bandwise spec push|pull|diff`, `bandwise publish`, `bandwise rollback`, `bandwise rollout` against app.bandwise.dev with a Bandwise token
 - [ ] Runs write `runs`, `usage_daily` and the savings ledger; `bandwise report --remote` reads them
 - [ ] Hooks switch from `--live` to the hosted endpoint by setting `BANDWISE_TOKEN`; receipts keep working
-- [ ] Import the `.bandwise/sets/` specs into the internal org; publish and roll back one set live with no redeploy
+- [ ] Import the `.bandwise/sets/` specs into the internal org; publish and roll back one set live with no redeploy. The import script and the runbook are built (D2e prep); the production run waits for Nick and PJ
 
 ## D3: Minimal console
 - [ ] Sign-in for Nick and PJ with Better Auth and two-factor (ADR-002), `internal` org only

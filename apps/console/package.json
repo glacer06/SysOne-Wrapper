@@ -14,7 +14,8 @@
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
-    "mint-token": "tsx --conditions=@bandwise/source scripts/mint-token.ts"
+    "mint-token": "tsx --conditions=@bandwise/source scripts/mint-token.ts",
+    "bootstrap-internal": "tsx --conditions=@bandwise/source scripts/bootstrap-internal.ts"
   },
   "dependencies": {
     "@bandwise/billing": "workspace:*",
