@@ -209,6 +209,21 @@ describe("session tokens at rest", () => {
     expect(await auth.api.getSession({ headers: old })).toBeNull();
   });
 
+  it("really revokes a session the library listed by user id and then deletes by its token", async () => {
+    const auth = makeAuth();
+    const { b, raw } = await signedIn(auth, "10.6.5.1");
+    const ctx = await auth.$context;
+    const user = await t.db.withNoTenant((tx) => authRepositories.users.getByEmail(tx, EMAIL));
+    const listed = await ctx.internalAdapter.listSessions(user?.id ?? "");
+    const mine = listed.find((s) => s.token === hashOf(raw));
+    // A listed row carries only the stored hash, never the cookie value.
+    expect(mine).toBeDefined();
+    expect(listed.some((s) => s.token === raw)).toBe(false);
+    await ctx.internalAdapter.deleteSession(mine?.token ?? "");
+    expect((await storedSessions(EMAIL)).some((r) => r.token === hashOf(raw))).toBe(false);
+    expect(await auth.api.getSession({ headers: b.headers() })).toBeNull();
+  });
+
   it("keeps the raw token in the cookie when the library refreshes a session", async () => {
     const auth = makeAuth();
     const { b, raw } = await signedIn(auth, "10.6.4.1");

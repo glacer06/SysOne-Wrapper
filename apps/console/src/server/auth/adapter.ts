@@ -6,15 +6,20 @@
 // raw token, and every where clause on sessions.token is hashed before it reaches the store. A read
 // of the sessions table therefore holds nothing that works as a cookie. Rows found by a token come
 // back with the raw token the caller already had; rows found any other way (by user id) carry only
-// the stored hash, which matches nothing when passed back in. The console calls no library route
-// that lists sessions and then deletes them one token at a time: sign-out and the two-factor steps
-// delete by the token in hand, and a password reset revokes by user id.
+// the stored hash. A cookie lookup (findOne) and every update always hash what they are given, so a
+// stored hash never works as a session. Library paths that list a user's sessions and then revoke
+// them one at a time (revoking other sessions, the multi-session plugin) hand the listed hash back
+// to findMany and delete; a revoke that matched nothing would report success while the session
+// stayed valid. So the adapter remembers the hashes it listed, for a few minutes, and passes those
+// through unhashed on findMany, count, delete and deleteMany (ListedSessionHashes). The console
+// mounts no library HTTP handler today (adapter.test.ts checks it); sign-out and the two-factor
+// steps delete by the token in hand, and a password reset revokes by user id.
 //
 // No rows from before hashing need moving: the console had not been deployed when this shipped, so
 // no sessions table anywhere holds a raw token. A raw token left in some local database simply
 // stops matching, which signs that browser out.
 
-import { createAdapterFactory } from "better-auth/adapters";
+import { createAdapterFactory, type CustomAdapter } from "better-auth/adapters";
 
 import { type AuthModel, type AuthRow, type AuthStore, type AuthValue, type AuthWhere, AUTH_MODELS } from "@bandwise/db";
 
@@ -34,6 +39,8 @@ function model(name: string): AuthModel {
 export interface AuthAdapterOptions {
   /** Hashes a session token for storage and lookup (tenancy's createSessionTokenHasher). */
   hashSessionToken: (token: string) => string;
+  /** Tests pass their own to control time. */
+  listed?: ListedSessionHashes;
 }
 
 const SESSIONS: AuthModel = "sessions";
@@ -45,10 +52,47 @@ interface Translated {
   raw: Map<string, string>;
 }
 
-function translate(m: AuthModel, clauses: readonly LibraryWhere[] | undefined, hash: (token: string) => string): Translated {
+/**
+ * Stored hashes this adapter handed out recently in rows found by something other than their
+ * token (a user's session list). The library lists a user's sessions and then deletes them, or
+ * looks one up again before deleting it, by the token on the listed row, which is the stored hash.
+ * Such a value is passed through as a hash on the paths that do that (findMany, count, delete,
+ * deleteMany), and only while it is remembered. findOne, which reads the session behind a cookie,
+ * and every update always hash, so a stored hash never works as a cookie.
+ */
+export class ListedSessionHashes {
+  private readonly seen = new Map<string, number>();
+  constructor(
+    private readonly ttlMs = 5 * 60_000,
+    private readonly max = 1_000,
+    private readonly clock: () => number = Date.now,
+  ) {}
+  remember(hash: string): void {
+    this.seen.delete(hash);
+    this.seen.set(hash, this.clock() + this.ttlMs);
+    while (this.seen.size > this.max) {
+      const oldest = this.seen.keys().next().value;
+      if (oldest === undefined) break;
+      this.seen.delete(oldest);
+    }
+  }
+  has(hash: string): boolean {
+    const until = this.seen.get(hash);
+    if (until === undefined) return false;
+    if (until < this.clock()) {
+      this.seen.delete(hash);
+      return false;
+    }
+    return true;
+  }
+}
+
+/** `listed`: values that are stored hashes this adapter handed out, passed through unhashed. */
+function translate(m: AuthModel, clauses: readonly LibraryWhere[] | undefined, hash: (token: string) => string, listed?: ListedSessionHashes): Translated {
   const raw = new Map<string, string>();
   const hashOne = (v: unknown): string => {
     if (typeof v !== "string") throw new Error("auth adapter: a session token must be a string");
+    if (listed?.has(v) === true) return v;
     const h = hash(v);
     raw.set(h, v);
     return h;
@@ -76,16 +120,30 @@ function translate(m: AuthModel, clauses: readonly LibraryWhere[] | undefined, h
   return { where, raw };
 }
 
-/** Puts back the raw token the caller gave us; any other row keeps only its stored hash. */
-function reveal(m: AuthModel, row: AuthRow | null, raw: ReadonlyMap<string, string>): AuthRow | null {
+/**
+ * Puts back the raw token the caller gave us; any other row keeps only its stored hash, which is
+ * remembered in `listed`.
+ */
+function reveal(m: AuthModel, row: AuthRow | null, raw: ReadonlyMap<string, string>, listed: ListedSessionHashes): AuthRow | null {
   if (row === null || m !== SESSIONS || typeof row[TOKEN] !== "string") return row;
   const known = raw.get(row[TOKEN]);
-  return known === undefined ? row : { ...row, [TOKEN]: known };
+  if (known !== undefined) return { ...row, [TOKEN]: known };
+  listed.remember(row[TOKEN]);
+  return row;
 }
 
-export function bandwiseAuthAdapter(store: AuthStore, opts: AuthAdapterOptions) {
+/**
+ * The adapter's methods over the store, as the library calls them once its own field and model
+ * mapping is done. Exported for the adapter's unit tests; the library gets them through
+ * bandwiseAuthAdapter.
+ */
+export function bandwiseAdapterMethods(store: AuthStore, opts: AuthAdapterOptions): CustomAdapter {
   const hash = opts.hashSessionToken;
+  const listed = opts.listed ?? new ListedSessionHashes();
   const where = (m: AuthModel, w: readonly LibraryWhere[] | undefined) => translate(m, w, hash);
+  /** For the list-then-revoke paths: a remembered listed hash passes through. */
+  const listWhere = (m: AuthModel, w: readonly LibraryWhere[] | undefined) => translate(m, w, hash, listed);
+  const show = (m: AuthModel, row: AuthRow | null, raw: ReadonlyMap<string, string>) => reveal(m, row, raw, listed);
   /** A token in written data (create or update) is stored as its hash. */
   const data = (m: AuthModel, d: Record<string, unknown>): { row: AuthRow; raw: Map<string, string> } => {
     const raw = new Map<string, string>();
@@ -97,6 +155,67 @@ export function bandwiseAuthAdapter(store: AuthStore, opts: AuthAdapterOptions) 
   };
   const both = (a: Map<string, string>, b: Map<string, string>) => new Map([...a, ...b]);
 
+  return {
+    create: async ({ model: name, data: input }) => {
+      const m = model(name);
+      const { row, raw } = data(m, input);
+      return show(m, await store.create(m, row), raw) as never;
+    },
+    findOne: async ({ model: name, where: w }) => {
+      const m = model(name);
+      const q = where(m, w);
+      return show(m, await store.findOne(m, q.where), q.raw) as never;
+    },
+    findMany: async ({ model: name, where: w, limit, offset, sortBy }) => {
+      const m = model(name);
+      const q = listWhere(m, w);
+      const rows = await store.findMany(m, {
+        where: q.where,
+        limit,
+        ...(offset === undefined ? {} : { offset }),
+        ...(sortBy === undefined ? {} : { sortBy }),
+      });
+      return rows.map((r) => show(m, r, q.raw)) as never;
+    },
+    count: async ({ model: name, where: w }) => {
+      const m = model(name);
+      return store.count(m, listWhere(m, w).where);
+    },
+    update: async ({ model: name, where: w, update }) => {
+      const m = model(name);
+      const q = where(m, w);
+      const u = data(m, update as Record<string, unknown>);
+      return show(m, await store.update(m, q.where, u.row), both(q.raw, u.raw)) as never;
+    },
+    updateMany: async ({ model: name, where: w, update }) => {
+      const m = model(name);
+      return store.updateMany(m, where(m, w).where, data(m, update).row);
+    },
+    delete: async ({ model: name, where: w }) => {
+      const m = model(name);
+      return store.delete(m, listWhere(m, w).where);
+    },
+    deleteMany: async ({ model: name, where: w }) => {
+      const m = model(name);
+      return store.deleteMany(m, listWhere(m, w).where);
+    },
+    consumeOne: async ({ model: name, where: w }) => {
+      const m = model(name);
+      const q = where(m, w);
+      return show(m, await store.consumeOne(m, q.where), q.raw) as never;
+    },
+    incrementOne: async ({ model: name, where: w, increment, set }) => {
+      const m = model(name);
+      const q = where(m, w);
+      const s = data(m, (set ?? {}) as Record<string, unknown>);
+      const row = await store.incrementOne(m, q.where, increment, set === undefined ? undefined : s.row);
+      return show(m, row, both(q.raw, s.raw)) as never;
+    },
+  };
+}
+
+export function bandwiseAuthAdapter(store: AuthStore, opts: AuthAdapterOptions) {
+  const methods = bandwiseAdapterMethods(store, opts);
   return createAdapterFactory({
     config: {
       adapterId: "bandwise",
@@ -109,62 +228,6 @@ export function bandwiseAuthAdapter(store: AuthStore, opts: AuthAdapterOptions) 
       supportsArrays: true,
       transaction: false,
     },
-    adapter: () => ({
-      create: async ({ model: name, data: input }) => {
-        const m = model(name);
-        const { row, raw } = data(m, input);
-        return reveal(m, await store.create(m, row), raw) as never;
-      },
-      findOne: async ({ model: name, where: w }) => {
-        const m = model(name);
-        const q = where(m, w);
-        return reveal(m, await store.findOne(m, q.where), q.raw) as never;
-      },
-      findMany: async ({ model: name, where: w, limit, offset, sortBy }) => {
-        const m = model(name);
-        const q = where(m, w);
-        const rows = await store.findMany(m, {
-          where: q.where,
-          limit,
-          ...(offset === undefined ? {} : { offset }),
-          ...(sortBy === undefined ? {} : { sortBy }),
-        });
-        return rows.map((r) => reveal(m, r, q.raw)) as never;
-      },
-      count: async ({ model: name, where: w }) => {
-        const m = model(name);
-        return store.count(m, where(m, w).where);
-      },
-      update: async ({ model: name, where: w, update }) => {
-        const m = model(name);
-        const q = where(m, w);
-        const u = data(m, update as Record<string, unknown>);
-        return reveal(m, await store.update(m, q.where, u.row), both(q.raw, u.raw)) as never;
-      },
-      updateMany: async ({ model: name, where: w, update }) => {
-        const m = model(name);
-        return store.updateMany(m, where(m, w).where, data(m, update).row);
-      },
-      delete: async ({ model: name, where: w }) => {
-        const m = model(name);
-        return store.delete(m, where(m, w).where);
-      },
-      deleteMany: async ({ model: name, where: w }) => {
-        const m = model(name);
-        return store.deleteMany(m, where(m, w).where);
-      },
-      consumeOne: async ({ model: name, where: w }) => {
-        const m = model(name);
-        const q = where(m, w);
-        return reveal(m, await store.consumeOne(m, q.where), q.raw) as never;
-      },
-      incrementOne: async ({ model: name, where: w, increment, set }) => {
-        const m = model(name);
-        const q = where(m, w);
-        const s = data(m, (set ?? {}) as Record<string, unknown>);
-        const row = await store.incrementOne(m, q.where, increment, set === undefined ? undefined : s.row);
-        return reveal(m, row, both(q.raw, s.raw)) as never;
-      },
-    }),
+    adapter: () => methods,
   });
 }
