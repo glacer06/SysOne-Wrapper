@@ -6,6 +6,7 @@ import { main, parseArgs } from "../main.js";
 import { createClient, toApiError } from "./client.js";
 import { parseBaseUrl, readRemote, scrubToken } from "./credentials.js";
 import { diffJson } from "./json-diff.js";
+import { ROLLBACK_REPLY, USAGE_REPLY } from "./__fixtures__/replies.js";
 
 // Built from parts so the kit export scanner does not read it as a real token.
 const TOKEN = ["sa", "live", "0123456789abcdef0123456789abcdef", "unitTestSecretValue"].join("_");
@@ -122,6 +123,21 @@ describe("client", () => {
     const res = await client.request("GET", "/usage");
     expect(res).toMatchObject({ ok: false, error: { code: "network_error", message: "could not reach app.bandwise.dev (ENOTFOUND)" } });
     expect(JSON.stringify(res)).not.toContain(TOKEN);
+  });
+
+  it("retries a read after a network error, but never a write, which may have landed", async () => {
+    let calls = 0;
+    const fetch = async (): Promise<Response> => {
+      calls++;
+      throw Object.assign(new TypeError("fetch failed"), { cause: { code: "ECONNRESET" } });
+    };
+    const client = createClient(remote, { fetch, sleep: async () => undefined });
+    await client.request("GET", "/usage");
+    expect(calls).toBe(3);
+    calls = 0;
+    const res = await client.request("POST", "/sets/triage/channels/production/rollback", { body: {} });
+    expect(res).toMatchObject({ ok: false, error: { code: "network_error" } });
+    expect(calls).toBe(1);
   });
 
   it("reads the envelope, and a body that is not one", () => {
@@ -296,41 +312,34 @@ describe("remote commands", () => {
     expect(out.stderr).toContain("gate min_labeled_high: not met (required 50, actual 12)");
   });
 
-  it("rollback posts toVersion and needs no etag", async () => {
-    const api = fakeApi({ "POST /sets/triage/channels/production/rollback": { status: 200, body: { version: 2 } } });
+  it("rollback posts toVersion, needs no etag, and prints the versions the server moved between", async () => {
+    const api = fakeApi({ "POST /sets/triage/channels/production/rollback": { status: 200, body: ROLLBACK_REPLY } });
     const out = await main(["rollback", "triage", "--to", "2"], { env: ENV, fetch: api.fetch });
-    expect(out).toMatchObject({ exitCode: 0, stdout: "Rolled back triage on production to version 2." });
+    expect(out).toMatchObject({ exitCode: 0, stdout: "Rolled back triage on production from version 3 to version 2 (stage shadow)." });
     expect(api.seen).toHaveLength(1);
     expect(api.seen[0]?.body).toEqual({ toVersion: 2 });
+    // Without --to, the target still comes from the server's answer.
+    expect((await main(["rollback", "triage"], { env: ENV, fetch: api.fetch })).stdout).toContain("to version 2");
   });
 
-  it("report --remote reads usage and pages through runs from --since", async () => {
-    const run = (set: string, band: string, status = "ok") => ({ set, status, runBand: band, overallAction: band === "high" ? "auto" : "review", cost: { systemOneCostUsd: 0.0001, savingsUsd: 0.002 } });
-    const api = fakeApi({
-      "GET /usage": { status: 200, body: { runs: 3, savingsUsd: 0.004 } },
-      "GET /runs": (req) =>
-        req.query["cursor"] === undefined
-          ? { status: 200, body: { data: [run("done-check", "high"), run("done-check", "low", "system_one_unavailable")], nextCursor: "c2" } }
-          : { status: 200, body: { data: [run("model-tier", "medium")], nextCursor: null } },
-    });
+  it("report --remote sums usage.get per set for --since and --set, in USD", async () => {
+    const api = fakeApi({ "GET /usage": { status: 200, body: USAGE_REPLY } });
     const now = Date.parse("2026-10-01T00:00:00.000Z");
-    const out = await main(["report", "--remote", "--since", "1d", "--json"], { env: ENV, fetch: api.fetch, now: () => now });
+    const out = await main(["report", "--remote", "--since", "1d", "--set", "done-check", "--json"], { env: ENV, fetch: api.fetch, now: () => now });
     expect(out.exitCode).toBe(0);
-    expect(api.seen.filter((s) => s.path === "/runs").map((s) => s.query)).toEqual([
-      { from: "2026-09-30T00:00:00.000Z", limit: "100" },
-      { from: "2026-09-30T00:00:00.000Z", limit: "100", cursor: "c2" },
+    expect(api.seen.map((s) => [s.path, s.query])).toEqual([["/usage", { from: "2026-09-30T00:00:00.000Z", set: "done-check" }]]);
+    const report = JSON.parse(out.stdout) as { from: string; to: string; sets: Array<{ set: string; runs: number; errors: number; systemOneCostUsd: number; savingsUsd: number }>; totals: { runs: number } };
+    expect(report).toMatchObject({ from: USAGE_REPLY.from, to: USAGE_REPLY.to, totals: { runs: 3 } });
+    expect(report.sets.map((s) => [s.set, s.runs, s.errors, s.systemOneCostUsd, s.savingsUsd])).toEqual([
+      ["done-check", 2, 1, 0.00012, 0.002],
+      ["model-tier", 1, 0, 0.00005, 0],
     ]);
-    const report = JSON.parse(out.stdout) as { runs: { count: number; sets: Array<{ set: string; runs: number; failed: number; auto: number }> }; usage: unknown };
-    expect(report.runs.count).toBe(3);
-    expect(report.runs.sets.map((s) => [s.set, s.runs, s.failed, s.auto])).toEqual([
-      ["done-check", 2, 1, 1],
-      ["model-tier", 1, 0, 0],
-    ]);
-    expect(report.usage).toEqual({ runs: 3, savingsUsd: 0.004 });
 
     const text = await main(["report", "--remote"], { env: ENV, fetch: api.fetch });
-    expect(text.stdout).toContain("done-check: 2 runs (1 failed), bands high 1 / medium 0 / low 1, auto 1");
-    expect(text.stdout).toContain("  savingsUsd: 0.004");
+    expect(api.seen.at(-1)?.query).toEqual({});
+    expect(text.stdout).toContain("2026-09-30 to 2026-10-01");
+    expect(text.stdout).toContain("done-check: 2 runs (1 error), bands high 1 / medium 0 / low 1, System One $0.000120, estimated savings $0.002000, LLM calls avoided 1");
+    expect(text.stdout).toContain("total: 3 runs");
   });
 
   it("never prints the token, even when the server echoes it", async () => {

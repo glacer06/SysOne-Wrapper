@@ -1,6 +1,6 @@
 // The HTTP client for /api/v1. It sends `Authorization: Bearer <token>`, an Idempotency-Key on
-// every write, and If-Match when asked. It retries network errors, 429 and retryable 503s with the
-// same key. Every failure comes back as one ApiError in the api.md envelope's shape, so commands
+// every write, and If-Match when asked. It retries 429 and retryable 503s with the same key, and
+// network errors on reads only. Every failure comes back as one ApiError in the api.md envelope's shape, so commands
 // print one kind of error. The token is never part of an error.
 
 import type { Remote } from "./credentials.js";
@@ -131,7 +131,8 @@ export function createClient(remote: Remote, deps: ClientDeps = {}): ApiClient {
       for (const [k, v] of Object.entries(opts.query ?? {})) if (v !== undefined) url.searchParams.set(k, String(v));
       const headers: Record<string, string> = { authorization: `Bearer ${remote.token}`, accept: "application/json" };
       if (opts.body !== undefined) headers["content-type"] = "application/json";
-      // One key for every attempt, so a retried write happens once.
+      // One key for every attempt. The server does not store keys yet (D2), so a write is retried
+      // only on a 429 or a retryable 503, which it sends before it changes anything.
       if (method !== "GET") headers["idempotency-key"] = newId();
       if (opts.ifMatch !== undefined) headers["if-match"] = quoteEtag(opts.ifMatch);
       const retries = opts.retry === false ? 0 : MAX_RETRIES;
@@ -143,7 +144,8 @@ export function createClient(remote: Remote, deps: ClientDeps = {}): ApiClient {
           res = await doFetch(url.href, { method, headers, signal, ...(opts.body !== undefined ? { body: JSON.stringify(opts.body) } : {}) });
         } catch (e) {
           if (signal.aborted) return { ok: false, error: clientError("timeout", `${host} did not answer in time`, null, true) };
-          if (attempt < retries) {
+          // A write that died on the wire may have landed: a retry could roll back twice.
+          if (method === "GET" && attempt < retries) {
             await sleep(300 * 3 ** attempt);
             continue;
           }

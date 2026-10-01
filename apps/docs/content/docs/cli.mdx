@@ -127,9 +127,9 @@ bandwise report --remote [--since 7d] [--set <slug>] [--json]
 | `spec push` | Replaces the draft with the file, then prints the lint errors and warnings. The set slug is the file name without `.json`, or `--set`. When the set does not exist yet, `--goal` creates it first. The CLI reads the draft ETag from the server and sends it as `If-Match`; pass `--if-match` to use the ETag from your last pull instead, so a change someone made since then is refused. |
 | `spec diff` | Compares the file with the server draft, or with a published `--version`. Each change shows its JSON Pointer, the server value and the file value. |
 | `publish` | Publishes the draft as the next version on a channel (default `production`). |
-| `rollback` | Points a channel back at its previous version, or at `--to`. Never waits for an approval. |
+| `rollback` | Points a channel back at the version it served before, or at an earlier version it served with `--to`. Never waits for an approval. To move forward, publish. |
 | `rollout` | Sets a channel's rollout stage, with `--reason` recorded in the audit log. |
-| `report --remote` | Runs per set from the server, with the band mix, System One cost and savings, plus the org's usage rollup. |
+| `report --remote` | Runs per set from the server for `--since` (default the last 7 days) and `--set`: the band mix, errors, System One cost, estimated savings and LLM calls avoided. |
 
 When a person must approve a change, `publish`, `rollback` and `rollout` print the approval id and the console link, and exit `3`. A failed gate prints each gate with what it needs and what it measured. Errors print one line with the code, the HTTP status, the message and the request id, then each detail, then what to do next. For example, a draft that changed since you read it:
 
@@ -138,7 +138,7 @@ error precondition_failed (HTTP 412): The draft changed. [request req_01J...]
   the draft changed on the server (now 9f2c...). Run bandwise spec diff, merge, then push again
 ```
 
-Writes send an `Idempotency-Key`, so a retry after a network error, a `429` or a retryable `503` happens once.
+Reads retry after a network error, a `429` or a retryable `503`. Writes retry only after a `429` or a retryable `503`, which the server sends before it changes anything. A write that hits a network error is not retried, because it may have landed: check with a read, such as `bandwise spec pull` or the console, before you send it again. Writes carry an `Idempotency-Key`, which the server will use to make such retries safe.
 
 ### Hooks on hosted Bandwise
 

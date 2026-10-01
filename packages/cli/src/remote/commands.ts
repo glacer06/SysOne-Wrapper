@@ -174,9 +174,12 @@ async function rollback(cmd: Extract<RemoteCommand, { kind: "rollback" }>, { cli
   if (!res.ok) return fail(res.error, cmd.json);
   if (res.status === 202) return approvalOutput(res.body, client.baseUrl, cmd.json, `Rolling back ${cmd.set} on ${cmd.channel}`);
   if (cmd.json) return json(res.body);
+  // ChannelRollbackResponse: { channel, fromVersion, toVersion, stage }.
   const b = isObj(res.body) ? res.body : {};
-  const to = typeof b["version"] === "number" ? b["version"] : cmd.to;
-  return ok(`Rolled back ${cmd.set} on ${cmd.channel}${to !== undefined ? ` to version ${to}` : ""}.`);
+  const from = typeof b["fromVersion"] === "number" ? ` from version ${b["fromVersion"]}` : "";
+  const to = typeof b["toVersion"] === "number" ? ` to version ${b["toVersion"]}` : "";
+  const stage = typeof b["stage"] === "string" ? ` (stage ${b["stage"]})` : "";
+  return ok(`Rolled back ${cmd.set} on ${cmd.channel}${from}${to}${stage}.`);
 }
 
 async function rollout(cmd: Extract<RemoteCommand, { kind: "rollout" }>, { client }: RemoteDeps): Promise<CommandOutput> {
@@ -187,76 +190,61 @@ async function rollout(cmd: Extract<RemoteCommand, { kind: "rollout" }>, { clien
   return cmd.json ? json(res.body) : ok(`${cmd.set} ${cmd.channel} is now ${cmd.stage}.`);
 }
 
-/** Most run pages `report --remote` reads. */
-const MAX_RUN_PAGES = 10;
-
-interface RemoteSetSummary {
+export interface RemoteSetSummary {
   set: string;
   runs: number;
-  failed: number;
+  errors: number;
   bands: { high: number; medium: number; low: number };
-  auto: number;
   systemOneCostUsd: number;
+  counterfactualUsd: number;
   savingsUsd: number;
+  llmCallsAvoided: number;
 }
 
 const num = (x: unknown): number => (typeof x === "number" && Number.isFinite(x) ? x : 0);
-const round6 = (n: number): number => Math.round(n * 1e6) / 1e6;
+const usd = (micro: unknown): number => Math.round(num(micro)) / 1e6;
 
-/** Sum run summaries per set. Fields a summary lacks count as zero. */
-export function summarizeRuns(rows: readonly unknown[]): RemoteSetSummary[] {
-  const bySet = new Map<string, RemoteSetSummary>();
-  for (const row of rows) {
-    if (!isObj(row)) continue;
-    const name = [row["set"], row["setSlug"], row["setId"]].find((v): v is string => typeof v === "string") ?? "unknown";
-    const s = bySet.get(name) ?? { set: name, runs: 0, failed: 0, bands: { high: 0, medium: 0, low: 0 }, auto: 0, systemOneCostUsd: 0, savingsUsd: 0 };
-    s.runs++;
-    if (row["status"] !== "ok") s.failed++;
-    const band = row["runBand"];
-    if (band === "high" || band === "medium" || band === "low") s.bands[band]++;
-    if (row["overallAction"] === "auto") s.auto++;
-    const cost = isObj(row["cost"]) ? row["cost"] : row;
-    s.systemOneCostUsd = round6(s.systemOneCostUsd + num(cost["systemOneCostUsd"]));
-    s.savingsUsd = round6(s.savingsUsd + num(cost["savingsUsd"]));
-    bySet.set(name, s);
-  }
-  return [...bySet.values()].sort((a, b) => a.set.localeCompare(b.set));
+/** One row of usage.get (UsageGetResponse sets[] or totals) in USD. */
+export function summarizeUsageRow(name: string, row: Record<string, unknown>): RemoteSetSummary {
+  return {
+    set: name,
+    runs: num(row["runs"]),
+    errors: num(row["errors"]),
+    bands: { high: num(row["bandHigh"]), medium: num(row["bandMedium"]), low: num(row["bandLow"]) },
+    systemOneCostUsd: usd(row["systemOneCostMicroUsd"]),
+    counterfactualUsd: usd(row["counterfactualMicroUsd"]),
+    savingsUsd: usd(row["savingsMicroUsd"]),
+    llmCallsAvoided: num(row["llmCallsAvoided"]),
+  };
 }
 
+function summaryLine(s: RemoteSetSummary): string {
+  return (
+    `${s.set}: ${s.runs} run${s.runs === 1 ? "" : "s"} (${s.errors} error${s.errors === 1 ? "" : "s"}), ` +
+    `bands high ${s.bands.high} / medium ${s.bands.medium} / low ${s.bands.low}, ` +
+    `System One $${s.systemOneCostUsd.toFixed(6)}, estimated savings $${s.savingsUsd.toFixed(6)}, LLM calls avoided ${s.llmCallsAvoided}`
+  );
+}
+
+/** Per-set spend and savings from usage.get, which sums every run in the range on the server. */
 async function reportRemote(cmd: Extract<RemoteCommand, { kind: "report-remote" }>, { client, now = Date.now }: RemoteDeps): Promise<CommandOutput> {
   const from = cmd.since === undefined ? undefined : new Date(now() - cmd.since.ms).toISOString();
-  const usage = await client.request("GET", "/usage");
+  const usage = await client.request("GET", "/usage", { query: { from, set: cmd.set } });
   if (!usage.ok) return fail(usage.error, cmd.json);
-  const rows: unknown[] = [];
-  let cursor: string | undefined;
-  let truncated = false;
-  for (let page = 0; ; page++) {
-    const res = await client.request("GET", "/runs", { query: { set: cmd.set, from, limit: 100, cursor } });
-    if (!res.ok) return fail(res.error, cmd.json);
-    const b = isObj(res.body) ? res.body : {};
-    if (Array.isArray(b["data"])) rows.push(...(b["data"] as unknown[]));
-    cursor = typeof b["nextCursor"] === "string" ? b["nextCursor"] : undefined;
-    if (cursor === undefined) break;
-    if (page + 1 >= MAX_RUN_PAGES) {
-      truncated = true;
-      break;
-    }
-  }
-  const sets = summarizeRuns(rows);
-  if (cmd.json) return json({ since: cmd.since?.text ?? null, from: from ?? null, set: cmd.set ?? null, runs: { count: rows.length, truncated, sets }, usage: usage.body });
+  const b = isObj(usage.body) ? usage.body : {};
+  const sets = (Array.isArray(b["sets"]) ? b["sets"] : [])
+    .filter(isObj)
+    .map((row) => summarizeUsageRow(typeof row["slug"] === "string" ? row["slug"] : String(row["setId"] ?? "unknown"), row))
+    .sort((x, y) => x.set.localeCompare(y.set));
+  const totals = summarizeUsageRow("total", isObj(b["totals"]) ? b["totals"] : {});
+  const range = { from: typeof b["from"] === "string" ? b["from"] : (from ?? null), to: typeof b["to"] === "string" ? b["to"] : null };
+  if (cmd.json) return json({ since: cmd.since?.text ?? null, ...range, set: cmd.set ?? null, sets, totals });
 
-  const lines = [`Bandwise report from ${new URL(client.baseUrl).host}${cmd.since !== undefined ? `, last ${cmd.since.text}` : ""}${cmd.set !== undefined ? `, set ${cmd.set}` : ""}.`];
+  const day = (iso: string | null) => (iso === null ? "?" : iso.slice(0, 10));
+  const lines = [`Bandwise report from ${new URL(client.baseUrl).host}, ${day(range.from)} to ${day(range.to)}${cmd.set !== undefined ? `, set ${cmd.set}` : ""}.`];
   if (sets.length === 0) lines.push("No runs.");
-  for (const s of sets) {
-    lines.push(
-      `${s.set}: ${s.runs} run${s.runs === 1 ? "" : "s"} (${s.failed} failed), bands high ${s.bands.high} / medium ${s.bands.medium} / low ${s.bands.low}, auto ${s.auto}, System One $${s.systemOneCostUsd.toFixed(6)}, savings $${s.savingsUsd.toFixed(6)}`,
-    );
-  }
-  if (truncated) lines.push(`Only the first ${rows.length} runs were read. Narrow it with --since or --set.`);
-  if (isObj(usage.body) && Object.keys(usage.body).length > 0) {
-    lines.push("Usage and savings (org rollup):");
-    for (const [k, v] of Object.entries(usage.body)) lines.push(`  ${k}: ${typeof v === "object" && v !== null ? preview(v, 120) : String(v)}`);
-  }
+  for (const s of sets) lines.push(summaryLine(s));
+  if (sets.length > 1) lines.push(summaryLine(totals));
   return ok(lines.join("\n"));
 }
 

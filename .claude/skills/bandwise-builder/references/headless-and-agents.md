@@ -115,7 +115,7 @@ Key rotation and revocation, member invites, role changes and removals, and crea
 | `hooks install [--sets-dir] [--command] [--rollout]` | none: prints `.claude/settings.json` entries, writes nothing | D1 |
 | `spec pull <set> [--out]`, `spec push <file> [--set] [--goal] [--if-match]`, `spec diff <file> [--version]` | `draft.get`; `set.create` (with `--goal`), `draft.update`, `draft.validate`; `draft.get` or `version.get` | D2 |
 | `publish <set> [--channel]`, `rollback <set> [--channel] [--to]`, `rollout <set> <stage> [--channel] [--reason]` | `set.publish`, `channel.rollback`, `rollout.change` | D2 |
-| `report --remote [--since] [--set]` | `usage.get`, `run.list` | D2 |
+| `report --remote [--since] [--set]` | `usage.get` | D2 |
 | `hook ...` with `BANDWISE_TOKEN` set | `set.run`: the hosted endpoint, with the server's rollout stage; no provider key | D2 |
 | `models list` | `model.list` | 3 |
 

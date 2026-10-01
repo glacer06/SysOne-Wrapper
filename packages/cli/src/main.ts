@@ -72,12 +72,12 @@ and never a provider key. The token is sent only as a bearer header and is never
             is given. The draft ETag comes from the server unless --if-match is given.
   spec diff Compare the file with the draft, or with a published --version. Exit 2 on a difference.
   publish   Publish the draft to a channel (default production).
-  rollback  Point a channel back at the previous version, or at --to.
+  rollback  Point a channel back at the version it served before, or at an earlier one with --to.
   rollout   Set a channel's rollout stage.
             publish, rollback and rollout exit 3 when a person must approve, and print the
             approval id and the console link.
   report --remote
-            Runs per set from the server (run.list) and the org's usage and savings (usage.get).
+            Runs, spend and estimated savings per set from the server (usage.get).
   hook      With BANDWISE_TOKEN set, a hook calls POST /api/v1/sets/<slug>/run, where <slug> is
             the --set file name or --remote-set. The local spec still decides which fields are
             sent. The server's rollout stage for the set decides whether the hook may act, so
