@@ -45,7 +45,7 @@ A short map so a new session doesn't have to work out structural decisions from 
 |---|---|---|
 | Our own small component set instead of a library | More code to maintain per component | When the console needs more than about 25 distinct components |
 | Fonts self-hosted through `next/font` | Slightly larger builds | Never, unless a font license changes |
-| The brand kit's PDF stored in the repo as a binary | About 1.4 MB in git history | If the guide is revised often. Then link to it from storage instead |
+| The brand guide PDF kept in Drive, not git | The guide can drift from the repo's spec, which is authoritative | If PJ revises the guide. Then the spec in `DESIGN.md` gets updated in the same change |
 
 ---
 

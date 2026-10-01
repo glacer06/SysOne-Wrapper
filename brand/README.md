@@ -11,7 +11,8 @@ The Bandwise brand kit v1 (ADR-022). The written spec is `DESIGN.md` and `BRAND-
 | `icons/` | App icons, avatars, favicons (`favicon.svg`, `favicon.ico`, 16 to 512px PNG) and `apple-touch-icon-180.png` |
 | `social/` | Open Graph images (dark and light) and a header image |
 | `bandwise-motion-demo.html` | The signature motion concept: the ant walks the ruler and sets the B down at the score |
-| `bandwise-brand-guidelines-v1.pdf` | The full 26-page visual guide |
+
+The full 26-page visual guide (`bandwise-brand-guidelines-v1.pdf`) lives in the Drive folder "Bandwise brand kit v1" (https://drive.google.com/drive/folders/1Wr7Q8eotXDFfNU-5sj0-yqeQ9QVyfPsN), not in git.
 
 Rules that matter most:
 

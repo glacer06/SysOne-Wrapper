@@ -25,8 +25,9 @@ PJ then delivered a full brand kit v1. It has a 26-page guide, tokens in CSS and
    - `brand/marks/` for the marks;
    - `brand/icons/` for the icons;
    - `brand/social/` for the social images;
-   - `brand/bandwise-brand-guidelines-v1.pdf` for the guide;
    - `brand/bandwise-motion-demo.html` for the motion concept.
+
+   The 26-page guide PDF stays out of git. It is kept in the Drive folder "Bandwise brand kit v1" (https://drive.google.com/drive/folders/1Wr7Q8eotXDFfNU-5sj0-yqeQ9QVyfPsN) (Nick, 2026-10-01).
 2. **The written spec sits at the repo root, beside the factory kit files.**
    - `DESIGN.md` and `BRAND-VOICE.md` are PJ's text, with the corrections below.
    - The kit files are `PRODUCT.md`, `scope.md`, `measurement.md`, `architecture.md`, `DESIGN-STANDARDS.md`, `verify-plan.md` and `corrections.md`.
@@ -51,7 +52,7 @@ PJ then delivered a full brand kit v1. It has a 26-page guide, tokens in CSS and
 - The three apps get one token import and one set of self-hosted fonts: Archivo, Schibsted Grotesk and JetBrains Mono, all OFL, through `next/font`.
 - The www page and its OG image change completely. Claims on www still come only from `docs/marketing/claims.md`.
 - `apps/web/DESIGN.md` remains as history until the www restyle lands. Then it is replaced with a pointer to the root `DESIGN.md`.
-- The brand guide PDF adds about 1.4 MB to the repo.
+- The guide PDF lives in Drive, so the repo carries only the files the apps load.
 
 ## Rollout
 

@@ -7,7 +7,7 @@ Source: the brand kit v1 that PJ delivered on 2026-10-01, locked in by Nick the 
 - Tokens: `brand/tokens/bandwise-tokens.css` (CSS variables) and `brand/tokens/bandwise-tokens.json` (DTCG).
 - Reference components: `brand/tokens/bandwise-components.css`.
 - Marks, lockups, monogram: `brand/marks/`. Icons and favicons: `brand/icons/`. Social images: `brand/social/`.
-- Motion concept: `brand/bandwise-motion-demo.html`. Full visual guide: `brand/bandwise-brand-guidelines-v1.pdf`.
+- Motion concept: `brand/bandwise-motion-demo.html`. Full visual guide: `bandwise-brand-guidelines-v1.pdf` (26 pages), kept in the Drive folder "Bandwise brand kit v1" (https://drive.google.com/drive/folders/1Wr7Q8eotXDFfNU-5sj0-yqeQ9QVyfPsN), not in git.
 - Voice: `BRAND-VOICE.md`. Strategy and principles: `PRODUCT.md`. Gates: `DESIGN-STANDARDS.md`.
 
 This file replaces the "survey instrument" identity in `apps/web/DESIGN.md` (warm paper, amber signal). That file is kept only as history until `apps/web` is restyled.
