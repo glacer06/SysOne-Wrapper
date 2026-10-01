@@ -462,6 +462,22 @@ describe("runs, usage and the manifest", () => {
     return id;
   }
 
+  it("refuses a malformed cursor on every list with 400, before any SQL", async () => {
+    const { slug } = await liveSet();
+    const lists: [OperationId, Record<string, unknown>][] = [
+      ["set.list", {}],
+      ["version.list", { ref: slug }],
+      ["run.list", {}],
+      ["review.list", {}],
+      ["approval.list", {}],
+    ];
+    for (const [id, input] of lists) {
+      for (const cursor of ["not-a-cursor", "1; drop table runs"]) {
+        expect((await refused(op(id, owner(), { ...input, cursor }))).code).toBe("invalid_request");
+      }
+    }
+  });
+
   it("lists runs newest first with filters and cursors, reads one, and sums usage per set", async () => {
     const a = await insertRun(internal, "high", 7);
     const b = await insertRun(internal, "low", 3);

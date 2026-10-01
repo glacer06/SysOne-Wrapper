@@ -94,7 +94,7 @@ describe("client", () => {
   it("sends the bearer token, one idempotency key per write across retries, and If-Match quoted", async () => {
     let calls = 0;
     const api = fakeApi({
-      "PUT /sets/triage/draft": () => (++calls === 1 ? { status: 503, body: { error: { code: "system_one_unavailable", message: "busy", requestId: "r", retryable: true } } } : { status: 200, body: { etag: "e2" } }),
+      "PUT /sets/triage/draft": () => (++calls === 1 ? { status: 429, body: { error: { code: "rate_limited", message: "slow down", requestId: "r", retryable: true } } } : { status: 200, body: { etag: "e2" } }),
     });
     const slept: number[] = [];
     const client = createClient(remote, { fetch: api.fetch, newId: () => "idem-1", sleep: async (ms) => void slept.push(ms) });
@@ -104,6 +104,28 @@ describe("client", () => {
     expect(api.seen[0]?.headers["authorization"]).toBe(`Bearer ${TOKEN}`);
     expect(api.seen[0]?.headers["if-match"]).toBe('"e1"');
     expect(slept).toHaveLength(1);
+  });
+
+  it("never retries a write on a 503, which can come after a commit, but retries a read", async () => {
+    const busy = { status: 503, body: { error: { code: "system_one_unavailable", message: "busy", requestId: "r", retryable: true } } };
+    const api = fakeApi({ "POST /sets/triage/rollback": busy, "GET /usage": busy });
+    const client = createClient(remote, { fetch: api.fetch, newId: () => "idem-1", sleep: async () => undefined });
+    expect(await client.request("POST", "/sets/triage/rollback", { body: {} })).toMatchObject({ ok: false, error: { status: 503 } });
+    expect(api.seen.filter((x) => x.method === "POST")).toHaveLength(1);
+    await client.request("GET", "/usage");
+    expect(api.seen.filter((x) => x.method === "GET").length).toBeGreaterThan(1);
+  });
+
+  it("refuses to follow redirects, so the bearer header goes only to the configured host", async () => {
+    const inits: (RequestInit | undefined)[] = [];
+    const client = createClient(remote, {
+      fetch: async (_url, init) => {
+        inits.push(init);
+        return new Response("{}", { status: 200, headers: { "content-type": "application/json" } });
+      },
+    });
+    await client.request("GET", "/usage");
+    expect(inits[0]?.redirect).toBe("error");
   });
 
   it("does not retry when retry is off, and sends no idempotency key on a read", async () => {

@@ -238,4 +238,10 @@ Every step above can be undone without touching data:
 - **Attempt limits are shared.** The per-email and per-IP sign-in limits live in `auth_attempts` (migration 0007), so they hold across every Vercel instance. Keys are stored as SHA-256 hashes. The IP comes from `x-real-ip`, which Vercel sets; `x-forwarded-for` is never read. TOTP codes also hit the library's database lockout (10 tries, then 15 minutes).
 - **Two-factor enrollment is admin-issued.** Setup needs the enrollment code from `console-member` as well as the password, and the code is used up when two-factor turns on. A lost phone: delete the person's `two_factors` row and set `users.two_factor_enabled` to false (see console-access.md), then run `console-member` again for a new reset link and code.
 
+## Hook safeguards and what they do not cover
+
+- **The hooks fail open.** Any error, a timeout, a revoked token or a server that is down ends the hook with exit 0 and no output. Nothing blocks, and Claude Code carries on as if the hook were not there. That matches live mode. A revoked hook token therefore turns blocking off silently. Watch for `unauthenticated` or `network_error` statuses in `pnpm bandwise report --since 1d`.
+- **No per-token spend cap yet.** A leaked hook token can only run the four allowlisted sets, but each run is a real call on the platform key, and D2 runs with open limits (`allowAllLimiter`). The control is revocation: the SQL in section 8 is ready to paste, and the server refuses a revoked token within a minute. A per-token rate and spend cap comes with the Phase 2 limits.
+- **Revoke and lost-phone reset are manual SQL** with a hand-written audit row until D3 ops exist. PJ accepted this for dogfood on 2026-10-01. Keep section 8 current.
+
 When this runbook is done, tick the D2e items in `.claude/skills/bandwise-builder/references/phases/phase-d.md` and note the date in [dogfood.md](dogfood.md).
