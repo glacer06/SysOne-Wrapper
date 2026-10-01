@@ -1,6 +1,6 @@
 # ADR-021: Bandwise Gate, the first plugin, and OAuth for remote MCP
 
-- **Status:** proposed
+- **Status:** accepted (Nick, 2026-10-01)
 - **Date:** 2026-10-01
 - **Owner:** Integrations (`packages/mcp-server`, `plugins/claude-code`), with Platform / Tenancy for the auth server, reviewed by the Security reviewer
 - **Decider:** Nick
@@ -83,7 +83,7 @@ For Phase 2 the org model is one org per installing team, created on first sign-
 
 ### 6. Opening depends on the shadow numbers
 
-The plugin opens to outside users only if the internal shadow period shows Bandwise doing something the free Haiku hook cannot. Proposed bar, for Nick to confirm: after at least 200 labelled Stop events, the done-check's high "not done" band has a precision lower bound of at least 0.9, and it catches false "done" claims that a Haiku prompt hook run in parallel on the same events misses. The parallel Haiku run happens only in shadow and uses the platform `ANTHROPIC_API_KEY`. If the bar is missed, the plugin stays as a channel for the operator tools and we look for the next niche.
+The plugin opens to outside users only if the internal shadow period shows Bandwise doing something the free Haiku hook cannot. The bar, confirmed by Nick on 2026-10-01: after at least 200 labelled Stop events, the done-check's high "not done" band has a precision lower bound of at least 0.9, and it catches false "done" claims that a Haiku prompt hook run in parallel on the same events misses. The parallel Haiku run happens only in shadow and uses the platform `ANTHROPIC_API_KEY`. If the bar is missed, the plugin stays as a channel for the operator tools and we look for the next niche.
 
 ## Options considered
 
@@ -115,8 +115,8 @@ The plugin opens to outside users only if the internal shadow period shows Bandw
 
 Reversal: remove the plugin from our marketplace and the connector from the directory, and turn off `/mcp`. Revoking the OAuth grants revokes their agent tokens. Nothing in the API, the CLI or the console depends on the MCP slice.
 
-## Open questions for Nick
+## Decisions (Nick, 2026-10-01)
 
-1. The name: Bandwise Gate, or keep plain "Bandwise" in both stores?
-2. The section 6 bar: 200 events and a 0.9 lower bound, or a different number?
-3. ChatGPT timing: after the Claude listing is stable (proposed), or submit in parallel once OAuth is live?
+1. The name is **Bandwise Gate** in both stores.
+2. The section 6 bar stands: at least 200 labelled Stop events and a precision lower bound of at least 0.9 for the high "not done" band.
+3. ChatGPT comes after the Claude listing is stable, as proposed in step 6.
