@@ -51,12 +51,12 @@ function ToastItem({ toast, onDone }: { toast: Toast; onDone: (id: number) => vo
     <div
       role={toast.kind === "error" ? "alert" : "status"}
       className={cx(
-        "pointer-events-auto flex max-w-sm items-start gap-3 rounded-sm border bg-paper-raised px-4 py-3 text-sm text-ink",
-        toast.kind === "error" ? "border-danger" : toast.kind === "success" ? "border-good" : "border-edge",
+        "pointer-events-auto flex max-w-sm items-start gap-3 rounded-sm border border-l-[3px] bg-bw-surface px-4 py-3 text-sm text-bw-text shadow-lg",
+        toast.kind === "error" ? "border-bw-low" : toast.kind === "success" ? "border-bw-high" : "border-bw-border-strong",
       )}
     >
       <span className="flex-1">{toast.message}</span>
-      <button type="button" onClick={() => onDone(toast.id)} className="text-ink-3 hover:text-ink" aria-label="Dismiss">
+      <button type="button" onClick={() => onDone(toast.id)} className="-my-2 -mr-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-sm text-bw-text-muted hover:bg-bw-surface-sunken hover:text-bw-text" aria-label="Dismiss">
         <span aria-hidden>×</span>
       </button>
     </div>

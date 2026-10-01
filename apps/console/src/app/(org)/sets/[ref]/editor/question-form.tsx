@@ -13,8 +13,8 @@ const KEY = /^[A-Za-z0-9_-]{1,64}$/;
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="flex flex-col gap-3 border-t border-rule pt-4">
-      <h4 className="text-xs font-medium uppercase tracking-wide text-ink-3">{title}</h4>
+    <section className="flex flex-col gap-3 border-t border-bw-border pt-4">
+      <h4 className="bw-label">{title}</h4>
       {children}
     </section>
   );
@@ -45,7 +45,7 @@ function ChoiceOptions({ spec, at, criteria, onSpec }: { spec: Spec; at: Questio
           Add option
         </Button>
       </div>
-      <p className="text-xs text-ink-3">Renaming a key updates its stricter bar and composite terms. Check routes and conditions that name it.</p>
+      <p className="text-xs text-bw-text-muted">Renaming a key updates its stricter bar and composite terms. Check routes and conditions that name it.</p>
     </div>
   );
 }
@@ -54,7 +54,7 @@ function ScoreLevels({ spec, at, levels, onSpec }: { spec: Spec; at: QuestionRef
   const set = (next: Structured[]) => onSpec(updateQuestion(spec, at, (q) => (q.type === "score" ? { ...q, criteria: next } : q)));
   return (
     <div className="flex flex-col gap-3">
-      <p className="text-xs text-ink-3">Lowest level first. Keep between 2 and 10 levels.</p>
+      <p className="text-xs text-bw-text-muted">Lowest level first. Keep between 2 and 10 levels.</p>
       {levels.map((level, i) => (
         <div key={i} className="flex items-start gap-2">
           <div className="flex-1">
@@ -91,10 +91,10 @@ export function QuestionForm({ spec, at, question, findings, answer, onSpec }: {
   const options = question.type === "choice" ? Object.keys(question.criteria) : [];
 
   return (
-    <article id={`q-${at.id}`} className="flex flex-col gap-4 rounded-md border border-rule bg-paper-raised p-5">
+    <article id={`q-${at.id}`} className="flex flex-col gap-4 rounded-md border border-bw-border bg-bw-surface p-5">
       <header className="flex flex-wrap items-center gap-2">
-        <h3 className="mr-auto text-base font-semibold text-ink">{question.meta.label}</h3>
-        <span className="font-mono text-xs text-ink-3">{at.id}</span>
+        <h3 className="mr-auto text-base font-semibold text-bw-text">{question.meta.label}</h3>
+        <span className="font-mono text-xs text-bw-text-muted">{at.id}</span>
         <Badge>{TYPE_LABEL[question.type]}</Badge>
         {errors > 0 ? <Badge tone="danger">{errors === 1 ? "1 error" : `${errors} errors`}</Badge> : null}
         {warnings > 0 ? <Badge tone="info">{warnings === 1 ? "1 warning" : `${warnings} warnings`}</Badge> : null}
@@ -133,7 +133,7 @@ export function QuestionForm({ spec, at, question, findings, answer, onSpec }: {
 
       <Section title="Confidence policy">
         {policy === undefined ? (
-          <p className="text-sm text-ink-2">This question has no policy, so it never sets a band. Add one in the JSON view under policies.{at.id}.</p>
+          <p className="text-sm text-bw-text-muted">This question has no policy, so it never sets a band. Add one in the JSON view under policies.{at.id}.</p>
         ) : (
           <PolicyForm
             policy={policy}
@@ -147,10 +147,10 @@ export function QuestionForm({ spec, at, question, findings, answer, onSpec }: {
       </Section>
 
       {findings.length === 0 ? null : (
-        <ul className="flex flex-col gap-1 rounded-sm bg-paper-sunk px-3 py-2 text-xs">
+        <ul className="flex flex-col gap-1 rounded-sm bg-bw-surface-sunken px-3 py-2 text-xs">
           {findings.map((f, i) => (
-            <li key={i} className={f.severity === "error" ? "text-danger" : "text-ink-2"}>
-              {f.message} <span className="font-mono text-ink-3">({f.rule})</span>
+            <li key={i} className={f.severity === "error" ? "text-bw-low-text" : "text-bw-text-muted"}>
+              {f.message} <span className="font-mono text-bw-text-muted">({f.rule})</span>
             </li>
           ))}
         </ul>

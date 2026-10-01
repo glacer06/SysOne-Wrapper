@@ -4,10 +4,10 @@ import type { RunDryRunResult, RunResult } from "@bandwise/core";
 import { useEffect, useState, useTransition } from "react";
 
 import { ACTION_LABEL, formatDollars, formatWhen } from "~/components/format";
-import { Badge, BandBadge, Button, Card, checkJson, CodeEditor, InlineAlert, RolloutBadge, Select, cx } from "~/components/ui";
+import { Badge, BandBadge, Button, Card, checkJson, CodeBlock, CodeEditor, InlineAlert, RolloutBadge, Select, cx } from "~/components/ui";
 
 import { previewDraftAction, runStateAction } from "../actions";
-import { answerSummary, reband, type Rebanded, skeletonState, type Spec, toJsonText } from "./spec-edit";
+import { answerMarker, answerSummary, reband, type Rebanded, skeletonState, type Spec, toJsonText } from "./spec-edit";
 
 export interface RecentRun {
   id: string;
@@ -52,7 +52,7 @@ function labelOf(spec: Spec, id: string): string {
 }
 
 function Changed({ before, after, children }: { before: string; after: string; children: React.ReactNode }) {
-  return <span className={cx(before !== after && "rounded-sm bg-signal/25 px-1 font-medium")}>{children}</span>;
+  return <span className={cx(before !== after && "inline-block rounded-sm px-1 font-medium outline-2 outline-offset-1 outline-dashed outline-bw-medium")}>{children}</span>;
 }
 
 function RunView({ preview, spec }: { preview: Extract<LastPreview, { kind: "run" }>; spec: Spec | null }) {
@@ -66,12 +66,12 @@ function RunView({ preview, spec }: { preview: Extract<LastPreview, { kind: "run
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <RolloutBadge stage={result.rollout} />
-        <span className="text-ink-2">Run band</span>
+        <span className="text-bw-text-muted">Run band</span>
         <BandBadge band={result.runBand} />
-        <span className="text-ink-2">Overall</span>
+        <span className="text-bw-text-muted">Overall</span>
         <Badge>{ACTION_LABEL[result.overallAction]}</Badge>
-        <span className="text-ink-2">Route</span>
-        <span className="font-mono text-ink">{result.route ?? "none"}</span>
+        <span className="text-bw-text-muted">Route</span>
+        <span className="font-mono text-bw-text">{result.route ?? "none"}</span>
       </div>
       {result.status === "ok" ? null : (
         <InlineAlert kind="error" title="The run did not finish">
@@ -93,7 +93,7 @@ function RunView({ preview, spec }: { preview: Extract<LastPreview, { kind: "run
         <table className="w-full text-left text-sm">
           <caption className="sr-only">Decisions from the preview run</caption>
           <thead>
-            <tr className="border-b border-rule text-xs uppercase tracking-wide text-ink-3">
+            <tr className="border-b border-bw-border bw-label">
               <th scope="col" className="py-1.5 pr-3 font-medium">Decision</th>
               <th scope="col" className="py-1.5 pr-3 font-medium">Answer</th>
               <th scope="col" className="py-1.5 pr-3 font-medium">Band</th>
@@ -109,18 +109,18 @@ function RunView({ preview, spec }: { preview: Extract<LastPreview, { kind: "run
               const band = e?.band ?? d.band;
               const action = e?.action ?? d.action;
               return (
-                <tr key={id} className="border-b border-rule align-top last:border-b-0">
+                <tr key={id} className="border-b border-bw-border align-top last:border-b-0">
                   <td className="py-2 pr-3">
-                    <div className="text-ink">{spec === null ? id : labelOf(spec, id)}</div>
-                    <div className="font-mono text-xs text-ink-3">
+                    <div className="text-bw-text">{spec === null ? id : labelOf(spec, id)}</div>
+                    <div className="font-mono text-xs text-bw-text-muted">
                       {id}
                       {d.relevant ? "" : ", not relevant"}
                     </div>
                   </td>
-                  <td className="py-2 pr-3 font-mono text-xs text-ink">{d.kind === "composite" ? (typeof d.value === "number" ? d.value.toFixed(2) : "none") : answerSummary(result.answers[id])}</td>
+                  <td className="py-2 pr-3 font-mono text-xs text-bw-text">{d.kind === "composite" ? (typeof d.value === "number" ? d.value.toFixed(2) : "none") : answerSummary(result.answers[id])}</td>
                   <td className="py-2 pr-3">
                     <Changed before={d.band} after={band}>
-                      <BandBadge band={band} />
+                      <BandBadge band={band} score={d.kind === "composite" ? null : answerMarker(result.answers[id])} />
                     </Changed>
                   </td>
                   <td className="py-2 pr-3">
@@ -128,14 +128,14 @@ function RunView({ preview, spec }: { preview: Extract<LastPreview, { kind: "run
                       {ACTION_LABEL[action]}
                     </Changed>
                   </td>
-                  <td className="py-2 text-ink-2">{ACTION_LABEL[e?.effectiveAction ?? d.effectiveAction]}</td>
+                  <td className="py-2 text-bw-text-muted">{ACTION_LABEL[e?.effectiveAction ?? d.effectiveAction]}</td>
                 </tr>
               );
             })}
           </tbody>
         </table>
       </div>
-      <p className="text-xs text-ink-3">
+      <p className="text-xs text-bw-text-muted">
         System One cost {formatDollars(result.cost.systemOneCostUsd)}, estimated savings {formatDollars(result.cost.savingsUsd)}, {result.cost.latencyMs} ms
         {result.modelResolved === null ? "" : ` on ${result.modelResolved}`}. Logged as a console run in shadow.
       </p>
@@ -146,17 +146,17 @@ function RunView({ preview, spec }: { preview: Extract<LastPreview, { kind: "run
 function DryView({ result }: { result: RunDryRunResult }) {
   return (
     <div className="flex flex-col gap-3 text-sm">
-      <p className="text-ink-2">
+      <p className="text-bw-text-muted">
         No call was made. {result.model} on {result.provider}, request limit {result.limits.requestTokens.toLocaleString()} tokens.
       </p>
       <ul className="flex flex-col gap-1">
         {result.stages.map((s) => (
           <li key={s.id} className="flex flex-wrap gap-2">
-            <span className="font-mono text-ink">{s.id}</span>
+            <span className="font-mono text-bw-text">{s.id}</span>
             {s.skipped ? (
-              <span className="text-ink-3">skipped: its condition is false for this state</span>
+              <span className="text-bw-text-muted">skipped: its condition is false for this state</span>
             ) : (
-              <span className="text-ink-2">
+              <span className="text-bw-text-muted">
                 {s.batches.length === 1 ? "1 request" : `${s.batches.length} requests`}, about {s.batches.reduce((n, b) => n + b.estTokens, 0).toLocaleString()} tokens
               </span>
             )}
@@ -173,14 +173,14 @@ function DryView({ result }: { result: RunDryRunResult }) {
         </InlineAlert>
       )}
       <details>
-        <summary className="cursor-pointer text-ink-2">The payload, after redaction</summary>
-        <pre className="mt-2 max-h-80 overflow-auto rounded-sm bg-paper-sunk p-3 font-mono text-xs text-ink">
+        <summary className="cursor-pointer text-bw-text-muted">The payload, after redaction</summary>
+        <CodeBlock className="mt-2 max-h-80">
           {JSON.stringify(
             result.stages.flatMap((s) => s.batches.map((b) => b.request)),
             null,
             2,
           )}
-        </pre>
+        </CodeBlock>
       </details>
     </div>
   );
@@ -302,12 +302,12 @@ export function PreviewPanel({ slug, inputSchema, recentRuns, synthetic, dirty, 
           </InlineAlert>
         )}
         {last === null ? (
-          <p className="text-sm text-ink-3">No preview yet. Pick or paste a state, then run it. The answers stay on screen while you move the sliders.</p>
+          <p className="text-sm text-bw-text-muted">No preview yet. Pick or paste a state, then run it. The answers stay on screen while you move the sliders.</p>
         ) : (
-          <section aria-live="polite" className="flex flex-col gap-2 border-t border-rule pt-4">
-            <h3 className="text-sm font-semibold text-ink">
+          <section aria-live="polite" className="flex flex-col gap-2 border-t border-bw-border pt-4">
+            <h3 className="text-sm font-semibold text-bw-text">
               {last.kind === "run" ? "Preview run" : "Payload check"}{" "}
-              <time dateTime={last.at} className="font-normal text-ink-3">
+              <time dateTime={last.at} className="font-normal text-bw-text-muted">
                 {new Date(last.at).toLocaleTimeString()}
               </time>
             </h3>

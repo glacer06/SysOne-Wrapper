@@ -25,7 +25,7 @@ export default async function ReleasesPage({ params }: { params: Promise<{ ref: 
   return (
     <>
       <SetHeader set={set.output} />
-      <p className="mb-6 max-w-prose text-sm text-ink-2">Publish the draft, move a channel through rollout, and roll back when something looks wrong.</p>
+      <p className="mb-6 max-w-prose text-sm text-bw-text-muted">Publish the draft, move a channel through rollout, and roll back when something looks wrong.</p>
       <ReleasesPanel setRef={setRef} set={set.output} />
     </>
   );

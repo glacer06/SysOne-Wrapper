@@ -20,15 +20,15 @@ export function SetTabs({ slug }: { slug: string }) {
     { href: `/review?set=${s}`, label: "Review", current: false },
   ];
   return (
-    <nav aria-label={`Set ${slug}`} className="mb-6 flex gap-1 overflow-x-auto border-b border-rule">
+    <nav aria-label={`Set ${slug}`} className="mb-6 flex gap-5 overflow-x-auto border-b border-bw-border">
       {tabs.map((t) => (
         <Link
           key={t.label}
           href={t.href}
           aria-current={t.current ? "page" : undefined}
           className={cx(
-            "-mb-px shrink-0 border-b-2 px-3 py-2 text-sm font-medium",
-            t.current ? "border-ink text-ink" : "border-transparent text-ink-3 hover:text-ink",
+            "-mb-px shrink-0 border-b-2 px-0.5 py-3 text-sm font-medium transition-colors duration-(--bw-dur-fast)",
+            t.current ? "border-bw-brand text-bw-text" : "border-transparent text-bw-text-muted hover:text-bw-text",
           )}
         >
           {t.label}

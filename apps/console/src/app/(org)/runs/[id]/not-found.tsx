@@ -7,7 +7,7 @@ export default function RunNotFound() {
     <EmptyState
       title="No such run"
       action={
-        <Link href="/runs" className="text-sm text-ink underline underline-offset-2">
+        <Link href="/runs" className="text-sm text-bw-text underline underline-offset-2">
           Back to all runs
         </Link>
       }

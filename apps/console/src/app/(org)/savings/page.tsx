@@ -104,7 +104,7 @@ export default async function SavingsPage({ searchParams }: { searchParams: Prom
                   key={k}
                   href={hrefWith("/savings", sp, { metric: k === "savings" ? undefined : k })}
                   aria-current={k === metric ? "true" : undefined}
-                  className={cx("rounded-sm px-2.5 py-1 text-sm", k === metric ? "bg-paper-sunk font-medium text-ink" : "text-ink-2 hover:bg-paper-sunk")}
+                  className={cx("rounded-sm px-2.5 py-1 text-sm", k === metric ? "bg-bw-surface-sunken font-medium text-bw-text" : "text-bw-text-muted hover:bg-bw-surface-sunken")}
                 >
                   {METRICS[k].label}
                 </Link>
@@ -114,7 +114,7 @@ export default async function SavingsPage({ searchParams }: { searchParams: Prom
         >
           <DailyBars days={days} label={`${m.label} per day`} format={fmt} />
           <details className="mt-4">
-            <summary className="cursor-pointer text-sm text-ink-2">Show the numbers by day</summary>
+            <summary className="cursor-pointer text-sm text-bw-text-muted">Show the numbers by day</summary>
             <div className="mt-3">
               <Table caption="Totals per day">
                 <thead>
@@ -161,7 +161,7 @@ export default async function SavingsPage({ searchParams }: { searchParams: Prom
                 <tr key={s.setId}>
                   <Td>
                     <SetLabel sets={sets} setId={s.setId} compact />
-                    <Link href={`/runs?set=${encodeURIComponent(s.slug)}&range=${range === "all" ? "all" : range}`} className="ml-2 text-xs text-ink-2 underline underline-offset-2">
+                    <Link href={`/runs?set=${encodeURIComponent(s.slug)}&range=${range === "all" ? "all" : range}`} className="ml-2 text-xs text-bw-text-muted underline underline-offset-2">
                       Runs
                     </Link>
                   </Td>
@@ -178,7 +178,7 @@ export default async function SavingsPage({ searchParams }: { searchParams: Prom
               ))}
             </tbody>
           </Table>
-          <p className="mt-3 text-xs text-ink-3">
+          <p className="mt-3 text-xs text-bw-text-muted">
             Savings are an estimate: each run is compared with the cost of asking an LLM the same questions.
           </p>
         </Card>

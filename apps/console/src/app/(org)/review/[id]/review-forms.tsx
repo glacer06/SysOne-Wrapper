@@ -35,18 +35,18 @@ function Correction({ choices, suggestedJson }: { choices: readonly Choice[] | n
   if (choices === null) {
     return (
       <label className="flex flex-col gap-1.5 text-sm">
-        <span className="font-medium text-ink">The right value</span>
-        <span className="text-xs text-ink-3">JSON, for example a number or &quot;option_key&quot;.</span>
-        <input name="value" required className="h-10 rounded-sm border border-edge bg-paper-sunk px-3 font-mono text-sm text-ink" />
+        <span className="font-medium text-bw-text">The right value</span>
+        <span className="text-xs text-bw-text-muted">JSON, for example a number or &quot;option_key&quot;.</span>
+        <input name="value" required className="h-10 rounded-sm border border-bw-border-strong bg-bw-surface-sunken px-3 font-mono text-sm text-bw-text" />
       </label>
     );
   }
   const others = choices.filter((c) => c.json !== suggestedJson);
   return (
     <fieldset className="flex flex-col gap-2">
-      <legend className="mb-1 text-sm font-medium text-ink">The right answer</legend>
+      <legend className="mb-1 text-sm font-medium text-bw-text">The right answer</legend>
       {others.map((c, i) => (
-        <label key={c.json} className="flex items-center gap-2 text-sm text-ink">
+        <label key={c.json} className="flex items-center gap-2 text-sm text-bw-text">
           <input type="radio" name="value" value={c.json} defaultChecked={i === 0} required />
           {c.label}
         </label>
@@ -87,7 +87,7 @@ export function ResolveForm({ id, runId, suggestedJson, suggestedLabel, choices 
       ) : null}
 
       {mode === "correct" ? (
-        <form action={fix} className="flex flex-col gap-4 rounded-md border border-rule p-4">
+        <form action={fix} className="flex flex-col gap-4 rounded-md border border-bw-border p-4">
           <Hidden id={id} runId={runId} />
           <Correction choices={choices} suggestedJson={suggestedJson} />
           <Select name="failureClass" label="Why it was wrong" hint="Optional. It groups misses when you tune the set." options={FAILURE_OPTIONS} defaultValue="" />
@@ -103,9 +103,9 @@ export function ResolveForm({ id, runId, suggestedJson, suggestedLabel, choices 
       ) : null}
 
       {mode === "dismiss" ? (
-        <form action={dismiss} className="flex flex-col gap-3 rounded-md border border-danger p-4">
+        <form action={dismiss} className="flex flex-col gap-3 rounded-md border border-bw-low p-4">
           <Hidden id={id} runId={runId} />
-          <p className="text-sm text-ink">Dismiss this item? It leaves the queue without an answer, so it teaches the set nothing.</p>
+          <p className="text-sm text-bw-text">Dismiss this item? It leaves the queue without an answer, so it teaches the set nothing.</p>
           <div className="flex gap-2">
             <Button type="submit" variant="danger" pending={dismissing} disabled={busy}>
               {dismissing ? "Dismissing..." : "Yes, dismiss it"}
@@ -131,7 +131,7 @@ export function ConfirmForm({ id, runId, agentJson, agentLabel, choices }: { id:
     <div className="flex flex-col gap-4">
       {error === undefined ? null : <InlineAlert kind="error">{error}</InlineAlert>}
       {replacingOpen ? (
-        <form action={replace} className="flex flex-col gap-4 rounded-md border border-rule p-4">
+        <form action={replace} className="flex flex-col gap-4 rounded-md border border-bw-border p-4">
           <Hidden id={id} runId={runId} />
           <Correction choices={choices} suggestedJson={agentJson} />
           <div className="flex gap-2">

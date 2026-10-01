@@ -9,13 +9,13 @@ export function LintList({ items }: { items: readonly ErrorDetail[] }) {
   return (
     <ul className="flex flex-col gap-2">
       {sorted.map((d, i) => (
-        <li key={`${d.rule}:${d.path}:${i}`} className="flex flex-col gap-1 rounded-sm border border-rule px-3 py-2 text-sm">
+        <li key={`${d.rule}:${d.path}:${i}`} className="flex flex-col gap-1 rounded-sm border border-bw-border px-3 py-2 text-sm">
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={d.severity === "error" ? "danger" : "neutral"}>{d.severity === "error" ? "Error" : "Warning"}</Badge>
-            <code className="font-mono text-xs text-ink-2">{d.rule}</code>
-            {d.path === "" ? null : <code className="font-mono text-xs break-all text-ink-3">{d.path}</code>}
+            <code className="font-mono text-xs text-bw-text-muted">{d.rule}</code>
+            {d.path === "" ? null : <code className="font-mono text-xs break-all text-bw-text-muted">{d.path}</code>}
           </div>
-          <p className="text-ink">{d.message}</p>
+          <p className="text-bw-text">{d.message}</p>
         </li>
       ))}
     </ul>

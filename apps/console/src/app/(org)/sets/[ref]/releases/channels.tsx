@@ -31,7 +31,7 @@ const STAGE_OPTIONS = STAGE_ORDER.map((s) => ({ value: s, label: STAGE_LABEL[s] 
 
 export function Channels({ setRef, channels, canEdit }: { setRef: string; channels: ChannelRow[]; canEdit: boolean }) {
   return (
-    <ul className="flex flex-col divide-y divide-rule">
+    <ul className="flex flex-col divide-y divide-bw-border">
       {channels.map((c) => (
         // Keyed on what the server says, so the controls reset after a change lands.
         <li key={`${c.channel}:${c.version}:${c.stage}`} className="py-4 first:pt-0 last:pb-0">
@@ -81,14 +81,14 @@ function ChannelControls({ setRef, row, canEdit }: { setRef: string; row: Channe
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <h3 className="text-sm font-semibold text-ink">{label}</h3>
-        <span className="font-mono text-sm text-ink">v{row.version}</span>
+        <h3 className="text-sm font-semibold text-bw-text">{label}</h3>
+        <span className="font-mono text-sm text-bw-text">v{row.version}</span>
         <RolloutBadge stage={row.stage} />
-        <span className="text-xs text-ink-3">Updated {formatTime(row.updatedAt)}</span>
+        <span className="text-xs text-bw-text-muted">Updated {formatTime(row.updatedAt)}</span>
       </div>
-      <p className="text-sm text-ink-2">{STAGE_MEANING[row.stage]}</p>
+      <p className="text-sm text-bw-text-muted">{STAGE_MEANING[row.stage]}</p>
       {row.warnings.length === 0 ? null : (
-        <ul className="flex flex-col gap-1 text-xs text-ink-2">
+        <ul className="flex flex-col gap-1 text-xs text-bw-text-muted">
           {row.warnings.map((w) => (
             <li key={w}>{w}</li>
           ))}
@@ -147,8 +147,8 @@ function ChannelControls({ setRef, row, canEdit }: { setRef: string; row: Channe
         {pending?.kind === "rollback" && pending.check !== null ? (
           <>
             <p>
-              {row.channel} stops serving <span className="font-mono text-ink">{pending.check.from}</span> and serves{" "}
-              <span className="font-mono text-ink">{pending.check.to}</span> again, with {pending.check.changes}{" "}
+              {row.channel} stops serving <span className="font-mono text-bw-text">{pending.check.from}</span> and serves{" "}
+              <span className="font-mono text-bw-text">{pending.check.to}</span> again, with {pending.check.changes}{" "}
               {pending.check.changes === 1 ? "spec change" : "spec changes"}.
             </p>
             <p>The stage stays {STAGE_LABEL[row.stage]}. Rollback is never gated, and the next run uses the older version.</p>

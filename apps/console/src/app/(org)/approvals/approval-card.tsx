@@ -87,19 +87,19 @@ export async function ApprovalCard({ item, now, decide }: { item: ApprovalItem; 
       actions={<Badge tone={STATUS_TONE[item.status]}>{item.status[0]?.toUpperCase() + item.status.slice(1)}</Badge>}
     >
       <dl className="grid gap-x-6 gap-y-3 text-sm sm:grid-cols-[9rem_1fr]">
-        <dt className="text-ink-3">Operation</dt>
-        <dd className="font-mono text-ink">{item.opId}</dd>
+        <dt className="text-bw-text-muted">Operation</dt>
+        <dd className="font-mono text-bw-text">{item.opId}</dd>
         {ref === null ? null : (
           <>
-            <dt className="text-ink-3">Set</dt>
+            <dt className="text-bw-text-muted">Set</dt>
             <dd>
-              <Link href={`/sets/${encodeURIComponent(ref)}/releases`} className="font-mono text-ink underline underline-offset-2">
+              <Link href={`/sets/${encodeURIComponent(ref)}/releases`} className="font-mono text-bw-text underline underline-offset-2">
                 {ref}
               </Link>
               {set === null ? null : (
                 <span className="ml-3 inline-flex flex-wrap gap-2 align-middle">
                   {set.channels.map((c) => (
-                    <span key={c.channel} className="inline-flex items-center gap-1 text-xs text-ink-2">
+                    <span key={c.channel} className="inline-flex items-center gap-1 text-xs text-bw-text-muted">
                       {c.channel} v{c.version} <RolloutBadge stage={c.stage} />
                     </span>
                   ))}
@@ -108,16 +108,16 @@ export async function ApprovalCard({ item, now, decide }: { item: ApprovalItem; 
             </dd>
           </>
         )}
-        <dt className="text-ink-3">Agent&apos;s reason</dt>
-        <dd className="text-ink">{item.reason}</dd>
-        <dt className="text-ink-3">Why it waits</dt>
-        <dd className="text-ink">{riskReason(item.opId, input, facts)}</dd>
+        <dt className="text-bw-text-muted">Agent&apos;s reason</dt>
+        <dd className="text-bw-text">{item.reason}</dd>
+        <dt className="text-bw-text-muted">Why it waits</dt>
+        <dd className="text-bw-text">{riskReason(item.opId, input, facts)}</dd>
       </dl>
 
       <div className="mt-4 flex flex-col gap-3">
         {stageMove === null ? null : (
-          <div className="flex flex-col gap-1 rounded-md border border-rule px-4 py-3 text-sm text-ink-2">
-            <p className="flex flex-wrap items-center gap-2 text-ink">
+          <div className="flex flex-col gap-1 rounded-md border border-bw-border px-4 py-3 text-sm text-bw-text-muted">
+            <p className="flex flex-wrap items-center gap-2 text-bw-text">
               {stageMove.channel}: <RolloutBadge stage={stageMove.from} /> to <RolloutBadge stage={stageMove.to} />
             </p>
             {describeMove(stageMove.channel, stageMove.from, stageMove.to)
@@ -127,19 +127,19 @@ export async function ApprovalCard({ item, now, decide }: { item: ApprovalItem; 
               ))}
           </div>
         )}
-        {change.warning === null ? null : <p className="text-sm font-medium text-danger">{change.warning}</p>}
-        {change.note === null ? null : <p className="text-sm text-ink-2">{change.note}</p>}
+        {change.warning === null ? null : <p className="text-sm font-medium text-bw-low-text">{change.warning}</p>}
+        {change.note === null ? null : <p className="text-sm text-bw-text-muted">{change.note}</p>}
         {change.diff === null ? null : <SpecDiffView diff={change.diff} />}
         <details className="text-sm">
-          <summary className="cursor-pointer text-ink-2">The exact input</summary>
-          <pre className="mt-2 max-h-72 overflow-auto rounded-sm bg-paper-sunk px-3 py-2 font-mono text-xs whitespace-pre-wrap break-words text-ink">
+          <summary className="cursor-pointer text-bw-text-muted">The exact input</summary>
+          <pre className="mt-2 max-h-72 overflow-auto rounded-sm bg-bw-surface-sunken px-3 py-2 font-mono text-xs whitespace-pre-wrap break-words text-bw-text">
             {JSON.stringify(item.input, null, 2)}
           </pre>
         </details>
         {item.result === undefined ? null : (
           <details className="text-sm" open={item.status !== "executed"}>
-            <summary className="cursor-pointer text-ink-2">Result</summary>
-            <pre className="mt-2 max-h-72 overflow-auto rounded-sm bg-paper-sunk px-3 py-2 font-mono text-xs whitespace-pre-wrap break-words text-ink">
+            <summary className="cursor-pointer text-bw-text-muted">Result</summary>
+            <pre className="mt-2 max-h-72 overflow-auto rounded-sm bg-bw-surface-sunken px-3 py-2 font-mono text-xs whitespace-pre-wrap break-words text-bw-text">
               {JSON.stringify(item.result, null, 2)}
             </pre>
           </details>

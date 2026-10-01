@@ -1,95 +1,193 @@
-/* Console tokens. The palette is the marketing site's (apps/web/DESIGN.md): warm paper and ink,
-   one amber signal for the high band and the primary action. The console is a work surface, so it
-   uses the system sans and mono faces and quieter type sizes. */
+/* Console styles on the Bandwise brand kit v1 (ADR-022, DESIGN.md). The kit's tokens come first,
+   then the system dark fallback, then the --bw-* semantic layer is exposed to Tailwind below.
+   Components read only the semantic layer: no raw colors and no primitives here or in .tsx. */
+@import "@bandwise/brand/tokens.css";
+@import "@bandwise/brand/theme.css";
 @import "tailwindcss";
 
-:root {
-  color-scheme: light dark;
-  --paper: oklch(0.972 0.008 85);
-  --paper-raised: oklch(0.985 0.005 85);
-  --paper-sunk: oklch(0.945 0.012 85);
-  --ink: oklch(0.24 0.018 70);
-  --ink-2: oklch(0.4 0.02 70);
-  --ink-3: oklch(0.5 0.02 70);
-  --rule: oklch(0.86 0.012 80);
-  --edge: oklch(0.56 0.02 75);
-  --signal: oklch(0.8 0.16 75);
-  --on-signal: oklch(0.22 0.02 70);
-  --danger: oklch(0.5 0.17 28);
-  --danger-wash: oklch(0.95 0.03 28);
-  --good: oklch(0.45 0.1 150);
-  --good-wash: oklch(0.95 0.03 150);
-  --info-wash: oklch(0.95 0.02 240);
-  --info: oklch(0.45 0.08 240);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --paper: oklch(0.195 0.012 70);
-    --paper-raised: oklch(0.215 0.013 70);
-    --paper-sunk: oklch(0.235 0.014 70);
-    --ink: oklch(0.93 0.012 85);
-    --ink-2: oklch(0.8 0.015 80);
-    --ink-3: oklch(0.7 0.015 80);
-    --rule: oklch(0.33 0.014 70);
-    --edge: oklch(0.6 0.015 75);
-    --signal: oklch(0.82 0.15 78);
-    --on-signal: oklch(0.2 0.02 70);
-    --danger: oklch(0.76 0.13 30);
-    --danger-wash: oklch(0.28 0.05 30);
-    --good: oklch(0.8 0.11 150);
-    --good-wash: oklch(0.27 0.04 150);
-    --info-wash: oklch(0.27 0.03 240);
-    --info: oklch(0.8 0.08 240);
-  }
-}
-
 @theme inline {
-  --color-paper: var(--paper);
-  --color-paper-raised: var(--paper-raised);
-  --color-paper-sunk: var(--paper-sunk);
-  --color-ink: var(--ink);
-  --color-ink-2: var(--ink-2);
-  --color-ink-3: var(--ink-3);
-  --color-rule: var(--rule);
-  --color-edge: var(--edge);
-  --color-signal: var(--signal);
-  --color-on-signal: var(--on-signal);
-  --color-danger: var(--danger);
-  --color-danger-wash: var(--danger-wash);
-  --color-good: var(--good);
-  --color-good-wash: var(--good-wash);
-  --color-info: var(--info);
-  --color-info-wash: var(--info-wash);
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
-  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
-  --radius-sm: 2px;
-  --radius-md: 4px;
+  --color-bw-bg: var(--bw-bg);
+  --color-bw-surface: var(--bw-surface);
+  --color-bw-surface-sunken: var(--bw-surface-sunken);
+  --color-bw-border: var(--bw-border);
+  --color-bw-border-strong: var(--bw-border-strong);
+  --color-bw-text: var(--bw-text);
+  --color-bw-text-muted: var(--bw-text-muted);
+  --color-bw-brand: var(--bw-brand);
+  --color-bw-brand-text: var(--bw-brand-text);
+  --color-bw-on-brand: var(--bw-on-brand);
+  --color-bw-high: var(--bw-high);
+  --color-bw-high-text: var(--bw-high-text);
+  --color-bw-high-bg: var(--bw-high-bg);
+  --color-bw-medium: var(--bw-medium);
+  --color-bw-medium-text: var(--bw-medium-text);
+  --color-bw-medium-bg: var(--bw-medium-bg);
+  --color-bw-low: var(--bw-low);
+  --color-bw-low-text: var(--bw-low-text);
+  --color-bw-low-bg: var(--bw-low-bg);
+  --color-bw-focus: var(--bw-focus);
+  --color-bw-overlay: var(--bw-overlay);
+
+  /* next/font sets the face variables on <html> (layout.tsx); the kit's stacks are the fallback. */
+  --font-sans: var(--font-schibsted), var(--bw-font-body);
+  --font-display: var(--font-archivo), var(--bw-font-display);
+  --font-mono: var(--font-jetbrains), var(--bw-font-mono);
+
+  /* Radius is 0, 2, 4 or 8 (DESIGN.md). */
+  --radius-xs: var(--bw-radius-sm);
+  --radius-sm: var(--bw-radius-sm);
+  --radius-md: var(--bw-radius-md);
+  --radius-lg: var(--bw-radius-lg);
+}
+
+/* Hover fills, mixed from the semantic tokens as the kit's reference button does. */
+:root {
+  --bw-brand-hover: color-mix(in srgb, var(--bw-brand) 86%, var(--bw-text));
+  --bw-low-hover: color-mix(in srgb, var(--bw-low) 86%, var(--bw-text));
 }
 
 html {
-  background: var(--paper);
-  color: var(--ink);
+  background: var(--bw-bg);
+  color: var(--bw-text);
 }
 
 body {
+  background: var(--bw-bg);
+  color: var(--bw-text);
   font-family: var(--font-sans);
+  font-size: 1rem;
+  line-height: var(--bw-lh-body);
   -webkit-font-smoothing: antialiased;
 }
 
-/* One visible focus style everywhere: a 2px ink ring with a gap, on paper and on signal. */
+/* One visible focus style everywhere: 2px in the focus color with a 2px gap. */
 :focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 2px;
+  outline: var(--bw-focus-width) solid var(--bw-focus);
+  outline-offset: var(--bw-focus-offset);
 }
 
-/* The medium band is hatched and the low band dotted, so bands read without color too. */
-.band-medium {
-  background-image: repeating-linear-gradient(135deg, currentColor 0 1px, transparent 1px 5px);
+::selection {
+  background: var(--bw-high-bg);
+  color: var(--bw-text);
 }
-.band-low {
-  background-image: radial-gradient(currentColor 0.8px, transparent 0.8px);
-  background-size: 4px 4px;
+
+@layer components {
+  /* Display type: page titles and big numbers only. */
+  .bw-display {
+    font-family: var(--font-display);
+    font-stretch: 125%;
+    font-weight: 800;
+    letter-spacing: var(--bw-track-display);
+  }
+
+  /* One page title per view. Quiet sizes: the console is a work surface. */
+  .bw-page-title {
+    font-family: var(--font-display);
+    font-stretch: 125%;
+    font-weight: 800;
+    letter-spacing: var(--bw-track-display);
+    font-size: 1.625rem;
+    line-height: var(--bw-lh-h2);
+    color: var(--bw-text);
+    overflow-wrap: anywhere;
+  }
+  @media (min-width: 960px) {
+    .bw-page-title {
+      font-size: 2rem;
+    }
+  }
+  .bw-auth-title {
+    font-family: var(--font-display);
+    font-stretch: 125%;
+    font-weight: 800;
+    letter-spacing: var(--bw-track-display);
+    font-size: 1.5rem;
+    line-height: var(--bw-lh-h3);
+    color: var(--bw-text);
+  }
+
+  /* Mono 12px caps in the muted color, for labels above values and table heads. */
+  .bw-label {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: var(--bw-lh-caption);
+    letter-spacing: var(--bw-track-label);
+    text-transform: uppercase;
+    color: var(--bw-text-muted);
+  }
+
+  .bw-data {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* The signature cut: top-right and bottom-left at 45 degrees. Primary buttons, decision cards
+     and badges only, one per region. */
+  .bw-chamfer {
+    --c: var(--bw-chamfer);
+    clip-path: polygon(0 0, calc(100% - var(--c)) 0, 100% var(--c), 100% 100%, var(--c) 100%, 0 calc(100% - var(--c)));
+  }
+  .bw-chamfer-sm {
+    --c: 6px;
+    clip-path: polygon(0 0, calc(100% - var(--c)) 0, 100% var(--c), 100% 100%, var(--c) 100%, 0 calc(100% - var(--c)));
+  }
+
+  /* A clipped element hides its own outline, so a chamfered control draws focus on a wrapper-free
+     inset ring instead. */
+  .bw-chamfer:focus-visible {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--bw-focus);
+  }
+
+  /* The trail motif: a dotted 3px line. */
+  .bw-trail {
+    height: 0;
+    border-top: 3px dotted var(--bw-border-strong);
+  }
+
+  /* Busy buttons: the trail walks instead of a spinner. 240ms steps, stopped by reduced motion. */
+  .bw-trail-busy {
+    display: inline-block;
+    width: 1.25rem;
+    height: 0;
+    border-top: 3px dotted currentColor;
+    opacity: 0.7;
+  }
+}
+
+/* The danger button keeps white text on light and ink on dark, as the kit's reference does. Kept
+   here so it follows both the system theme and an explicit data-theme. */
+.bw-on-low {
+  color: var(--bw-surface);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .bw-on-low {
+    color: var(--bw-bg);
+  }
+}
+[data-theme="dark"] .bw-on-low {
+  color: var(--bw-bg);
+}
+
+/* Marks come as a light-background and a dark-background file. Show the one for the theme in
+   force: the system setting, unless data-theme on <html> says otherwise. */
+.bw-for-dark {
+  display: none;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .bw-for-light {
+    display: none;
+  }
+  :root:not([data-theme="light"]) .bw-for-dark {
+    display: block;
+  }
+}
+[data-theme="dark"] .bw-for-light {
+  display: none;
+}
+[data-theme="dark"] .bw-for-dark {
+  display: block;
 }
 
 @media (prefers-reduced-motion: reduce) {

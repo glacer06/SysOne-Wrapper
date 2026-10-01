@@ -43,24 +43,24 @@ export function setOptions(sets: SetDirectory): { value: string; label: string }
  */
 export function SetLabel({ sets, setId, compact = false, stage = true }: { sets: SetDirectory; setId: string; compact?: boolean; stage?: boolean }) {
   const s = sets.get(setId);
-  if (s === undefined) return <span className="font-mono text-xs text-ink-3">{setId.slice(0, 8)}</span>;
+  if (s === undefined) return <span className="font-mono text-xs text-bw-text-muted">{setId.slice(0, 8)}</span>;
   if (!stage) {
     return (
-      <Link href={`/sets/${encodeURIComponent(s.slug)}`} className="font-medium text-ink underline-offset-2 hover:underline" title={s.name}>
+      <Link href={`/sets/${encodeURIComponent(s.slug)}`} className="font-medium text-bw-text underline-offset-2 hover:underline" title={s.name}>
         {s.slug}
       </Link>
     );
   }
   return (
     <span className="inline-flex flex-wrap items-center gap-2">
-      <Link href={`/sets/${encodeURIComponent(s.slug)}`} className="font-medium text-ink underline-offset-2 hover:underline" title={s.name}>
+      <Link href={`/sets/${encodeURIComponent(s.slug)}`} className="font-medium text-bw-text underline-offset-2 hover:underline" title={s.name}>
         {s.slug}
       </Link>
       {s.production === null ? (
-        <span className="text-xs text-ink-3">Not released</span>
+        <span className="text-xs text-bw-text-muted">Not released</span>
       ) : (
         <span className="inline-flex items-center gap-1">
-          {compact ? null : <span className="text-xs text-ink-3">production now</span>}
+          {compact ? null : <span className="text-xs text-bw-text-muted">production now</span>}
           <RolloutBadge stage={s.production} />
         </span>
       )}

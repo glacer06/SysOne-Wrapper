@@ -1,12 +1,12 @@
 import Link from "next/link";
 
 import { Facts, JsonBlock } from "~/components/observe/bits";
-import { choicesOf, confidenceOf, decisionsOf, DecisionsTable } from "~/components/observe/decisions";
+import { choicesOf, confidenceOf, decisionsOf, DecisionsTable, scoreOf } from "~/components/observe/decisions";
 import { param, type SearchParams } from "~/components/observe/filters";
-import { ACTION_LABEL, formatUtc, formatValue, REASON_LABEL, REVIEW_STATUS_LABEL } from "~/components/format";
+import { ACTION_LABEL, formatUsd, formatUtc, formatValue, REASON_LABEL, REVIEW_STATUS_LABEL, reviewStateLine } from "~/components/format";
 import { loadSets, SetLabel } from "~/components/observe/sets";
 import { OperationFailed } from "~/components/shell/operation-failed";
-import { Badge, BandBadge, Card, InlineAlert, PageHeader, RolloutBadge } from "~/components/ui";
+import { Badge, Card, DecisionCard, InlineAlert, PageHeader, RolloutBadge } from "~/components/ui";
 import { consoleOperation } from "~/server/console-operation";
 import type { RunDetail } from "~/server/operations/views";
 
@@ -57,13 +57,17 @@ export default async function ReviewItemPage({ params, searchParams }: { params:
         crumbs={crumbs}
       />
       <div className="flex flex-col gap-6">
-        <Card title="Is this answer right?" description={REASON_LABEL[item.reason]}>
-          <div className="mb-5 flex flex-wrap items-center gap-3">
-            <span className="text-3xl font-semibold text-ink">{formatValue(suggested)}</span>
-            <BandBadge band={item.band} />
-            {conf === null ? null : <span className="font-mono text-xs text-ink-3">{conf}</span>}
-            <Badge tone={item.status === "open" || item.status === "pending_confirmation" ? "info" : "neutral"}>{REVIEW_STATUS_LABEL[item.status]}</Badge>
-          </div>
+        <DecisionCard
+          state={reviewStateLine(item.status)}
+          aside={<Badge tone={item.status === "open" || item.status === "pending_confirmation" ? "info" : "neutral"}>{REVIEW_STATUS_LABEL[item.status]}</Badge>}
+          band={item.band}
+          score={scoreOf(answer)}
+          {...(conf === null ? {} : { bandNote: conf })}
+          why={REASON_LABEL[item.reason]}
+          cost={`${formatUsd(run.systemOneCostMicroUsd)} for the run, saved ${formatUsd(run.savingsMicroUsd)}`}
+        />
+        <Card title="The model answered">
+          <p className="bw-display mb-5 text-[2rem] leading-[1.1] break-words text-bw-text">{formatValue(suggested)}</p>
           {item.status === "open" ? (
             <ResolveForm id={item.id} runId={run.id} suggestedJson={JSON.stringify(suggested)} suggestedLabel={formatValue(suggested)} choices={choices} />
           ) : item.status === "pending_confirmation" ? (
@@ -75,8 +79,8 @@ export default async function ReviewItemPage({ params, searchParams }: { params:
               choices={choices}
             />
           ) : (
-            <p className="text-sm text-ink-2">
-              {item.status === "resolved" ? <>Resolved as <strong className="text-ink">{formatValue(valueOf(item.resolution))}</strong></> : "Dismissed"}
+            <p className="text-sm text-bw-text-muted">
+              {item.status === "resolved" ? <>Resolved as <strong className="text-bw-text">{formatValue(valueOf(item.resolution))}</strong></> : "Dismissed"}
               {item.resolvedAt === null ? null : <> on {formatUtc(item.resolvedAt)}</>}.
             </p>
           )}
@@ -84,7 +88,7 @@ export default async function ReviewItemPage({ params, searchParams }: { params:
 
         <Card title="What the run saw" description="The state is what System One answered on.">
           {run.state === null ? (
-            <p className="text-sm text-ink-2">Not stored. This set keeps a hash of the state only, so judge from the answers and the other decisions below.</p>
+            <p className="text-sm text-bw-text-muted">Not stored. This set keeps a hash of the state only, so judge from the answers and the other decisions below.</p>
           ) : (
             <JsonBlock value={run.state} label="Run state" />
           )}

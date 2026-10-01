@@ -59,7 +59,7 @@ export function VersionHistory({ setRef, versions, serving, hasDraft }: {
   }
 
   if (versions.length === 0) {
-    return <p className="text-sm text-ink-2">No published versions yet. Publish the draft to create version 1.</p>;
+    return <p className="text-sm text-bw-text-muted">No published versions yet. Publish the draft to create version 1.</p>;
   }
 
   return (
@@ -86,17 +86,17 @@ export function VersionHistory({ setRef, versions, serving, hasDraft }: {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-mono">v{v.version}</span>
                     {channels.map((c) => (
-                      <Badge key={c.channel} tone="signal">
+                      <Badge key={c.channel} tone="brand">
                         {c.channel === "production" ? "Production" : "Staging"}
                       </Badge>
                     ))}
                   </div>
                 </Td>
-                <Td className="max-w-md">{v.changelog ?? <span className="text-ink-3">No changelog</span>}</Td>
+                <Td className="max-w-md">{v.changelog ?? <span className="text-bw-text-muted">No changelog</span>}</Td>
                 <Td className="font-mono text-xs whitespace-nowrap">{v.model}</Td>
-                <Td className="whitespace-nowrap text-ink-2">
+                <Td className="whitespace-nowrap text-bw-text-muted">
                   {v.publishedAt === null ? "" : formatTime(v.publishedAt)}
-                  {v.byAgent ? <span className="ml-2 text-xs text-ink-3">by an agent</span> : null}
+                  {v.byAgent ? <span className="ml-2 text-xs text-bw-text-muted">by an agent</span> : null}
                 </Td>
                 <Td className="text-right">
                   {previous === undefined ? null : (
@@ -111,8 +111,8 @@ export function VersionHistory({ setRef, versions, serving, hasDraft }: {
         </tbody>
       </Table>
 
-      <div className="flex flex-col gap-3 rounded-md border border-rule px-4 py-4">
-        <h3 className="text-sm font-semibold text-ink">Compare</h3>
+      <div className="flex flex-col gap-3 rounded-md border border-bw-border px-4 py-4">
+        <h3 className="text-sm font-semibold text-bw-text">Compare</h3>
         <div className="grid gap-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
           <Select label="From" options={options} value={from} onChange={(e) => setFrom(e.target.value as Side)} disabled={busy} />
           <Select label="To" options={options} value={to} onChange={(e) => setTo(e.target.value as Side)} disabled={busy} />

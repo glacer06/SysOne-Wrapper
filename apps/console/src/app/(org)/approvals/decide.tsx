@@ -51,7 +51,7 @@ export function DecideButtons({ id, label, warning }: { id: string; label: strin
         onConfirm={() => decide("approved")}
       >
         <p>The request runs now, exactly as the agent sent it, as the agent&apos;s token. The audit log names you as the approver.</p>
-        {warning === null ? null : <p className="text-danger">{warning}</p>}
+        {warning === null ? null : <p className="text-bw-low-text">{warning}</p>}
       </ConfirmDialog>
       <ConfirmDialog
         open={asking === "rejected"}

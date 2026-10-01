@@ -59,7 +59,7 @@ export interface ResetState extends FormState {
 }
 
 export async function resetPasswordAction(_prev: ResetState, form: FormData): Promise<ResetState> {
-  if (text(form, "password") !== text(form, "confirm")) return { error: "The two passwords do not match." };
+  if (text(form, "password") !== text(form, "confirm")) return { error: "The two passwords don't match. Nothing changed. Type the same password in both fields." };
   const res = await resetPassword({ token: text(form, "token"), password: text(form, "password") }, await flowDeps());
   return res.ok ? { done: true } : { error: res.error };
 }

@@ -54,12 +54,12 @@ export default async function SetsPage() {
             {rows.map((s, i) => {
               const last = lastRuns[i] ?? null;
               return (
-                <tr key={s.id} className="hover:bg-paper-sunk">
+                <tr key={s.id} className="hover:bg-bw-surface-sunken">
                   <Td>
-                    <Link href={`/sets/${encodeURIComponent(s.slug)}`} className="font-medium text-ink underline-offset-2 hover:underline">
+                    <Link href={`/sets/${encodeURIComponent(s.slug)}`} className="font-medium text-bw-text underline-offset-2 hover:underline">
                       {s.name}
                     </Link>
-                    <div className="font-mono text-xs text-ink-3">{s.slug}</div>
+                    <div className="font-mono text-xs text-bw-text-muted">{s.slug}</div>
                   </Td>
                   <Td>
                     <ChannelStage channel="production" pointer={s.channels.find((c) => c.channel === "production")} />
@@ -67,10 +67,10 @@ export default async function SetsPage() {
                   <Td>
                     <ChannelStage channel="staging" pointer={s.channels.find((c) => c.channel === "staging")} />
                   </Td>
-                  <Td>{s.draft === null ? <span className="text-ink-3">None</span> : <span className="font-mono tabular-nums">v{s.draft.version}</span>}</Td>
+                  <Td>{s.draft === null ? <span className="text-bw-text-muted">None</span> : <span className="font-mono tabular-nums">v{s.draft.version}</span>}</Td>
                   <Td>
                     {last === null ? (
-                      <span className="text-ink-3">No runs yet</span>
+                      <span className="text-bw-text-muted">No runs yet</span>
                     ) : (
                       <time dateTime={last} title={last}>
                         {formatWhen(last, now)}

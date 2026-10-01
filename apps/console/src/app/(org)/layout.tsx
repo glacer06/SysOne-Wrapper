@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { SideNav } from "~/components/shell/nav";
 import { UserMenu } from "~/components/shell/user-menu";
-import { Wordmark } from "~/components/shell/wordmark";
+import { Lockup, Monogram } from "~/components/shell/wordmark";
 import { ToastProvider } from "~/components/ui";
 import { requireConsole } from "~/server/auth/console";
 
@@ -16,22 +16,31 @@ const ROLE_LABEL: Record<string, string> = { owner: "Owner", admin: "Admin", edi
 export default async function OrgLayout({ children }: { children: ReactNode }) {
   const { org, user, ctx } = await requireConsole();
   const header = (
-    <div className="flex flex-col gap-1">
-      <Wordmark compact />
-      <span className="truncate text-xs text-ink-3" title={org.name}>
+    <div className="flex flex-col gap-3">
+      <Lockup width={168} />
+      <span className="bw-label truncate" title={org.name}>
+        {org.name}
+      </span>
+    </div>
+  );
+  // Below the lockup's 160px minimum the B stands in (DESIGN.md, logo use).
+  const compactHeader = (
+    <div className="flex min-w-0 items-center gap-3">
+      <Monogram height={28} label="Bandwise console" />
+      <span className="truncate text-sm font-semibold text-bw-text" title={org.name}>
         {org.name}
       </span>
     </div>
   );
   return (
     <ToastProvider>
-      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-sm focus:bg-paper-raised focus:px-3 focus:py-2">
+      <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-sm focus:border focus:border-bw-border-strong focus:bg-bw-surface focus:px-3 focus:py-2 focus:text-bw-text">
         Skip to content
       </a>
-      <div className="min-h-dvh bg-paper md:flex">
-        <SideNav header={header} footer={<UserMenu name={user.name} email={user.email} role={ROLE_LABEL[ctx.actor.role] ?? ctx.actor.role} />} />
-        <main id="main" className="min-w-0 flex-1 px-4 py-6 sm:px-8 sm:py-8">
-          <div className="mx-auto max-w-6xl">{children}</div>
+      <div className="min-h-dvh bg-bw-bg md:flex">
+        <SideNav header={header} compactHeader={compactHeader} footer={<UserMenu name={user.name} email={user.email} role={ROLE_LABEL[ctx.actor.role] ?? ctx.actor.role} />} />
+        <main id="main" className="min-w-0 flex-1 px-4 py-6 sm:px-8 sm:py-8 xl:px-12 xl:py-10">
+          <div className="mx-auto max-w-[75rem]">{children}</div>
         </main>
       </div>
     </ToastProvider>

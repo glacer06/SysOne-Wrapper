@@ -62,16 +62,16 @@ export default async function RunsPage({ searchParams }: { searchParams: Promise
             </thead>
             <tbody>
               {page.data.map((r) => (
-                <tr key={r.id} className="hover:bg-paper-sunk">
+                <tr key={r.id} className="hover:bg-bw-surface-sunken">
                   <Td className="whitespace-nowrap">
-                    <Link href={`/runs/${r.id}`} className="text-ink underline underline-offset-2" title={r.createdAt}>
+                    <Link href={`/runs/${r.id}`} className="text-bw-text underline underline-offset-2" title={r.createdAt}>
                       {formatWhen(r.createdAt, now)}
                     </Link>
-                    <span className="ml-2 text-xs text-ink-3">{SOURCE_LABEL[r.source]}</span>
+                    <span className="ml-2 text-xs text-bw-text-muted">{SOURCE_LABEL[r.source]}</span>
                   </Td>
                   <Td>
                     <SetLabel sets={sets} setId={r.setId} compact stage={false} />
-                    <span className="ml-1 text-xs text-ink-3">{r.channel}</span>
+                    <span className="ml-1 text-xs text-bw-text-muted">{r.channel}</span>
                   </Td>
                   <Td>
                     <RolloutBadge stage={r.rollout} />
@@ -88,7 +88,7 @@ export default async function RunsPage({ searchParams }: { searchParams: Promise
               ))}
             </tbody>
           </Table>
-          <div className="mt-4 flex items-center justify-between text-sm text-ink-3">
+          <div className="mt-4 flex items-center justify-between text-sm text-bw-text-muted">
             <span>
               {page.data.length} {page.data.length === 1 ? "run" : "runs"} on this page
             </span>

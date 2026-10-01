@@ -71,7 +71,7 @@ export function TwoFactorForm() {
       <Button type="submit" variant="primary" pending={pending}>
         {pending ? "Checking" : "Continue"}
       </Button>
-      <button type="button" className="self-start text-sm text-ink-2 underline underline-offset-2 hover:text-ink" onClick={() => setBackup(!backup)}>
+      <button type="button" className="-my-1 min-h-10 self-start text-sm font-medium text-bw-brand-text underline underline-offset-4 hover:text-bw-text" onClick={() => setBackup(!backup)}>
         {backup ? "Use the authenticator app instead" : "Use a backup code instead"}
       </button>
     </form>
@@ -88,7 +88,7 @@ export function SetupTwoFactor() {
   if (enrollment === undefined) {
     return (
       <form action={start} className="flex flex-col gap-4" noValidate>
-        <p className="text-sm text-ink-2">
+        <p className="text-sm text-bw-text-muted">
           Every console account needs two-factor sign-in. Enter your password and the enrollment code that came with your reset link.
         </p>
         {started.error ? <InlineAlert kind="error">{started.error}</InlineAlert> : null}
@@ -111,24 +111,24 @@ export function SetupTwoFactor() {
 
   return (
     <div className="flex flex-col gap-5">
-      <ol className="flex list-decimal flex-col gap-4 pl-5 text-sm text-ink-2">
+      <ol className="flex list-decimal flex-col gap-4 pl-5 text-sm text-bw-text-muted">
         <li>
           Scan this code with an authenticator app such as 1Password or Google Authenticator.
           <div
-            className="mt-3 w-44 rounded-sm border border-rule bg-white p-2 [&_svg]:h-auto [&_svg]:w-full"
+            className="mt-3 w-44 rounded-sm border border-bw-border bg-bw-surface p-2 [&_svg]:h-auto [&_svg]:w-full"
             role="img"
             aria-label="QR code for your authenticator app"
             // The SVG comes from the qrcode library on our server, from the otpauth URI.
             dangerouslySetInnerHTML={{ __html: enrollment.qrSvg }}
           />
           <details className="mt-2">
-            <summary className="cursor-pointer text-ink">Cannot scan? Enter this key</summary>
-            <code className="mt-2 block break-all rounded-sm bg-paper-sunk p-2 font-mono text-xs text-ink">{enrollment.secret}</code>
+            <summary className="cursor-pointer text-bw-text">Can't scan it? Enter this key instead</summary>
+            <code className="mt-2 block break-all rounded-sm bg-bw-surface-sunken p-2 font-mono text-xs text-bw-text">{enrollment.secret}</code>
           </details>
         </li>
         <li>
           Save these backup codes somewhere safe. Each one signs you in once if you lose your phone. They are shown only now.
-          <ul className="mt-2 grid grid-cols-2 gap-1 rounded-sm bg-paper-sunk p-3 font-mono text-xs text-ink">
+          <ul className="mt-2 grid grid-cols-2 gap-1 rounded-sm bg-bw-surface-sunken p-3 font-mono text-xs text-bw-text">
             {enrollment.backupCodes.map((c) => (
               <li key={c}>{c}</li>
             ))}
@@ -165,7 +165,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
         <InlineAlert kind="success" title="Password set">
           Sign in with your new password. You will set up two-factor next if you have not yet.
         </InlineAlert>
-        <Link href="/sign-in" className="text-sm font-medium text-ink underline underline-offset-2">
+        <Link href="/sign-in" className="text-sm font-medium text-bw-text underline underline-offset-2">
           Go to sign-in
         </Link>
       </div>

@@ -27,7 +27,7 @@ export default async function ApprovalsPage() {
         </EmptyState>
       ) : (
         <div className="flex flex-col gap-4">
-          <p className="text-sm text-ink-2">
+          <p className="text-sm text-bw-text-muted">
             {items.length} {items.length === 1 ? "request is" : "requests are"} waiting, newest first.
           </p>
           {items.map((item) => (

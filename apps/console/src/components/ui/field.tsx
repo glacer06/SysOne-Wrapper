@@ -2,9 +2,11 @@ import { type InputHTMLAttributes, type ReactNode, type Ref, type SelectHTMLAttr
 
 import { cx } from "./cx";
 
+// DESIGN.md: 40px tall (44 on touch), 1px strong border, 2px focus ring, low color on error.
 const CONTROL =
-  "w-full rounded-sm border border-edge bg-paper-sunk px-3 text-sm text-ink placeholder:text-ink-3 " +
-  "aria-[invalid=true]:border-danger disabled:opacity-60";
+  "w-full rounded-sm border border-bw-border-strong bg-bw-surface px-3 text-base text-bw-text placeholder:text-bw-text-muted sm:text-sm " +
+  "transition-colors duration-(--bw-dur-fast) hover:border-bw-text-muted focus-visible:border-bw-focus " +
+  "aria-[invalid=true]:border-bw-low disabled:cursor-not-allowed disabled:opacity-40";
 
 interface FieldShell {
   label: string;
@@ -16,17 +18,17 @@ interface FieldShell {
 function Shell({ id, label, hint, error, children }: FieldShell & { id: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-medium text-ink">
+      <label htmlFor={id} className="text-sm font-medium text-bw-text">
         {label}
       </label>
       {hint === undefined ? null : (
-        <p id={`${id}-hint`} className="text-xs text-ink-3">
+        <p id={`${id}-hint`} className="text-xs text-bw-text-muted">
           {hint}
         </p>
       )}
       {children}
       {error ? (
-        <p id={`${id}-error`} className="text-xs text-danger">
+        <p id={`${id}-error`} className="text-xs text-bw-low-text">
           {error}
         </p>
       ) : null}
@@ -49,7 +51,7 @@ export function Input({ label, hint, error, className, id: givenId, ...rest }: I
     <Shell id={id} label={label} hint={hint} error={error}>
       <input
         id={id}
-        className={cx(CONTROL, "h-10", className)}
+        className={cx(CONTROL, "h-11 sm:h-10", className)}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy(id, hint, error)}
         {...rest}
@@ -69,7 +71,7 @@ export function Select({ label, hint, error, options, className, id: givenId, ..
     <Shell id={id} label={label} hint={hint} error={error}>
       <select
         id={id}
-        className={cx(CONTROL, "h-10 pr-8", className)}
+        className={cx(CONTROL, "h-11 pr-8 sm:h-10", className)}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy(id, hint, error)}
         {...rest}

@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-import { Facts, JsonBlock, Stat } from "~/components/observe/bits";
-import { DecisionsTable } from "~/components/observe/decisions";
-import { ACTION_LABEL, formatCount, formatLatency, formatUsd, formatUtc, REASON_LABEL, REVIEW_STATUS_LABEL, SOURCE_LABEL, STATUS_LABEL } from "~/components/format";
+import { Facts, JsonBlock } from "~/components/observe/bits";
+import { decisionsOf, DecisionsTable } from "~/components/observe/decisions";
+import { ACTION_LABEL, bandCountLine, formatCount, formatLatency, formatUsd, formatUtc, REASON_LABEL, REVIEW_STATUS_LABEL, runStateLine, SOURCE_LABEL, STATUS_LABEL } from "~/components/format";
 import { loadSets, SetLabel } from "~/components/observe/sets";
 import { OperationFailed } from "~/components/shell/operation-failed";
-import { Badge, BandBadge, Card, InlineAlert, PageHeader, RolloutBadge, Table, Td, Th } from "~/components/ui";
+import { Badge, BandBadge, Card, DecisionCard, InlineAlert, PageHeader, RolloutBadge, Table, Td, Th } from "~/components/ui";
 import { consoleOperation } from "~/server/console-operation";
 import type { RunDetail } from "~/server/operations/views";
 
@@ -46,11 +46,21 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
         </InlineAlert>
       )}
 
-      <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <Stat label="System One cost" value={formatUsd(run.systemOneCostMicroUsd)} hint={`${formatCount(run.inputTokens)} in, ${formatCount(run.outputTokens)} out, ${calls} ${calls === 1 ? "call" : "calls"}`} />
-        <Stat label="Same decisions on an LLM" value={formatUsd(run.counterfactualMicroUsd)} hint="The estimate this run is compared with" />
-        <Stat label="Saved" value={formatUsd(run.savingsMicroUsd)} emphasis />
-      </div>
+      <DecisionCard
+        className="mb-6"
+        state={runStateLine(run.overallAction, run.rollout)}
+        band={run.runBand}
+        bandNote="Run band: the lowest among the counted decisions"
+        why={run.route === null ? bandCountLine(decisionsOf(run.decisions).map(([, d]) => d.band)) : <>Route <span className="font-mono">{run.route}</span>. {bandCountLine(decisionsOf(run.decisions).map(([, d]) => d.band))}</>}
+        cost={
+          <>
+            {formatUsd(run.systemOneCostMicroUsd)} on System One, saved {formatUsd(run.savingsMicroUsd)} against {formatUsd(run.counterfactualMicroUsd)} on an LLM
+            <span className="mt-1 block font-sans text-xs text-bw-text-muted">
+              {formatCount(run.inputTokens)} tokens in, {formatCount(run.outputTokens)} out, {calls} {calls === 1 ? "call" : "calls"}
+            </span>
+          </>
+        }
+      />
 
       <div className="flex flex-col gap-6">
         <Card title="Summary">
@@ -124,7 +134,7 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
                 <tr key={s.id}>
                   <Td className="font-mono text-xs">
                     {s.id}
-                    {s.skipped ? <span className="ml-2 font-sans text-ink-3">skipped</span> : null}
+                    {s.skipped ? <span className="ml-2 font-sans text-bw-text-muted">skipped</span> : null}
                   </Td>
                   <Td numeric>{s.calls.length}</Td>
                   <Td numeric>{formatCount(s.calls.reduce((n, c) => n + c.inputTokens, 0))}</Td>
@@ -135,7 +145,7 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
             </tbody>
           </Table>
           {Object.keys(run.checks).length === 0 ? null : (
-            <p className="mt-3 text-sm text-ink-2">
+            <p className="mt-3 text-sm text-bw-text-muted">
               Checks:{" "}
               {Object.entries(run.checks).map(([k, v]) => (
                 <span key={k} className="mr-3 font-mono text-xs">
@@ -148,15 +158,15 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
 
         <Card title="State" description="The input the run decided on.">
           {run.state === null ? (
-            <p className="text-sm text-ink-2">Not stored. This set keeps a hash of the state only, or the state has passed its retention.</p>
+            <p className="text-sm text-bw-text-muted">Not stored. This set keeps a hash of the state only, or the state has passed its retention.</p>
           ) : (
             <JsonBlock value={run.state} label="Run state" />
           )}
         </Card>
 
         {run.answers === null ? null : (
-          <details className="rounded-md border border-rule bg-paper-raised px-5 py-4">
-            <summary className="cursor-pointer text-sm font-medium text-ink">Raw answers from System One</summary>
+          <details className="rounded-md border border-bw-border bg-bw-surface px-5 py-4">
+            <summary className="cursor-pointer text-sm font-medium text-bw-text">Raw answers from System One</summary>
             <div className="mt-3">
               <JsonBlock value={run.answers} label="Raw answers" />
             </div>

@@ -28,7 +28,7 @@ export function SetHeader({ set }: { set: SetHeaderSet }) {
           </>
         }
       />
-      <div className="mb-4 rounded-md border border-rule bg-paper-raised px-5 py-3">
+      <div className="mb-4 rounded-md border border-bw-border bg-bw-surface px-5 py-3">
         <ChannelStages channels={set.channels} />
       </div>
       <SetTabs slug={set.slug} />

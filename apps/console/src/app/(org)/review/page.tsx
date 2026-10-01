@@ -68,7 +68,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
             </thead>
             <tbody>
               {page.data.map((i) => (
-                <tr key={i.id} className="hover:bg-paper-sunk">
+                <tr key={i.id} className="hover:bg-bw-surface-sunken">
                   <Td className="font-mono text-xs">
                     {i.runId === null ? (
                       i.decisionId
@@ -85,9 +85,9 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
                   <Td>
                     <BandBadge band={i.band} />
                   </Td>
-                  <Td className="text-ink-2">{REASON_LABEL[i.reason]}</Td>
+                  <Td className="text-bw-text-muted">{REASON_LABEL[i.reason]}</Td>
                   <Td className="whitespace-nowrap">{REVIEW_STATUS_LABEL[i.status]}</Td>
-                  <Td className="whitespace-nowrap text-ink-2">{formatWhen(i.createdAt, now)}</Td>
+                  <Td className="whitespace-nowrap text-bw-text-muted">{formatWhen(i.createdAt, now)}</Td>
                 </tr>
               ))}
             </tbody>
@@ -120,7 +120,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
           {done}
         </InlineAlert>
       )}
-      <nav aria-label="Review status" className="mb-4 flex flex-wrap gap-1 border-b border-rule">
+      <nav aria-label="Review status" className="mb-4 flex flex-wrap gap-x-5 border-b border-bw-border">
         {TABS.map((t) => {
           const current = status === t.value || (t.value === undefined && status === undefined);
           return (
@@ -128,7 +128,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
               key={t.label}
               href={hrefWith("/review", sp, { status: t.value, done: undefined })}
               aria-current={current ? "page" : undefined}
-              className={cx("-mb-px border-b-2 px-3 py-2 text-sm", current ? "border-signal font-medium text-ink" : "border-transparent text-ink-2 hover:text-ink")}
+              className={cx("-mb-px border-b-2 px-0.5 py-3 text-sm transition-colors duration-(--bw-dur-fast)", current ? "border-bw-brand font-medium text-bw-text" : "border-transparent text-bw-text-muted hover:text-bw-text")}
             >
               {t.label}
             </Link>

@@ -19,7 +19,7 @@ const BAND_LABEL: Record<Band, string> = { high: "High band", medium: "Medium ba
 
 function Problem({ text }: { text: string | null }) {
   return text === null ? null : (
-    <p role="status" className="text-xs text-danger">
+    <p role="status" className="text-xs text-bw-low-text">
       {text}
     </p>
   );
@@ -98,8 +98,8 @@ export function PolicyForm({ policy, options, onChange, marker, answeredOption =
   const ownBar = policy.type === "choice" && answeredOption !== null && policy.perOption?.[answeredOption] !== undefined;
   return (
     <div className="flex flex-col gap-4">
-      <label className="flex items-center gap-2 text-sm text-ink">
-        <input type="checkbox" checked={policy.gating} onChange={(e) => onChange({ ...policy, gating: e.target.checked })} className="h-4 w-4 accent-[var(--signal)]" />
+      <label className="flex items-center gap-2 text-sm text-bw-text">
+        <input type="checkbox" checked={policy.gating} onChange={(e) => onChange({ ...policy, gating: e.target.checked })} className="h-4 w-4 accent-bw-brand" />
         Gating: this answer decides the run band and the overall action
       </label>
       {policy.type === "noul" ? (
@@ -108,15 +108,15 @@ export function PolicyForm({ policy, options, onChange, marker, answeredOption =
         <ThresholdSliders value={policy.thresholds} marker={ownBar ? null : marker} context={context} onChange={(thresholds) => onChange({ ...policy, thresholds })} />
       )}
       {policy.type === "choice" && options.length > 0 ? (
-        <fieldset className="flex flex-col gap-3 rounded-sm border border-rule p-3">
-          <legend className="px-1 text-sm font-medium text-ink">Stricter bars per option</legend>
-          <p className="text-xs text-ink-3">Turn one on for a risky option that should need more confidence before it acts.</p>
+        <fieldset className="flex flex-col gap-3 rounded-sm border border-bw-border p-3">
+          <legend className="px-1 text-sm font-medium text-bw-text">Stricter bars per option</legend>
+          <p className="text-xs text-bw-text-muted">Turn one on for a risky option that should need more confidence before it acts.</p>
           {options.map((key) => {
             const own = policy.perOption?.[key];
             return (
               <div key={key} className="flex flex-col gap-2">
-                <label className="flex items-center gap-2 text-sm text-ink">
-                  <input type="checkbox" checked={own !== undefined} onChange={(e) => onChange(togglePerOption(policy, key, e.target.checked))} className="h-4 w-4 accent-[var(--signal)]" />
+                <label className="flex items-center gap-2 text-sm text-bw-text">
+                  <input type="checkbox" checked={own !== undefined} onChange={(e) => onChange(togglePerOption(policy, key, e.target.checked))} className="h-4 w-4 accent-bw-brand" />
                   <span className="font-mono">{key}</span>
                 </label>
                 {own === undefined ? null : (
