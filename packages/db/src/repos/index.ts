@@ -607,10 +607,40 @@ export function buildRepositories(opts: RepoOptions) {
     },
     idempotencyKeys: {
       ...idempotencyKeys,
-      async lookup(tx: TenantTx, actorKey: string, key: string) {
-        const where = and(eq(s.idempotencyKeys.actorKey, actorKey), eq(s.idempotencyKeys.key, key));
+      /** The caller's row for a key. With `liveSince`, a row created before it reads as absent. */
+      async lookup(tx: TenantTx, actorKey: string, key: string, liveSince?: Date) {
+        const t = s.idempotencyKeys;
+        const where = and(eq(t.actorKey, actorKey), eq(t.key, key), liveSince === undefined ? undefined : gte(t.createdAt, liveSince));
         const [row] = await idempotencyKeys.findMany(tx, where, 1);
         return row ?? null;
+      },
+      /**
+       * Claim a key for this transaction: insert the row with `responseStatus` 0, or take over a
+       * row created before `liveSince` (an expired key). A live row is left as it is and returned
+       * with `claimed: false`. A concurrent claim of the same key blocks on the unique index until
+       * the other transaction ends, then sees its committed row, or claims the key if it rolled back.
+       */
+      async claim(
+        tx: TenantTx,
+        values: { actorKey: string; key: string; opId: string; requestHash: string; createdAt: Date },
+        liveSince: Date,
+      ): Promise<{ claimed: boolean; row: InferSelectModel<typeof s.idempotencyKeys> }> {
+        const t = s.idempotencyKeys;
+        const fresh = { ...values, orgId: tx.orgId, responseStatus: 0, response: null };
+        const [row] = await drizzleOf(tx)
+          .insert(t)
+          .values(fresh)
+          .onConflictDoUpdate({
+            target: [t.orgId, t.actorKey, t.key],
+            set: { opId: values.opId, requestHash: values.requestHash, responseStatus: 0, response: null, createdAt: values.createdAt },
+            setWhere: lt(t.createdAt, liveSince),
+          })
+          .returning();
+        if (row !== undefined) return { claimed: true, row };
+        const where = and(eq(t.actorKey, values.actorKey), eq(t.key, values.key));
+        const [live] = await idempotencyKeys.findMany(tx, where, 1);
+        if (live === undefined) throw new Error("idempotency key conflict with no row");
+        return { claimed: false, row: live };
       },
     },
     jobs: tenantRepo(s.jobs, opts),

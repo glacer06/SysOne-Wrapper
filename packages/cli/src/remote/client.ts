@@ -1,7 +1,8 @@
 // The HTTP client for /api/v1. It sends `Authorization: Bearer <token>`, an Idempotency-Key on
 // every write, and If-Match when asked. Reads retry 429, retryable 503s and network errors.
-// Writes retry only a 429, with the same key. Every failure comes back as one ApiError in the api.md envelope's shape, so commands
-// print one kind of error. The token is never part of an error.
+// Writes retry 429 and retryable 503s with the same key, never a network error. Every failure
+// comes back as one ApiError in the api.md envelope's shape, so commands print one kind of error.
+// The token is never part of an error.
 
 import type { Remote } from "./credentials.js";
 
@@ -131,12 +132,15 @@ export function createClient(remote: Remote, deps: ClientDeps = {}): ApiClient {
       for (const [k, v] of Object.entries(opts.query ?? {})) if (v !== undefined) url.searchParams.set(k, String(v));
       const headers: Record<string, string> = { authorization: `Bearer ${remote.token}`, accept: "application/json" };
       if (opts.body !== undefined) headers["content-type"] = "application/json";
-      // One key for every attempt. The server does not store keys yet (D2), so a write is retried
-      // only on a 429, which the limiter sends before anything runs. Not on a 503: the server's
-      // catch-all sends 503 for any unexpected error, which can come after a commit.
+      // One key for every attempt. The server stores each write's response under its key in the
+      // write's own transaction, so a retry with the same key after a 503 (which can come after a
+      // commit) replays the committed answer instead of running the write again. A 429 comes
+      // before anything runs. POST /sets/{ref}/run has its own route, which does not store keys
+      // yet, so a run is not retried on a 503.
       if (method !== "GET") headers["idempotency-key"] = newId();
       if (opts.ifMatch !== undefined) headers["if-match"] = quoteEtag(opts.ifMatch);
       const retries = opts.retry === false ? 0 : MAX_RETRIES;
+      const replaysOn503 = method === "GET" || !/^\/sets\/[^/]+\/run$/.test(apiPath);
 
       for (let attempt = 0; ; attempt++) {
         const signal = opts.signal ?? AbortSignal.timeout(deps.timeoutMs ?? DEFAULT_TIMEOUT_MS);
@@ -146,7 +150,8 @@ export function createClient(remote: Remote, deps: ClientDeps = {}): ApiClient {
           res = await doFetch(url.href, { method, headers, signal, redirect: "error", ...(opts.body !== undefined ? { body: JSON.stringify(opts.body) } : {}) });
         } catch (e) {
           if (signal.aborted) return { ok: false, error: clientError("timeout", `${host} did not answer in time`, null, true) };
-          // A write that died on the wire may have landed: a retry could roll back twice.
+          // A write that died on the wire may have landed, and a timeout may have cut it off
+          // mid-flight. Writes are not retried here; the caller checks with a read first.
           if (method === "GET" && attempt < retries) {
             await sleep(300 * 3 ** attempt);
             continue;
@@ -170,7 +175,7 @@ export function createClient(remote: Remote, deps: ClientDeps = {}): ApiClient {
           return { ok: true, status: res.status, body, etag: etag === null ? null : unquoteEtag(etag) };
         }
         const error = toApiError(res.status, parsed ? body : null);
-        const again = res.status === 429 || (method === "GET" && res.status === 503 && (error.retryable || error.code === "http_503"));
+        const again = res.status === 429 || (replaysOn503 && res.status === 503 && (error.retryable || error.code === "http_503"));
         if (again && attempt < retries) {
           await sleep(retryAfterMs(res, attempt));
           continue;

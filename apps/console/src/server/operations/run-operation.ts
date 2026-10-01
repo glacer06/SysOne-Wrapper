@@ -5,8 +5,11 @@
 // row the handler records, and an approved request's result, all in that transaction. Stubbed
 // handlers still end in OperationNotImplementedError, with no database.
 //
-// Not yet (D2 limits): idempotency keys are accepted and not stored, no event rows are written,
-// and the org's agentApprovals setting is read as "required".
+// A mutation sent with an Idempotency-Key claims the key in that same transaction and stores its
+// response there too (./idempotency.ts), so a retry after a commit replays the stored response.
+//
+// Not yet (D2 limits): no event rows are written, and the org's agentApprovals setting is read as
+// "required".
 
 import {
   type ActorType,
@@ -31,10 +34,16 @@ import { approvalInputHash, DEFAULT_CONSOLE_ORIGIN, describeApproval, openApprov
 import { bareEtag } from "../manage/spec-diff";
 import type { AuditRecord, OperationEnv, RegisteredOperation } from "./define";
 import { OperationError } from "./errors";
+import { checkIdempotencyKey, IDEMPOTENCY_TTL_MS, idempotencyActorKey, idempotencyRequestHash, isStoredResponse, type StoredResponse } from "./idempotency";
 import { getOperation, isOperationId, type OperationOutput } from "./registry";
 
 export interface RunOperationOptions {
-  /** From the Idempotency-Key header. Accepted and not stored yet (D2). */
+  /**
+   * From the Idempotency-Key header. On a mutation the key and the response are stored in the
+   * operation's transaction for 24 hours; a retry from the same caller with the same request
+   * replays the response, and the same key with another request is refused. Ignored on reads,
+   * previews and stubs.
+   */
   idempotencyKey?: string;
   /** From the If-Match header. */
   ifMatch?: string;
@@ -69,7 +78,8 @@ export interface OperationDeps {
  * success status, "dryRun" is 200 with the preview, and "approval" is 202 with the approval.
  */
 export type RunOperationResult<K extends OperationId> =
-  | { kind: "ok"; output: OperationOutput<K>; etag?: string }
+  /** `replayed` is set when the output is a stored response for a repeated Idempotency-Key. */
+  | { kind: "ok"; output: OperationOutput<K>; etag?: string; replayed?: true }
   | { kind: "dryRun"; preview: DryRunResult }
   | { kind: "approval"; accepted: ApprovalAccepted };
 
@@ -167,6 +177,7 @@ export async function runOperation<K extends OperationId>(
   if (options.dryRun === true && !call.hasPreview) {
     throw new OperationError("invalid_request", `${id} does not accept dryRun.`);
   }
+  if (options.idempotencyKey !== undefined) checkIdempotencyKey(options.idempotencyKey);
 
   if (!call.implemented) {
     if (options.dryRun === true) return { kind: "dryRun", preview: await call.preview(null) };
@@ -180,6 +191,12 @@ export async function runOperation<K extends OperationId>(
   const ifMatch = options.ifMatch === undefined ? undefined : bareEtag(options.ifMatch);
   const approvalId = options.approvalId ?? null;
   const towardSafety = op.descriptor.towardSafety;
+  // An approved request runs once by its own claim, so it stores no key.
+  const actorKey = idempotencyActorKey(tenant);
+  const idempotency =
+    options.idempotencyKey !== undefined && actorKey !== null && !op.descriptor.readOnly && options.dryRun !== true && approvalId === null
+      ? { actorKey, key: options.idempotencyKey, requestHash: idempotencyRequestHash(id, call.input, ifMatch) }
+      : null;
 
   const state: { authorized: boolean; audit: AuditRecord | null; unchanged: boolean; etag?: string; approvals: string[] } = {
     authorized: false,
@@ -190,6 +207,26 @@ export async function runOperation<K extends OperationId>(
 
   const result = await deps.db.withTenant(tenant, async (tx): Promise<RunOperationResult<K>> => {
     if (approvalId !== null) await checkApproval(tx, tenant, id, call.input, ifMatch, approvalId);
+
+    // 5. Idempotency: claim the key, or replay what a committed call with it answered.
+    let claimedKeyId: string | null = null;
+    if (idempotency !== null) {
+      const { claimed, row } = await repos.idempotencyKeys.claim(
+        tx,
+        { actorKey: idempotency.actorKey, key: idempotency.key, opId: id, requestHash: idempotency.requestHash, createdAt: now },
+        new Date(now.getTime() - IDEMPOTENCY_TTL_MS),
+      );
+      if (!claimed) {
+        if (row.requestHash !== idempotency.requestHash) {
+          throw new OperationError("idempotency_key_reused", "This Idempotency-Key was already used for a different request. Send a new key.");
+        }
+        if (!isStoredResponse(row.response)) throw new Error("the stored idempotent response has no body");
+        const replay: RunOperationResult<K> = { kind: "ok", output: row.response.body as OperationOutput<K>, replayed: true };
+        if (row.response.etag !== undefined) replay.etag = row.response.etag;
+        return replay;
+      }
+      claimedKeyId = row.id;
+    }
 
     const env: OperationEnv = {
       ctx: tenant,
@@ -241,6 +278,9 @@ export async function runOperation<K extends OperationId>(
         const created = opened.created;
         await writeAudit(tx, tenant, id, { targetType: "approval_request", targetId: created.id, diff: { status: "pending", reason: created.reason } }, created.id);
       }
+      // A 202 is not stored under the key: a retry reaches the gate again, which returns the same
+      // request with its current status (step 4 comes before step 5).
+      if (claimedKeyId !== null) await repos.idempotencyKeys.delete(tx, claimedKeyId);
       return { kind: "approval", accepted: opened.accepted };
     }
     if (!state.authorized) throw new Error(`${id} handler did not call authorize`);
@@ -252,11 +292,19 @@ export async function runOperation<K extends OperationId>(
     if (approvalId !== null) await repos.approvalRequests.update(tx, approvalId, { result: { ok: true, response: output } });
     const ok: RunOperationResult<K> = { kind: "ok", output: output as OperationOutput<K> };
     if (state.etag !== undefined) ok.etag = state.etag;
+
+    // 10. The stored response, in the same transaction as the write. approval.decide stores the
+    // decision as committed here, before the approved request runs after commit.
+    if (claimedKeyId !== null) {
+      const stored: StoredResponse = { body: output };
+      if (state.etag !== undefined) stored.etag = state.etag;
+      await repos.idempotencyKeys.update(tx, claimedKeyId, { responseStatus: op.successStatus, response: stored });
+    }
     return ok;
   });
 
   // After commit: run what a person just approved, then answer with the request as it ended.
-  if (result.kind === "ok" && state.approvals.length > 0) {
+  if (result.kind === "ok" && result.replayed !== true && state.approvals.length > 0) {
     let view: unknown = result.output;
     for (const approved of state.approvals) view = await executeApproval(tenant, approved, deps);
     return { kind: "ok", output: view as OperationOutput<K> };
