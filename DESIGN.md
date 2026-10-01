@@ -2,11 +2,11 @@
 
 Read this before building any Bandwise UI, doc or marketing page. It is the visual spec for every surface: www.bandwise.dev (`apps/web`), the console on app.bandwise.dev (`apps/console`), docs.bandwise.dev (`apps/docs`), plugin listings and CLI output.
 
-Source: the brand kit v1 that PJ delivered on 2026-10-01, locked in by Nick the same day (ADR-022). Files:
+Source: the brand kit v1 that PJ delivered on 2026-10-01, locked in by Nick the same day (ADR-022), updated to v1.2 the same day (`brand/CHANGES.md`). Files:
 
 - Tokens: `brand/tokens/bandwise-tokens.css` (CSS variables) and `brand/tokens/bandwise-tokens.json` (DTCG).
 - Reference components: `brand/tokens/bandwise-components.css`.
-- Marks, lockups, monogram: `brand/marks/`. Icons and favicons: `brand/icons/`. Social images: `brand/social/`.
+- Marks, lockups, monogram: `brand/marks/`. Layered ant and load files for motion: `brand/layers/`. Icons and favicons: `brand/icons/`. Social images: `brand/social/`.
 - Motion concept: `brand/bandwise-motion-demo.html`. Full visual guide: `bandwise-brand-guidelines-v1.pdf` (26 pages), kept in the Drive folder "Bandwise brand kit v1" (https://drive.google.com/drive/folders/1Wr7Q8eotXDFfNU-5sj0-yqeQ9QVyfPsN), not in git.
 - Voice: `BRAND-VOICE.md`. Strategy and principles: `PRODUCT.md`. Gates: `DESIGN-STANDARDS.md`.
 
@@ -30,11 +30,13 @@ Personality: calm, candid, street-smart. It should feel like a tool crib, with s
    - Brand text on light is Deep Teal #0B7060.
 4. **Bands are always labeled.** Color is never the only signal: show the badge text (HIGH, MEDIUM or LOW) plus the number.
 5. **Marks are supplied files.**
-   - Never redraw, recolor or regenerate the ant or the B.
-   - Use the SVGs in `brand/marks/` and `brand/icons/`.
+   - Never redraw, recolor or regenerate the ant.
+   - Use the SVGs in `brand/marks/` and `brand/icons/`, and the split ant and load files in `brand/layers/` for motion.
+   - The faceted B may be used as a graphic: see "The faceted B as a graphic" below.
 6. **Accessibility floor.**
    - Every text pair passes WCAG 2.2 AA.
-   - Focus ring is 2px with a 2px offset, on every interactive element.
+   - Focus ring is 2px with a 2px offset, on every interactive element. Chamfered buttons and badges sit in a `.bw-focus-poly` wrapper so the ring follows the chamfer.
+   - Control outlines (inputs, secondary buttons) use `--bw-border-control`, never `--bw-border-strong`.
 
 ## Color
 
@@ -44,15 +46,16 @@ Personality: calm, candid, street-smart. It should feel like a tool crib, with s
 | surface | #FFFFFF | #131D22 |
 | text | #0D1417 | #F2F5F4 |
 | text-muted | #5B6B70 | #8A9A9F |
-| border | #D9E1E1 | #2A3A41 |
+| border (hairlines, table rules) | #D9E1E1 | #2A3A41 |
+| border-control (inputs, secondary buttons) | #7E8E93 | #66777C |
 | brand (fill) | #12A38A | #4FD1B5 |
 | brand-text | #0B7060 | #4FD1B5 |
 | high | #12A38A | #4FD1B5 |
-| medium | #8B7CF6 (text #5B4BD6) | #8B7CF6 |
+| medium | #8B7CF6 (text #5B4BD6) | #8B7CF6 (text #A498F9) |
 | low | #D92D4A (text #C4203D) | #FF6B83 |
 | focus | #5B4BD6 | #4FD1B5 |
 
-Contrast was checked on 2026-10-01. All 21 text pairs in both themes pass AA. The lowest are 4.70:1 (low text on low background, light) and 4.75:1 (white on the light danger button).
+Contrast was checked on 2026-10-01. All 21 text pairs in both themes pass AA. The lowest are 4.70:1 (low text on low background, light) and 4.75:1 (white on the light danger button). v1.2 fixed the dark Medium badge on a card (now 5.53:1) and gave control outlines their own 3:1 token.
 
 Keep violet and red under 10% of any screen.
 
@@ -83,7 +86,7 @@ The kit themes through `data-theme`. Apps also follow the system setting when th
 
 - **Spacing:** 4px base, with steps 4, 8, 12, 16, 24, 32, 48, 64 and 96.
 - **Radius:** 0, 2, 4 or 8. Pills are only for chips and toggles.
-- **Surfaces:** flat, with 1px hairlines. Shadows only on overlays.
+- **Surfaces:** flat, with 1px hairlines. Shadows only on overlays (dialogs, popovers, toasts), using `--bw-shadow-overlay`.
 - **Chamfer, the signature.** Primary buttons, decision cards and badges have their top-right and bottom-left corners cut at 45 degrees. The cut is 8px, or 6px on badges, and echoes the B. Use one chamfered element per region.
 - **Grid:** 12 columns, 24px gutters, 1200px max content width.
 - **Breakpoints:** 640, 960 and 1280.
@@ -102,8 +105,8 @@ Reference CSS is in `brand/tokens/bandwise-components.css`. The apps rebuild the
   States are default, hover, active (moves 1px down), focus, disabled (40% opacity) and loading. In the loading state the label stays and the trail motif replaces the spinner.
 - **Input.** 40px tall, 1px strong border, 2px focus ring. The error state uses the low color plus help text in plain words.
 - **Band badge.** Mono 11px caps on a tinted band background, with a square dot. Always reads High, Medium or Low, usually with the score.
-- **Decision card.** A title (what happened, in one sentence), then the rows BAND, WHY and COST, separated by hairlines. The order is fixed: state, band, why, cost.
-- **Confidence ruler.** A 0 to 1 scale with red, violet and teal segments at the set's thresholds, and a 2px marker at the score.
+- **Decision card.** Chamfered, in a `.bw-decision-wrap` wrapper. A title (what happened, in one sentence), then the rows BAND, WHY and COST, separated by hairlines. The order is fixed: state, band, why, cost.
+- **Confidence ruler.** A 0 to 1 scale with red, violet and teal segments at the set's thresholds, and a 2px marker at the score with a 1px page-colored halo on each side, so it reads on any segment.
 - **Alert.** A 3px band-colored rule on the left, a tinted background and a bold first phrase.
 - **Table, tabs, code block, tooltip.** See the CSS. Any numeric column is mono.
 - **Trail divider.** `.bw-trail` is a dotted 3px line. For progress, trail dots grow toward one teal node.
@@ -116,7 +119,8 @@ Reference CSS is in `brand/tokens/bandwise-components.css`. The apps rebuild the
   - `bandwise-mark-C-*` is Scout, for square and compact spaces;
   - `bandwise-b-monogram-*` is the B, for the favicon and small sizes;
   - lockups come horizontal and stacked, each with A or C.
-- **Wordmark.** In logo art the wordmark is lowercase "bandwise" in Archivo Expanded 800. It always sits with the ant (A or C). There is no standalone wordmark and no faceted-B wordmark.
+- **Wordmark.** In logo art the wordmark is lowercase "bandwise" in Archivo Expanded 800, and in the lockup files it sits with the ant (A or C).
+- **Headers use the typed wordmark** (Nick, 2026-10-01). Site and app headers set "bandwise" as live text in Archivo, font-stretch 125%, weight 800, tracking -0.02em, with no ant beside it. At header size the lockup reads small and cramped. The ant goes where it has room: heroes, footers, sign-in, empty states and brand moments.
 - **Clear space:** half the height of the B block.
 - **Minimum sizes:**
   - horizontal lockup 160px wide;
@@ -126,13 +130,27 @@ Reference CSS is in `brand/tokens/bandwise-components.css`. The apps rebuild the
   - the B 16px.
 
   Below those sizes, use the B.
-- **Don't:** stretch, rotate, recolor, add a shadow, fade, crop or blur the marks. Don't place them on busy photos or warm backgrounds.
+- **Don't:** stretch, rotate, recolor, add a shadow, fade, crop or blur the marks. Don't place them on busy photos or warm backgrounds. The one exception is the faceted B used as a graphic, described below.
+
+## The faceted B as a graphic
+
+Nick, 2026-10-01: "We can be more creative with how the faceted B is used." The B monogram may be:
+
+- drawn as a wireframe from its supplied path data, with `fill="none"` and a dotted or dashed trail stroke;
+- scaled far past its normal size, cropped at the edge of a section, and set faint behind content;
+- used as the centerpiece of a brand moment: a large lockup over the B wireframe, with corner brackets and a mono receipt line.
+
+Limits:
+- Never change the B's path geometry, and never add facets.
+- When shown filled, the B keeps its supplied colors.
+- Every text pair on top of it still passes AA.
+- The ant marks are never redrawn. This freedom is for the B only.
 
 ## Motion
 
 Motion is purposeful, never constant. When a decision resolves:
 
-1. The ant walks the ruler (1400ms, `--bw-ease-walk`) and stops at the score.
+1. The ant walks the ruler (1400ms, `--bw-ease-walk`) and stops at the score. Use the split files in `brand/layers/`, so the ant and its load move separately.
 2. The band lights up.
 3. The B sets down with one small overshoot (480ms, `--bw-ease-settle`).
 4. The score and the cost fade in.
@@ -161,7 +179,7 @@ Do:
 - Put the cost in exact digits.
 - Use one chamfered element per region.
 - Draw thresholds from the set's spec.
-- Use supplied mark files at or above their minimum size.
+- Use supplied mark files at or above their minimum size, and the typed wordmark in headers.
 
 Don't:
 
@@ -170,6 +188,6 @@ Don't:
 - Put white text on teal.
 - Use color as the only band signal.
 - Hard-code 0.55 or 0.80.
-- Redraw the ant.
+- Redraw the ant, or change the B's paths.
 - Animate idly.
 - Use gradient text, cards inside cards, or a rounded-square icon tile above every heading.

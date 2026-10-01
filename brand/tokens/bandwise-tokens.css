@@ -10,6 +10,7 @@
   --bw-ink-700: #2A3A41;
   --bw-slate-600: #5B6B70;
   --bw-slate-400: #8A9A9F;
+  --bw-slate-500: #7E8E93;  /* control outlines, 3.4:1 on white */
   --bw-slate-300: #B7C3C5;
   --bw-slate-200: #D9E1E1;
   --bw-slate-100: #E8EEED;
@@ -24,6 +25,7 @@
   /* ---- primitives: violet (the MEDIUM band) ---- */
   --bw-violet-600: #5B4BD6;
   --bw-violet-400: #8B7CF6;
+  --bw-violet-300: #A498F9;
   --bw-violet-100: #E7E4FD;
   /* ---- primitives: red (the LOW band, errors; cool crimson, never orange) ---- */
   --bw-red-600: #C4203D;
@@ -73,7 +75,8 @@
   --bw-surface: var(--bw-white-0);
   --bw-surface-sunken: var(--bw-slate-100);
   --bw-border: var(--bw-slate-200);
-  --bw-border-strong: var(--bw-slate-300);
+  --bw-border-strong: var(--bw-slate-300);   /* hairlines and table rules only */
+  --bw-border-control: var(--bw-slate-500);  /* input and secondary button outlines, 3:1 */
   --bw-text: var(--bw-ink-950);
   --bw-text-muted: var(--bw-slate-600);
   --bw-brand: var(--bw-teal-500);            /* fills and graphics only, 2.9:1 on white */
@@ -84,6 +87,7 @@
   --bw-low: var(--bw-red-500);     --bw-low-text: var(--bw-red-600);     --bw-low-bg: var(--bw-red-100);
   --bw-focus: var(--bw-violet-600);
   --bw-overlay: rgba(13, 20, 23, 0.56);
+  --bw-shadow-overlay: 0 8px 24px rgba(13, 20, 23, 0.16), 0 1px 3px rgba(13, 20, 23, 0.12);  /* dialogs, popovers, toasts only */
 }
 /* ---- semantic layer: DARK ---- */
 [data-theme="dark"] {
@@ -91,17 +95,19 @@
   --bw-surface: var(--bw-ink-900);
   --bw-surface-sunken: #0A1013;
   --bw-border: var(--bw-ink-700);
-  --bw-border-strong: #3B4D55;
+  --bw-border-strong: #3B4D55;   /* hairlines and table rules only */
+  --bw-border-control: #66777C;  /* input and secondary button outlines, 3:1 */
   --bw-text: var(--bw-white-50);
   --bw-text-muted: var(--bw-slate-400);
   --bw-brand: var(--bw-teal-300);
   --bw-brand-text: var(--bw-teal-300);
   --bw-on-brand: var(--bw-ink-950);
   --bw-high: var(--bw-teal-300);   --bw-high-text: var(--bw-teal-300);   --bw-high-bg: rgba(79, 209, 181, 0.14);
-  --bw-medium: var(--bw-violet-400); --bw-medium-text: var(--bw-violet-400); --bw-medium-bg: rgba(139, 124, 246, 0.16);
+  --bw-medium: var(--bw-violet-400); --bw-medium-text: var(--bw-violet-300); --bw-medium-bg: rgba(139, 124, 246, 0.16);
   --bw-low: var(--bw-red-300);     --bw-low-text: var(--bw-red-300);     --bw-low-bg: rgba(255, 107, 131, 0.14);
   --bw-focus: var(--bw-teal-300);
   --bw-overlay: rgba(0, 0, 0, 0.64);
+  --bw-shadow-overlay: 0 8px 24px rgba(0, 0, 0, 0.56), 0 1px 3px rgba(0, 0, 0, 0.48);  /* dialogs, popovers, toasts only */
 }
 @media (prefers-reduced-motion: reduce) {
   :root { --bw-dur-fast: 0ms; --bw-dur-base: 0ms; --bw-dur-slow: 0ms; --bw-dur-walk: 0ms; }

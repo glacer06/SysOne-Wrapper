@@ -1,6 +1,6 @@
 # brand
 
-The Bandwise brand kit v1 (ADR-022). The written spec is `DESIGN.md` and `BRAND-VOICE.md` at the repo root. This folder holds the files they point to.
+The Bandwise brand kit v1.2 (ADR-022; changes in `CHANGES.md`). The written spec is `DESIGN.md` and `BRAND-VOICE.md` at the repo root. This folder holds the files they point to.
 
 | Path | What |
 |---|---|
@@ -9,6 +9,7 @@ The Bandwise brand kit v1 (ADR-022). The written spec is `DESIGN.md` and `BRAND-
 | `tokens/bandwise-components.css` | Reference CSS for the button, input, band badge, decision card, confidence ruler, table, tabs, alert, code block, tooltip and trail divider |
 | `marks/` | `mark-A` (Ascent, primary), `mark-C` (Scout, compact), the `b-monogram`, and the horizontal and stacked lockups. Each comes in dark and light, as SVG and PNG |
 | `icons/` | App icons, avatars, favicons (`favicon.svg`, `favicon.ico`, 16 to 512px PNG) and `apple-touch-icon-180.png` |
+| `layers/` | Marks A and C split into ant and load SVGs (light and dark), for the signature motion. Paths unchanged |
 | `social/` | Open Graph images (dark and light) and a header image |
 | `bandwise-motion-demo.html` | The signature motion concept: the ant walks the ruler and sets the B down at the score |
 

@@ -15,3 +15,9 @@ Mistakes already corrected in this project. Read at the start of a session so th
 - **2026-09-30: The kit export scan fails on internal names.** People's names and PR numbers must stay out of `packages/cli` and `packages/core` source.
 - **2026-09-30: Drizzle numbers migrations itself.** After generating, check the number, the journal tag and the snapshot file. They must follow the last applied migration.
 - **2026-10-01: Gmail rewrites links in sent mail** into google.com/url wrappers, which breaks copied commands. Send commands as plain text without links.
+
+## Brand kit v1.2 (2026-10-01)
+
+- **Control outlines use `--bw-border-control`.** `--bw-border-strong` is for hairlines and table rules only. It is under 3:1 on surfaces.
+- **Chamfered buttons, badges and decision cards need their wrapper.** Use `.bw-focus-poly` or `.bw-decision-wrap`, so the focus ring follows the chamfer. A plain `outline` is clipped by `clip-path`.
+- **Headers use the typed wordmark, not the lockup image.** The lockup at header size reads small and awkward (Nick).
