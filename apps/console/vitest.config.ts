@@ -9,4 +9,13 @@ export default defineBandwiseVitestConfig({
       "~": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
+  test: {
+    server: {
+      deps: {
+        // The auth library loads this package's ESM build, which uses directory imports that
+        // plain Node refuses. Vite resolves them when it transforms the package itself.
+        inline: [/better-auth/, /@opentelemetry\/semantic-conventions/],
+      },
+    },
+  },
 });

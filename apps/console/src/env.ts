@@ -20,8 +20,16 @@ export const serverEnvShape = {
   AI_GATEWAY_API_KEY: z.string().min(1).optional(),
   // Postgres connection string. The app role must not bypass RLS.
   DATABASE_URL: z.url(),
-  // Session signing secret for the auth library (ADR-002).
+  // Session signing secret for the auth library (ADR-002). It also encrypts TOTP secrets and
+  // backup codes, so changing it signs everyone out and breaks every two-factor setup.
   AUTH_SECRET: z.string().min(32),
+  // The console origin the auth library builds links and checks origins against, for example
+  // https://app.bandwise.dev. Optional so the early-access route runs without it; sign-in refuses
+  // to start when it is unset. Cookies are Secure when it starts with https://.
+  BETTER_AUTH_URL: z.url().optional(),
+  // Optional extra gate on console sign-in (D3): a comma-separated list of emails. When set, only
+  // these people can hold a console session, and only while they are members of the internal org.
+  BANDWISE_CONSOLE_EMAILS: z.string().optional(),
   // Key encryption key for the tenant key vault (ADR-003). Optional until the vault is wired in
   // Phase 2: kekFromEnv throws when it is unset, so nothing can store a key without it. The thin
   // pre-Phase 2 deploy of app.bandwise.dev (ADR-018) runs without it.

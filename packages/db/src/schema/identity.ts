@@ -91,6 +91,11 @@ export const twoFactors = pgTable(
     userId: uuid()
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    // Better Auth 1.7 two-factor plugin (migration 0006). verified stays false until the first
+    // TOTP code is checked; the other two lock the account after repeated failed codes.
+    verified: boolean().notNull().default(true),
+    failedVerificationCount: integer().notNull().default(0),
+    lockedUntil: ts(),
   },
   (t) => [index("two_factors_user_id_idx").on(t.userId)],
 );
