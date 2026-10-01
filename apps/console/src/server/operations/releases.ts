@@ -12,6 +12,8 @@ import {
 } from "@bandwise/core";
 import { z } from "zod";
 
+import { changeRollout, getRollout, previewPublish, previewRollback, previewRollout, publish, rollback } from "../manage/releases";
+import { diffVersions, getVersion, listVersions } from "../manage/sets";
 import { defineOperation, operationGroup, placeholderInput, placeholderOutput } from "./define";
 import {
   Reason,
@@ -19,10 +21,12 @@ import {
   VersionNumber,
   VersionSide,
   listInput,
+  listOutput,
   placeholderListOutput,
   productionReleaseRisk,
   rolloutChangeRisk,
 } from "./schemas";
+import { RollbackOutput, RolloutChangeOutput, RolloutView, VersionGetOutput, VersionSummary } from "./views";
 
 const WithReason = z.strictObject({ reason: Reason });
 
@@ -40,15 +44,15 @@ export const releaseOperations = operationGroup(
   defineOperation("version.list", {
     summary: "List a set's versions.",
     input: listInput({ ref: SetRef }),
-    // shape: Phase 3, owner Platform / Tenancy
-    output: placeholderListOutput(),
+    output: listOutput(VersionSummary),
+    handler: listVersions,
   }),
 
   defineOperation("version.get", {
     summary: "Read one version: the full spec for sessions and agent tokens, the manifest for app tokens.",
     input: z.strictObject({ ref: SetRef, n: VersionNumber }),
-    // shape: Phase 3, owner Platform / Tenancy
-    output: placeholderOutput(),
+    output: VersionGetOutput,
+    handler: getVersion,
   }),
 
   defineOperation("version.diff", {
@@ -56,6 +60,7 @@ export const releaseOperations = operationGroup(
     input: z.strictObject({ ref: SetRef, from: VersionSide, to: VersionSide }),
     output: SpecDiff,
     mcp: "diff_versions",
+    handler: diffVersions,
   }),
 
   defineOperation("set.publish", {
@@ -84,6 +89,8 @@ export const releaseOperations = operationGroup(
     dryRun: true,
     mcp: "publish",
     emits: ["set.published", "interface.breaking_published", "experiment.started"],
+    handler: publish,
+    preview: previewPublish,
   }),
 
   defineOperation("channel.rollback", {
@@ -93,12 +100,13 @@ export const releaseOperations = operationGroup(
       channel: PointerChannel,
       toVersion: z.number().int().positive().optional(),
     }),
-    // shape: Phase 3, owner Platform / Tenancy
-    output: placeholderOutput(),
+    output: RollbackOutput,
     scope: (input) => releaseScope(input.channel),
     dryRun: true,
     mcp: "rollback",
     emits: ["release.rolled_back"],
+    handler: rollback,
+    preview: previewRollback,
   }),
 
   defineOperation("channel.promote", {
@@ -128,22 +136,23 @@ export const releaseOperations = operationGroup(
   defineOperation("rollout.get", {
     summary: "Read a channel's rollout stage, next-stage gates and auto-demote status.",
     input: z.strictObject({ ref: SetRef, channel: PointerChannel }),
-    // shape: Phase 3, owner Platform / Tenancy
-    output: placeholderOutput(),
+    output: RolloutView,
     mcp: "get_rollout_gates",
+    handler: getRollout,
   }),
 
   defineOperation("rollout.change", {
     summary: "Move a channel to another rollout stage. Pausing is never gated.",
     input: z.strictObject({ ref: SetRef, channel: PointerChannel, stage: RolloutStage, reason: Reason }),
-    // shape: Phase 3, owner Platform / Tenancy
-    output: placeholderOutput(),
+    output: RolloutChangeOutput,
     scope: (input) => releaseScope(input.channel),
     // The target channel's own current stage decides, so staging follows the same rule as production.
     risk: (_ctx, input, resource) => rolloutChangeRisk(resource.stages[input.channel], input.stage),
     dryRun: true,
     mcp: "change_rollout",
     emits: ["rollout.changed"],
+    handler: changeRollout,
+    preview: previewRollout,
   }),
 
   // Experiments (Phase 3b)

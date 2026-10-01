@@ -13,8 +13,10 @@ import {
 } from "@bandwise/core";
 import { z } from "zod";
 
+import { createSet, getDraft, getSet, listSets, updateDraft, validateDraft } from "../manage/sets";
 import { defineOperation, operationGroup, placeholderInput, placeholderOutput } from "./define";
 import { SetRef, listInput, listOutput, placeholderListOutput, storageModeChangeRisk } from "./schemas";
+import { SetView } from "./views";
 
 /** One seeded template (definition-studio.md): enough for an agent to find a fromTemplate id. */
 export const TemplateSummary = z.object({
@@ -78,9 +80,9 @@ export const setOperations = operationGroup(
   defineOperation("set.list", {
     summary: "List question sets visible to the caller.",
     input: listInput({}),
-    // shape: Phase 3, owner Platform / Tenancy
-    output: placeholderListOutput(),
+    output: listOutput(SetView),
     mcp: "list_sets",
+    handler: listSets,
   }),
 
   defineOperation("set.create", {
@@ -94,17 +96,17 @@ export const setOperations = operationGroup(
       /** slug@n of another set in the org. */
       fromVersion: z.string().min(1).optional(),
     }),
-    // shape: Phase 3, owner Platform / Tenancy
-    output: placeholderOutput(),
+    output: SetView,
     mcp: "create_set",
+    handler: createSet,
   }),
 
   defineOperation("set.get", {
     summary: "Read a set with its channel pointers, rollout stages, experiments and live interface major.",
     input: z.strictObject({ ref: SetRef }),
-    // shape: Phase 3, owner Platform / Tenancy
-    output: placeholderOutput(),
+    output: SetView,
     mcp: "get_set",
+    handler: getSet,
   }),
 
   defineOperation("set.update", {
@@ -145,6 +147,7 @@ export const setOperations = operationGroup(
     input: z.strictObject({ ref: SetRef }),
     output: QuestionSetSpec,
     mcp: "get_draft",
+    handler: getDraft,
   }),
 
   defineOperation("draft.update", {
@@ -154,6 +157,7 @@ export const setOperations = operationGroup(
     body: { key: "spec" },
     ifMatch: "required",
     mcp: "update_draft",
+    handler: updateDraft,
   }),
 
   defineOperation("draft.validate", {
@@ -163,5 +167,6 @@ export const setOperations = operationGroup(
     output: z.object({ errors: z.array(ErrorDetail), warnings: z.array(ErrorDetail) }),
     body: { key: "spec" },
     mcp: "validate_draft",
+    handler: validateDraft,
   }),
 );
