@@ -5,6 +5,7 @@ import { type RefObject, useActionState, useEffect, useRef, useState } from "rea
 
 import { Button, InlineAlert, Input } from "~/components/ui";
 
+import { useBackupStep } from "./auth-rail";
 import {
   finishSetupAction,
   type FormState,
@@ -45,6 +46,8 @@ export function SignInForm() {
 export function TwoFactorForm() {
   const [state, action, pending] = useActionState<FormState, FormData>(verifyCodeAction, {});
   const [backup, setBackup] = useState(false);
+  // The rail points at the backup step while one is in use. Display only.
+  useBackupStep(backup);
   const code = useRef<HTMLInputElement>(null);
   useFocusOnError(state.error, state, code);
   return (

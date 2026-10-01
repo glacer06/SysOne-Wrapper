@@ -11,6 +11,7 @@ import { saveDraftAction, validateDraftAction } from "../actions";
 import { ThresholdSliders } from "./policy-form";
 import { type LastPreview, PreviewPanel, type RecentRun } from "./preview-panel";
 import { QuestionForm } from "./question-form";
+import type { RecentScores } from "./recent-scores";
 import { type Finding, findingsFor, listQuestions, type Spec, toJsonText, updateCompositePolicy } from "./spec-edit";
 import { useUnsavedGuard } from "./unsaved-guard";
 
@@ -23,6 +24,10 @@ export interface DraftEditorProps {
   canEdit: boolean;
   recentRuns: RecentRun[];
   synthetic: boolean;
+  /** Recent scores per question from real runs, for the rulers. Null when runs could not be read. */
+  recentScores: RecentScores | null;
+  /** The spec the production channel serves (or staging when production has none), for the "vs published" column. */
+  published: { label: string; spec: Spec } | null;
 }
 
 type SaveProblem =
@@ -46,7 +51,13 @@ function parseText(text: string): { spec: Spec; raw: unknown } | { problem: stri
 
 const LINT_DELAY_MS = 700;
 
-export function DraftEditor({ slug, draftVersion, initialSpec, initialEtag, initialFindings, canEdit, recentRuns, synthetic }: DraftEditorProps) {
+/** The published level thresholds of a composite with the same id, for its ruler's faint ticks. */
+function publishedComposite(published: DraftEditorProps["published"], id: string) {
+  const t = published?.spec.composites?.find((c) => c.id === id)?.policy?.levelThresholds;
+  return published === null || t === undefined ? null : { label: published.label, thresholds: t };
+}
+
+export function DraftEditor({ slug, draftVersion, initialSpec, initialEtag, initialFindings, canEdit, recentRuns, synthetic, recentScores, published }: DraftEditorProps) {
   const router = useRouter();
   const toast = useToast();
   const [text, setText] = useState(() => toJsonText(initialSpec));
@@ -145,7 +156,7 @@ export function DraftEditor({ slug, draftVersion, initialSpec, initialEtag, init
         {"problem" in parsed ? parsed.problem : null}. Fix it in the JSON view, or reset to the saved draft.
       </InlineAlert>
     ) : (
-      <fieldset disabled={!canEdit} className="flex flex-col gap-5">
+      <fieldset disabled={!canEdit} className="flex min-w-0 flex-col gap-5">
         {spec.stages.length > 1 ? <p className="text-sm text-bw-text-muted">Questions run in {spec.stages.length} stages, in the order below.</p> : null}
         {listQuestions(spec).map(({ stage, id, question }) => (
           <QuestionForm
@@ -156,6 +167,9 @@ export function DraftEditor({ slug, draftVersion, initialSpec, initialEtag, init
             findings={findingsFor(findings ?? [], { stage, id })}
             answer={answers[id]}
             onSpec={editSpec}
+            recent={recentScores === null ? null : (recentScores[id] ?? [])}
+            published={published === null ? null : { label: published.label, policy: published.spec.policies[id] }}
+            readOnly={!canEdit}
           />
         ))}
         {(spec.composites ?? []).map((c, i) =>
@@ -166,7 +180,15 @@ export function DraftEditor({ slug, draftVersion, initialSpec, initialEtag, init
                 <Badge>Composite</Badge>
               </header>
               <p className="text-sm text-bw-text-muted">A weighted blend of {c.terms.length} terms. Its level picks the action; edit terms in the JSON view.</p>
-              <ThresholdSliders value={c.policy.levelThresholds} marker={null} axis="Composite value" context={c.id} onChange={(t) => editSpec(updateCompositePolicy(spec, i, t))} />
+              <ThresholdSliders
+                value={c.policy.levelThresholds}
+                marker={null}
+                axis="Composite value"
+                context={c.id}
+                disabled={!canEdit}
+                published={publishedComposite(published, c.id)}
+                onChange={(t) => editSpec(updateCompositePolicy(spec, i, t))}
+              />
             </article>
           ),
         )}

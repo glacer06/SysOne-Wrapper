@@ -5,7 +5,8 @@ import type { QuestionDef, Structured, SystemOneAnswer } from "@bandwise/core";
 import { Badge, Button, Input } from "~/components/ui";
 
 import { CommitInput, RequiredInput, StructuredEditor } from "./fields";
-import { PolicyForm } from "./policy-form";
+import { PolicyForm, type PublishedPolicy } from "./policy-form";
+import type { RecentScore } from "./recent-scores";
 import { answerMarker, answerSummary, type Finding, freeOptionKey, type Policy, type QuestionRef, removeOption, renameOption, type Spec, updatePolicy, updateQuestion } from "./spec-edit";
 
 const TYPE_LABEL = { noul: "Yes or no", choice: "Choice", score: "Score" } as const;
@@ -75,7 +76,7 @@ function ScoreLevels({ spec, at, levels, onSpec }: { spec: Spec; at: QuestionRef
 }
 
 /** One question's form: its label, instructions, criteria and policy. */
-export function QuestionForm({ spec, at, question, findings, answer, onSpec }: {
+export function QuestionForm({ spec, at, question, findings, answer, onSpec, recent = null, published = null, readOnly = false }: {
   spec: Spec;
   at: QuestionRef;
   question: QuestionDef;
@@ -83,6 +84,10 @@ export function QuestionForm({ spec, at, question, findings, answer, onSpec }: {
   /** The last preview's answer to this question, when there is one. */
   answer: SystemOneAnswer | undefined;
   onSpec: (s: Spec) => void;
+  /** Recent scores for this question from real runs, or null when none were loaded. */
+  recent?: readonly RecentScore[] | null;
+  published?: PublishedPolicy | null;
+  readOnly?: boolean;
 }) {
   const edit = (change: (q: QuestionDef) => QuestionDef) => onSpec(updateQuestion(spec, at, change));
   const policy = spec.policies[at.id];
@@ -141,6 +146,9 @@ export function QuestionForm({ spec, at, question, findings, answer, onSpec }: {
             context={question.meta.label || at.id}
             marker={answerMarker(answer)}
             answeredOption={answer?.type === "choice" && typeof answer.choice === "string" ? answer.choice : null}
+            recent={recent}
+            published={published}
+            disabled={readOnly}
             onChange={(p: Policy) => onSpec(updatePolicy(spec, at.id, () => p))}
           />
         )}

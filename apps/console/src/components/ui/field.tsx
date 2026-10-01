@@ -13,12 +13,14 @@ interface FieldShell {
   /** Shown under the label. */
   hint?: ReactNode;
   error?: string | null | undefined;
+  /** Keeps the label for screen readers only, where a table header or column already names the field. */
+  labelHidden?: boolean;
 }
 
-function Shell({ id, label, hint, error, children }: FieldShell & { id: string; children: ReactNode }) {
+function Shell({ id, label, hint, error, labelHidden = false, children }: FieldShell & { id: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-medium text-bw-text">
+      <label htmlFor={id} className={labelHidden ? "sr-only" : "text-sm font-medium text-bw-text"}>
         {label}
       </label>
       {hint === undefined ? null : (
@@ -44,11 +46,11 @@ function describedBy(id: string, hint: unknown, error: unknown): string | undefi
 export type InputProps = InputHTMLAttributes<HTMLInputElement> & FieldShell & { ref?: Ref<HTMLInputElement> };
 
 /** A labelled text input with an optional hint and error. */
-export function Input({ label, hint, error, className, id: givenId, ...rest }: InputProps) {
+export function Input({ label, hint, error, labelHidden, className, id: givenId, ...rest }: InputProps) {
   const autoId = useId();
   const id = givenId ?? autoId;
   return (
-    <Shell id={id} label={label} hint={hint} error={error}>
+    <Shell id={id} label={label} hint={hint} error={error} labelHidden={labelHidden}>
       <input
         id={id}
         className={cx(CONTROL, "h-11 sm:h-10", className)}
@@ -64,11 +66,11 @@ export type SelectProps = SelectHTMLAttributes<HTMLSelectElement> &
   FieldShell & { options: readonly { value: string; label: string }[] };
 
 /** A labelled native select: keyboard and screen readers work as the platform does. */
-export function Select({ label, hint, error, options, className, id: givenId, ...rest }: SelectProps) {
+export function Select({ label, hint, error, labelHidden, options, className, id: givenId, ...rest }: SelectProps) {
   const autoId = useId();
   const id = givenId ?? autoId;
   return (
-    <Shell id={id} label={label} hint={hint} error={error}>
+    <Shell id={id} label={label} hint={hint} error={error} labelHidden={labelHidden}>
       <select
         id={id}
         className={cx(CONTROL, "h-11 pr-8 sm:h-10", className)}

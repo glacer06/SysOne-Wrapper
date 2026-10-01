@@ -9,6 +9,7 @@ import { Card } from "~/components/ui";
 import { requireConsole } from "~/server/auth/console";
 import { consoleOperation } from "~/server/console-operation";
 
+import { ChannelTrail } from "../../_components/stage-trail-view";
 import { type ChannelRow, Channels } from "./channels";
 import { VersionHistory, type VersionRow } from "./history";
 import { PublishDraft } from "./publish";
@@ -63,7 +64,12 @@ export async function ReleasesPanel({ setRef, set: s }: { setRef: string; set: R
         description="What each channel serves and its rollout stage. Rollback and pause take effect on the next run and never wait for an approval."
       >
         {channels.length === 0 ? (
-          <p className="text-sm text-bw-text-muted">No channel serves this set yet. Publish the draft below to start production at Shadow.</p>
+          <div className="flex flex-col gap-4">
+            <div className="max-w-xl">
+              <ChannelTrail stage={null} channel="Production" />
+            </div>
+            <p className="text-sm text-bw-text-muted">No channel serves this set yet. Publish the draft below to start production at Shadow.</p>
+          </div>
         ) : (
           <Channels setRef={setRef} channels={channels} canEdit={canEdit} />
         )}

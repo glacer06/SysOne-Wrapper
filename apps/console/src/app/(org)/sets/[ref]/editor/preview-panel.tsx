@@ -302,7 +302,7 @@ export function PreviewPanel({ slug, inputSchema, recentRuns, synthetic, dirty, 
           </InlineAlert>
         )}
         {last === null ? (
-          <p className="text-sm text-bw-text-muted">No preview yet. Pick or paste a state, then run it. The answers stay on screen while you move the sliders.</p>
+          <p className="text-sm text-bw-text-muted">No preview yet. Pick or paste a state, then run it. The answers stay on screen while you move the threshold handles.</p>
         ) : (
           <section aria-live="polite" className="flex flex-col gap-2 border-t border-bw-border pt-4">
             <h3 className="text-sm font-semibold text-bw-text">
