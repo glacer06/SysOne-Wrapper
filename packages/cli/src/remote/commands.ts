@@ -114,7 +114,8 @@ async function specPush(cmd: Extract<RemoteCommand, { kind: "spec-push" }>, { cl
   const newEtag = isObj(put.body) && typeof put.body["etag"] === "string" ? unquoteEtag(put.body["etag"]) : put.etag;
 
   // The push already landed. Lints are advice here; publish refuses a draft with lint errors.
-  const lint = await client.request("POST", path`/sets/${set}/draft/validate`, { body: {} });
+  // No body, so the server lints the stored draft.
+  const lint = await client.request("POST", path`/sets/${set}/draft/validate`);
   const lintOk = lint.ok && isObj(lint.body);
   const errors = lintOk && Array.isArray((lint.body as Record<string, unknown>)["errors"]) ? ((lint.body as Record<string, unknown>)["errors"] as ErrorDetail[]) : [];
   const warnings = lintOk && Array.isArray((lint.body as Record<string, unknown>)["warnings"]) ? ((lint.body as Record<string, unknown>)["warnings"] as ErrorDetail[]) : [];

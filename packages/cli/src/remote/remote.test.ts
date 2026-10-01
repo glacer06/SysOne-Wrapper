@@ -203,7 +203,8 @@ describe("remote commands", () => {
     const put = api.seen.find((s) => s.method === "PUT");
     expect(put?.headers["if-match"]).toBe('"e1"');
     expect(put?.body).toEqual(SPEC);
-    expect(api.seen.find((s) => s.path.endsWith("/validate"))?.body).toEqual({});
+    // No body: an empty one would become the spec the server lints, not the stored draft.
+    expect(api.seen.find((s) => s.path.endsWith("/validate"))?.body).toBeUndefined();
   });
 
   it("spec push creates a missing set with --goal, and refuses without it", async () => {

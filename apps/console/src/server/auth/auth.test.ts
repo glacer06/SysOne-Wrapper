@@ -206,7 +206,8 @@ describe("sign-in", () => {
       ok: false,
       error: SIGN_IN_FAILED,
     });
-  });
+    // 26 sign-ins, each hashing a password on purpose, take more than the 5 s default under the full gate.
+  }, 30_000);
 });
 
 describe("two-factor", () => {

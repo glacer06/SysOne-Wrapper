@@ -50,8 +50,8 @@ Migrations run from the Database migrate workflow, never from a laptop ([databas
 | `BANDWISE_TOKEN_PEPPER` | New: `openssl rand -base64 48` on your machine | Store it in the team vault in the same minute; the mint script needs the same value (section 4). Changing it later invalidates every token. |
 | `TYPESAFE_API_KEY` | A TypeSafe key for the platform, from the vault | Use a key made for the hosted server, not your personal shell key, so either can be revoked alone and spend shows apart. |
 | `SYSTEM_ONE_TRANSPORT` | `sdk` | Without it the server answers from synthetic fixtures. |
-| `BETTER_AUTH_URL` | TODO(D3): `https://app.bandwise.dev`, if the D3 sign-in reads it | Confirm the name with the D3 auth PR before setting it. |
-| `BETTER_AUTH_SECRET` | TODO(D3): only if D3 does not reuse `AUTH_SECRET` | Confirm with the D3 auth PR. Generate like `AUTH_SECRET`. |
+| `BETTER_AUTH_URL` | `https://app.bandwise.dev` | Turns on console sign-in (D3). Unset, sign-in is off and the API still serves. Sign-in reuses `AUTH_SECRET`; there is no `BETTER_AUTH_SECRET`. |
+| `BANDWISE_CONSOLE_EMAILS` | Optional: Nick's and PJ's emails, comma separated | An allowlist on top of the `internal` membership. See `docs/runbooks/console-access.md`. |
 
 Leave `BANDWISE_KEK`, `BANDWISE_JWT_SIGNING_KEY`, `OPENROUTER_API_KEY`, `AI_GATEWAY_API_KEY`, `STRIPE_*` and `ANTHROPIC_API_KEY` unset. Nothing in D2 uses them.
 
@@ -77,7 +77,7 @@ pnpm -s --filter @bandwise/console bootstrap-internal --owner <nick's email> --m
 It creates, in one transaction, only what is missing:
 
 - the org `internal` in platform key mode, on plan `internal`;
-- Nick as owner and PJ as admin (an existing user row with the same email is reused, so a D3 sign-in made first is fine);
+- Nick as owner and PJ as admin (an existing user row with the same email is reused);
 - project `dogfood`, its goal, and the app `Claude Code hooks` that the hook token belongs to;
 - one set per `.bandwise/sets/*.json`, slug = file name, published as version 1 on `production` at `shadow`, with an open draft version 2;
 - an audit row for every step, with `source: bootstrap-internal` in the diff.
@@ -108,6 +108,8 @@ order by created_at;
 ```
 
 Expect `org.create`, two `member.add`, `project.create`, `goal.create`, `app.create`, and one `set.create` and one `set.publish` per set.
+
+**Console sign-in.** With `AUTH_SECRET` and `BETTER_AUTH_URL` also set in the shell, run `console-member` once for Nick and once for PJ with the org uuid above and the same roles. It reuses the user and membership the bootstrap made and writes a one-time reset link to `console-reset-link.txt`. Then each person sets a password and two-factor. See `docs/runbooks/console-access.md`.
 
 ## 4. Mint the tokens
 

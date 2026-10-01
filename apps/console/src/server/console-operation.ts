@@ -5,6 +5,7 @@ import "server-only";
 import type { OperationId } from "@bandwise/core";
 
 import { requireConsole } from "./auth/console";
+import { getDb } from "./db";
 import { OperationError, OperationNotImplementedError, type OperationOutput, runOperation, type RunOperationOptions } from "./operations";
 
 export type ConsoleOperationResult<K extends OperationId> =
@@ -20,7 +21,10 @@ export async function consoleOperation<K extends OperationId>(
 ): Promise<ConsoleOperationResult<K>> {
   const { ctx } = await requireConsole();
   try {
-    const res = await runOperation(id, ctx as Parameters<typeof runOperation<K>>[1], input, options);
+    const res = await runOperation(id, ctx as Parameters<typeof runOperation<K>>[1], input, options, {
+      db: getDb(),
+      logError: (message, requestId) => console.error(`console ${requestId}: ${message}`),
+    });
     if (res.kind !== "ok") return { status: "error", code: "unexpected", message: "The operation did not run." };
     return { status: "ok", output: res.output };
   } catch (e) {
