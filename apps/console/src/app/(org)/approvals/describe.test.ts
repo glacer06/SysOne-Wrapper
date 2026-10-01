@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { describeMove, needsConfirm, widensActing } from "../sets/[ref]/releases/stages";
-import { operationLabel, riskReason, timeLeft } from "./describe";
+import { operationLabel, requestSentence, riskReason, timeLeft, trailSteps, undoNote } from "./describe";
 
 describe("riskReason", () => {
   it("names the condition that gated a publish", () => {
@@ -50,5 +50,29 @@ describe("timeLeft", () => {
     expect(timeLeft("2026-10-01T10:30:00Z", now)).toBe("in 3 hours");
     expect(timeLeft("2026-10-01T07:12:00Z", now)).toBe("in 12 minutes");
     expect(timeLeft("2026-10-01T06:00:00Z", now)).toBe("now");
+  });
+});
+
+describe("request card", () => {
+  it("says what the agent wants in plain verbs, with the set and channel", () => {
+    expect(requestSentence("set.publish", { ref: "done-check", channel: "production" })).toBe("Publish the draft on done-check to production.");
+    expect(requestSentence("rollout.change", { ref: "done-check", channel: "staging", stage: "full" })).toBe("Move staging on done-check to Full.");
+    expect(requestSentence("agent_token.create", {})).toBe("Create a new agent token.");
+    expect(requestSentence("member.remove", { ref: "x" })).toBe("Run member.remove on x.");
+    expect(undoNote("set.publish")).toContain("rolled back in one step");
+    expect(undoNote("rollout.change")).toContain("never wait for approval");
+  });
+
+  it("draws the trail: proposed, waiting, decided", () => {
+    const now = new Date("2026-10-01T07:00:00Z");
+    const base = { createdAt: "2026-10-01T06:00:00Z", expiresAt: "2026-10-01T10:00:00Z", requestedBy: { name: "Nick", tokenName: "release-bot" } };
+    const t = (iso: string) => iso.slice(11, 16);
+    const pending = trailSteps({ ...base, status: "pending" }, now, t);
+    expect(pending.map((s) => s.state)).toEqual(["done", "current", "todo"]);
+    expect(pending[0]?.detail).toBe('Nick, through the token "release-bot".');
+    expect(pending[1]?.detail).toContain("in 3 hours");
+    const denied = trailSteps({ ...base, status: "rejected", decidedAt: "2026-10-01T06:30:00Z" }, now, t);
+    expect(denied[2]).toMatchObject({ at: "06:30", detail: "Denied. Nothing ran." });
+    expect(trailSteps({ ...base, status: "expired" }, now, t)[2]?.at).toBe("10:00");
   });
 });

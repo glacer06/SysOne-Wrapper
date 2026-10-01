@@ -3,7 +3,15 @@ import { join, relative } from "node:path";
 import { SEED_MODEL_PROFILES, lint, parseSpec } from "@bandwise/core";
 import { createFromSource } from "fumadocs-core/search/server";
 import { describe, expect, it } from "vitest";
-import { OPENAPI_PATH, type ApiDocument, isPlatformOperation, listOperations, loadApiDocument, phaseLabel } from "~/lib/api-spec";
+import {
+  OPENAPI_PATH,
+  type ApiDocument,
+  breakInlineSchemaCycles,
+  isPlatformOperation,
+  listOperations,
+  loadApiDocument,
+  phaseLabel,
+} from "~/lib/api-spec";
 import { llmsFull, llmsIndex } from "~/lib/llms";
 import { PRODUCT_TOKEN } from "~/lib/remark-product";
 import { source } from "~/lib/source";
@@ -79,6 +87,61 @@ describe("API reference", () => {
     const apiPages = source.getPages().filter((p) => p.type === "openapi");
     expect(apiPages.length).toBe(doc.tags?.length);
     for (const page of apiPages) expect(page.url.startsWith("/docs/api/")).toBe(true);
+  });
+
+  // Component schemas that reach themselves through union members and array items only, the
+  // path the renderer draws inline in a type label. Written apart from breakInlineSchemaCycles so
+  // the test does not check the fix with itself.
+  function inlineLoops(d: ApiDocument): string[] {
+    const schemas = (d.components as { schemas?: Record<string, unknown> } | undefined)?.schemas ?? {};
+    const found = new Set<string>();
+    const visit = (node: unknown, root: string, seen: ReadonlySet<string>): void => {
+      if (Array.isArray(node)) {
+        for (const item of node) visit(item, root, seen);
+        return;
+      }
+      if (typeof node !== "object" || node === null) return;
+      const n = node as Record<string, unknown>;
+      if (typeof n.$ref === "string") {
+        const name = n.$ref.replace("#/components/schemas/", "");
+        if (name === root) found.add(root);
+        else if (!seen.has(name)) visit(schemas[name], root, new Set([...seen, name]));
+        return;
+      }
+      for (const key of ["anyOf", "oneOf", "allOf", "items"]) visit(n[key], root, seen);
+    };
+    for (const name of Object.keys(schemas)) visit(schemas[name], name, new Set([name]));
+    return [...found].sort();
+  }
+
+  it("cuts JsonValue where the renderer would expand it forever, and leaves the source alone", () => {
+    expect(inlineLoops(doc)).toContain("JsonValue");
+    const fixed = breakInlineSchemaCycles(doc);
+    expect(inlineLoops(fixed)).toEqual([]);
+    expect(inlineLoops(doc)).toContain("JsonValue");
+
+    const schemas = (fixed.components as { schemas: Record<string, { anyOf?: Array<Record<string, unknown>> }> }).schemas;
+    const arrayMember = schemas.JsonValue?.anyOf?.find((m) => m.type === "array");
+    expect(arrayMember?.items).toMatchObject({ title: "JsonValue" });
+    expect(arrayMember?.items).not.toHaveProperty("$ref");
+    // Condition only reaches itself through object properties, which open one level per click.
+    expect(JSON.stringify(schemas.Condition)).toContain('"$ref":"#/components/schemas/Condition"');
+  });
+
+  it("cuts a loop that runs through more than one schema", () => {
+    const loop: ApiDocument = {
+      openapi: "3.1.0",
+      info: { title: "t", version: "1" },
+      paths: {},
+      components: {
+        schemas: {
+          A: { anyOf: [{ type: "string" }, { $ref: "#/components/schemas/B" }] },
+          B: { type: "array", items: { $ref: "#/components/schemas/A" } },
+        },
+      },
+    };
+    expect(inlineLoops(loop)).toEqual(["A", "B"]);
+    expect(inlineLoops(breakInlineSchemaCycles(loop))).toEqual([]);
   });
 
   it("never dates an operation before the API goes live in Phase 3", () => {

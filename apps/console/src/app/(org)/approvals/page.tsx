@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 
+import { ApprovalsFirstRun } from "~/components/observe/first-runs";
 import { OperationFailed } from "~/components/shell/operation-failed";
-import { EmptyState, PageHeader } from "~/components/ui";
+import { PageHeader } from "~/components/ui";
 import { consoleOperation } from "~/server/console-operation";
 
 import { ApprovalCard, type ApprovalItem } from "./approval-card";
@@ -21,13 +22,10 @@ export default async function ApprovalsPage() {
       {result.status === "error" ? (
         <OperationFailed message={result.message} />
       ) : items.length === 0 ? (
-        <EmptyState title="No requests waiting">
-          When an agent token asks to publish to a live production channel, widen a rollout or lift a pause, the request waits here.
-          You see the requests your role can decide.
-        </EmptyState>
+        <ApprovalsFirstRun />
       ) : (
-        <div className="flex flex-col gap-4">
-          <p className="text-sm text-ink-2">
+        <div className="flex flex-col gap-10">
+          <p className="text-sm text-bw-text-muted">
             {items.length} {items.length === 1 ? "request is" : "requests are"} waiting, newest first.
           </p>
           {items.map((item) => (

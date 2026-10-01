@@ -13,10 +13,10 @@ const LABEL: Record<PointerChannel, string> = { production: "Production", stagin
 
 /** One channel: its version and rollout stage, or that nothing is published there. */
 export function ChannelStage({ channel, pointer }: { channel: PointerChannel; pointer: ChannelSummary | undefined }) {
-  if (pointer === undefined) return <span className="text-sm text-ink-3">Not published</span>;
+  if (pointer === undefined) return <span className="text-sm text-bw-text-muted">Not published</span>;
   return (
     <span className="inline-flex items-center gap-2">
-      <span className="font-mono text-sm tabular-nums text-ink" aria-label={`${LABEL[channel]} serves version ${pointer.version}`}>
+      <span className="font-mono text-sm tabular-nums text-bw-text" aria-label={`${LABEL[channel]} serves version ${pointer.version}`}>
         v{pointer.version}
       </span>
       <RolloutBadge stage={pointer.stage} />
@@ -30,7 +30,7 @@ export function ChannelStages({ channels }: { channels: readonly ChannelSummary[
     <dl className="flex flex-wrap gap-x-6 gap-y-2">
       {CHANNELS.map((c) => (
         <div key={c} className="flex items-center gap-2">
-          <dt className="text-xs font-medium uppercase tracking-wide text-ink-3">{LABEL[c]}</dt>
+          <dt className="bw-label">{LABEL[c]}</dt>
           <dd>
             <ChannelStage channel={c} pointer={channels.find((p) => p.channel === c)} />
           </dd>

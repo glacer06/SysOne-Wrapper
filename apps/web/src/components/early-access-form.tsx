@@ -230,10 +230,12 @@ export function EarlyAccessForm() {
       </div>
 
       <div className="form-actions">
-        <button type="submit" className="btn btn-primary btn-stack" disabled={submitting} aria-disabled={submitting}>
-          <span aria-hidden={submitting}>Request early access</span>
-          <span aria-hidden={!submitting}>Sending</span>
-        </button>
+        <span className="focus-poly">
+          <button type="submit" className="btn btn-primary btn-stack" disabled={submitting} aria-disabled={submitting}>
+            <span aria-hidden={submitting}>Request early access</span>
+            <span aria-hidden={!submitting}>Sending</span>
+          </button>
+        </span>
         <span className="visually-hidden" role="status">
           {submitting ? "Sending your request" : ""}
         </span>

@@ -34,7 +34,7 @@ export function Tabs({ items, defaultTab, label }: { items: readonly TabItem[]; 
 
   return (
     <div>
-      <div role="tablist" aria-label={label} onKeyDown={onKeyDown} className="flex gap-1 border-b border-rule">
+      <div role="tablist" aria-label={label} onKeyDown={onKeyDown} className="flex gap-5 border-b border-bw-border">
         {items.map((item, i) => {
           const selected = item.id === active;
           return (
@@ -51,8 +51,8 @@ export function Tabs({ items, defaultTab, label }: { items: readonly TabItem[]; 
               tabIndex={selected ? 0 : -1}
               onClick={() => setActive(item.id)}
               className={cx(
-                "-mb-px border-b-2 px-3 py-2 text-sm font-medium",
-                selected ? "border-ink text-ink" : "border-transparent text-ink-3 hover:text-ink",
+                "-mb-px min-w-11 border-b-2 px-0.5 py-3 text-center text-sm font-medium transition-colors duration-(--bw-dur-fast)",
+                selected ? "border-bw-brand text-bw-text" : "border-transparent text-bw-text-muted hover:text-bw-text",
               )}
             >
               {item.label}

@@ -1,0 +1,81 @@
+/* bandwise components v1.0 - reads only --bw-* semantic tokens from bandwise-tokens.css */
+.bw-body { background: var(--bw-bg); color: var(--bw-text); font: 400 var(--bw-text-body)/var(--bw-lh-body) var(--bw-font-body); }
+.bw-display { font-family: var(--bw-font-display); font-stretch: 125%; font-weight: 800; letter-spacing: var(--bw-track-display); line-height: var(--bw-lh-display); }
+.bw-label { font: 500 var(--bw-text-caption)/var(--bw-lh-caption) var(--bw-font-mono); letter-spacing: var(--bw-track-label); text-transform: uppercase; color: var(--bw-text-muted); }
+.bw-data { font-family: var(--bw-font-mono); font-variant-numeric: tabular-nums; }
+
+/* Button: chamfered primary */
+.bw-btn { --c: var(--bw-chamfer); display: inline-flex; align-items: center; gap: var(--bw-space-2); height: 40px; padding: 0 var(--bw-space-5);
+  font: 600 var(--bw-text-small)/1 var(--bw-font-body); border: var(--bw-border-width) solid transparent; border-radius: var(--bw-radius-sm); cursor: pointer;
+  transition: background var(--bw-dur-fast) var(--bw-ease-standard), border-color var(--bw-dur-fast) var(--bw-ease-standard), transform var(--bw-dur-instant) var(--bw-ease-standard); }
+.bw-btn:focus-visible { outline: var(--bw-focus-width) solid var(--bw-focus); outline-offset: var(--bw-focus-offset); }
+.bw-btn:active { transform: translateY(1px); }
+.bw-btn[disabled], .bw-btn.is-disabled { opacity: .4; cursor: not-allowed; }
+.bw-btn--primary { background: var(--bw-brand); color: var(--bw-on-brand); border-radius: 0; clip-path: polygon(0 0, calc(100% - var(--c)) 0, 100% var(--c), 100% 100%, var(--c) 100%, 0 calc(100% - var(--c))); }
+.bw-btn--primary:hover, .bw-btn--primary.is-hover { background: color-mix(in srgb, var(--bw-brand) 86%, var(--bw-text)); }
+.bw-btn--secondary { background: transparent; color: var(--bw-text); border-color: var(--bw-border-control); }
+.bw-btn--secondary:hover, .bw-btn--secondary.is-hover { background: var(--bw-surface-sunken); }
+.bw-btn--ghost { background: transparent; color: var(--bw-brand-text); }
+.bw-btn--ghost:hover, .bw-btn--ghost.is-hover { background: var(--bw-high-bg); }
+.bw-btn--danger { background: var(--bw-low); color: #fff; }
+[data-theme="dark"] .bw-btn--danger { color: var(--bw-ink-950); }
+
+/* Focus on chamfered elements: clip-path would cut an outside outline, so wrap the button or badge in .bw-focus-poly.
+   The wrapper draws a 2px page-colored gap and a 2px ring along the chamfer polygon. */
+.bw-focus-poly { display: inline-flex; }
+.bw-focus-poly > .bw-btn--primary:focus-visible, .bw-focus-poly > .bw-badge:focus-visible { outline: none; box-shadow: none; }
+.bw-focus-poly:has(> :focus-visible) {
+  filter: drop-shadow(2px 0 0 var(--bw-bg)) drop-shadow(-2px 0 0 var(--bw-bg)) drop-shadow(0 2px 0 var(--bw-bg)) drop-shadow(0 -2px 0 var(--bw-bg))
+          drop-shadow(2px 0 0 var(--bw-focus)) drop-shadow(-2px 0 0 var(--bw-focus)) drop-shadow(0 2px 0 var(--bw-focus)) drop-shadow(0 -2px 0 var(--bw-focus));
+}
+
+/* Inputs */
+.bw-input { height: 40px; width: 100%; padding: 0 var(--bw-space-3); background: var(--bw-surface); color: var(--bw-text); border: var(--bw-border-width) solid var(--bw-border-control); border-radius: var(--bw-radius-sm); font: 400 var(--bw-text-body)/1 var(--bw-font-body); }
+.bw-input::placeholder { color: var(--bw-text-muted); }
+.bw-input:hover { border-color: var(--bw-text-muted); }
+.bw-input:focus, .bw-input.is-focus { outline: var(--bw-focus-width) solid var(--bw-focus); outline-offset: 0; border-color: var(--bw-focus); }
+.bw-input.is-error { border-color: var(--bw-low); }
+.bw-help { font-size: var(--bw-text-caption); color: var(--bw-text-muted); margin-top: var(--bw-space-1); }
+.bw-help.is-error { color: var(--bw-low-text); }
+
+/* Band badge: the product's core component */
+.bw-badge { --c: 6px; display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px; font: 600 11px/1 var(--bw-font-mono); letter-spacing: var(--bw-track-label); text-transform: uppercase;
+  clip-path: polygon(0 0, calc(100% - var(--c)) 0, 100% var(--c), 100% 100%, var(--c) 100%, 0 calc(100% - var(--c))); }
+.bw-badge::before { content: ""; width: 6px; height: 6px; background: currentColor; }
+.bw-badge--high { background: var(--bw-high-bg); color: var(--bw-high-text); }
+.bw-badge--medium { background: var(--bw-medium-bg); color: var(--bw-medium-text); }
+.bw-badge--low { background: var(--bw-low-bg); color: var(--bw-low-text); }
+
+/* Card + decision card */
+.bw-card { background: var(--bw-surface); border: var(--bw-border-width) solid var(--bw-border); border-radius: var(--bw-radius-md); padding: var(--bw-space-5); }
+/* Decision card is chamfered: wrap the .bw-card in .bw-decision-wrap, which draws the 1px border along the polygon */
+.bw-decision-wrap { --c: var(--bw-chamfer); background: var(--bw-border);
+  clip-path: polygon(0 0, calc(100% - var(--c)) 0, 100% var(--c), 100% 100%, var(--c) 100%, 0 calc(100% - var(--c))); padding: var(--bw-border-width); }
+.bw-decision-wrap > .bw-card { border: 0; border-radius: 0; margin: 0;
+  clip-path: polygon(0 0, calc(100% - var(--c) + 0.41px) 0, 100% calc(var(--c) - 0.41px), 100% 100%, calc(var(--c) - 0.41px) 100%, 0 calc(100% - var(--c) + 0.41px)); }
+.bw-decision { display: grid; gap: var(--bw-space-3); }
+.bw-decision__title { font: 700 var(--bw-text-h3)/var(--bw-lh-h3) var(--bw-font-display); font-stretch: 125%; letter-spacing: -0.01em; margin: 0; }
+.bw-decision__row { display: grid; grid-template-columns: 72px 1fr; gap: var(--bw-space-3); padding-top: var(--bw-space-3); border-top: var(--bw-border-width) solid var(--bw-border); font-size: var(--bw-text-small); }
+
+/* Confidence ruler: 0 to 1, bands at 0.55 and 0.80 */
+.bw-ruler { position: relative; height: 12px; background: linear-gradient(90deg, var(--bw-low) 0 55%, var(--bw-medium) 55% 80%, var(--bw-high) 80% 100%); }
+.bw-ruler__mark { position: absolute; top: -6px; width: 2px; height: 24px; background: var(--bw-text); box-shadow: 0 0 0 1px var(--bw-bg); left: var(--score, 71%); transition: left var(--bw-dur-walk) var(--bw-ease-walk); }
+
+/* Overlays (dialog, popover, toast): the only place shadow is used */
+.bw-overlay-surface { background: var(--bw-surface); border: var(--bw-border-width) solid var(--bw-border); border-radius: var(--bw-radius-md); box-shadow: var(--bw-shadow-overlay); }
+
+/* Table, tabs, alert, code, tooltip, nav */
+.bw-table { width: 100%; border-collapse: collapse; font-size: var(--bw-text-small); }
+.bw-table th { text-align: left; font: 500 11px/1 var(--bw-font-mono); letter-spacing: var(--bw-track-label); text-transform: uppercase; color: var(--bw-text-muted); padding: var(--bw-space-3); border-bottom: 1px solid var(--bw-border-strong); }
+.bw-table td { padding: var(--bw-space-3); border-bottom: 1px solid var(--bw-border); }
+.bw-table tr:hover td { background: var(--bw-surface-sunken); }
+.bw-tabs { display: flex; gap: var(--bw-space-5); border-bottom: 1px solid var(--bw-border); }
+.bw-tab { padding: var(--bw-space-3) 0; font-weight: 500; color: var(--bw-text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.bw-tab[aria-selected="true"] { color: var(--bw-text); border-bottom-color: var(--bw-brand); }
+.bw-alert { display: flex; gap: var(--bw-space-3); padding: var(--bw-space-4); border-left: 1px solid; font-size: var(--bw-text-small); }  /* 1px rule, not the kit's 3px: Nick, 2026-10-01 (ALERT-1PX) */
+.bw-alert--info { background: var(--bw-high-bg); border-color: var(--bw-high); }
+.bw-alert--warn { background: var(--bw-medium-bg); border-color: var(--bw-medium); }
+.bw-alert--error { background: var(--bw-low-bg); border-color: var(--bw-low); }
+.bw-code { font: 400 13px/1.6 var(--bw-font-mono); background: var(--bw-surface-sunken); border: 1px solid var(--bw-border); border-radius: var(--bw-radius-sm); padding: var(--bw-space-4); overflow: auto; }
+.bw-tooltip { background: var(--bw-text); color: var(--bw-bg); font-size: var(--bw-text-caption); padding: 6px 10px; border-radius: var(--bw-radius-sm); }
+.bw-trail { height: 0; border-top: 3px dotted var(--bw-border-strong); }  /* the trail motif as a divider */

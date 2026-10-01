@@ -1,8 +1,758 @@
 @import "tailwindcss";
-@import "fumadocs-ui/css/neutral.css";
+@import "@bandwise/brand/tokens.css";
+@import "@bandwise/brand/theme.css";
 @import "fumadocs-ui/css/preset.css";
 @import "fumadocs-openapi/css/preset.css";
+
+/*
+ * Fumadocs reads --color-fd-*. Each one maps to a Bandwise semantic token (ADR-022).
+ * The semantic tokens carry both themes (data-theme, or the system setting), so one mapping covers
+ * light and dark. The docs theme toggle sets `class="dark"` (fumadocs' variant) and `data-theme`
+ * (the brand switch) together, see src/app/layout.tsx.
+ */
+@theme inline {
+  --color-fd-background: var(--bw-bg);
+  --color-fd-foreground: var(--bw-text);
+  --color-fd-muted: var(--bw-surface-sunken);
+  --color-fd-muted-foreground: var(--bw-text-muted);
+  --color-fd-popover: var(--bw-surface);
+  --color-fd-popover-foreground: var(--bw-text);
+  --color-fd-card: var(--bw-surface);
+  --color-fd-card-foreground: var(--bw-text);
+  --color-fd-border: var(--bw-border);
+  /* Primary is used as text (links, active items), so it is the brand text color, never the teal fill. */
+  --color-fd-primary: var(--bw-brand-text);
+  --color-fd-primary-foreground: var(--bw-on-brand);
+  --color-fd-secondary: var(--bw-surface-sunken);
+  --color-fd-secondary-foreground: var(--bw-text);
+  --color-fd-accent: var(--bw-surface-sunken);
+  --color-fd-accent-foreground: var(--bw-text);
+  --color-fd-ring: var(--bw-focus);
+  --color-fd-overlay: var(--bw-overlay);
+  --color-fd-info: var(--bw-medium-text);
+  --color-fd-warning: var(--bw-medium-text);
+  --color-fd-error: var(--bw-low-text);
+  --color-fd-success: var(--bw-high-text);
+  --color-fd-idea: var(--bw-medium-text);
+  --color-fd-diff-remove: var(--bw-low-bg);
+  --color-fd-diff-remove-symbol: var(--bw-low-text);
+  --color-fd-diff-add: var(--bw-high-bg);
+  --color-fd-diff-add-symbol: var(--bw-high-text);
+
+  /*
+   * fumadocs-openapi colors its method and status badges with Tailwind's palette. Green at 600 is
+   * 3.2:1 on white, and yellow and orange are warm. Each badge also prints its method or code, so
+   * the hue is never the only signal; map the hues onto band and brand text tokens.
+   */
+  --color-green-400: var(--bw-high-text);
+  --color-green-500: var(--bw-high-text);
+  --color-green-600: var(--bw-high-text);
+  --color-blue-400: var(--bw-brand-text);
+  --color-blue-600: var(--bw-brand-text);
+  --color-yellow-400: var(--bw-medium-text);
+  --color-yellow-600: var(--bw-medium-text);
+  --color-orange-400: var(--bw-medium-text);
+  --color-orange-600: var(--bw-medium-text);
+  --color-red-400: var(--bw-low-text);
+  --color-red-500: var(--bw-low-text);
+  --color-red-600: var(--bw-low-text);
+
+  /* Shadows only on overlays: popovers and dialogs. Everything else stays flat. */
+  --shadow-sm: 0 0 transparent;
+  --shadow-md: var(--bw-shadow-overlay);
+  --shadow-lg: var(--bw-shadow-overlay);
+
+  --font-sans: var(--font-body), "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-code), ui-monospace, "SF Mono", Menlo, monospace;
+}
 
 html {
   scrollbar-gutter: stable;
 }
+
+body {
+  background: var(--bw-bg);
+  color: var(--bw-text);
+  font-family: var(--font-body), "Helvetica Neue", Arial, sans-serif;
+  font-size: var(--bw-text-body);
+  line-height: var(--bw-lh-body);
+}
+
+/* Teal fills carry ink text, never white. Fumadocs pairs bg-fd-primary with a primary foreground. */
+.bg-fd-primary,
+.group-data-\[active\=true\]\:bg-fd-primary {
+  background-color: var(--bw-brand);
+  color: var(--bw-on-brand);
+}
+
+/* Display type: page titles and the home headline. */
+.bw-display,
+#nd-page h1 {
+  font-family: var(--font-heading), "Helvetica Neue", Arial, sans-serif;
+  font-stretch: 125%;
+  font-weight: 800;
+  letter-spacing: var(--bw-track-display);
+  line-height: var(--bw-lh-h2);
+  text-wrap: balance;
+}
+#nd-page h1 {
+  font-size: clamp(1.75rem, 1.2rem + 2vw, 2.5rem);
+}
+
+/* Labels: mono, 12px, uppercase, tracked, muted. */
+.bw-label {
+  font: 500 var(--bw-text-caption) / var(--bw-lh-caption) var(--font-code), ui-monospace, monospace;
+  letter-spacing: var(--bw-track-label);
+  text-transform: uppercase;
+  color: var(--bw-text-muted);
+}
+
+/* Code and numbers. */
+code,
+kbd,
+samp,
+pre {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Search triggers and the search field are controls: their outline is the control border (3:1). */
+[data-search],
+[data-search-full],
+[cmdk-input],
+#nd-search-input,
+[role="dialog"] input {
+  border: 1px solid var(--bw-border-control);
+  border-radius: var(--bw-radius-sm);
+}
+[role="dialog"] input {
+  min-height: 40px;
+}
+
+/* Focus: 2px ring, 2px offset, on every interactive element. */
+:where(a, button, input, select, textarea, summary, [role="button"], [tabindex]):focus-visible {
+  outline: var(--bw-focus-width) solid var(--bw-focus);
+  outline-offset: var(--bw-focus-offset);
+  box-shadow: none;
+}
+
+/* Links in prose are underlined and read in brand text. */
+.prose a:not([data-card]) {
+  color: var(--bw-brand-text);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+/* Table headers read as mono labels. */
+.prose th {
+  font: 500 11px / 1 var(--font-code), ui-monospace, monospace;
+  letter-spacing: var(--bw-track-label);
+  text-transform: uppercase;
+  color: var(--bw-text-muted);
+}
+
+/* The nav title: the unloaded ant facing right, then the typed wordmark. The ant's body sits
+   between the wordmark's x-height and cap height and its feet stand on the baseline. The box crops
+   the supplied drawing (1400 units square) to the ant, 1014 by 357 units, which leaves the trail
+   out. One file per theme, switched with the docs `dark` class like the hero mark. */
+.bw-wordmark-pair {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3em;
+  font-size: 20px;
+}
+.bw-header-ant {
+  --ant-h: 0.57em; /* 40% smaller than the first cut (Nick, 2026-10-01). */
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  overflow: hidden;
+  width: calc(var(--ant-h) * 1014 / 357);
+  height: var(--ant-h);
+}
+.bw-header-ant img {
+  position: absolute;
+  left: calc(var(--ant-h) * -236 / 357);
+  top: calc(var(--ant-h) * -518 / 357);
+  width: calc(var(--ant-h) * 1400 / 357);
+  max-width: none;
+  height: auto;
+}
+.bw-header-ant-dark,
+.dark .bw-header-ant-light {
+  display: none;
+}
+.dark .bw-header-ant-dark {
+  display: block;
+}
+
+/* The nav wordmark, typed. */
+.bw-wordmark {
+  font-family: var(--font-heading), "Helvetica Neue", Arial, sans-serif;
+  font-stretch: 125%;
+  font-weight: 800;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: var(--bw-track-display);
+  color: var(--bw-text);
+}
+
+/* Hero: the supplied mark A on a dotted trail, with thin corner brackets. One file per theme. */
+.bw-hero {
+  position: relative;
+  padding: var(--bw-space-6) var(--bw-space-5);
+}
+@media (min-width: 640px) {
+  .bw-hero {
+    padding: var(--bw-space-8) var(--bw-space-7);
+  }
+}
+.bw-hero::before,
+.bw-hero::after,
+.bw-hero > .bw-corner-bl,
+.bw-hero > .bw-corner-br {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 0 solid var(--bw-border-strong);
+}
+.bw-hero::before {
+  top: 0;
+  left: 0;
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+.bw-hero::after {
+  top: 0;
+  right: 0;
+  border-top-width: 1px;
+  border-right-width: 1px;
+}
+.bw-hero > .bw-corner-bl {
+  bottom: 0;
+  left: 0;
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+}
+.bw-hero > .bw-corner-br {
+  bottom: 0;
+  right: 0;
+  border-bottom-width: 1px;
+  border-right-width: 1px;
+}
+.bw-hero-mark-dark {
+  display: none;
+}
+.dark .bw-hero-mark-light {
+  display: none;
+}
+.dark .bw-hero-mark-dark {
+  display: block;
+}
+
+/* Docs home (DOCS-M1): the bench, the worked receipt, the trail, quick links. */
+.bw-bench {
+  display: grid;
+  gap: var(--bw-space-6);
+}
+.bw-bench > * {
+  min-width: 0;
+}
+@media (max-width: 639px) {
+  .bw-hero.bw-bench {
+    padding: var(--bw-space-6) var(--bw-space-3);
+  }
+}
+@media (min-width: 960px) {
+  .bw-bench {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: var(--bw-space-7);
+    align-items: start;
+  }
+}
+.bw-home-title {
+  margin: 0 0 var(--bw-space-4);
+  max-width: 14ch;
+  font-size: clamp(2rem, 1.25rem + 2.4vw, 3.25rem);
+  line-height: var(--bw-lh-h1);
+}
+.bw-home-lede {
+  margin: 0 0 var(--bw-space-5);
+  max-width: 44ch;
+  color: var(--bw-text-muted);
+}
+.bw-steps {
+  list-style: none;
+  margin: 0 0 var(--bw-space-5);
+  padding: 0;
+  display: grid;
+  gap: var(--bw-space-4);
+}
+.bw-steps li {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: var(--bw-space-3);
+  align-items: start;
+}
+.bw-step-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--bw-border-control);
+  border-radius: var(--bw-radius-sm);
+  font: 600 var(--bw-text-caption) / 1 var(--font-code), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.bw-step-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.bw-step-title {
+  font-weight: 600;
+}
+.bw-step-body code {
+  font: 400 var(--bw-text-small) / var(--bw-lh-small) var(--font-code), ui-monospace, monospace;
+  color: var(--bw-text-muted);
+  overflow-wrap: anywhere;
+}
+.bw-text-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 600;
+  color: var(--bw-brand-text);
+}
+/* Only the words are underlined; the arrow sits outside the underline. */
+.bw-u {
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 4px;
+}
+.bw-text-link > span[aria-hidden],
+.bw-receipt-link a > span[aria-hidden] {
+  margin-left: 6px;
+}
+.bw-text-link:hover .bw-u,
+.bw-receipt-link a:hover .bw-u {
+  text-decoration-thickness: 2px;
+}
+
+/* Tabbed code block. */
+.bw-codetabs {
+  border: 1px solid var(--bw-border);
+  border-radius: var(--bw-radius-sm);
+  background: var(--bw-surface-sunken);
+}
+.bw-codetabs-bar {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: var(--bw-space-3);
+  padding: 0 var(--bw-space-2) 0 var(--bw-space-4);
+  border-bottom: 1px solid var(--bw-border);
+  background: var(--bw-surface);
+}
+.bw-codetabs-list {
+  display: flex;
+  gap: var(--bw-space-4);
+}
+.bw-codetabs-tab {
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 2px;
+  font: 500 var(--bw-text-caption) / 1 var(--font-code), ui-monospace, monospace;
+  letter-spacing: var(--bw-track-label);
+  text-transform: uppercase;
+  color: var(--bw-text-muted);
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+}
+.bw-codetabs-tab:hover {
+  color: var(--bw-text);
+}
+.bw-codetabs-tab[aria-selected="true"] {
+  color: var(--bw-text);
+  border-bottom-color: var(--bw-brand);
+}
+.bw-codetabs-tab:focus-visible,
+.bw-codetabs-copy:focus-visible {
+  outline-offset: -2px;
+}
+.bw-codetabs-copy {
+  align-self: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 var(--bw-space-3);
+  font: 500 var(--bw-text-caption) / 1 var(--font-code), ui-monospace, monospace;
+  letter-spacing: var(--bw-track-label);
+  text-transform: uppercase;
+  color: var(--bw-text);
+  border-radius: var(--bw-radius-sm);
+}
+.bw-codetabs-copy:hover {
+  background: var(--bw-surface-sunken);
+}
+.bw-codetabs-panel pre,
+.bw-raw pre {
+  margin: 0;
+  padding: var(--bw-space-4);
+  overflow-x: auto;
+  font: 400 13px / 1.6 var(--font-code), ui-monospace, monospace;
+  color: var(--bw-text);
+}
+.bw-codetabs-panel pre:focus-visible,
+.bw-raw pre:focus-visible {
+  outline-offset: -2px;
+}
+.bw-codetabs-prompt {
+  color: var(--bw-text-muted);
+  user-select: none;
+}
+.bw-codetabs-note {
+  margin: 0;
+  padding: var(--bw-space-2) var(--bw-space-4) var(--bw-space-3);
+  font-size: var(--bw-text-caption);
+  line-height: var(--bw-lh-caption);
+  color: var(--bw-text-muted);
+}
+
+/* The worked receipt: the decision card. State, band, why, cost, in that order. */
+.bw-receipt-heading {
+  margin: var(--bw-space-5) 0 var(--bw-space-2);
+}
+.bw-decision-wrap {
+  --c: var(--bw-chamfer);
+  background: var(--bw-border);
+  padding: var(--bw-border-width);
+  clip-path: polygon(0 0, calc(100% - var(--c)) 0, 100% var(--c), 100% 100%, var(--c) 100%, 0 calc(100% - var(--c)));
+}
+.bw-receipt {
+  margin: 0;
+  padding: var(--bw-space-1) var(--bw-space-5);
+  background: var(--bw-surface);
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--c) + 0.41px) 0,
+    100% calc(var(--c) - 0.41px),
+    100% 100%,
+    calc(var(--c) - 0.41px) 100%,
+    0 calc(100% - var(--c) + 0.41px)
+  );
+}
+.bw-receipt-row {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  column-gap: var(--bw-space-3);
+  align-items: center;
+  padding: 2px 0;
+  font-size: var(--bw-text-small);
+  line-height: var(--bw-lh-small);
+}
+.bw-receipt-row + .bw-receipt-row {
+  border-top: 1px solid var(--bw-border);
+}
+.bw-receipt-row dd {
+  margin: 0;
+  min-width: 0;
+}
+.bw-receipt-row .bw-receipt-link {
+  grid-column: 2;
+}
+.bw-receipt-title {
+  grid-template-columns: minmax(0, 1fr);
+}
+.bw-receipt-title > dd:not(.bw-receipt-link) {
+  font-family: var(--font-heading), "Helvetica Neue", Arial, sans-serif;
+  font-stretch: 125%;
+  font-weight: 700;
+  font-size: var(--bw-text-h4);
+  line-height: var(--bw-lh-h4);
+  letter-spacing: -0.01em;
+}
+.bw-receipt-title .bw-receipt-link {
+  grid-column: 1;
+}
+@media (min-width: 640px) {
+  .bw-receipt-row {
+    grid-template-columns: 56px minmax(0, 1fr) auto;
+  }
+  .bw-receipt-row .bw-receipt-link {
+    grid-column: 3;
+    justify-self: end;
+  }
+  .bw-receipt-title {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .bw-receipt-title .bw-receipt-link {
+    grid-column: 2;
+  }
+}
+.bw-receipt-link a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: var(--bw-text-small);
+  color: var(--bw-brand-text);
+  white-space: nowrap;
+}
+/* The band badge: word plus number, never color alone. Not chamfered here: the card is this region's one chamfer. */
+.bw-band {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--bw-radius-sm);
+  font: 600 11px / 1 var(--font-code), ui-monospace, monospace;
+  letter-spacing: var(--bw-track-label);
+  text-transform: uppercase;
+  font-variant-numeric: tabular-nums;
+}
+.bw-band::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+}
+.bw-band-high {
+  background: var(--bw-high-bg);
+  color: var(--bw-high-text);
+}
+.bw-band-medium {
+  background: var(--bw-medium-bg);
+  color: var(--bw-medium-text);
+}
+.bw-band-low {
+  background: var(--bw-low-bg);
+  color: var(--bw-low-text);
+}
+.bw-mono {
+  font-family: var(--font-code), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+.bw-receipt-note {
+  margin: var(--bw-space-2) 0 0;
+  font-size: var(--bw-text-caption);
+  line-height: var(--bw-lh-caption);
+  color: var(--bw-text-muted);
+}
+
+/* The raw RunResult disclosure. */
+.bw-raw {
+  margin-top: var(--bw-space-3);
+}
+.bw-raw summary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bw-space-2);
+  min-height: 44px;
+  cursor: pointer;
+  font-size: var(--bw-text-small);
+  font-weight: 600;
+  color: var(--bw-brand-text);
+  list-style: none;
+}
+.bw-raw summary::-webkit-details-marker {
+  display: none;
+}
+.bw-raw-chevron {
+  flex: none;
+  transition: transform var(--bw-dur-fast) var(--bw-ease-standard);
+}
+.bw-raw[open] .bw-raw-chevron {
+  transform: rotate(90deg);
+}
+.bw-raw summary:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.bw-raw pre {
+  margin-top: var(--bw-space-2);
+  max-height: 420px;
+  border: 1px solid var(--bw-border);
+  border-radius: var(--bw-radius-sm);
+  background: var(--bw-surface-sunken);
+}
+
+/* Mark A at the head of the trail, then quick links as plain rows. */
+.bw-trailhead {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--bw-space-3);
+  margin: var(--bw-space-7) 0 var(--bw-space-6);
+}
+.bw-trailhead-mark {
+  height: 80px;
+  width: auto;
+  flex: none;
+}
+.bw-trailhead .bw-trail {
+  flex: 1;
+  margin-bottom: 6px;
+}
+.bw-quick {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--bw-border);
+}
+.bw-quick li {
+  border-bottom: 1px solid var(--bw-border);
+}
+.bw-quick a {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: var(--bw-space-4);
+  align-items: center;
+  min-height: 48px;
+  padding: var(--bw-space-3) var(--bw-space-1);
+  color: var(--bw-text);
+  transition: background-color var(--bw-dur-fast) var(--bw-ease-standard);
+}
+.bw-quick a:hover {
+  background: var(--bw-surface-sunken);
+}
+.bw-quick a:focus-visible {
+  outline-offset: -2px;
+}
+.bw-quick-title {
+  grid-column: 1;
+  font-weight: 600;
+}
+.bw-quick-desc {
+  grid-row: 2;
+  font-size: var(--bw-text-small);
+  color: var(--bw-text-muted);
+}
+.bw-quick-arrow {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  color: var(--bw-text-muted);
+}
+@media (min-width: 768px) {
+  .bw-quick a {
+    grid-template-columns: minmax(12rem, 1fr) minmax(0, 2fr) auto;
+  }
+  .bw-quick-desc {
+    grid-row: 1;
+    grid-column: 2;
+  }
+  .bw-quick-arrow {
+    grid-row: 1;
+    grid-column: 3;
+  }
+}
+.bw-agents {
+  margin: var(--bw-space-4) 0 0;
+  font-size: var(--bw-text-small);
+  color: var(--bw-text-muted);
+}
+.bw-agents a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  font-family: var(--font-code), ui-monospace, monospace;
+  color: var(--bw-text-muted);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+.bw-agents a:hover {
+  color: var(--bw-text);
+}
+.bw-focus-poly {
+  display: inline-flex;
+}
+.bw-focus-poly:has(> :focus-visible) {
+  filter: drop-shadow(2px 0 0 var(--bw-bg)) drop-shadow(-2px 0 0 var(--bw-bg)) drop-shadow(0 2px 0 var(--bw-bg)) drop-shadow(0 -2px 0 var(--bw-bg))
+    drop-shadow(2px 0 0 var(--bw-focus)) drop-shadow(-2px 0 0 var(--bw-focus)) drop-shadow(0 2px 0 var(--bw-focus)) drop-shadow(0 -2px 0 var(--bw-focus));
+}
+.bw-trail {
+  height: 3px;
+  background-image: radial-gradient(circle, var(--bw-border-strong) 1.5px, transparent 1.6px);
+  background-size: 12px 3px;
+  background-repeat: repeat-x;
+}
+
+/*
+ * Phone tap targets (DESIGN-STANDARDS.md: 44px at phone widths). Fumadocs' own controls are 22 to
+ * 40px. Each one grows its box, never its icon. Where a control sits inside a line or a heading,
+ * a negative margin gives the extra space back so nothing else moves. Selectors use fumadocs' data
+ * attributes, ids and roles, not its generated classes.
+ */
+@media (max-width: 639px) {
+  /* Header and nav: the wordmark link, search, sidebar and menu toggles. */
+  #nd-subnav > a[href="/"],
+  #nd-nav a[href="/"] {
+    min-height: 44px;
+  }
+  [data-search],
+  button[aria-controls="nd-sidebar-mobile"],
+  #nd-nav button[aria-label="Toggle Menu"] {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* The theme toggle is a bordered pill: keep its look and grow the hit area around it. */
+  [data-theme-toggle] {
+    position: relative;
+    overflow: visible;
+  }
+  [data-theme-toggle]::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+
+  /* Rows in the sidebar drawer and the "On this page" popover. */
+  #nd-sidebar-mobile a,
+  #nd-sidebar-mobile button:not([data-theme-toggle]),
+  [data-toc-popover-trigger] {
+    min-height: 44px;
+  }
+  [data-toc-popover-content] a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  /* Copy buttons: on code blocks (24px), next to headings (24px) and on API fields (22px). */
+  button[aria-live="polite"] {
+    min-width: 44px;
+    min-height: 44px;
+    margin: -10px;
+  }
+  :not(figure) > div > button[aria-live="polite"]:not(:is(h1, h2, h3, h4, h5, h6) > *) {
+    margin: -11px;
+  }
+
+  /* Heading self-links: vertical padding on an inline box grows the target, not the line. */
+  #nd-page :is(h2, h3) > a[data-card] {
+    padding-block: 8px;
+  }
+
+  /* API pages: language and status tabs, the auth picker and the response accordions. */
+  /* A min-width replaces the flex item's min-width: auto, so keep tabs from shrinking under their
+     labels. The tab list already scrolls sideways when the tabs run long. */
+  #nd-page [role="tablist"] > [role="tab"] {
+    flex-shrink: 0;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  #nd-page [role="combobox"],
+  #nd-page button[aria-expanded][data-orientation="vertical"] {
+    min-height: 44px;
+  }
+}
+

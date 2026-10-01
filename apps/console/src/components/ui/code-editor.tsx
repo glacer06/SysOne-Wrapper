@@ -23,7 +23,7 @@ export function CodeEditor({ label, value, onChange, json = true, rows = 18, rea
   const invalid = check !== null && !check.ok;
   return (
     <div className={cx("flex flex-col gap-1.5", className)}>
-      <label htmlFor={id} className="text-sm font-medium text-ink">
+      <label htmlFor={id} className="text-sm font-medium text-bw-text">
         {label}
       </label>
       <textarea
@@ -35,7 +35,7 @@ export function CodeEditor({ label, value, onChange, json = true, rows = 18, rea
         autoCapitalize="off"
         autoCorrect="off"
         aria-invalid={invalid || undefined}
-        aria-describedby={`${id}-status`}
+        aria-describedby={readOnly ? `${id}-status` : `${id}-status ${id}-keys`}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
           if (e.key !== "Tab" || e.shiftKey || readOnly || e.currentTarget.dataset["escaped"] === "1") return;
@@ -52,13 +52,15 @@ export function CodeEditor({ label, value, onChange, json = true, rows = 18, rea
           delete e.currentTarget.dataset["escaped"];
         }}
         className={cx(
-          "w-full rounded-sm border bg-paper-sunk p-3 font-mono text-[13px] leading-5 text-ink",
-          invalid ? "border-danger" : "border-edge",
+          "w-full rounded-sm border bg-bw-surface-sunken p-3 font-mono text-[13px] leading-5 text-bw-text",
+          invalid ? "border-bw-low" : "border-bw-border-control",
         )}
       />
-      <p id={`${id}-status`} className={cx("text-xs", invalid ? "text-danger" : "text-ink-3")} aria-live="polite">
+      <p id={`${id}-status`} className={cx("text-xs", invalid ? "text-bw-low-text" : "text-bw-text-muted")} aria-live="polite">
         {check === null ? "" : check.ok ? "Valid JSON" : `Invalid JSON${check.line === null ? "" : ` near line ${check.line}`}: ${check.message}`}
       </p>
+      {/* Tab is taken for indenting, so say how to leave the field (WCAG 2.1.2). */}
+      {readOnly ? null : <p id={`${id}-keys`} className="text-xs text-bw-text-muted">Tab indents. Press Escape, then Tab, to leave the field.</p>}
     </div>
   );
 }

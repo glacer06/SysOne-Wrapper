@@ -1,0 +1,114 @@
+/* bandwise design tokens v1.0 - cool palette, no warm tones.
+   Fonts (all OFL, Google Fonts): Archivo (variable wdth+wght), Schibsted Grotesk, JetBrains Mono.
+   Usage: <html data-theme="light"> or "dark". Components read only the semantic (--bw-*) layer. */
+
+:root {
+  /* ---- primitives: neutral (cool ink to cool white) ---- */
+  --bw-ink-950: #0D1417;
+  --bw-ink-900: #131D22;
+  --bw-ink-800: #1B282E;
+  --bw-ink-700: #2A3A41;
+  --bw-slate-600: #5B6B70;
+  --bw-slate-400: #8A9A9F;
+  --bw-slate-500: #7E8E93;  /* control outlines, 3.4:1 on white */
+  --bw-slate-300: #B7C3C5;
+  --bw-slate-200: #D9E1E1;
+  --bw-slate-100: #E8EEED;
+  --bw-white-50: #F2F5F4;
+  --bw-white-0: #FFFFFF;
+  /* ---- primitives: teal (brand, the HIGH band) ---- */
+  --bw-teal-900: #08463D;
+  --bw-teal-700: #0B7060;
+  --bw-teal-500: #12A38A;
+  --bw-teal-300: #4FD1B5;
+  --bw-teal-100: #D4F1EA;
+  /* ---- primitives: violet (the MEDIUM band) ---- */
+  --bw-violet-600: #5B4BD6;
+  --bw-violet-400: #8B7CF6;
+  --bw-violet-300: #A498F9;
+  --bw-violet-100: #E7E4FD;
+  /* ---- primitives: red (the LOW band, errors; cool crimson, never orange) ---- */
+  --bw-red-600: #C4203D;
+  --bw-red-500: #D92D4A;
+  --bw-red-300: #FF6B83;
+  --bw-red-100: #FBE1E6;
+
+  /* ---- type ---- */
+  --bw-font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;   /* use with font-stretch:125% weight 800 */
+  --bw-font-body: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --bw-font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --bw-text-display: 64px;  --bw-lh-display: 1.04;
+  --bw-text-h1: 48px;       --bw-lh-h1: 1.08;
+  --bw-text-h2: 36px;       --bw-lh-h2: 1.12;
+  --bw-text-h3: 24px;       --bw-lh-h3: 1.2;
+  --bw-text-h4: 18px;       --bw-lh-h4: 1.3;
+  --bw-text-body: 16px;     --bw-lh-body: 1.55;
+  --bw-text-small: 14px;    --bw-lh-small: 1.5;
+  --bw-text-caption: 12px;  --bw-lh-caption: 1.4;
+  --bw-track-display: -0.02em;
+  --bw-track-label: 0.08em;
+
+  /* ---- spacing (4px base) ---- */
+  --bw-space-0: 0;   --bw-space-1: 4px;  --bw-space-2: 8px;  --bw-space-3: 12px;
+  --bw-space-4: 16px; --bw-space-5: 24px; --bw-space-6: 32px; --bw-space-7: 48px;
+  --bw-space-8: 64px; --bw-space-9: 96px;
+
+  /* ---- shape: faceted. Small radii; the signature is the chamfer. ---- */
+  --bw-radius-0: 0;  --bw-radius-sm: 2px;  --bw-radius-md: 4px;  --bw-radius-lg: 8px;  --bw-radius-pill: 999px;
+  --bw-chamfer: 8px;  /* top-right + bottom-left corner cut on primary buttons, cards, badges */
+  --bw-border-width: 1px;
+  --bw-focus-width: 2px;  --bw-focus-offset: 2px;
+
+  /* ---- motion ---- */
+  --bw-dur-instant: 80ms;  --bw-dur-fast: 140ms;  --bw-dur-base: 240ms;  --bw-dur-slow: 480ms;  --bw-dur-walk: 1400ms;
+  --bw-ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --bw-ease-settle: cubic-bezier(0.34, 1.4, 0.64, 1);  /* the load set-down: one small overshoot */
+  --bw-ease-walk: cubic-bezier(0.45, 0, 0.25, 1);
+
+  /* ---- layout ---- */
+  --bw-bp-sm: 640px; --bw-bp-md: 960px; --bw-bp-lg: 1280px;  --bw-content-max: 1200px;  --bw-prose-max: 68ch;
+}
+
+/* ---- semantic layer: LIGHT ---- */
+:root, [data-theme="light"] {
+  --bw-bg: var(--bw-white-50);
+  --bw-surface: var(--bw-white-0);
+  --bw-surface-sunken: var(--bw-slate-100);
+  --bw-border: var(--bw-slate-200);
+  --bw-border-strong: var(--bw-slate-300);   /* hairlines and table rules only */
+  --bw-border-control: var(--bw-slate-500);  /* input and secondary button outlines, 3:1 */
+  --bw-text: var(--bw-ink-950);
+  --bw-text-muted: var(--bw-slate-600);
+  --bw-brand: var(--bw-teal-500);            /* fills and graphics only, 2.9:1 on white */
+  --bw-brand-text: var(--bw-teal-700);       /* links, text, 5.5:1 */
+  --bw-on-brand: var(--bw-ink-950);          /* text on teal fills, 5.9:1 */
+  --bw-high: var(--bw-teal-500);   --bw-high-text: var(--bw-teal-700);   --bw-high-bg: var(--bw-teal-100);
+  --bw-medium: var(--bw-violet-400); --bw-medium-text: var(--bw-violet-600); --bw-medium-bg: var(--bw-violet-100);
+  --bw-low: var(--bw-red-500);     --bw-low-text: var(--bw-red-600);     --bw-low-bg: var(--bw-red-100);
+  --bw-focus: var(--bw-violet-600);
+  --bw-overlay: rgba(13, 20, 23, 0.56);
+  --bw-shadow-overlay: 0 8px 24px rgba(13, 20, 23, 0.16), 0 1px 3px rgba(13, 20, 23, 0.12);  /* dialogs, popovers, toasts only */
+}
+/* ---- semantic layer: DARK ---- */
+[data-theme="dark"] {
+  --bw-bg: var(--bw-ink-950);
+  --bw-surface: var(--bw-ink-900);
+  --bw-surface-sunken: #0A1013;
+  --bw-border: var(--bw-ink-700);
+  --bw-border-strong: #3B4D55;   /* hairlines and table rules only */
+  --bw-border-control: #66777C;  /* input and secondary button outlines, 3:1 */
+  --bw-text: var(--bw-white-50);
+  --bw-text-muted: var(--bw-slate-400);
+  --bw-brand: var(--bw-teal-300);
+  --bw-brand-text: var(--bw-teal-300);
+  --bw-on-brand: var(--bw-ink-950);
+  --bw-high: var(--bw-teal-300);   --bw-high-text: var(--bw-teal-300);   --bw-high-bg: rgba(79, 209, 181, 0.14);
+  --bw-medium: var(--bw-violet-400); --bw-medium-text: var(--bw-violet-300); --bw-medium-bg: rgba(139, 124, 246, 0.16);
+  --bw-low: var(--bw-red-300);     --bw-low-text: var(--bw-red-300);     --bw-low-bg: rgba(255, 107, 131, 0.14);
+  --bw-focus: var(--bw-teal-300);
+  --bw-overlay: rgba(0, 0, 0, 0.64);
+  --bw-shadow-overlay: 0 8px 24px rgba(0, 0, 0, 0.56), 0 1px 3px rgba(0, 0, 0, 0.48);  /* dialogs, popovers, toasts only */
+}
+@media (prefers-reduced-motion: reduce) {
+  :root { --bw-dur-fast: 0ms; --bw-dur-base: 0ms; --bw-dur-slow: 0ms; --bw-dur-walk: 0ms; }
+}

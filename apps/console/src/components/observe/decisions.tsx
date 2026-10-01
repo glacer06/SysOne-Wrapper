@@ -29,6 +29,15 @@ export function confidenceOf(answer: unknown): string | null {
   return null;
 }
 
+/** The same number as confidenceOf, for the band badge: P(yes) for noul, the confidence otherwise. */
+export function scoreOf(answer: unknown): number | null {
+  if (typeof answer !== "object" || answer === null) return null;
+  const a = answer as Record<string, unknown>;
+  if (a["type"] === "noul" && typeof a["noul"] === "number") return a["noul"];
+  if (typeof a["confidence"] === "number") return a["confidence"];
+  return null;
+}
+
 /** The options a person can pick to correct a decision: from the answer's own probabilities. */
 export function choicesOf(answer: unknown): { value: string; label: string; json: unknown }[] | null {
   if (typeof answer !== "object" || answer === null) return null;
@@ -51,7 +60,7 @@ export function choicesOf(answer: unknown): { value: string; label: string; json
 export function DecisionsTable({ decisions, answers, highlight }: { decisions: unknown; answers: unknown; highlight?: string }) {
   const rows = decisionsOf(decisions);
   const byId = (typeof answers === "object" && answers !== null ? answers : {}) as Record<string, unknown>;
-  if (rows.length === 0) return <p className="text-sm text-ink-3">No decisions were stored for this run.</p>;
+  if (rows.length === 0) return <p className="text-sm text-bw-text-muted">No decisions were stored for this run.</p>;
   return (
     <Table caption="Decisions">
       <thead>
@@ -67,23 +76,23 @@ export function DecisionsTable({ decisions, answers, highlight }: { decisions: u
         {rows.map(([id, d]) => {
           const conf = confidenceOf(byId[id]);
           return (
-            <tr key={id} className={id === highlight ? "bg-info-wash" : undefined}>
+            <tr key={id} className={id === highlight ? "bg-bw-surface-sunken" : undefined} aria-current={id === highlight ? "true" : undefined}>
               <Td className="font-mono text-xs">
                 {id}
-                {d.relevant ? null : <span className="ml-2 font-sans text-ink-3">not relevant</span>}
+                {d.relevant ? null : <span className="ml-2 font-sans text-bw-text-muted">not relevant</span>}
               </Td>
               <Td>
                 {formatValue(d.value)}
-                {d.level === undefined ? null : <span className="ml-1 text-xs text-ink-3">({d.level})</span>}
-                {conf === null ? null : <span className="ml-2 font-mono text-xs text-ink-3">{conf}</span>}
+                {d.level === undefined ? null : <span className="ml-1 text-xs text-bw-text-muted">({d.level})</span>}
+                {conf === null ? null : <span className="ml-2 font-mono text-xs text-bw-text-muted">{conf}</span>}
               </Td>
               <Td>
-                <BandBadge band={d.band} />
+                <BandBadge band={d.band} score={scoreOf(byId[id])} />
               </Td>
               <Td>{ACTION_LABEL[d.action] ?? d.action}</Td>
               <Td>
                 {ACTION_LABEL[d.effectiveAction] ?? d.effectiveAction}
-                {d.relevant && d.effectiveAction !== d.action ?<span className="ml-1 text-xs text-ink-3">(held back by the stage)</span> : null}
+                {d.relevant && d.effectiveAction !== d.action ? <span className="ml-1 text-xs text-bw-text-muted">(held back by the stage)</span> : null}
               </Td>
             </tr>
           );

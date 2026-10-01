@@ -11,6 +11,7 @@ ADR-018 allows only claims we can source. Every number on www.bandwise.dev comes
 | Calibration: higher confidence means higher accuracy | TypeSafe docs describe confidence as the spread of the answer distribution, not the chance of being right | Do not claim "0.8 is right 80% of the time". An independent study found raw calibration error of 0.117 on one sentiment task, cut to 0.008 with isotonic calibration (github.com/AnthusAI/Jev-Calibration). Our pitch: we measure your accuracy on your own labels |
 | Calculator comparators: Claude Haiku 4.5 at $1 input and $5 output per million tokens; Claude Fable 5.1 at $10 input and $50 output | Anthropic pricing, https://platform.claude.com/docs/en/about-claude/pricing (2026-09-28) | Base API prices, no caching or batch discount. The calculator reads them from the core price book; update both together |
 | TypeSafe accepts pinned versioned model ids (for example `jev-1.13.0`) next to aliases, so thresholds tuned on one version stay on it | TypeSafe docs, https://docs.typesafe.ai/models.md (2026-09-28) | The site's provider table says the direct route has pinned versions for controlled and full rollout; that pairing is our rule (ADR-008), not TypeSafe's |
+| OG and social images show "0.71 · $0.00003 · saved ~$0.004" | Brand kit v1 art (`brand/social/`), example values, not measured (Nick, 2026-10-01: fine as examples for now) | Illustrative only. Replace with real dogfood receipt numbers by 2026-10-15, and never quote these numbers in page copy |
 
 ## Things the site must not say
 

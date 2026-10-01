@@ -14,11 +14,11 @@ export default async function SetupTwoFactorPage() {
   if (state.kind !== "needs-two-factor") redirect("/sets");
   return (
     <>
-      <h1 className="mb-1 text-xl font-semibold text-ink">Set up two-factor</h1>
-      <p className="mb-6 text-sm text-ink-2">Signed in as {state.user.email}.</p>
+      <h1 className="bw-auth-title mb-2">Set up two-factor</h1>
+      <p className="mb-6 text-sm text-bw-text-muted">Signed in as {state.user.email}.</p>
       <SetupTwoFactor />
       <form action={signOutAction} className="mt-6">
-        <button type="submit" className="text-xs text-ink-3 underline underline-offset-2 hover:text-ink">
+        <button type="submit" className="text-xs text-bw-text-muted underline underline-offset-2 hover:text-bw-text">
           Sign out
         </button>
       </form>

@@ -20,7 +20,7 @@ vi.mock("next/navigation", () => ({
   },
 }));
 
-const { confirmReviewAction, dismissReviewAction, resolveReviewAction } = await import("./actions");
+const { confirmReviewAction, dismissReviewAction, resolveReviewAction, settleQueueItem } = await import("./actions");
 const { parseReviewForm } = await import("./form");
 
 const ITEM = "0199a1b2-0000-7000-8000-000000000001";
@@ -79,5 +79,18 @@ describe("review actions", () => {
       { id: "review.confirm", input: { id: ITEM } },
       { id: "review.confirm", input: { id: ITEM, resolution: { value: true } } },
     ]);
+  });
+});
+
+describe("settleQueueItem", () => {
+  it("treats an item that is already closed as settled, so a retry after a lost response is not an error", async () => {
+    answer = { status: "error", code: "already_exists", message: "This item was already resolved." };
+    await expect(settleQueueItem({ op: "resolve", id: ITEM, runId: RUN, value: "true" })).resolves.toEqual({ ok: true });
+    expect(revalidated).toEqual(["/review", `/runs/${RUN}`]);
+  });
+
+  it("still reports any other failure", async () => {
+    answer = { status: "error", code: "not_found", message: "No such item." };
+    await expect(settleQueueItem({ op: "dismiss", id: ITEM, runId: null })).resolves.toEqual({ ok: false, message: "No such item." });
   });
 });

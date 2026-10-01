@@ -7,7 +7,7 @@ export default function SetNotFound() {
     <EmptyState
       title="No such set"
       action={
-        <Link href="/sets" className="text-sm text-ink underline underline-offset-2">
+        <Link href="/sets" className="bw-hit text-sm text-bw-text underline underline-offset-2">
           Back to all sets
         </Link>
       }
