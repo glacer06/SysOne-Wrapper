@@ -77,6 +77,20 @@ export function serverRunPorts(deps: RunSetDeps): RunPorts {
 }
 
 /**
+ * The caller gates, before anything about the request is read: the internal org only (any other
+ * org gets the same 404 as a missing set), and the run scope for tokens.
+ */
+export function assertRunCaller(ctx: TenantContext, orgSlug: string): void {
+  if (orgSlug !== HOSTED_RUN_ORG_SLUG) {
+    throw new OperationError("not_found", "Hosted runs are open only to the internal org for now.");
+  }
+  const actor = ctx.actor;
+  if ((actor.type === "apiKey" || actor.type === "agent") && !actor.scopes.includes("run")) {
+    throw new OperationError("insufficient_scope", "Running a set needs the run scope.", { requiredScope: "run" });
+  }
+}
+
+/**
  * Run a set for an authenticated caller. Throws OperationError for every refusal, so the route
  * maps one type to the api.md envelope. A run that got a run id comes back as a RunResult, failed
  * or not.
@@ -88,13 +102,8 @@ export async function runSetForCaller(
   deps: RunSetDeps,
   signal: AbortSignal = new AbortController().signal,
 ): Promise<RunResult | RunDryRunResult> {
-  if (orgSlug !== HOSTED_RUN_ORG_SLUG) {
-    throw new OperationError("not_found", "Hosted runs are open only to the internal org for now.");
-  }
-  const actor = ctx.actor;
-  if ((actor.type === "apiKey" || actor.type === "agent") && !actor.scopes.includes("run")) {
-    throw new OperationError("insufficient_scope", "Running a set needs the run scope.", { requiredScope: "run" });
-  }
+  // Checked again here so no other caller of this function can skip the gates.
+  assertRunCaller(ctx, orgSlug);
 
   const resolved = await deps.db.withTenant(ctx, (tx) => resolveRun(tx, ctx, { ref: input.ref, channel: input.channel }));
   const ports = serverRunPorts(deps);

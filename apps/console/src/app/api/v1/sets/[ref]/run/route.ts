@@ -1,5 +1,6 @@
 // POST /api/v1/sets/{ref}/run (api.md, Run surface; ADR-020 D2b). The logic and its tests live in
-// ~/server/run. This file reads the request and builds the deps from the env.
+// ~/server/run. This file hands over the raw request parts; the body is read only after the
+// caller passes auth and the gates, and every failure goes through the handler's error boundary.
 
 import type { SystemOneTransport } from "@bandwise/core";
 import { FixtureTransport, SdkTransport } from "@bandwise/system-one-client/server";
@@ -15,7 +16,10 @@ export const dynamic = "force-dynamic";
 
 let transport: SystemOneTransport | undefined;
 
-function deps(): RunHttpDeps {
+const log = (message: string, requestId: string) => console.error(`run ${requestId}: ${message}`);
+
+/** Throws when the env is incomplete; handleRunHttp turns that into a generic 503. */
+function runDeps(): RunHttpDeps {
   const env = getEnv();
   const pepper = env.BANDWISE_TOKEN_PEPPER;
   if (pepper === undefined) throw new Error("BANDWISE_TOKEN_PEPPER is not set");
@@ -31,25 +35,30 @@ function deps(): RunHttpDeps {
       ...(env.OPENROUTER_API_KEY !== undefined ? { openrouter: env.OPENROUTER_API_KEY } : {}),
       ...(env.AI_GATEWAY_API_KEY !== undefined ? { vercel: env.AI_GATEWAY_API_KEY } : {}),
     },
-    logError: (message, requestId) => console.error(`run ${requestId}: ${message}`),
+    logError: log,
   };
 }
 
 export async function POST(req: Request, ctx: { params: Promise<{ ref: string }> }): Promise<Response> {
   const requestId = crypto.randomUUID();
-  const { ref } = await ctx.params;
-  const body = await readLimitedBody(req, MAX_RUN_BODY_BYTES);
+  const headers = { "x-request-id": requestId, "cache-control": "no-store" };
+  let rawRef = "";
+  try {
+    rawRef = (await ctx.params).ref;
+  } catch {
+    // An unreadable path falls through as an empty ref, which the handler refuses after auth.
+  }
   const res = await handleRunHttp(
     {
       authorization: req.headers.get("authorization"),
-      ref: decodeURIComponent(ref),
+      rawRef,
       channel: new URL(req.url).searchParams.get("channel"),
-      body: body.text,
-      bodyTooLarge: body.tooLarge,
+      readBody: () => readLimitedBody(req, MAX_RUN_BODY_BYTES),
       requestId,
       signal: req.signal,
     },
-    deps(),
+    runDeps,
+    log,
   );
-  return Response.json(res.body, { status: res.status, headers: { "x-request-id": requestId, "cache-control": "no-store" } });
+  return Response.json(res.body, { status: res.status, headers });
 }

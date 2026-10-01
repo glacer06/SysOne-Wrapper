@@ -46,19 +46,30 @@ async function token(org: SeededOrg, opts: { prefix?: TokenPrefix; scopes?: stri
   return raw;
 }
 
-function call(raw: string | null, extra: Partial<RunHttpInput> = {}) {
-  return handleRunHttp(
+type CallExtra = Partial<Omit<RunHttpInput, "readBody" | "rawRef">> & { ref?: string; body?: string | null; bodyTooLarge?: boolean; readBody?: RunHttpInput["readBody"] };
+
+/** Calls the handler; `reads` counts how often the body was read. */
+function call(raw: string | null, extra: CallExtra = {}) {
+  const { ref, body, bodyTooLarge, readBody, ...rest } = extra;
+  const reads = { count: 0 };
+  const text = body === undefined ? JSON.stringify({ state: { text: "Can you send me the invoice by Friday?" } }) : body;
+  const res = handleRunHttp(
     {
       authorization: raw === null ? null : `Bearer ${raw}`,
-      ref: "inbox-triage",
+      rawRef: encodeURIComponent(ref ?? "inbox-triage"),
       channel: null,
-      body: JSON.stringify({ state: { text: "Can you send me the invoice by Friday?" } }),
-      bodyTooLarge: false,
+      readBody:
+        readBody ??
+        (async () => {
+          reads.count += 1;
+          return { text, tooLarge: bodyTooLarge ?? false };
+        }),
       requestId: "req-1",
-      ...extra,
+      ...rest,
     },
-    deps(),
+    deps,
   );
+  return Object.assign(res, { reads });
 }
 
 const code = (res: { body: unknown }) => (res.body as { error: { code: string } }).error.code;
@@ -105,10 +116,56 @@ describe("POST /api/v1/sets/{ref}/run", () => {
     expect(after.length).toBe(before.length);
   });
 
-  it("answers 401 before reading the body or the set", async () => {
-    const res = await call(null, { body: "not json", ref: "nope" });
+  it("answers 401 without reading the body or the set", async () => {
+    const pending = call(null, { body: "not json", ref: "nope" });
+    const res = await pending;
     expect(res.status).toBe(401);
     expect(code(res)).toBe("unauthenticated");
+    expect(pending.reads.count).toBe(0);
+  });
+
+  it("refuses a denied caller before validating anything it sent", async () => {
+    // Another org: always 404, whatever the body, channel or ref, and the body is never read.
+    const outsider = await token(acme);
+    for (const extra of [{ body: "{" }, { channel: "nightly" }, { ref: "inbox triage@" }] as CallExtra[]) {
+      const pending = call(outsider, extra);
+      const res = await pending;
+      expect(res.status).toBe(404);
+      expect(pending.reads.count).toBe(0);
+    }
+    // Missing run scope: always 403, and the body is never read.
+    const noScope = call(await token(internal, { scopes: ["sets:read"] }), { body: "{" });
+    expect(code(await noScope)).toBe("insufficient_scope");
+    expect(noScope.reads.count).toBe(0);
+  });
+
+  it("turns bad percent-encoding and an unreadable body into 400", async () => {
+    const raw = await token(internal);
+    const bad = await handleRunHttp(
+      { authorization: `Bearer ${raw}`, rawRef: "%", channel: null, readBody: async () => ({ text: "{}", tooLarge: false }), requestId: "r" },
+      deps,
+    );
+    expect(bad.status).toBe(400);
+    expect(code(bad)).toBe("invalid_request");
+    const unreadable = await call(raw, {
+      readBody: () => Promise.reject(new Error("socket hang up with state text")),
+    });
+    expect(unreadable.status).toBe(400);
+    expect(JSON.stringify(unreadable.body)).not.toContain("state text");
+  });
+
+  it("answers a generic 503 when the deps cannot load, logging only the error type", async () => {
+    const lines: string[] = [];
+    const res = await handleRunHttp(
+      { authorization: "Bearer x", rawRef: "inbox-triage", channel: null, readBody: async () => ({ text: "{}", tooLarge: false }), requestId: "r" },
+      () => {
+        throw new Error("BANDWISE_TOKEN_PEPPER is not set, value was hunter2");
+      },
+      (m) => lines.push(m),
+    );
+    expect(res.status).toBe(503);
+    expect(JSON.stringify(res.body)).not.toContain("hunter2");
+    expect(lines).toEqual(["Error"]);
   });
 
   it("is open only to the internal org", async () => {
