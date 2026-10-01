@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { SideNav } from "~/components/shell/nav";
 import { UserMenu } from "~/components/shell/user-menu";
-import { Lockup, Monogram } from "~/components/shell/wordmark";
+import { Wordmark } from "~/components/shell/wordmark";
 import { ToastProvider } from "~/components/ui";
 import { requireConsole } from "~/server/auth/console";
 
@@ -16,17 +16,17 @@ const ROLE_LABEL: Record<string, string> = { owner: "Owner", admin: "Admin", edi
 export default async function OrgLayout({ children }: { children: ReactNode }) {
   const { org, user, ctx } = await requireConsole();
   const header = (
-    <div className="flex flex-col gap-3">
-      <Lockup width={168} />
+    <div className="flex flex-col gap-2">
+      <Wordmark />
       <span className="bw-label truncate" title={org.name}>
         {org.name}
       </span>
     </div>
   );
-  // Below the lockup's 160px minimum the B stands in (DESIGN.md, logo use).
+  // The phone header carries the same typed wordmark, a size down.
   const compactHeader = (
     <div className="flex min-w-0 items-center gap-3">
-      <Monogram height={28} label="Bandwise console" />
+      <Wordmark size="sm" />
       <span className="truncate text-sm font-semibold text-bw-text" title={org.name}>
         {org.name}
       </span>

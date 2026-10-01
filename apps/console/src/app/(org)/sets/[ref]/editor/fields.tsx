@@ -34,7 +34,7 @@ export function TextArea({ label, hint, value, onValueChange, className, rows, .
         rows={lines}
         aria-describedby={hint === undefined ? undefined : `${id}-hint`}
         onChange={(e) => onValueChange(e.target.value)}
-        className={cx("w-full rounded-sm border border-bw-border-strong bg-bw-surface-sunken px-3 py-2 text-sm leading-6 text-bw-text placeholder:text-bw-text-muted", className)}
+        className={cx("w-full rounded-sm border border-bw-border-control bg-bw-surface-sunken px-3 py-2 text-sm leading-6 text-bw-text placeholder:text-bw-text-muted", className)}
         {...rest}
       />
     </div>
@@ -163,7 +163,7 @@ export function CommitInput({ label, value, onCommit, invalid }: { label: string
           if (e.key === "Escape") setText(value);
         }}
         aria-invalid={problem === null ? undefined : true}
-        className="h-9 w-full rounded-sm border border-bw-border-strong bg-bw-surface-sunken px-2 font-mono text-sm text-bw-text aria-[invalid=true]:border-bw-low"
+        className="h-9 w-full rounded-sm border border-bw-border-control bg-bw-surface-sunken px-2 font-mono text-sm text-bw-text aria-[invalid=true]:border-bw-low"
       />
       {problem === null ? null : <p className="text-xs text-bw-low-text">{problem}</p>}
     </div>

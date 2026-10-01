@@ -40,7 +40,7 @@ export function ConfirmDialog({ open, title, children, confirmLabel, tone = "pri
         e.preventDefault();
         if (!pending) onCancel();
       }}
-      className="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-md border border-bw-border bg-bw-surface p-0 text-bw-text shadow-xl backdrop:bg-bw-overlay"
+      className="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-md border border-bw-border bg-bw-surface p-0 text-bw-text shadow-(--bw-shadow-overlay) backdrop:bg-bw-overlay"
     >
       <div className="px-5 py-4">
         <h2 id={titleId} className="text-base font-semibold">

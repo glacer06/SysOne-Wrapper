@@ -11,6 +11,7 @@
   --color-bw-surface-sunken: var(--bw-surface-sunken);
   --color-bw-border: var(--bw-border);
   --color-bw-border-strong: var(--bw-border-strong);
+  --color-bw-border-control: var(--bw-border-control);
   --color-bw-text: var(--bw-text);
   --color-bw-text-muted: var(--bw-text-muted);
   --color-bw-brand: var(--bw-brand);
@@ -106,6 +107,17 @@ body {
     color: var(--bw-text);
   }
 
+  /* The typed wordmark, top-left in the sidebar and the phone header. Size comes from the caller. */
+  .bw-wordmark {
+    font-family: var(--font-display);
+    font-stretch: 125%;
+    font-weight: 800;
+    letter-spacing: var(--bw-track-display);
+    line-height: 1;
+    color: var(--bw-text);
+    text-transform: lowercase;
+  }
+
   /* Mono 12px caps in the muted color, for labels above values and table heads. */
   .bw-label {
     font-family: var(--font-mono);
@@ -133,11 +145,42 @@ body {
     clip-path: polygon(0 0, calc(100% - var(--c)) 0, 100% var(--c), 100% 100%, var(--c) 100%, 0 calc(100% - var(--c)));
   }
 
-  /* A clipped element hides its own outline, so a chamfered control draws focus on a wrapper-free
-     inset ring instead. */
-  .bw-chamfer:focus-visible {
+  /* A clipped element hides its own outline, so a chamfered button or badge sits in
+     .bw-focus-poly, which draws the ring along the chamfer: a 2px gap in the page color, then a
+     2px ring (the kit's reference rule). The child fills the wrapper when the wrapper stretches. */
+  .bw-focus-poly {
+    display: inline-flex;
+  }
+  .bw-focus-poly > * {
+    flex: 1 1 auto;
+  }
+  .bw-focus-poly > .bw-chamfer:focus-visible,
+  .bw-focus-poly > .bw-chamfer-sm:focus-visible {
     outline: none;
-    box-shadow: inset 0 0 0 2px var(--bw-focus);
+    box-shadow: none;
+  }
+  .bw-focus-poly:has(> :focus-visible) {
+    filter: drop-shadow(2px 0 0 var(--bw-bg)) drop-shadow(-2px 0 0 var(--bw-bg)) drop-shadow(0 2px 0 var(--bw-bg)) drop-shadow(0 -2px 0 var(--bw-bg))
+      drop-shadow(2px 0 0 var(--bw-focus)) drop-shadow(-2px 0 0 var(--bw-focus)) drop-shadow(0 2px 0 var(--bw-focus)) drop-shadow(0 -2px 0 var(--bw-focus));
+  }
+
+  /* Decision cards are chamfered: the wrapper is the 1px border along the polygon and the card
+     inside is cut a hair smaller (the kit's .bw-decision-wrap). */
+  .bw-decision-wrap {
+    --c: var(--bw-chamfer);
+    background: var(--bw-border);
+    padding: var(--bw-border-width);
+    clip-path: polygon(0 0, calc(100% - var(--c)) 0, 100% var(--c), 100% 100%, var(--c) 100%, 0 calc(100% - var(--c)));
+  }
+  .bw-decision-wrap > .bw-decision-card {
+    clip-path: polygon(
+      0 0,
+      calc(100% - var(--c) + 0.41px) 0,
+      100% calc(var(--c) - 0.41px),
+      100% 100%,
+      calc(var(--c) - 0.41px) 100%,
+      0 calc(100% - var(--c) + 0.41px)
+    );
   }
 
   /* The trail motif: a dotted 3px line. */
@@ -188,6 +231,36 @@ body {
 }
 [data-theme="dark"] .bw-for-dark {
   display: block;
+}
+
+/* The faceted B as a wireframe behind the sign-in pages: the supplied path data, no fill, a
+   dotted trail stroke. Opacity applies to the whole drawing, so shared edges never stack: at
+   most 20% of --bw-border-strong in light (45% in dark) lies under any text, which keeps every
+   text pair at AA (muted text stays at 4.6:1 or better). */
+.bw-bwire {
+  display: block;
+  overflow: visible;
+  fill: none;
+  color: var(--bw-border-strong);
+  opacity: 0.2;
+  pointer-events: none;
+}
+.bw-bwire path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-dasharray: 1 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .bw-bwire {
+    opacity: 0.45;
+  }
+}
+[data-theme="dark"] .bw-bwire {
+  opacity: 0.45;
 }
 
 @media (prefers-reduced-motion: reduce) {

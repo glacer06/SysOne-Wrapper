@@ -51,7 +51,7 @@ function ToastItem({ toast, onDone }: { toast: Toast; onDone: (id: number) => vo
     <div
       role={toast.kind === "error" ? "alert" : "status"}
       className={cx(
-        "pointer-events-auto flex max-w-sm items-start gap-3 rounded-sm border border-l-[3px] bg-bw-surface px-4 py-3 text-sm text-bw-text shadow-lg",
+        "pointer-events-auto flex max-w-sm items-start gap-3 rounded-sm border border-l-[3px] bg-bw-surface px-4 py-3 text-sm text-bw-text shadow-(--bw-shadow-overlay)",
         toast.kind === "error" ? "border-bw-low" : toast.kind === "success" ? "border-bw-high" : "border-bw-border-strong",
       )}
     >

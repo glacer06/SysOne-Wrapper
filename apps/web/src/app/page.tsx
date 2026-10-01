@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { BandBadge, BandLegend, ConfidenceRuler } from "~/components/confidence-ruler";
 import { EarlyAccessForm } from "~/components/early-access-form";
+import { BWireframe } from "~/components/b-wireframe";
+import { DrawOnView } from "~/components/draw-on-view";
 import { SavingsCalculator } from "~/components/savings-calculator";
+import { MarkA } from "~/components/site-header";
 import { calculatorSetup, systemOneModel } from "~/lib/bill";
 import { formatUsd } from "~/lib/format";
 import { decisions, policy, question, templateId, templateTitle } from "~/lib/decision-example";
@@ -37,6 +40,7 @@ function Hero() {
   const d = r.decision;
   return (
     <section className="hero" aria-labelledby="hero-title">
+      <BWireframe className="hero-bwire" />
       <div className="wrap hero-grid">
         <div className="hero-copy">
           <p className="label">Early access</p>
@@ -50,15 +54,19 @@ function Hero() {
             fall back to a default, or ask a larger LLM. Every run records what it cost and what it saved.
           </p>
           <div className="hero-actions">
-            <a className="btn btn-primary" href="#early-access">
-              Request early access
-            </a>
+            <span className="focus-poly">
+              <a className="btn btn-primary" href="#early-access">
+                Request early access
+              </a>
+            </span>
             <a className="btn btn-secondary" href="#kit">
               Get the free kit
             </a>
           </div>
           <p className="hero-status">The hosted cloud is in early access. The kit is free and open source today.</p>
         </div>
+
+        <MarkA width={340} className="hero-mark" />
 
         <div className="hero-demo">
           <ConfidenceRuler
@@ -519,6 +527,35 @@ function Kit() {
   );
 }
 
+/** The brand moment: the lockup on the dark ground, the B drawn as a trail behind it. */
+function BrandMoment() {
+  const r = heroReceipt();
+  const d = r.decision;
+  return (
+    <section className="brand-moment" data-theme="dark" aria-label={productName}>
+      <span className="bracket bracket-tl" aria-hidden="true" />
+      <span className="bracket bracket-tr" aria-hidden="true" />
+      <span className="bracket bracket-bl" aria-hidden="true" />
+      <span className="bracket bracket-br" aria-hidden="true" />
+      <DrawOnView className="brand-moment-stage">
+        <BWireframe className="brand-moment-bwire" revealId="brand-moment-reveal" />
+        {/* The section is always on the dark ground, so it always takes the lockup made for dark. */}
+        <picture className="brand-moment-lockup">
+          <img
+            src="/brand/bandwise-lockup-horizontal-A-dark.svg"
+            alt={productName}
+            width={680}
+            height={Math.round((680 * 744) / 2168)}
+          />
+        </picture>
+      </DrawOnView>
+      <p className="brand-moment-line data">
+        band={d.band} score={d.noul.toFixed(2)} cost={formatUsd(r.costMicro)}
+      </p>
+    </section>
+  );
+}
+
 function EarlyAccess() {
   return (
     <section className="section access" id="early-access" aria-labelledby="access-title">
@@ -548,6 +585,7 @@ export default function Home() {
       <Headless />
       <Providers />
       <Kit />
+      <BrandMoment />
       <EarlyAccess />
     </main>
   );

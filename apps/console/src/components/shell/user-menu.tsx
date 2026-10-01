@@ -16,7 +16,7 @@ export function UserMenu({ name, email, role }: { name: string; email: string; r
           ▾
         </span>
       </summary>
-      <div className="mt-1 rounded-sm border border-bw-border bg-bw-surface p-1 md:absolute md:bottom-full md:left-0 md:right-0 md:mb-1 md:shadow-lg">
+      <div className="mt-1 rounded-sm border border-bw-border bg-bw-surface p-1 md:absolute md:bottom-full md:left-0 md:right-0 md:mb-1 md:shadow-(--bw-shadow-overlay)">
         <p className="truncate px-3 py-2 text-xs text-bw-text-muted">{email}</p>
         <form action={signOutAction}>
           <button type="submit" className="min-h-10 w-full rounded-sm px-3 py-2 text-left text-sm text-bw-text hover:bg-bw-surface-sunken">

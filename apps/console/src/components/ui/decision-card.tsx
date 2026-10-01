@@ -33,7 +33,8 @@ export function DecisionCard({ state, band, score, bandNote, why, cost, aside, c
   className?: string;
 }) {
   return (
-    <section className={cx("bw-chamfer border border-bw-border bg-bw-surface px-5 py-4 sm:px-6 sm:py-5", className)}>
+    <section className={cx("bw-decision-wrap", className)}>
+      <div className="bw-decision-card bg-bw-surface px-5 py-4 sm:px-6 sm:py-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <p className="text-lg leading-snug font-semibold text-bw-text">{state}</p>
         {aside === undefined ? null : <div className="flex shrink-0 flex-wrap gap-2">{aside}</div>}
@@ -50,6 +51,7 @@ export function DecisionCard({ state, band, score, bandNote, why, cost, aside, c
           <span className="font-mono tabular-nums">{cost}</span>
         </Row>
       </dl>
+      </div>
     </section>
   );
 }

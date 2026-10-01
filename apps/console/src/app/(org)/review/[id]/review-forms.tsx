@@ -37,7 +37,7 @@ function Correction({ choices, suggestedJson }: { choices: readonly Choice[] | n
       <label className="flex flex-col gap-1.5 text-sm">
         <span className="font-medium text-bw-text">The right value</span>
         <span className="text-xs text-bw-text-muted">JSON, for example a number or &quot;option_key&quot;.</span>
-        <input name="value" required className="h-10 rounded-sm border border-bw-border-strong bg-bw-surface-sunken px-3 font-mono text-sm text-bw-text" />
+        <input name="value" required className="h-10 rounded-sm border border-bw-border-control bg-bw-surface-sunken px-3 font-mono text-sm text-bw-text" />
       </label>
     );
   }

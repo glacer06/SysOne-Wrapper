@@ -2,7 +2,7 @@
 // from these so the UI stays one system.
 export { InlineAlert } from "./alert";
 export { Badge, BAND_WORD, BandBadge, RolloutBadge } from "./badge";
-export { Button, buttonClasses, type ButtonVariant } from "./button";
+export { Button, buttonClasses, type ButtonVariant, FocusPoly } from "./button";
 export { Card, type Crumb, EmptyState, PageHeader } from "./card";
 export { CodeBlock } from "./code-block";
 export { CodeEditor } from "./code-editor";

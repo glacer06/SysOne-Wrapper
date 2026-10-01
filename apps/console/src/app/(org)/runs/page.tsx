@@ -39,7 +39,7 @@ export default async function RunsPage({ searchParams }: { searchParams: Promise
             Try a longer time range or fewer filters.
           </EmptyState>
         ) : (
-          <EmptyState title="No runs in this time range">
+          <EmptyState mark title="No runs in this time range">
             Runs show up here once a hook or an app calls a set on app.bandwise.dev with a Bandwise token. With <code className="font-mono text-xs">BANDWISE_TOKEN</code> set,
             the next hook call lands here.
           </EmptyState>

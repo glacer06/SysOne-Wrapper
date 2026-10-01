@@ -35,7 +35,7 @@ export default async function SetsPage() {
     <>
       <PageHeader title="Sets" description={DESCRIPTION} />
       {rows.length === 0 ? (
-        <EmptyState title="No sets yet">
+        <EmptyState mark title="No sets yet">
           Push a spec from the repo with <code className="font-mono text-xs">bandwise spec push</code>, or run the
           bootstrap script for the internal org. Each set shows up here with its draft and channels.
         </EmptyState>

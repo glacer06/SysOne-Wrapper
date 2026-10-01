@@ -221,9 +221,20 @@ picture {
   flex-shrink: 0;
 }
 
-.lockup img {
-  width: 160px;
-  height: auto;
+/* The typed wordmark. The ant marks appear at size in the hero, the brand moment and the footer. */
+.wordmark {
+  font-family: var(--bw-font-display);
+  font-stretch: 125%;
+  font-weight: 800;
+  letter-spacing: var(--bw-track-display);
+  font-size: 23px;
+  line-height: 1;
+  color: var(--bw-text);
+  text-transform: lowercase;
+}
+
+.home-link {
+  text-decoration: none;
 }
 
 .site-nav {
@@ -312,18 +323,27 @@ picture {
   background: color-mix(in srgb, var(--bw-brand) 86%, var(--bw-text));
 }
 
-/* The chamfer clips an outline, so the primary button shows focus with a ring drawn inside it. */
-.btn-primary:focus-visible {
+/* The chamfer clips an outline, so a primary button sits in .focus-poly, which draws the focus
+   ring along the chamfer: a 2px gap in the page color, then a 2px ring (the kit's .bw-focus-poly). */
+.focus-poly {
+  display: inline-flex;
+}
+
+.focus-poly > .btn-primary:focus-visible {
   outline: none;
-  box-shadow:
-    inset 0 0 0 2px var(--bw-on-brand),
-    inset 0 0 0 4px var(--bw-brand);
+  box-shadow: none;
+}
+
+.focus-poly:has(> :focus-visible) {
+  filter: drop-shadow(2px 0 0 var(--bw-bg)) drop-shadow(-2px 0 0 var(--bw-bg)) drop-shadow(0 2px 0 var(--bw-bg))
+    drop-shadow(0 -2px 0 var(--bw-bg)) drop-shadow(2px 0 0 var(--bw-focus)) drop-shadow(-2px 0 0 var(--bw-focus))
+    drop-shadow(0 2px 0 var(--bw-focus)) drop-shadow(0 -2px 0 var(--bw-focus));
 }
 
 .btn-secondary {
   background: transparent;
   color: var(--bw-text);
-  border-color: var(--bw-border-strong);
+  border-color: var(--bw-border-control);
 }
 
 .btn-secondary:hover {
@@ -368,6 +388,9 @@ picture {
 /* Hero */
 
 .hero {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
   padding: var(--bw-space-7) 0 var(--section-pad);
 }
 
@@ -377,16 +400,117 @@ picture {
   }
 }
 
+/* Copy first; mark A, then the ruler and the decision card. From 960px the mark sits beside the
+   copy and the ruler and the card share the row below, so neither half is left empty. */
 .hero-grid {
   display: grid;
-  gap: var(--bw-space-8);
+  gap: var(--bw-space-7);
+  grid-template-areas: "copy" "mark" "demo";
 }
 
-@media (min-width: 1280px) {
+.hero-copy {
+  grid-area: copy;
+}
+
+.hero-mark {
+  grid-area: mark;
+  justify-self: start;
+}
+
+.hero-mark img {
+  display: block;
+  width: clamp(200px, 56vw, 340px);
+  height: auto;
+}
+
+.hero-demo {
+  grid-area: demo;
+}
+
+@media (min-width: 960px) {
   .hero-grid {
-    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
-    gap: var(--bw-space-8);
-    align-items: start;
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
+    grid-template-areas: "copy mark" "demo demo";
+    column-gap: var(--bw-space-8);
+    row-gap: var(--bw-space-8);
+    align-items: center;
+  }
+
+  .hero-mark {
+    justify-self: end;
+  }
+
+  .hero-mark img {
+    width: clamp(280px, 26vw, 360px);
+  }
+}
+
+/* The faceted B as a faint dotted wireframe, cropped at the right edge, behind the hero.
+   Opacity is set on the whole drawing, so shared edges never stack: at most 20% of
+   --bw-border-strong in light (45% in dark) sits under any text, which keeps every text
+   pair at AA (muted text stays at 4.6:1 or better). */
+.hero-bwire {
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  right: 0;
+  height: clamp(720px, 120%, 1180px);
+  width: auto;
+  aspect-ratio: 203.33 / 306.67;
+  transform: translate(34%, -50%);
+  color: var(--bw-border-strong);
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .hero-bwire {
+    opacity: 0.45;
+  }
+}
+
+[data-theme="dark"] .hero-bwire {
+  opacity: 0.45;
+}
+
+/* Shared wireframe drawing: no fill, a dotted trail stroke with round caps. */
+.bwire {
+  display: block;
+  overflow: visible;
+  fill: none;
+}
+
+.bwire-dots path {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-dasharray: 1 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.bwire mask {
+  mask-type: alpha;
+}
+
+.bwire-reveal {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 8;
+  stroke-linecap: round;
+  stroke-dasharray: 1 1;
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset var(--bw-dur-walk) var(--bw-ease-walk);
+}
+
+[data-draw="pending"] .bwire-reveal {
+  stroke-dashoffset: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bwire-reveal {
+    transition: none;
   }
 }
 
@@ -433,9 +557,11 @@ picture {
   align-content: start;
 }
 
-@media (min-width: 1280px) {
+/* From 960px the ruler and the card sit side by side under the copy and the mark. */
+@media (min-width: 960px) {
   .hero-demo {
-    padding-top: var(--bw-space-6);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
   }
 }
 
@@ -494,11 +620,12 @@ picture {
   color: var(--bw-text);
 }
 
-/* Decision card: state, then band, why and cost, split by hairlines. Chamfered. */
+/* Decision card: state, then band, why and cost, split by hairlines. Chamfered as the kit's
+   .bw-decision-wrap: the outer box is the 1px border along the polygon, the inner one the card. */
 
 .decision {
   --c: var(--bw-chamfer);
-  background: var(--bw-border-strong);
+  background: var(--bw-border);
   padding: var(--bw-border-width);
   clip-path: polygon(0 0, calc(100% - var(--c)) 0, 100% var(--c), 100% 100%, var(--c) 100%, 0 calc(100% - var(--c)));
 }
@@ -508,7 +635,14 @@ picture {
   padding: var(--bw-space-5);
   display: grid;
   gap: var(--bw-space-3);
-  clip-path: polygon(0 0, calc(100% - var(--c)) 0, 100% var(--c), 100% 100%, var(--c) 100%, 0 calc(100% - var(--c)));
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--c) + 0.41px) 0,
+    100% calc(var(--c) - 0.41px),
+    100% 100%,
+    calc(var(--c) - 0.41px) 100%,
+    0 calc(100% - var(--c) + 0.41px)
+  );
 }
 
 .decision-input {
@@ -611,6 +745,8 @@ picture {
   width: 2px;
   margin-left: -1px;
   background: var(--bw-text);
+  /* A 1px halo in the page color on each side keeps the marker readable on any band. */
+  box-shadow: 0 0 0 1px var(--bw-bg);
 }
 
 .ruler-marker span {
@@ -1046,7 +1182,7 @@ picture {
   padding: 0 var(--bw-space-3);
   background: var(--bw-surface);
   color: var(--bw-text);
-  border: var(--bw-border-width) solid var(--bw-border-strong);
+  border: var(--bw-border-width) solid var(--bw-border-control);
   border-radius: var(--bw-radius-sm);
   font: 400 var(--bw-text-body) / 1.3 var(--bw-font-body);
   transition: border-color var(--bw-dur-fast) var(--bw-ease-standard);
@@ -1123,7 +1259,7 @@ input[type="range"] {
 .period-tabs {
   display: inline-flex;
   justify-self: start;
-  border: var(--bw-border-width) solid var(--bw-border-strong);
+  border: var(--bw-border-width) solid var(--bw-border-control);
   border-radius: var(--bw-radius-pill);
   padding: 2px;
 }
@@ -1476,6 +1612,128 @@ code {
   color: var(--bw-text-muted);
 }
 
+/* Brand moment: the lockup on the dark ground in both themes (data-theme="dark" on the section),
+   the faceted B behind it as a dotted teal trail, thin brackets at the corners and one mono line
+   carrying the hero's example decision. */
+
+.brand-moment {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: var(--bw-space-7);
+  min-height: clamp(520px, 62vw, 800px);
+  padding: var(--bw-space-9) var(--gutter) var(--bw-space-7);
+  background: var(--bw-bg);
+  color: var(--bw-text);
+}
+
+.brand-moment-stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 100%;
+  min-height: clamp(360px, 46vw, 600px);
+}
+
+.brand-moment-bwire {
+  position: absolute;
+  z-index: -1;
+  top: 50%;
+  left: 50%;
+  height: clamp(360px, 46vw, 600px);
+  width: auto;
+  aspect-ratio: 203.33 / 306.67;
+  transform: translate(-50%, -50%);
+  color: var(--bw-brand);
+  opacity: 0.3;
+}
+
+.brand-moment-lockup {
+  display: block;
+  width: min(100%, clamp(280px, 50vw, 680px));
+}
+
+.brand-moment-lockup img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.brand-moment-line {
+  font-size: var(--bw-text-caption);
+  line-height: var(--bw-lh-caption);
+  letter-spacing: var(--bw-track-label);
+  color: var(--bw-text-muted);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.bracket {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border: 0 solid var(--bw-border-strong);
+  pointer-events: none;
+}
+
+.bracket-tl {
+  top: var(--bw-space-5);
+  left: var(--bw-space-5);
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+
+.bracket-tr {
+  top: var(--bw-space-5);
+  right: var(--bw-space-5);
+  border-top-width: 1px;
+  border-right-width: 1px;
+}
+
+.bracket-bl {
+  bottom: var(--bw-space-5);
+  left: var(--bw-space-5);
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+}
+
+.bracket-br {
+  bottom: var(--bw-space-5);
+  right: var(--bw-space-5);
+  border-bottom-width: 1px;
+  border-right-width: 1px;
+}
+
+@media (min-width: 960px) {
+  .bracket {
+    width: 32px;
+    height: 32px;
+  }
+
+  .bracket-tl,
+  .bracket-tr {
+    top: var(--bw-space-6);
+  }
+
+  .bracket-bl,
+  .bracket-br {
+    bottom: var(--bw-space-6);
+  }
+
+  .bracket-tl,
+  .bracket-bl {
+    left: var(--bw-space-6);
+  }
+
+  .bracket-tr,
+  .bracket-br {
+    right: var(--bw-space-6);
+  }
+}
+
 /* Early access */
 
 .access {
@@ -1603,9 +1861,27 @@ code {
 }
 
 .footer-brand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--bw-space-5);
+}
+
+.footer-mark img {
+  display: block;
+  width: 120px;
+  height: auto;
+}
+
+.footer-brand-text {
+  flex: 1 1 280px;
   display: grid;
   gap: var(--bw-space-3);
   justify-items: start;
+}
+
+.footer-brand-text .home-link {
+  min-height: 44px;
 }
 
 .independence {

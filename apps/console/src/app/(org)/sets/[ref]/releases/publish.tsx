@@ -87,7 +87,7 @@ export function PublishDraft({ setRef, draft, stages }: PublishProps) {
             aria-invalid={missing || undefined}
             aria-describedby={missing ? `${changelogId}-error` : undefined}
             disabled={busy}
-            className="w-full rounded-sm border border-bw-border-strong bg-bw-surface-sunken px-3 py-2 text-sm text-bw-text placeholder:text-bw-text-muted aria-[invalid=true]:border-bw-low"
+            className="w-full rounded-sm border border-bw-border-control bg-bw-surface-sunken px-3 py-2 text-sm text-bw-text placeholder:text-bw-text-muted aria-[invalid=true]:border-bw-low"
           />
           {missing ? (
             <p id={`${changelogId}-error`} className="text-xs text-bw-low-text">

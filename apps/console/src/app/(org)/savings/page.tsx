@@ -71,7 +71,7 @@ export default async function SavingsPage({ searchParams }: { searchParams: Prom
     return (
       <>
         {header}
-        <EmptyState title="Nothing to count in this range">
+        <EmptyState mark title="Nothing to count in this range">
           Savings add up from hosted runs. The first run of a set starts its count. Local runs from <code className="font-mono text-xs">bandwise run --live</code> stay in your
           receipts; see them with <code className="font-mono text-xs">pnpm bandwise report --since 7d</code>.
         </EmptyState>

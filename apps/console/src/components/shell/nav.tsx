@@ -56,7 +56,7 @@ export function SideNav({ header, compactHeader, footer }: { header: React.React
           aria-expanded={open}
           aria-controls="mobile-nav"
           onClick={() => setOpen(!open)}
-          className="h-11 rounded-sm border border-bw-border-strong px-4 text-sm font-semibold text-bw-text hover:bg-bw-surface-sunken"
+          className="h-11 rounded-sm border border-bw-border-control px-4 text-sm font-semibold text-bw-text hover:bg-bw-surface-sunken"
         >
           {open ? "Close" : "Menu"}
         </button>

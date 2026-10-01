@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes } from "react";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
 
 import { cx } from "./cx";
 
@@ -8,7 +8,7 @@ export type ButtonVariant = "primary" | "secondary" | "ghost" | "danger";
 // text, danger the low color. Hover, active (1px down), focus and disabled (40%) on every one.
 const VARIANTS: Record<ButtonVariant, string> = {
   primary: "bw-chamfer rounded-none border border-transparent bg-bw-brand text-bw-on-brand hover:bg-(--bw-brand-hover)",
-  secondary: "border border-bw-border-strong bg-transparent text-bw-text hover:bg-bw-surface-sunken",
+  secondary: "border border-bw-border-control bg-transparent text-bw-text hover:bg-bw-surface-sunken",
   ghost: "border border-transparent bg-transparent text-bw-brand-text hover:bg-bw-high-bg",
   danger: "bw-on-low border border-transparent bg-bw-low hover:bg-(--bw-low-hover)",
 };
@@ -31,10 +31,17 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 export function Button({ variant = "secondary", size = "md", pending = false, className, children, disabled, type = "button", ...rest }: ButtonProps) {
-  return (
+  const button = (
     <button type={type} className={cx(buttonClasses(variant, size), className)} disabled={disabled === true || pending} aria-busy={pending || undefined} {...rest}>
       {children}
       {pending ? <span aria-hidden className="bw-trail-busy" /> : null}
     </button>
   );
+  // The chamfer clips an outline, so the primary button's focus ring is drawn by its wrapper.
+  return variant === "primary" ? <FocusPoly>{button}</FocusPoly> : button;
+}
+
+/** Wraps a chamfered control so its focus ring follows the chamfer (the kit's .bw-focus-poly). */
+export function FocusPoly({ children }: { children: ReactNode }) {
+  return <span className="bw-focus-poly">{children}</span>;
 }

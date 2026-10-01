@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { MarkA } from "../shell/wordmark";
 import { cx } from "./cx";
 
 export function Card({ title, description, actions, children, className }: {
@@ -26,10 +27,15 @@ export function Card({ title, description, actions, children, className }: {
   );
 }
 
-/** What a page or list shows when there is nothing yet: what will be here and what to do. */
-export function EmptyState({ title, children, action }: { title: string; children?: ReactNode; action?: ReactNode }) {
+/**
+ * What a page or list shows when there is nothing yet: what will be here and what to do.
+ * `mark` adds mark A for a first-time empty page ("nothing on the trail yet"); leave it off for
+ * filter misses and not-found pages.
+ */
+export function EmptyState({ title, children, action, mark = false }: { title: string; children?: ReactNode; action?: ReactNode; mark?: boolean }) {
   return (
     <div className="flex flex-col items-start gap-3 rounded-md border border-dashed border-bw-border-strong px-6 py-10">
+      {mark ? <MarkA width={96} className="mb-2" /> : null}
       <h2 className="text-base font-semibold text-bw-text">{title}</h2>
       {children === undefined ? null : <div className="max-w-prose text-sm leading-6 text-bw-text-muted">{children}</div>}
       {action}

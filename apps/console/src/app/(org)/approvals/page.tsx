@@ -21,7 +21,7 @@ export default async function ApprovalsPage() {
       {result.status === "error" ? (
         <OperationFailed message={result.message} />
       ) : items.length === 0 ? (
-        <EmptyState title="No requests waiting">
+        <EmptyState mark title="No requests waiting">
           When an agent token asks to publish to a live production channel, widen a rollout or lift a pause, the request waits here.
           You see the requests your role can decide.
         </EmptyState>

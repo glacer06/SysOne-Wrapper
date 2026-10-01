@@ -33,12 +33,12 @@ export function BandLegend() {
   );
 }
 
-/** The supplied Scout art (brand/marks/bandwise-mark-C-*), split into the ant and its load as in the motion demo. */
+/** The supplied Scout layers (brand/layers/bandwise-mark-C-*-{ant,load}.svg): the ant and its load as separate files. */
 function Layer({ part }: { part: "ant" | "load" }) {
   return (
     <picture className={`carry-${part}`}>
-      <source srcSet={`/brand/scout-${part}-dark.svg`} media="(prefers-color-scheme: dark)" />
-      <img src={`/brand/scout-${part}-light.svg`} alt="" width={72} height={110} />
+      <source srcSet={`/brand/bandwise-mark-C-dark-${part}.svg`} media="(prefers-color-scheme: dark)" />
+      <img src={`/brand/bandwise-mark-C-light-${part}.svg`} alt="" width={72} height={110} />
     </picture>
   );
 }

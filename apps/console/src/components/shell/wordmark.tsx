@@ -1,38 +1,32 @@
 import Image from "next/image";
+import Link from "next/link";
 
-// The supplied mark files (brand/marks, copied to public/brand). Never redrawn or recolored.
-// Each comes as a file for light backgrounds and one for dark; CSS shows the one for the theme.
+import { cx } from "../ui/cx";
 
-/** Horizontal lockup C (Scout) is 1926 by 744. DESIGN.md: at least 160px wide. */
-const LOCKUP_RATIO = 744 / 1926;
-/** The B monogram is 203.33 by 306.67. DESIGN.md: at least 16px. */
-const MONOGRAM_RATIO = 203.33 / 306.67;
+// The typed wordmark for the top-left, and the supplied mark A (Ascent) for the places where the
+// ant appears at size: the sign-in pages and first-time empty states. Mark files come from
+// brand/marks, copied to public/brand, never redrawn or recolored. Each comes as a file for light
+// backgrounds and one for dark; CSS shows the one for the theme (globals.css, .bw-for-*).
 
-function Pair({ name, width, height, alt }: { name: string; width: number; height: number; alt: string }) {
+/** Mark A's viewBox is 1104.72 by 1044.77. */
+const MARK_A_RATIO = 1044.77 / 1104.72;
+
+/** The lowercase "bandwise" in Archivo display, as a link to the console home. */
+export function Wordmark({ href = "/sets", size = "md", label = "Bandwise console home" }: { href?: string; size?: "sm" | "md"; label?: string }) {
   return (
-    <>
-      <Image src={`/brand/${name}-light.svg`} width={width} height={height} alt={alt} unoptimized priority className="bw-for-light" />
-      <Image src={`/brand/${name}-dark.svg`} width={width} height={height} alt={alt} unoptimized priority className="bw-for-dark" />
-    </>
+    <Link href={href} aria-label={label} className="inline-flex min-h-10 items-center rounded-sm max-md:min-h-11">
+      <span className={cx("bw-wordmark", size === "sm" ? "text-[1.125rem]" : "text-[1.25rem]")}>bandwise</span>
+    </Link>
   );
 }
 
-/** The horizontal lockup: the ant mark with the wordmark. `width` stays at or above 160. */
-export function Lockup({ width = 168 }: { width?: number }) {
-  const w = Math.max(160, width);
+/** Mark A, the ant climbing the trail with the B. Decorative unless given an `alt`. */
+export function MarkA({ width, alt = "", priority = false, className }: { width: number; alt?: string; priority?: boolean; className?: string }) {
+  const height = Math.round(width * MARK_A_RATIO);
   return (
-    <span className="inline-flex">
-      <Pair name="bandwise-lockup-horizontal-C" width={w} height={Math.round(w * LOCKUP_RATIO)} alt="Bandwise" />
-    </span>
-  );
-}
-
-/** The B monogram for small spaces, such as the phone header. `height` stays at or above 16. */
-export function Monogram({ height = 28, label = "Bandwise" }: { height?: number; label?: string }) {
-  const h = Math.max(16, height);
-  return (
-    <span className="inline-flex">
-      <Pair name="bandwise-b-monogram" width={Math.round(h * MONOGRAM_RATIO)} height={h} alt={label} />
+    <span className={cx("inline-flex", className)}>
+      <Image src="/brand/bandwise-mark-A-light.svg" width={width} height={height} alt={alt} unoptimized priority={priority} className="bw-for-light" />
+      <Image src="/brand/bandwise-mark-A-dark.svg" width={width} height={height} alt={alt} unoptimized priority={priority} className="bw-for-dark" />
     </span>
   );
 }

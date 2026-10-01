@@ -53,7 +53,7 @@ export function CodeEditor({ label, value, onChange, json = true, rows = 18, rea
         }}
         className={cx(
           "w-full rounded-sm border bg-bw-surface-sunken p-3 font-mono text-[13px] leading-5 text-bw-text",
-          invalid ? "border-bw-low" : "border-bw-border-strong",
+          invalid ? "border-bw-low" : "border-bw-border-control",
         )}
       />
       <p id={`${id}-status`} className={cx("text-xs", invalid ? "text-bw-low-text" : "text-bw-text-muted")} aria-live="polite">

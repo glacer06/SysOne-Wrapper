@@ -4,7 +4,7 @@ import { cx } from "./cx";
 
 // DESIGN.md: 40px tall (44 on touch), 1px strong border, 2px focus ring, low color on error.
 const CONTROL =
-  "w-full rounded-sm border border-bw-border-strong bg-bw-surface px-3 text-base text-bw-text placeholder:text-bw-text-muted sm:text-sm " +
+  "w-full rounded-sm border border-bw-border-control bg-bw-surface px-3 text-base text-bw-text placeholder:text-bw-text-muted sm:text-sm " +
   "transition-colors duration-(--bw-dur-fast) hover:border-bw-text-muted focus-visible:border-bw-focus " +
   "aria-[invalid=true]:border-bw-low disabled:cursor-not-allowed disabled:opacity-40";
 

@@ -59,7 +59,7 @@ export function ConfidenceRuler({ segments, marker, axis, markerLabel = "Score" 
         </div>
         {hasMarker ? (
           <div
-            className="absolute top-0 h-6 w-0.5 bg-bw-text transition-[left] duration-(--bw-dur-walk) ease-(--bw-ease-walk)"
+            className="absolute top-0 h-6 w-0.5 bg-bw-text shadow-[0_0_0_1px_var(--bw-bg)] transition-[left] duration-(--bw-dur-walk) ease-(--bw-ease-walk)"
             style={{ left: `calc(${marker * 100}% - 1px)` }}
           />
         ) : null}
