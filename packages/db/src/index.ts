@@ -12,6 +12,8 @@ export {
   type EarlyAccessOutcome,
   type EarlyAccessSubmission,
   type Repositories,
+  type ReviewPageFilter,
+  type RunDayTotals,
   type RunPageFilter,
   type RunSetTotals,
 } from "./repos/index.js";

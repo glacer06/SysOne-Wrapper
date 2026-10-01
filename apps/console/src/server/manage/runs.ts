@@ -41,7 +41,7 @@ function summary(r: RunRow): RunSummary {
 }
 
 /** The set filter: a set the caller can see, or 404 with the same message as a missing set. */
-async function visibleSetId(env: OperationEnv, ref: string): Promise<string> {
+export async function visibleSetId(env: OperationEnv, ref: string): Promise<string> {
   const set = await findSet(env.tx, ref);
   if (!inAllowlist(env.ctx, set.id)) throw new OperationError("not_found", setNotFound(ref));
   return set.id;
@@ -144,7 +144,9 @@ export async function getUsage(env: OperationEnv, input: { from?: string | undef
   if (from.getTime() > to.getTime()) throw new OperationError("invalid_request", "from is after to.");
   let setIds = allowlistOf(env.ctx);
   if (input.set !== undefined) setIds = [await visibleSetId(env, input.set)];
-  const rows = await repos.runs.totalsBySet(env.tx, { from, to, ...(setIds === undefined ? {} : { setIds }) });
+  const range = { from, to, ...(setIds === undefined ? {} : { setIds }) };
+  const rows = await repos.runs.totalsBySet(env.tx, range);
+  const days = await repos.runs.totalsByDay(env.tx, range);
   const totals = { ...ZERO };
   const sets: UsageView["sets"] = [];
   for (const row of rows) {
@@ -152,5 +154,5 @@ export async function getUsage(env: OperationEnv, input: { from?: string | undef
     sets.push({ ...row, slug: set?.slug ?? row.setId });
     for (const k of Object.keys(ZERO) as (keyof typeof ZERO)[]) totals[k] += row[k];
   }
-  return { from: iso(from), to: iso(to), sets, totals };
+  return { from: iso(from), to: iso(to), sets, totals, days };
 }

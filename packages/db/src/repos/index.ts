@@ -5,7 +5,7 @@
 
 import { and, asc, desc, eq, getTableColumns, gte, inArray, type InferInsertModel, type InferSelectModel, isNull, lt, lte, ne, or, type SQL, sql } from "drizzle-orm";
 
-import type { Action, Band, Channel, ModelPrice, Page, PageReq, PointerChannel, RunRecordSource, RunStatus, SystemOneProvider } from "@bandwise/core/contracts";
+import type { Action, Band, Channel, ModelPrice, Page, PageReq, PointerChannel, ReviewItemKind, ReviewItemStatus, RunRecordSource, RunStatus, SystemOneProvider } from "@bandwise/core/contracts";
 
 import { type AnyTx, drizzleOf, type TenantTx, type UserTx } from "../internal/drizzle.js";
 import * as s from "../schema/index.js";
@@ -169,6 +169,27 @@ export interface RunSetTotals {
   counterfactualMicroUsd: number;
   savingsMicroUsd: number;
   llmCallsAvoided: number;
+}
+
+/** One UTC day of org run totals for the usage.get chart. `day` is YYYY-MM-DD. */
+export interface RunDayTotals {
+  day: string;
+  runs: number;
+  errors: number;
+  systemOneCostMicroUsd: number;
+  counterfactualMicroUsd: number;
+  savingsMicroUsd: number;
+  llmCallsAvoided: number;
+}
+
+/** review.list filters (management-api.md, Review and feedback). */
+export interface ReviewPageFilter {
+  setId?: string;
+  /** Limit to these sets: a token's allowlist. */
+  setIds?: readonly string[];
+  kind?: ReviewItemKind;
+  status?: ReviewItemStatus;
+  band?: Band;
 }
 
 /** Builds every repository. Exported repositories always use `{ orgFilter: true }`. */
@@ -382,6 +403,36 @@ export function buildRepositories(opts: RepoOptions) {
           .groupBy(t.setId)
           .orderBy(asc(t.setId));
       },
+      /** usage.get: org totals per UTC day over [from, to], oldest first. Days without runs are left out. */
+      async totalsByDay(tx: TenantTx, range: { from: Date; to: Date; setIds?: readonly string[] }): Promise<RunDayTotals[]> {
+        const t = s.runs;
+        if (range.setIds !== undefined && range.setIds.length === 0) return [];
+        const n = (expr: SQL) => sql<number>`coalesce(${expr}, 0)::bigint`.mapWith(Number);
+        const day = sql<string>`to_char(${t.createdAt} at time zone 'UTC', 'YYYY-MM-DD')`;
+        return drizzleOf(tx)
+          .select({
+            day,
+            runs: n(sql`count(*)`),
+            errors: n(sql`count(*) filter (where ${t.status} <> 'ok')`),
+            systemOneCostMicroUsd: n(sql`sum(${t.systemOneCostMicroUsd})`),
+            counterfactualMicroUsd: n(sql`sum(${t.counterfactualMicroUsd})`),
+            savingsMicroUsd: n(sql`sum(${t.savingsMicroUsd})`),
+            llmCallsAvoided: n(sql`sum(${t.llmCallsAvoided})`),
+          })
+          .from(t)
+          .where(
+            runs.scope(
+              tx,
+              and(
+                gte(t.createdAt, range.from),
+                lte(t.createdAt, range.to),
+                range.setIds === undefined ? undefined : inArray(t.setId, [...range.setIds]),
+              ),
+            ),
+          )
+          .groupBy(day)
+          .orderBy(asc(day));
+      },
       async listBySet(tx: TenantTx, setId: string, limit?: number) {
         return drizzleOf(tx)
           .select()
@@ -402,6 +453,29 @@ export function buildRepositories(opts: RepoOptions) {
       ...reviewItems,
       async listByRun(tx: TenantTx, runId: string) {
         return reviewItems.findMany(tx, eq(s.reviewItems.runId, runId));
+      },
+      /** review.list: newest first, filtered. */
+      async listPage(tx: TenantTx, filter: ReviewPageFilter, page: PageReq) {
+        const t = s.reviewItems;
+        if (filter.setIds !== undefined && filter.setIds.length === 0) return { data: [], nextCursor: null };
+        const where = and(
+          filter.setId === undefined ? undefined : eq(t.setId, filter.setId),
+          filter.setIds === undefined ? undefined : inArray(t.setId, [...filter.setIds]),
+          filter.kind === undefined ? undefined : eq(t.kind, filter.kind),
+          filter.status === undefined ? undefined : eq(t.status, filter.status),
+          filter.band === undefined ? undefined : eq(t.band, filter.band),
+        );
+        return newestFirst(
+          (after, limit) =>
+            drizzleOf(tx)
+              .select()
+              .from(t)
+              .where(reviewItems.scope(tx, and(where, after)))
+              .orderBy(desc(t.createdAt), desc(t.id))
+              .limit(limit),
+          { createdAt: t.createdAt, id: t.id, tableName: "review_items" },
+          page,
+        );
       },
       /** Label items created for a set since `since`: the labeling policy's day counter. */
       async countLabelItemsSince(tx: TenantTx, setId: string, since: Date): Promise<number> {

@@ -242,7 +242,7 @@ describe("jobs, previews and MCP tools", () => {
   });
 });
 
-/** The operations D2c serves (ADR-020). Every other handler is still a stub. */
+/** The operations D2c and D3 serve (ADR-020). Every other handler is still a stub. */
 const IMPLEMENTED: OperationId[] = [
   "set.list",
   "set.get",
@@ -264,6 +264,10 @@ const IMPLEMENTED: OperationId[] = [
   "approval.list",
   "approval.get",
   "approval.decide",
+  "review.list",
+  "review.resolve",
+  "review.dismiss",
+  "review.confirm",
 ];
 
 describe("stubbed handlers", () => {

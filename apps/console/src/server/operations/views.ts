@@ -174,11 +174,49 @@ const Totals = z.object({
   llmCallsAvoided: TokenCount,
 });
 
-/** usage.get: run totals per set over [from, to]. */
+/** One UTC day of totals in usage.get, for the savings chart. Days without runs are left out. */
+export const UsageDay = z.object({
+  day: z.iso.date(),
+  runs: TokenCount,
+  errors: TokenCount,
+  systemOneCostMicroUsd: MicroUsd,
+  counterfactualMicroUsd: MicroUsd,
+  savingsMicroUsd: MicroUsd,
+  llmCallsAvoided: TokenCount,
+});
+export type UsageDay = z.infer<typeof UsageDay>;
+
+/** usage.get: run totals per set over [from, to], and totals per UTC day. */
 export const UsageView = z.object({
   from: IsoTimestamp,
   to: IsoTimestamp,
   sets: z.array(Totals.extend({ setId: SetId, slug: z.string() })),
   totals: Totals,
+  days: z.array(UsageDay),
 });
 export type UsageView = z.infer<typeof UsageView>;
+
+/** review.list items, and what review.resolve, review.dismiss and review.confirm return. */
+export const ReviewItemView = z.object({
+  id: z.uuid(),
+  /** Null for Studio items. */
+  runId: RunId.nullable(),
+  setId: SetId,
+  decisionId: z.string(),
+  kind: ReviewItemKind,
+  /** Why the item was picked. */
+  reason: ReviewItemReason,
+  /** Set when the random audit picked it. */
+  sampleRate: z.number().nullable(),
+  band: Band,
+  /** What the run decided: `{ value }`. */
+  suggested: JsonValue.nullable(),
+  status: ReviewItemStatus,
+  assigneeId: UserId.nullable(),
+  resolution: JsonValue.nullable(),
+  resolvedBy: z.object({ userId: UserId.nullable(), tokenId: TokenId.nullable() }),
+  resolvedAt: IsoTimestamp.nullable(),
+  addToDataset: z.boolean(),
+  createdAt: IsoTimestamp,
+});
+export type ReviewItemView = z.infer<typeof ReviewItemView>;
