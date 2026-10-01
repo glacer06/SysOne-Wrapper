@@ -36,6 +36,13 @@
       "when": 1790605097423,
       "tag": "0005_early_access_signups",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790826110684,
+      "tag": "0006_two_factor_verification",
+      "breakpoints": true
     }
   ]
 }

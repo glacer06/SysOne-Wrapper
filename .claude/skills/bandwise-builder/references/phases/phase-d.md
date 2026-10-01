@@ -46,7 +46,7 @@ Built in five slices, one PR each:
 - [ ] Import the `.bandwise/sets/` specs into the internal org; publish and roll back one set live with no redeploy
 
 ## D3: Minimal console
-- [ ] Sign-in for Nick and PJ with Better Auth and two-factor (ADR-002), `internal` org only
+- [x] Sign-in for Nick and PJ with Better Auth and two-factor (ADR-002), `internal` org only. Email and password plus TOTP, sign-up closed, members added by `pnpm --filter @bandwise/console console-member`; the app shell and placeholder pages for Sets, Runs, Savings, Review and Approvals call operations through `consoleOperation` (`apps/console/src/server/console-operation.ts`). See `docs/runbooks/console-access.md`.
 - [ ] Question editor (form and JSON) and threshold sliders with a live preview on sample state
 - [ ] Publish, version history and one-click rollback, each calling the same operation as the CLI
 - [ ] Runs explorer and a savings view per set
