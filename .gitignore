@@ -9,3 +9,5 @@ coverage
 !.env.example
 .DS_Store
 /dist-kit/
+# One-time console reset links (console-member). Never commit one.
+*reset-link*.txt

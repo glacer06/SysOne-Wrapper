@@ -51,7 +51,8 @@ export async function flowDeps(): Promise<FlowDeps> {
 export const getConsoleState = cache(async (): Promise<ConsoleState> => {
   const h = await headers();
   const session = await getAuth().api.getSession({ headers: h });
-  return resolveConsoleState(getDb(), session, h.get("x-vercel-id") ?? globalThis.crypto.randomUUID());
+  const requestId = h.get("x-vercel-id") ?? globalThis.crypto.randomUUID();
+  return resolveConsoleState(getDb(), session, requestId, parseAllowedEmails(getEnv().BANDWISE_CONSOLE_EMAILS));
 });
 
 /** The signed-in member's context, or a redirect to the step they still need. */

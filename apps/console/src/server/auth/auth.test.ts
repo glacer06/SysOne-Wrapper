@@ -206,8 +206,7 @@ describe("sign-in", () => {
       ok: false,
       error: SIGN_IN_FAILED,
     });
-    // 26 sign-ins, each hashing a password on purpose, take more than the 5 s default under the full gate.
-  }, 30_000);
+  });
 });
 
 describe("two-factor", () => {
@@ -293,6 +292,12 @@ describe("session to TenantContext", () => {
     await t.db.withTenant(sys, (tx) => repos.memberships.delete(tx, membership?.id as string));
     expect(await contextForUser(t.db, user(internal, "pj@bandwise.test"), "req")).toBeNull();
     await t.db.withTenant(sys, (tx) => repos.memberships.insert(tx, { userId: pj, role: "editor" }));
+  });
+
+  it("ends a live session when the email leaves BANDWISE_CONSOLE_EMAILS", async () => {
+    const pj = { user: { ...user(internal, "pj@bandwise.test"), twoFactorEnabled: true } };
+    expect((await resolveConsoleState(t.db, pj, "req", ["pj@bandwise.test"])).kind).toBe("ready");
+    expect((await resolveConsoleState(t.db, pj, "req", ["nick@bandwise.test"])).kind).toBe("no-access");
   });
 
   it("signed out is signed out", async () => {

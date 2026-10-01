@@ -4,14 +4,16 @@
 //   pnpm --filter @bandwise/console console-member --org <uuid> --email <email> --name <text> [--role owner] [--out <file>]
 //
 // Creates the user row (if new) and the internal-org membership (if missing), each with an audit
-// row, then writes a one-time password reset link to --out (default ./console-reset-link.txt) with
-// mode 0600. Nothing secret prints: hand the file's link to the person over a private channel and
-// delete the file. The link lasts 24 hours. They set a password, sign in, and set up two-factor.
+// row, then writes a one-time password reset link to --out (default
+// ~/.bandwise/console-reset-link.txt, outside the repo) with mode 0600. Nothing secret prints:
+// hand the file's link to the person over a private channel and delete the file. The link lasts
+// 24 hours. They set a password, sign in, and set up two-factor.
 //
 // Reads DATABASE_URL, AUTH_SECRET and BETTER_AUTH_URL from the shell. Run it from a trusted shell.
 
-import { writeFile } from "node:fs/promises";
-import { resolve } from "node:path";
+import { mkdir, rename, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 import { parseArgs } from "node:util";
 
 import { Role } from "@bandwise/core";
@@ -32,7 +34,7 @@ const { values } = parseArgs({
     email: { type: "string" },
     name: { type: "string" },
     role: { type: "string", default: "owner" },
-    out: { type: "string", default: "console-reset-link.txt" },
+    out: { type: "string", default: join(homedir(), ".bandwise", "console-reset-link.txt") },
   },
   strict: true,
 });
@@ -62,7 +64,11 @@ try {
     { orgId, userId: member.userId, email },
   );
   const link = `${baseURL.replace(/\/$/, "")}/reset-password?token=${encodeURIComponent(token)}`;
-  await writeFile(out, `${link}\n`, { mode: 0o600, flag: "w" });
+  // A fresh file renamed into place, so the link is 0600 even when --out already exists with a wider mode.
+  await mkdir(dirname(out), { recursive: true, mode: 0o700 });
+  const tmp = `${out}.${process.pid}-${Date.now()}.tmp`;
+  await writeFile(tmp, `${link}\n`, { mode: 0o600, flag: "wx" });
+  await rename(tmp, out);
   process.stderr.write(`console-member: reset link written to ${out} (mode 0600). It lasts 24 hours and works once.\n`);
 } catch (e) {
   // Our own errors carry no secrets; anything else is reduced to its type.

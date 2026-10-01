@@ -17,7 +17,7 @@ From a trusted shell with `DATABASE_URL`, `AUTH_SECRET` and `BETTER_AUTH_URL` se
 pnpm --filter @bandwise/console console-member --org <internal org uuid> --email pj@example.com --name PJ --role editor
 ```
 
-It creates the user row and the membership (each once, with a `member.add` audit row), then writes a one-time reset link to `console-reset-link.txt` with mode 0600. Nothing secret prints. Send the link to the person over a private channel and delete the file. The link lasts 24 hours and works once; run the script again for a new one.
+It creates the user row and the membership (each once, with a `member.add` audit row), then writes a one-time reset link to `~/.bandwise/console-reset-link.txt` (or `--out`), outside the repo, with mode 0600. Nothing secret prints. Send the link to the person over a private channel and delete the file. The link lasts 24 hours and works once; run the script again for a new one.
 
 ## First sign-in
 

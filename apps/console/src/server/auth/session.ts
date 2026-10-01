@@ -103,9 +103,15 @@ export interface LibrarySession {
 
 /**
  * Where a session stands. Two-factor comes first: until it is on, the session reaches only the
- * setup page. Then the membership, read fresh, decides between a context and no access.
+ * setup page. Then the BANDWISE_CONSOLE_EMAILS allowlist and the membership, both read on every
+ * request, decide between a context and no access, so taking someone off either ends a live session.
  */
-export async function resolveConsoleState(db: BandwiseDb, session: LibrarySession | null, requestId: string): Promise<ConsoleState> {
+export async function resolveConsoleState(
+  db: BandwiseDb,
+  session: LibrarySession | null,
+  requestId: string,
+  allowedEmails: readonly string[] | null = null,
+): Promise<ConsoleState> {
   if (session === null) return { kind: "signed-out" };
   const user: SessionUser = {
     id: session.user.id,
@@ -115,6 +121,7 @@ export async function resolveConsoleState(db: BandwiseDb, session: LibrarySessio
     platformRole: session.user.platformRole ?? null,
   };
   if (!user.twoFactorEnabled) return { kind: "needs-two-factor", user };
+  if (allowedEmails !== null && !allowedEmails.includes(user.email.toLowerCase())) return { kind: "no-access", user };
   const ready = await contextForUser(db, user, requestId);
   return ready === null ? { kind: "no-access", user } : { kind: "ready", console: ready };
 }

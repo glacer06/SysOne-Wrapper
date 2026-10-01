@@ -109,7 +109,7 @@ order by created_at;
 
 Expect `org.create`, two `member.add`, `project.create`, `goal.create`, `app.create`, and one `set.create` and one `set.publish` per set.
 
-**Console sign-in.** With `AUTH_SECRET` and `BETTER_AUTH_URL` also set in the shell, run `console-member` once for Nick and once for PJ with the org uuid above and the same roles. It reuses the user and membership the bootstrap made and writes a one-time reset link to `console-reset-link.txt`. Then each person sets a password and two-factor. See `docs/runbooks/console-access.md`.
+**Console sign-in.** With `AUTH_SECRET` and `BETTER_AUTH_URL` also set in the shell, run `console-member` once for Nick and once for PJ with the org uuid above and the same roles. It reuses the user and membership the bootstrap made and writes a one-time reset link to `~/.bandwise/console-reset-link.txt`. Then each person sets a password and two-factor. See `docs/runbooks/console-access.md`.
 
 ## 4. Mint the tokens
 
