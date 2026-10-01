@@ -107,7 +107,7 @@ Reference CSS is in `brand/tokens/bandwise-components.css`. The apps rebuild the
 - **Band badge.** Mono 11px caps on a tinted band background, with a square dot. Always reads High, Medium or Low, usually with the score.
 - **Decision card.** Chamfered, in a `.bw-decision-wrap` wrapper. A title (what happened, in one sentence), then the rows BAND, WHY and COST, separated by hairlines. The order is fixed: state, band, why, cost.
 - **Confidence ruler.** A 0 to 1 scale with red, violet and teal segments at the set's thresholds, and a 2px marker at the score with a 1px page-colored halo on each side, so it reads on any segment.
-- **Alert.** A 3px band-colored rule on the left, a tinted background and a bold first phrase.
+- **Alert.** A 1px band-colored rule on the left, a tinted background and a bold first phrase. The tint carries the band, so the rule stays thin. No side stripe is ever thicker than 1px (Nick, 2026-10-01, replacing the kit's 3px).
 - **Table, tabs, code block, tooltip.** See the CSS. Any numeric column is mono.
 - **Trail divider.** `.bw-trail` is a dotted 3px line. For progress, trail dots grow toward one teal node.
 - **Icons.** Lucide, on a 24px grid, 1.5px stroke, `currentColor`.

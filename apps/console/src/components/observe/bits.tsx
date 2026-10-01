@@ -5,7 +5,7 @@ import { CodeBlock, cx } from "~/components/ui";
 /** A headline number with what it means. Big numbers take the display face. */
 export function Stat({ label, value, hint, emphasis = false }: { label: string; value: string; hint?: ReactNode; emphasis?: boolean }) {
   return (
-    <div className={cx("rounded-md border border-bw-border bg-bw-surface px-4 py-3", emphasis && "border-l-[3px] border-l-bw-brand")}>
+    <div className={cx("rounded-md border border-bw-border bg-bw-surface px-4 py-3", emphasis && "border-bw-brand")}>
       <p className="bw-label">{label}</p>
       <p className="bw-display mt-1 text-[1.75rem] leading-[1.1] tabular-nums text-bw-text">{value}</p>
       {hint === undefined ? null : <p className="mt-1 text-xs text-bw-text-muted">{hint}</p>}

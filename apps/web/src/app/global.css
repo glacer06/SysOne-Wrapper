@@ -1779,7 +1779,7 @@ code {
   display: grid;
   gap: var(--bw-space-1);
   padding: var(--bw-space-4);
-  border-left: 3px solid var(--bw-low);
+  border-left: 1px solid var(--bw-low);
   background: var(--bw-low-bg);
   font-size: var(--bw-text-small);
 }
@@ -1820,7 +1820,7 @@ code {
   align-content: start;
   gap: var(--bw-space-3);
   padding: var(--bw-space-4);
-  border-left: 3px solid var(--bw-high);
+  border-left: 1px solid var(--bw-high);
   background: var(--bw-high-bg);
 }
 
@@ -1934,7 +1934,7 @@ code {
 .legal .notice {
   margin: var(--bw-space-5) 0;
   padding: var(--bw-space-4);
-  border-left: 3px solid var(--bw-high);
+  border-left: 1px solid var(--bw-high);
   background: var(--bw-high-bg);
   font-size: var(--bw-text-small);
 }

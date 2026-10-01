@@ -72,7 +72,7 @@
 .bw-tabs { display: flex; gap: var(--bw-space-5); border-bottom: 1px solid var(--bw-border); }
 .bw-tab { padding: var(--bw-space-3) 0; font-weight: 500; color: var(--bw-text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
 .bw-tab[aria-selected="true"] { color: var(--bw-text); border-bottom-color: var(--bw-brand); }
-.bw-alert { display: flex; gap: var(--bw-space-3); padding: var(--bw-space-4); border-left: 3px solid; font-size: var(--bw-text-small); }
+.bw-alert { display: flex; gap: var(--bw-space-3); padding: var(--bw-space-4); border-left: 1px solid; font-size: var(--bw-text-small); }  /* 1px rule, not the kit's 3px: Nick, 2026-10-01 (ALERT-1PX) */
 .bw-alert--info { background: var(--bw-high-bg); border-color: var(--bw-high); }
 .bw-alert--warn { background: var(--bw-medium-bg); border-color: var(--bw-medium); }
 .bw-alert--error { background: var(--bw-low-bg); border-color: var(--bw-low); }
