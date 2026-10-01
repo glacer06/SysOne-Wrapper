@@ -12,6 +12,8 @@ export {
   type EarlyAccessOutcome,
   type EarlyAccessSubmission,
   type Repositories,
+  type RunPageFilter,
+  type RunSetTotals,
 } from "./repos/index.js";
 export { DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT } from "./repos/base.js";
 export {
