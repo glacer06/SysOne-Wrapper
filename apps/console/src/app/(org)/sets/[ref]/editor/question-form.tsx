@@ -138,6 +138,7 @@ export function QuestionForm({ spec, at, question, findings, answer, onSpec }: {
           <PolicyForm
             policy={policy}
             options={options}
+            context={question.meta.label || at.id}
             marker={answerMarker(answer)}
             answeredOption={answer?.type === "choice" && typeof answer.choice === "string" ? answer.choice : null}
             onChange={(p: Policy) => onSpec(updatePolicy(spec, at.id, () => p))}

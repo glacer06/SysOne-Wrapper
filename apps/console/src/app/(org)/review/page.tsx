@@ -79,7 +79,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
                     )}
                   </Td>
                   <Td>
-                    <SetLabel sets={sets} setId={i.setId} compact />
+                    <SetLabel sets={sets} setId={i.setId} compact stage={false} />
                   </Td>
                   <Td>{suggestedOf(i)}</Td>
                   <Td>

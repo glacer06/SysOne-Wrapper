@@ -1,4 +1,4 @@
-import { type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, useId } from "react";
+import { type InputHTMLAttributes, type ReactNode, type Ref, type SelectHTMLAttributes, useId } from "react";
 
 import { cx } from "./cx";
 
@@ -39,7 +39,7 @@ function describedBy(id: string, hint: unknown, error: unknown): string | undefi
   return ids.length === 0 ? undefined : ids.join(" ");
 }
 
-export type InputProps = InputHTMLAttributes<HTMLInputElement> & FieldShell;
+export type InputProps = InputHTMLAttributes<HTMLInputElement> & FieldShell & { ref?: Ref<HTMLInputElement> };
 
 /** A labelled text input with an optional hint and error. */
 export function Input({ label, hint, error, className, id: givenId, ...rest }: InputProps) {

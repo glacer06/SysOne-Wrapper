@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { type RefObject, useActionState, useEffect, useRef, useState } from "react";
 
 import { Button, InlineAlert, Input } from "~/components/ui";
 
@@ -16,13 +16,25 @@ import {
   verifyCodeAction,
 } from "./actions";
 
+/**
+ * After a failed attempt React resets the form and a clicked submit button drops focus to the
+ * page, so focus goes back to the field to fill in again.
+ */
+function useFocusOnError(error: string | undefined, state: object, field: RefObject<HTMLInputElement | null>) {
+  useEffect(() => {
+    if (error !== undefined) field.current?.focus();
+  }, [error, state, field]);
+}
+
 export function SignInForm() {
   const [state, action, pending] = useActionState<FormState, FormData>(signInAction, {});
+  const password = useRef<HTMLInputElement>(null);
+  useFocusOnError(state.error, state, password);
   return (
     <form action={action} className="flex flex-col gap-4" noValidate>
       {state.error ? <InlineAlert kind="error">{state.error}</InlineAlert> : null}
-      <Input label="Email" name="email" type="email" autoComplete="username" required autoFocus />
-      <Input label="Password" name="password" type="password" autoComplete="current-password" required />
+      <Input label="Email" name="email" type="email" autoComplete="username" required autoFocus defaultValue={state.email} />
+      <Input ref={password} label="Password" name="password" type="password" autoComplete="current-password" required />
       <Button type="submit" variant="primary" pending={pending}>
         {pending ? "Signing in" : "Sign in"}
       </Button>
@@ -33,15 +45,18 @@ export function SignInForm() {
 export function TwoFactorForm() {
   const [state, action, pending] = useActionState<FormState, FormData>(verifyCodeAction, {});
   const [backup, setBackup] = useState(false);
+  const code = useRef<HTMLInputElement>(null);
+  useFocusOnError(state.error, state, code);
   return (
     <form action={action} className="flex flex-col gap-4" noValidate>
       {state.error ? <InlineAlert kind="error">{state.error}</InlineAlert> : null}
       <input type="hidden" name="backup" value={backup ? "1" : "0"} />
       {backup ? (
-        <Input key="backup" label="Backup code" name="code" autoComplete="one-time-code" required autoFocus spellCheck={false} />
+        <Input key="backup" ref={code} label="Backup code" name="code" autoComplete="one-time-code" required autoFocus spellCheck={false} />
       ) : (
         <Input
           key="totp"
+          ref={code}
           label="Code from your authenticator app"
           name="code"
           inputMode="numeric"
@@ -67,6 +82,8 @@ export function SetupTwoFactor() {
   const [started, start, starting] = useActionState<SetupState, FormData>(startSetupAction, {});
   const [finished, finish, finishing] = useActionState<SetupState, FormData>(finishSetupAction, {});
   const enrollment = finished.enrollment ?? started.enrollment;
+  const setupCode = useRef<HTMLInputElement>(null);
+  useFocusOnError(finished.error, finished, setupCode);
 
   if (enrollment === undefined) {
     return (
@@ -111,6 +128,7 @@ export function SetupTwoFactor() {
       <form action={finish} className="flex flex-col gap-4" noValidate>
         {finished.error ? <InlineAlert kind="error">{finished.error}</InlineAlert> : null}
         <Input
+          ref={setupCode}
           label="Six-digit code"
           name="code"
           inputMode="numeric"

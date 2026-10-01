@@ -36,10 +36,21 @@ export function setOptions(sets: SetDirectory): { value: string; label: string }
   return [...sets.values()].sort((a, b) => a.slug.localeCompare(b.slug)).map((s) => ({ value: s.slug, label: s.slug }));
 }
 
-/** A set's slug, linked to the set, with its production stage beside it. */
-export function SetLabel({ sets, setId, compact = false }: { sets: SetDirectory; setId: string; compact?: boolean }) {
+/**
+ * A set's slug, linked to the set, with its current production stage beside it. Run rows pass
+ * `stage={false}`: their own "Stage at run" column is the stage that matters there, and a second,
+ * current badge next to it reads as a contradiction.
+ */
+export function SetLabel({ sets, setId, compact = false, stage = true }: { sets: SetDirectory; setId: string; compact?: boolean; stage?: boolean }) {
   const s = sets.get(setId);
   if (s === undefined) return <span className="font-mono text-xs text-ink-3">{setId.slice(0, 8)}</span>;
+  if (!stage) {
+    return (
+      <Link href={`/sets/${encodeURIComponent(s.slug)}`} className="font-medium text-ink underline-offset-2 hover:underline" title={s.name}>
+        {s.slug}
+      </Link>
+    );
+  }
   return (
     <span className="inline-flex flex-wrap items-center gap-2">
       <Link href={`/sets/${encodeURIComponent(s.slug)}`} className="font-medium text-ink underline-offset-2 hover:underline" title={s.name}>
@@ -49,7 +60,7 @@ export function SetLabel({ sets, setId, compact = false }: { sets: SetDirectory;
         <span className="text-xs text-ink-3">Not released</span>
       ) : (
         <span className="inline-flex items-center gap-1">
-          {compact ? null : <span className="text-xs text-ink-3">production</span>}
+          {compact ? null : <span className="text-xs text-ink-3">production now</span>}
           <RolloutBadge stage={s.production} />
         </span>
       )}

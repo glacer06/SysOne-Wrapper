@@ -11,6 +11,8 @@ import { resetPassword, signIn, signOut, startTotpSetup, verifyCode } from "~/se
 
 export interface FormState {
   error?: string;
+  /** Sign-in only: the email as typed, so a failed attempt does not clear it. */
+  email?: string;
 }
 
 const text = (form: FormData, key: string) => {
@@ -20,7 +22,7 @@ const text = (form: FormData, key: string) => {
 
 export async function signInAction(_prev: FormState, form: FormData): Promise<FormState> {
   const res = await signIn({ email: text(form, "email"), password: text(form, "password") }, await flowDeps());
-  if (!res.ok) return { error: res.error };
+  if (!res.ok) return { error: res.error, email: text(form, "email") };
   redirect(res.next === "two-factor" ? "/two-factor" : "/setup-two-factor");
 }
 

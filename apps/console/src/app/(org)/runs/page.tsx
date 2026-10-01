@@ -70,7 +70,7 @@ export default async function RunsPage({ searchParams }: { searchParams: Promise
                     <span className="ml-2 text-xs text-ink-3">{SOURCE_LABEL[r.source]}</span>
                   </Td>
                   <Td>
-                    <SetLabel sets={sets} setId={r.setId} compact />
+                    <SetLabel sets={sets} setId={r.setId} compact stage={false} />
                     <span className="ml-1 text-xs text-ink-3">{r.channel}</span>
                   </Td>
                   <Td>

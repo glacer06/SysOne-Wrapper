@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Badge, Button, Card, CodeEditor, InlineAlert, Tabs, useToast } from "~/components/ui";
+import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 
 import { saveDraftAction, validateDraftAction } from "../actions";
 import { ThresholdSliders } from "./policy-form";
@@ -53,6 +54,7 @@ export function DraftEditor({ slug, draftVersion, initialSpec, initialEtag, init
   const [linting, setLinting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [problem, setProblem] = useState<SaveProblem | null>(null);
+  const [confirmDiscard, setConfirmDiscard] = useState(false);
   const [last, setLast] = useState<LastPreview | null>(null);
   const reloadRequested = useRef(false);
   // The server already linted the saved draft, so the first lint waits for an edit.
@@ -92,11 +94,28 @@ export function DraftEditor({ slug, draftVersion, initialSpec, initialEtag, init
     return () => clearTimeout(timer);
   }, [parsed.raw, slug, text]);
 
+  // Unsaved edits: the browser asks on a reload or tab close, and we ask on an in-app link (the set
+  // tabs, the nav, the crumbs), which never fires beforeunload. The capture listener on document
+  // runs before Next's Link handler, so stopping it there cancels the client navigation.
   useEffect(() => {
     if (!dirty) return;
     const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+      const a = e.target instanceof Element ? e.target.closest("a[href]") : null;
+      if (!(a instanceof HTMLAnchorElement) || (a.target !== "" && a.target !== "_self") || a.hasAttribute("download")) return;
+      const to = new URL(a.href, window.location.href);
+      if (to.origin !== window.location.origin || to.pathname === window.location.pathname) return;
+      if (window.confirm("The draft has unsaved changes. Leave this page and lose them?")) return;
+      e.preventDefault();
+      e.stopPropagation();
+    };
     window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
+    document.addEventListener("click", onClick, true);
+    return () => {
+      window.removeEventListener("beforeunload", warn);
+      document.removeEventListener("click", onClick, true);
+    };
   }, [dirty]);
 
   const editSpec = useCallback((next: Spec) => setText(toJsonText(next)), []);
@@ -167,7 +186,7 @@ export function DraftEditor({ slug, draftVersion, initialSpec, initialEtag, init
                 <Badge>Composite</Badge>
               </header>
               <p className="text-sm text-ink-2">A weighted blend of {c.terms.length} terms. Its level picks the action; edit terms in the JSON view.</p>
-              <ThresholdSliders value={c.policy.levelThresholds} marker={null} axis="Composite value" onChange={(t) => editSpec(updateCompositePolicy(spec, i, t))} />
+              <ThresholdSliders value={c.policy.levelThresholds} marker={null} axis="Composite value" context={c.id} onChange={(t) => editSpec(updateCompositePolicy(spec, i, t))} />
             </article>
           ),
         )}
@@ -196,7 +215,7 @@ export function DraftEditor({ slug, draftVersion, initialSpec, initialEtag, init
           </span>
           <span className="ml-auto flex gap-2">
             {dirty && canEdit ? (
-              <Button size="sm" variant="ghost" onClick={() => setText(saved.text)}>
+              <Button size="sm" variant="ghost" onClick={() => setConfirmDiscard(true)}>
                 Discard changes
               </Button>
             ) : null}
@@ -207,6 +226,20 @@ export function DraftEditor({ slug, draftVersion, initialSpec, initialEtag, init
             ) : null}
           </span>
         </div>
+
+        <ConfirmDialog
+          open={confirmDiscard}
+          title="Discard unsaved changes?"
+          confirmLabel="Discard changes"
+          tone="danger"
+          onCancel={() => setConfirmDiscard(false)}
+          onConfirm={() => {
+            setConfirmDiscard(false);
+            setText(saved.text);
+          }}
+        >
+          <p>Every edit since the last save goes back to the saved draft. This cannot be undone.</p>
+        </ConfirmDialog>
 
         {problem === null ? null : problem.kind === "conflict" ? (
           <InlineAlert kind="error" title="This draft changed elsewhere">

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { notFound } from "next/navigation";
 
 import { Facts, JsonBlock, Stat } from "~/components/observe/bits";
 import { DecisionsTable } from "~/components/observe/decisions";
@@ -13,6 +14,8 @@ export default async function RunPage({ params }: { params: Promise<{ id: string
   const { id } = await params;
   const [sets, res] = await Promise.all([loadSets(), consoleOperation("run.get", { id })]);
   const crumbs = [{ href: "/runs", label: "Runs" }];
+  // A mistyped or truncated id, or a run this org does not have: the not-found page, not an error.
+  if (res.status === "error" && (res.code === "not_found" || res.code === "invalid_request")) notFound();
   if (res.status !== "ok") {
     return (
       <>
