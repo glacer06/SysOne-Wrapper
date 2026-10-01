@@ -6,7 +6,7 @@ The plugin has four parts:
 
 - a **Stop hook** that runs the `done-check` set each time Claude says it is finished;
 - a **PreToolUse hook** that runs the `action-risk-gate` set before Bash, Edit, Write, MultiEdit and NotebookEdit;
-- the **`bandwise` MCP server** at `https://app.bandwise.dev/mcp`, with the tools `bandwise_check_done`, `bandwise_check_action`, `bandwise_get_savings`, `bandwise_list_review_items`, `bandwise_resolve_review_item` and `bandwise_report_feedback`;
+- the **`bandwise` MCP server** at `https://app.bandwise.dev/mcp`, with the tools `bandwise_check_done`, `bandwise_check_action`, `bandwise_get_savings`, `bandwise_list_review_items`, and `bandwise_resolve_review_item`. A token sees only the tools its scopes allow. `bandwise_report_feedback` appears once the server can record feedback;
 - the **`bandwise-gate` skill**, which tells Claude when to call those tools and how to read a band.
 
 It also carries the `find-decisions` skill from the free Bandwise kit, which finds LLM calls in a codebase that could run as Bandwise question sets.
@@ -20,18 +20,18 @@ claude plugin marketplace add glacer06/bandwise
 claude plugin install bandwise-gate@bandwise
 ```
 
-The hooks run `npx -y @bandwise/cli@0.3`, so the machine needs Node 22 or later and npm. The first hook call downloads the CLI; later calls use the npm cache.
+The hooks run `npx -y @bandwise/cli@0.3.0` from this plugin's own folder, so a project you open can never swap in its own copy of the CLI. The machine needs Node 22 or later and npm. The first hook call downloads the CLI; later calls use the npm cache.
 
-## Set BANDWISE_TOKEN
+## Set the tokens
 
-Both the hooks and the MCP server read `BANDWISE_TOKEN` from the environment of the shell that starts Claude Code.
+The hooks and the MCP server read separate variables, so the hooks never run with more than they need.
 
-- For the hooks and the check tools, use a run-only `sa_live_` agent token for the `internal` org (scope `run`, role ceiling `viewer`).
-- The review tools need a second token with the review scopes (`review:read`, and `review:write` to resolve). Use it only in a session where you want them.
+- `BANDWISE_TOKEN`, for the hooks: a run-only `sa_live_` agent token for the `internal` org (scope `run`, role ceiling `viewer`).
+- `BANDWISE_MCP_TOKEN`, for the MCP tools. For the check tools alone it can hold the same run-only token. Add the review scopes (`review:read`, and `review:write` to resolve) only if you want the review tools.
 
-Load the token from your password manager or keychain in your shell profile. Never put it in a file in a repository, and never paste it into a prompt.
+Load both from your password manager or keychain in your shell profile. Never put a token in a file in a repository, and never paste it into a prompt.
 
-Without `BANDWISE_TOKEN` the hooks end silently and change nothing. The MCP server cannot connect without it.
+Without `BANDWISE_TOKEN` the hooks end silently and change nothing. Without `BANDWISE_MCP_TOKEN` the MCP server is refused and shows no tools.
 
 ## What leaves your machine
 

@@ -117,15 +117,27 @@ describe("/mcp gates", () => {
     }
   });
 
-  it("refuses an app secret token with a message about agent tokens", async () => {
+  it("answers 403 insufficient_scope for an app secret token, with a message about agent tokens", async () => {
     for (const mode of ["live", "test"] as const) {
       const minted = await mintAppToken(t.db, hasher, { orgId: internal.orgId, appId: internal.appId, mode, scopes: ["run"], setIds: null, channel: "production", expiresAt: null });
       expect(minted.token.startsWith(mode === "live" ? "sk_live_" : "sk_test_" satisfies TokenPrefix)).toBe(true);
       const pending = call(minted.token);
       const res = await pending;
-      expect(res.status).toBe(401);
+      expect(res.status).toBe(403);
+      expect(code(res)).toBe("insufficient_scope");
       expect((res.body as { error: { message: string } }).error.message).toContain("agent token");
-      expect(res.headers["www-authenticate"]).toContain('error="invalid_token"');
+      expect(res.headers["www-authenticate"]).toBe('Bearer realm="bandwise", error="insufficient_scope"');
+      expect(pending.readBody).not.toHaveBeenCalled();
+    }
+  });
+
+  it("answers the bare 401 challenge for an empty or malformed Authorization header, without reading the body", async () => {
+    for (const authorization of ["Bearer ", "Basic abc"]) {
+      const pending = call(null, { authorization });
+      const res = await pending;
+      expect(res.status).toBe(401);
+      expect(res.headers["www-authenticate"]).toBe('Bearer realm="bandwise"');
+      expect(res.headers["www-authenticate"]).not.toContain("error=");
       expect(pending.readBody).not.toHaveBeenCalled();
     }
   });
@@ -138,8 +150,8 @@ describe("/mcp gates", () => {
     expect(pending.readBody).not.toHaveBeenCalled();
   });
 
-  it("answers 405 to GET with a valid token", async () => {
-    const res = await call(await agent(internal.orgId, internalUser, ["run"]), { method: "GET" });
+  it.each(["GET", "DELETE"])("answers 405 to %s with a valid token", async (method) => {
+    const res = await call(await agent(internal.orgId, internalUser, ["run"]), { method });
     expect(res.status).toBe(405);
   });
 });
@@ -236,6 +248,33 @@ describe("/mcp check tools", () => {
       expect(result?.isError).toBe(true);
       expect(result?.content?.[0]?.text.length).toBeGreaterThan(0);
       expect(result?.content?.[0]?.text).not.toMatch(/ZodError|at \w+\.\w+ \(/);
+    }
+    expect(await runCount()).toBe(before);
+  });
+
+  it("refuses a field longer than the schema maxLength, naming the field and the limit, and writes no run row", async () => {
+    const token = await agent(internal.orgId, internalUser, ["run"]);
+    const before = await runCount();
+    const res = await call(token, { rpc: callTool("bandwise_check_done", { request: "a", last_reply: "x".repeat(8001) }) });
+    expect(res.status).toBe(200);
+    const result = rpcBody(res).result;
+    expect(result?.isError).toBe(true);
+    expect(result?.content?.[0]?.text).toContain("last_reply");
+    expect(result?.content?.[0]?.text).toContain("8000");
+    expect(await runCount()).toBe(before);
+  });
+
+  it("refuses keys that are not own schema fields, including constructor, toString and __proto__", async () => {
+    const token = await agent(internal.orgId, internalUser, ["run"]);
+    const before = await runCount();
+    for (const key of ["constructor", "toString", "__proto__"]) {
+      const args = JSON.parse(`{"${key}": "x", "request": "a", "last_reply": "b"}`) as unknown;
+      expect(Object.keys(args as object)).toContain(key);
+      const res = await call(token, { rpc: callTool("bandwise_check_done", args) });
+      expect(res.status).toBe(200);
+      const result = rpcBody(res).result;
+      expect(result?.isError).toBe(true);
+      expect(result?.content?.[0]?.text).toContain(`${key} is not a field`);
     }
     expect(await runCount()).toBe(before);
   });

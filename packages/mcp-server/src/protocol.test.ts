@@ -61,21 +61,32 @@ describe("handleMcpHttp transport", () => {
     expect(res.status).toBe(200);
   });
 
-  it("rejects an unknown header version with 400 and -32600", async () => {
-    const res = await handleMcpHttp(post({ jsonrpc: "2.0", id: 1, method: "ping" }, "1999-01-01"), server, tools);
+  it.each(["ping", "tools/list"])("rejects an unknown header version on %s with 400, -32600 and the request id", async (method) => {
+    const res = await handleMcpHttp(post({ jsonrpc: "2.0", id: 7, method }, "2099-01-01"), server, tools);
     expect(res.status).toBe(400);
     expect(errorOf(res.body).code).toBe(-32600);
+    expect((res.body as { id: unknown }).id).toBe(7);
   });
 
-  it("answers 413 for a body that is too large", async () => {
-    const res = await handleMcpHttp({ method: "POST", protocolVersion: null, body: { text: null, tooLarge: true } }, server, tools);
-    expect(res.status).toBe(413);
+  it("skips the header check for initialize and negotiates 2025-06-18", async () => {
+    const res = await handleMcpHttp(post({ jsonrpc: "2.0", id: 1, method: "initialize", params: { protocolVersion: "2099-01-01" } }, "2099-01-01"), server, tools);
+    expect(res.status).toBe(200);
+    expect(resultOf(res.body)["protocolVersion"]).toBe("2025-06-18");
   });
 
-  it("answers 400 and -32700 for invalid JSON", async () => {
-    const res = await handleMcpHttp({ method: "POST", protocolVersion: null, body: { text: "{nope", tooLarge: false } }, server, tools);
-    expect(res.status).toBe(400);
-    expect(errorOf(res.body).code).toBe(-32700);
+  it("answers 413 for a body that is too large, even with a bad header version", async () => {
+    for (const protocolVersion of [null, "2099-01-01"]) {
+      const res = await handleMcpHttp({ method: "POST", protocolVersion, body: { text: null, tooLarge: true } }, server, tools);
+      expect(res.status).toBe(413);
+    }
+  });
+
+  it("answers 400 and -32700 for invalid JSON, even with a bad header version", async () => {
+    for (const protocolVersion of [null, "2099-01-01"]) {
+      const res = await handleMcpHttp({ method: "POST", protocolVersion, body: { text: "{nope", tooLarge: false } }, server, tools);
+      expect(res.status).toBe(400);
+      expect(errorOf(res.body).code).toBe(-32700);
+    }
   });
 
   it("answers 400 and -32600 for a batch array", async () => {

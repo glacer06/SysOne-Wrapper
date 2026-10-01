@@ -91,13 +91,19 @@ export function explainFrom(spec: QuestionSetSpec): (questionId: string, value: 
   };
 }
 
-/** Plain-words input check for the two check tools: only named string fields, required ones present. */
+/**
+ * Plain-words input check for the two check tools: only named string fields, each within the
+ * schema's maxLength, required ones present. The length check runs before any redaction, so a
+ * long input costs nothing (security review 2026-10-01).
+ */
 function checkArgs(spec: GateToolSpec, args: JsonObject): Record<string, string> | string {
-  const schema = spec.inputSchema as { properties: Record<string, unknown>; required?: string[] };
+  const schema = spec.inputSchema as { properties: Record<string, { maxLength?: number }>; required?: string[] };
   const out: Record<string, string> = {};
   for (const [k, v] of Object.entries(args)) {
-    if (!(k in schema.properties)) return `${k} is not a field of ${spec.name}.`;
+    if (!Object.hasOwn(schema.properties, k)) return `${k} is not a field of ${spec.name}.`;
     if (typeof v !== "string") return `${k} must be a string.`;
+    const max = schema.properties[k]?.maxLength;
+    if (max !== undefined && v.length > max) return `${k} is longer than ${max} characters. Send the end of it, where the result is.`;
     out[k] = v;
   }
   for (const k of schema.required ?? []) if (out[k] === undefined || out[k].trim() === "") return `${k} is required.`;
@@ -106,12 +112,20 @@ function checkArgs(spec: GateToolSpec, args: JsonObject): Record<string, string>
 
 /** Tool errors the model can read: a refusal's code and message, never an internal error's. */
 function refusalResult(e: OperationError) {
-  return toolError(`${e.code}: ${e.message}`);
+  const wait = e.retryAfterMs === undefined ? "" : ` Try again in ${Math.max(1, Math.ceil(e.retryAfterMs / 1000))} seconds.`;
+  return toolError(`${e.code}: ${e.message}${wait}`);
 }
 
+const schemaCache = new Map<OperationId, JsonObject>();
+
+/** The operation's input schema as JSON Schema, built once per process. */
 function inputSchemaOf(id: OperationId): JsonObject {
-  const schema = z.toJSONSchema(getOperation(id).input, { io: "input", unrepresentable: "any" }) as JsonObject;
-  delete schema["$schema"];
+  let schema = schemaCache.get(id);
+  if (schema === undefined) {
+    schema = z.toJSONSchema(getOperation(id).input, { io: "input", unrepresentable: "any" }) as JsonObject;
+    delete schema["$schema"];
+    schemaCache.set(id, schema);
+  }
   return schema;
 }
 
@@ -182,20 +196,30 @@ export async function handleMcpRequest(
       return { status: 403, headers: { ...json }, body: { error: { code: "forbidden", message: "Browsers cannot call /mcp. Connect from an agent host.", requestId } } };
     }
 
+    // A missing header and an empty or malformed one both get the bare challenge (RFC 6750 3.1):
+    // the plugin sends "Bearer " when no token is set.
+    const tokenSent = /^Bearer \S+$/.test(req.authorization ?? "");
     let auth: Awaited<ReturnType<typeof authenticateBearer>>;
     try {
-      auth = await authenticateBearer(req.authorization, { db: deps.run.db, hasher: deps.hasher, now: deps.nowDate ?? (() => new Date()), requestId });
+      auth = await authenticateBearer(tokenSent ? req.authorization : null, { db: deps.run.db, hasher: deps.hasher, now: deps.nowDate ?? (() => new Date()), requestId });
     } catch (e) {
-      if (e instanceof OperationError && e.code === "unauthenticated") return unauthorized(req.authorization !== null, requestId, e.message);
+      if (e instanceof OperationError && e.code === "unauthenticated") return unauthorized(tokenSent, requestId, e.message);
       throw e;
     }
-    // Agent tokens only: app tokens belong to apps, and their scopes are not the tool scopes.
-    if (auth.ctx.actor.type !== "agent") return unauthorized(true, requestId, "/mcp takes an agent token (sa_live_).");
+    // Agent tokens only: app tokens belong to apps, and their scopes are not the tool scopes. The
+    // token is valid but the wrong kind, so 403 insufficient_scope, not a re-auth prompt.
+    if (auth.ctx.actor.type !== "agent") {
+      return {
+        status: 403,
+        headers: { ...json, "www-authenticate": 'Bearer realm="bandwise", error="insufficient_scope"' },
+        body: { error: { code: "insufficient_scope", message: "/mcp takes an agent token (sa_live_).", requestId } },
+      };
+    }
     if (auth.orgSlug !== HOSTED_RUN_ORG_SLUG) return refused(new OperationError("not_found", "/mcp is open only to the internal org for now."), requestId);
 
-    const specs = toolsFor(auth.ctx.actor.scopes);
-    const body = req.method === "POST" ? await req.readBody() : { text: null, tooLarge: false };
-    const tools = buildTools(specs, auth, deps, req.signal);
+    const isPost = req.method === "POST";
+    const body = isPost ? await req.readBody() : { text: null, tooLarge: false };
+    const tools = isPost ? buildTools(toolsFor(auth.ctx.actor.scopes), auth, deps, req.signal) : [];
     const res = await handleMcpHttp({ method: req.method, protocolVersion: req.protocolVersion, body }, { ...SERVER_INFO, version: MCP_SERVER_VERSION }, tools, (e) =>
       log?.(e instanceof Error ? e.name : "unknown error", requestId),
     );

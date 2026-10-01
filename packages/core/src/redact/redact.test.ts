@@ -50,3 +50,30 @@ describe("redaction and state shaping", () => {
     expect(shapeState({ prompt: "abcdefgh", n: 3, secret: "x", gone: "y" }, schema, ["gone"])).toEqual({ prompt: "abcde", n: 3 });
   });
 });
+
+describe("redaction cost and the 2026-10-01 security review", () => {
+  it("stays fast on input built to make the name patterns backtrack", () => {
+    for (const unit of ["key-", "--key", "token_", "secret", "a://b", "Bearer ", "-----BEGIN A PRIVATE KEY-----", "sk-proj-"]) {
+      const text = unit.repeat(Math.ceil(64 * 1024 / unit.length));
+      const started = performance.now();
+      redactSecrets(text);
+      expect(performance.now() - started, unit).toBeLessThan(1500);
+    }
+  });
+
+  it("cuts a field to maxLength before redacting it", () => {
+    const schema = { type: "object", properties: { last_reply: { type: "string", maxLength: 8000 } } };
+    const started = performance.now();
+    const out = shapeState({ last_reply: "key-".repeat(16_000) }, schema);
+    expect(performance.now() - started).toBeLessThan(1500);
+    expect((out["last_reply"] as string).length).toBeLessThanOrEqual(8000);
+  });
+
+  it("redacts DB_PASS assignments, curl -u passwords and GitLab tokens, and keeps --passWithNoTests", () => {
+    const j = (...parts: string[]): string => parts.join("");
+    expect(redactSecrets("DB_PASS=Tr0ub4dor")).toBe("DB_PASS=[redacted]");
+    expect(redactSecrets("curl -u admin:S3cretPass https://x.example")).toBe("curl -u admin:[redacted] https://x.example");
+    expect(redactSecrets(j("glpat", "-", "abcdefghijklmnopqrstuvwx"))).toBe("[redacted]");
+    expect(redactSecrets("pnpm vitest --passWithNoTests src/a.ts")).toBe("pnpm vitest --passWithNoTests src/a.ts");
+  });
+});

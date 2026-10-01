@@ -110,10 +110,6 @@ export async function handleMcpHttp(
   if (req.method !== "POST") {
     return { status: 405, headers: { allow: "POST", "cache-control": "no-store" }, body: null };
   }
-  const headerVersion = req.protocolVersion ?? DEFAULT_HEADER_VERSION;
-  if (!(SUPPORTED_PROTOCOL_VERSIONS as readonly string[]).includes(headerVersion)) {
-    return rpcError(null, INVALID_REQUEST, `Unsupported MCP-Protocol-Version. This server speaks ${SUPPORTED_PROTOCOL_VERSIONS.join(" and ")}.`, 400);
-  }
   if (req.body.tooLarge) return rpcError(null, INVALID_REQUEST, `The body is larger than ${MAX_MCP_BODY_BYTES} bytes.`, 413);
 
   let message: unknown;
@@ -134,6 +130,11 @@ export async function handleMcpHttp(
 
   const method = message["method"];
   if (typeof method !== "string") return rpcError(id, INVALID_REQUEST, "A request needs a method.", 400);
+  // initialize negotiates the version in its body, so a newer client is answered, not refused.
+  const headerVersion = req.protocolVersion ?? DEFAULT_HEADER_VERSION;
+  if (method !== "initialize" && !(SUPPORTED_PROTOCOL_VERSIONS as readonly string[]).includes(headerVersion)) {
+    return rpcError(id, INVALID_REQUEST, `Unsupported MCP-Protocol-Version. This server speaks ${SUPPORTED_PROTOCOL_VERSIONS.join(" and ")}.`, 400);
+  }
   const params = isObject(message["params"]) ? message["params"] : {};
 
   switch (method) {

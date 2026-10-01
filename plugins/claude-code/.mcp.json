@@ -4,7 +4,7 @@
       "type": "http",
       "url": "https://app.bandwise.dev/mcp",
       "headers": {
-        "Authorization": "Bearer ${BANDWISE_TOKEN:-}"
+        "Authorization": "Bearer ${BANDWISE_MCP_TOKEN:-}"
       }
     }
   }

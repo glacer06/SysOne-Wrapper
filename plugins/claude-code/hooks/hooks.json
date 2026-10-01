@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx -y @bandwise/cli@0.3 hook Stop --set \"${CLAUDE_PLUGIN_ROOT}/sets/done-check.json\"",
+            "command": "cd \"${CLAUDE_PLUGIN_ROOT}\" && npx -y @bandwise/cli@0.3.0 hook Stop --set \"${CLAUDE_PLUGIN_ROOT}/sets/done-check.json\"",
             "timeout": 10
           }
         ]
@@ -18,7 +18,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "npx -y @bandwise/cli@0.3 hook PreToolUse --set \"${CLAUDE_PLUGIN_ROOT}/sets/action-risk-gate.json\" --drop content_preview",
+            "command": "cd \"${CLAUDE_PLUGIN_ROOT}\" && npx -y @bandwise/cli@0.3.0 hook PreToolUse --set \"${CLAUDE_PLUGIN_ROOT}/sets/action-risk-gate.json\" --drop content_preview",
             "timeout": 10
           }
         ]
