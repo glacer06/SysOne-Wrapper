@@ -16,7 +16,7 @@ The template pack is part of the free %product% kit, licensed Apache-2.0. The [f
 | [Log-line pager](/docs/templates/log-line-pager) | `confidence_routing` | Decide whether one log line needs a human now, so only real problems page someone. |
 | [Context pruner](/docs/templates/context-pruner) | `confidence_routing` | Decide, item by item, whether an agent's context item still matters for the current task, and drop the rest unchanged. |
 | [Wake gate](/docs/templates/wake-gate) | `intent_routing` | Decide whether an event should wake a sleeping agent now, later, or not at all. |
-| [Done check](/docs/templates/done-check) | `confidence_routing` | Decide whether a coding agent has really finished the request before it stops, or has work left or an unchecked claim. |
+| [Done check](/docs/templates/done-check) | `confidence_routing` | Decide whether a coding agent has really finished the request before it stops, or has work left, an unchecked claim or work nobody asked for. |
 | [Action risk gate](/docs/templates/action-risk-gate) | `fan_out` | Decide whether a coding agent's shell command or file edit is risky enough that a person should confirm it before it runs. |
 | [Model tier](/docs/templates/model-tier) | `intent_routing` | Decide how hard a new request to a coding agent is, so mechanical work can go to a cheaper model or subagent. |
 | [Launch profile](/docs/templates/launch-profile) | `intent_routing` | Pick a launch profile for a coding agent session before it starts, from a list the host has approved. |

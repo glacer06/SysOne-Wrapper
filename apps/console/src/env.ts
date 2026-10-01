@@ -29,6 +29,10 @@ export const serverEnvShape = {
   // ES256 private key that signs short-lived browser tokens. Optional until browser tokens ship
   // (Phase 4); the signer must refuse to run without it.
   BANDWISE_JWT_SIGNING_KEY: z.string().min(1).optional(),
+  // Pepper for app and agent token hashes (security.md). Optional until bearer auth serves /api/v1
+  // (ADR-020, D2): tokenHasherFromEnv throws when it is unset or shorter than 32 characters, so no
+  // token can be checked or minted without it. Changing it invalidates every token.
+  BANDWISE_TOKEN_PEPPER: z.string().min(32).optional(),
   // Which SystemOneTransport the server uses. "fixture" never calls the network.
   SYSTEM_ONE_TRANSPORT: z.enum(["sdk", "fixture"]).default("fixture"),
   // Stripe keys. Required once billing lands in Phase 2.

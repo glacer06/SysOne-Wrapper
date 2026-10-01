@@ -66,7 +66,7 @@ Wake gate. Decide whether an event should wake a sleeping agent now, later, or n
 
 ## done-check
 
-Done check. Decide whether a coding agent has really finished the request before it stops, or has work left or an unchecked claim.
+Done check. Decide whether a coding agent has really finished the request before it stops, or has work left, an unchecked claim or work nobody asked for.
 
 - Pattern: `confidence_routing`
 - Questions: `turn_outcome` (choice)

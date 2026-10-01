@@ -519,6 +519,16 @@ const PROBES: Record<string, Probe> = {
   "memberships.getByUser": async (r) => {
     expect(await inA((tx) => r.memberships.getByUser(tx, B.ownerId))).toBeNull();
   },
+  "agentTokens.getByHash": async (r) => {
+    const hash = await inB(async (tx) => (await r.agentTokens.get(tx, created["agentTokens"]?.b ?? ""))?.hash);
+    expect(hash).toBeDefined();
+    expect(await inA((tx) => r.agentTokens.getByHash(tx, hash ?? ""))).toBeNull();
+  },
+  "appTokens.getByHash": async (r) => {
+    const hash = await inB(async (tx) => (await r.appTokens.get(tx, created["appTokens"]?.b ?? ""))?.hash);
+    expect(hash).toBeDefined();
+    expect(await inA((tx) => r.appTokens.getByHash(tx, hash ?? ""))).toBeNull();
+  },
   "orgSystemOneKeys.getByProvider": async (r) => {
     const row = await inA((tx) => r.orgSystemOneKeys.getByProvider(tx, "openrouter"));
     expect(row?.orgId).toBe(A.orgId);

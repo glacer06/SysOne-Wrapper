@@ -132,6 +132,8 @@ export function buildRepositories(opts: RepoOptions) {
   const idempotencyKeys = tenantRepo(s.idempotencyKeys, opts);
   const runFeedback = tenantRepo(s.runFeedback, opts);
   const projects = tenantRepo(s.projects, opts);
+  const agentTokens = tenantRepo(s.agentTokens, opts);
+  const appTokens = tenantRepo(s.appTokens, opts);
 
   return {
     organizations: organizationsRepo(opts),
@@ -150,10 +152,24 @@ export function buildRepositories(opts: RepoOptions) {
         return row ?? null;
       },
     },
-    agentTokens: tenantRepo(s.agentTokens, opts),
+    agentTokens: {
+      ...agentTokens,
+      /** The token with this hash in the transaction's org, revoked or not. The caller checks. */
+      async getByHash(tx: TenantTx, hash: string) {
+        const [row] = await agentTokens.findMany(tx, eq(s.agentTokens.hash, hash), 1);
+        return row ?? null;
+      },
+    },
     orgWebhookSecrets: tenantRepo(s.orgWebhookSecrets, opts),
     apps: tenantRepo(s.apps, opts),
-    appTokens: tenantRepo(s.appTokens, opts),
+    appTokens: {
+      ...appTokens,
+      /** The token with this hash in the transaction's org, revoked or not. The caller checks. */
+      async getByHash(tx: TenantTx, hash: string) {
+        const [row] = await appTokens.findMany(tx, eq(s.appTokens.hash, hash), 1);
+        return row ?? null;
+      },
+    },
     appOpportunities: tenantRepo(s.appOpportunities, opts),
     appSetBindings: tenantRepo(s.appSetBindings, opts),
     projects: {

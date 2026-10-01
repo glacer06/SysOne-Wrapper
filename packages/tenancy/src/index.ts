@@ -42,3 +42,16 @@ export {
   type InMemoryQuotaGuardOptions,
 } from "./limits/quota-guard.js";
 export { hashClientIp } from "./ip-hash.js";
+export {
+  AGENT_TOKEN_PREFIX,
+  APP_TOKEN_PREFIXES,
+  createTokenHasher,
+  MIN_PEPPER_LENGTH,
+  type ParsedToken,
+  parseToken,
+  TOKEN_PREFIXES,
+  type TokenHasher,
+  tokenHasherFromEnv,
+  TokenPepperError,
+  type TokenPrefix,
+} from "./tokens.js";
