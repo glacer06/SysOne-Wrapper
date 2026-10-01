@@ -73,7 +73,7 @@ export function FirstRunEmpty({
               <span className="bw-label rounded-xs border border-bw-border-strong px-1.5 leading-5">
                 Sample
               </span>
-              <BandBadge band={r.band} score={r.score} />
+              {columns.some((c) => c.band) ? <BandBadge band={r.band} score={r.score} /> : null}
             </span>
             <span className="flex flex-wrap gap-x-3 gap-y-1">
               {columns.map((c, j) =>

@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { FilterForm, optionsOf } from "~/components/observe/filter-form";
 import { hasFilters, hrefWith, param, reviewListInput, type SearchParams } from "~/components/observe/filters";
+import { ReviewFirstRun } from "~/components/observe/first-runs";
 import { mapLimit } from "~/components/observe/map-limit";
 import { loadSets, setOptions } from "~/components/observe/sets";
 import { loadSpecs } from "~/components/observe/specs";
@@ -63,10 +64,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
       body = hasFilters(sp, ["kind", "band", "set"]) ? (
         <EmptyState title="No items match these filters" action={<Link href={hrefWith("/review", sp, { kind: undefined, band: undefined, set: undefined })} className={buttonClasses("secondary", "sm")}>Clear filters</Link>} />
       ) : status === undefined ? (
-        <EmptyState mark title="Nothing to review">
-          Decisions land here when a set&apos;s policy sends a medium or low band to review, or when an audit samples one. In shadow the policy never sends a
-          decision to review, so the queue starts once a set moves to controlled.
-        </EmptyState>
+        <ReviewFirstRun />
       ) : (
         <EmptyState title="No items with this status" />
       );

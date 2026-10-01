@@ -87,7 +87,7 @@ describe("runs", () => {
   it("explains an empty list, and shows an operation error", async () => {
     answers["run.list"] = { status: "ok", output: { data: [], nextCursor: null } };
     const { default: RunsPage } = await import("./runs/page");
-    expect(await html(RunsPage({ searchParams: sp() }))).toContain("No runs in this time range");
+    expect(await html(RunsPage({ searchParams: sp() }))).toContain("pnpm bandwise report --remote --since 1h");
     expect(await html(RunsPage({ searchParams: sp({ status: "error" }) }))).toContain("No runs match these filters");
     answers["run.list"] = { status: "error", code: "not_found", message: "No set nope is visible to this caller." };
     expect(await html(RunsPage({ searchParams: sp({ set: "nope" }) }))).toContain("No set nope is visible to this caller.");
@@ -156,7 +156,7 @@ describe("savings", () => {
     const zero = { runs: 0, bandHigh: 0, bandMedium: 0, bandLow: 0, errors: 0, inputTokens: 0, outputTokens: 0, systemOneCostMicroUsd: 0, counterfactualMicroUsd: 0, savingsMicroUsd: 0, llmCallsAvoided: 0 };
     answers["usage.get"] = { status: "ok", output: { from: NOW, to: NOW, totals: zero, sets: [], days: [] } };
     const { default: SavingsPage } = await import("./savings/page");
-    expect(await html(SavingsPage({ searchParams: sp() }))).toContain("Nothing to count in this range");
+    expect(await html(SavingsPage({ searchParams: sp() }))).toContain("Nothing on the trail yet.");
   });
 });
 

@@ -4,6 +4,7 @@ import { FilterForm, optionsOf } from "~/components/observe/filter-form";
 import { hasFilters, hrefWith, param, RANGES, runListInput, type SearchParams } from "~/components/observe/filters";
 import { SOURCE_LABEL, STATUS_LABEL } from "~/components/format";
 import { decisionsOf } from "~/components/observe/decisions";
+import { RunsFirstRun } from "~/components/observe/first-runs";
 import { mapLimit } from "~/components/observe/map-limit";
 import { decidingMarker, runRulers } from "~/components/observe/ruler-math";
 import { loadSets, setOptions } from "~/components/observe/sets";
@@ -67,10 +68,7 @@ export default async function RunsPage({ searchParams }: { searchParams: Promise
             Try a longer time range or fewer filters.
           </EmptyState>
         ) : (
-          <EmptyState mark title="No runs in this time range">
-            Runs show up here once a hook or an app calls a set on app.bandwise.dev with a Bandwise token. With <code className="font-mono text-xs">BANDWISE_TOKEN</code> set,
-            the next hook call lands here.
-          </EmptyState>
+          <RunsFirstRun />
         )
       ) : (
         <>

@@ -1,8 +1,9 @@
 import { FilterForm } from "~/components/observe/filter-form";
+import { SavingsFirstRun } from "~/components/observe/first-runs";
 import { param, rangeOf, rangeStart, type SearchParams } from "~/components/observe/filters";
 import { loadSets, setOptions } from "~/components/observe/sets";
 import { OperationFailed } from "~/components/shell/operation-failed";
-import { EmptyState, PageHeader } from "~/components/ui";
+import { PageHeader } from "~/components/ui";
 import { consoleOperation } from "~/server/console-operation";
 import type { UsageView } from "~/server/operations/views";
 
@@ -53,10 +54,7 @@ export default async function SavingsPage({ searchParams }: { searchParams: Prom
     return (
       <>
         {header}
-        <EmptyState mark title="Nothing to count in this range">
-          Savings add up from hosted runs. The first run of a set starts its count. Local runs from <code className="font-mono text-xs">bandwise run --live</code> stay in your
-          receipts; see them with <code className="font-mono text-xs">pnpm bandwise report --since 7d</code>.
-        </EmptyState>
+        <SavingsFirstRun />
       </>
     );
   }
