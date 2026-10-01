@@ -9,7 +9,8 @@ import { getDb } from "./db";
 import { OperationError, OperationNotImplementedError, type OperationOutput, runOperation, type RunOperationOptions } from "./operations";
 
 export type ConsoleOperationResult<K extends OperationId> =
-  | { status: "ok"; output: OperationOutput<K> }
+  /** `etag` is the response ETag, for the reads that send one (draft.get). */
+  | { status: "ok"; output: OperationOutput<K>; etag?: string }
   /** The handler is still a stub. Pages show what is coming instead of an error. */
   | { status: "not-built" }
   | { status: "error"; code: string; message: string };
@@ -26,7 +27,7 @@ export async function consoleOperation<K extends OperationId>(
       logError: (message, requestId) => console.error(`console ${requestId}: ${message}`),
     });
     if (res.kind !== "ok") return { status: "error", code: "unexpected", message: "The operation did not run." };
-    return { status: "ok", output: res.output };
+    return res.etag === undefined ? { status: "ok", output: res.output } : { status: "ok", output: res.output, etag: res.etag };
   } catch (e) {
     if (e instanceof OperationNotImplementedError) return { status: "not-built" };
     // Operation errors carry api.md messages written for people. Anything else stays generic.

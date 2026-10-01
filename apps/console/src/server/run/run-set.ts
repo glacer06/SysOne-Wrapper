@@ -58,6 +58,8 @@ export interface RunSetInput {
   channel?: PointerChannel | undefined;
   state: JsonValue;
   options?: RunOptions | undefined;
+  /** Set by the surface, never from a request body. Default "api". */
+  source?: "api" | "console" | undefined;
 }
 
 export function serverRunPorts(deps: RunSetDeps): RunPorts {
@@ -107,7 +109,7 @@ export async function runSetForCaller(
 
   const resolved = await deps.db.withTenant(ctx, (tx) => resolveRun(tx, ctx, { ref: input.ref, channel: input.channel }));
   const ports = serverRunPorts(deps);
-  const req = { setRef: input.ref, state: input.state, source: "api" as const, options: input.options ?? {} };
+  const req = { setRef: input.ref, state: input.state, source: input.source ?? "api", options: input.options ?? {} };
   try {
     if (req.options.dryRun === true) return await dryRunQuestionSet(ctx, req, resolved, ports);
     return await runQuestionSet(ctx, req, resolved, ports, { signal, budgetMs: latencyBudgetMs("api") });
