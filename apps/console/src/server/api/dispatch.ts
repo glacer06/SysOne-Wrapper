@@ -5,6 +5,10 @@
 // tested without Next. POST /sets/{ref}/run has its own route (server/run) and is not served here.
 //
 // D2 serves only the internal org (ADR-020): any other org gets 404 on every route.
+//
+// A mutation with an Idempotency-Key stores its response in the operation's transaction, so a
+// retry after the generic 503 below (for example a lost connection after the commit) replays the
+// committed response with `Idempotent-Replayed: true` instead of running again.
 
 import { API_PREFIX, errorEnvelope, OPERATION_CATALOG, type OperationId } from "@bandwise/core";
 import type { TokenHasher } from "@bandwise/tenancy";
@@ -189,6 +193,7 @@ export async function handleApiRequest(
       case "ok": {
         const headers: Record<string, string> = { ...json };
         if (result.etag !== undefined) headers["etag"] = `"${result.etag}"`;
+        if (result.replayed === true) headers["idempotent-replayed"] = "true";
         return { status: op.successStatus, body: result.output, headers };
       }
     }
