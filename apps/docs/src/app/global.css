@@ -1,8 +1,253 @@
 @import "tailwindcss";
-@import "fumadocs-ui/css/neutral.css";
+@import "@bandwise/brand/tokens.css";
+@import "@bandwise/brand/theme.css";
 @import "fumadocs-ui/css/preset.css";
 @import "fumadocs-openapi/css/preset.css";
 
+/*
+ * Fumadocs reads --color-fd-*. Each one maps to a Bandwise semantic token (ADR-022).
+ * The semantic tokens carry both themes (data-theme, or the system setting), so one mapping covers
+ * light and dark. The docs theme toggle sets `class="dark"` (fumadocs' variant) and `data-theme`
+ * (the brand switch) together, see src/app/layout.tsx.
+ */
+@theme inline {
+  --color-fd-background: var(--bw-bg);
+  --color-fd-foreground: var(--bw-text);
+  --color-fd-muted: var(--bw-surface-sunken);
+  --color-fd-muted-foreground: var(--bw-text-muted);
+  --color-fd-popover: var(--bw-surface);
+  --color-fd-popover-foreground: var(--bw-text);
+  --color-fd-card: var(--bw-surface);
+  --color-fd-card-foreground: var(--bw-text);
+  --color-fd-border: var(--bw-border);
+  /* Primary is used as text (links, active items), so it is the brand text color, never the teal fill. */
+  --color-fd-primary: var(--bw-brand-text);
+  --color-fd-primary-foreground: var(--bw-on-brand);
+  --color-fd-secondary: var(--bw-surface-sunken);
+  --color-fd-secondary-foreground: var(--bw-text);
+  --color-fd-accent: var(--bw-surface-sunken);
+  --color-fd-accent-foreground: var(--bw-text);
+  --color-fd-ring: var(--bw-focus);
+  --color-fd-overlay: var(--bw-overlay);
+  --color-fd-info: var(--bw-medium-text);
+  --color-fd-warning: var(--bw-medium-text);
+  --color-fd-error: var(--bw-low-text);
+  --color-fd-success: var(--bw-high-text);
+  --color-fd-idea: var(--bw-medium-text);
+  --color-fd-diff-remove: var(--bw-low-bg);
+  --color-fd-diff-remove-symbol: var(--bw-low-text);
+  --color-fd-diff-add: var(--bw-high-bg);
+  --color-fd-diff-add-symbol: var(--bw-high-text);
+
+  /* Shadows only on overlays: popovers and dialogs. Everything else stays flat. */
+  --shadow-sm: 0 0 transparent;
+  --shadow-md: var(--bw-shadow-overlay);
+  --shadow-lg: var(--bw-shadow-overlay);
+
+  --font-sans: var(--font-body), "Helvetica Neue", Arial, sans-serif;
+  --font-mono: var(--font-code), ui-monospace, "SF Mono", Menlo, monospace;
+}
+
 html {
   scrollbar-gutter: stable;
+}
+
+body {
+  background: var(--bw-bg);
+  color: var(--bw-text);
+  font-family: var(--font-body), "Helvetica Neue", Arial, sans-serif;
+  font-size: var(--bw-text-body);
+  line-height: var(--bw-lh-body);
+}
+
+/* Teal fills carry ink text, never white. Fumadocs pairs bg-fd-primary with a primary foreground. */
+.bg-fd-primary,
+.group-data-\[active\=true\]\:bg-fd-primary {
+  background-color: var(--bw-brand);
+  color: var(--bw-on-brand);
+}
+
+/* Display type: page titles and the home headline. */
+.bw-display,
+#nd-page h1 {
+  font-family: var(--font-heading), "Helvetica Neue", Arial, sans-serif;
+  font-stretch: 125%;
+  font-weight: 800;
+  letter-spacing: var(--bw-track-display);
+  line-height: var(--bw-lh-h2);
+  text-wrap: balance;
+}
+#nd-page h1 {
+  font-size: clamp(1.75rem, 1.2rem + 2vw, 2.5rem);
+}
+
+/* Labels: mono, 12px, uppercase, tracked, muted. */
+.bw-label {
+  font: 500 var(--bw-text-caption) / var(--bw-lh-caption) var(--font-code), ui-monospace, monospace;
+  letter-spacing: var(--bw-track-label);
+  text-transform: uppercase;
+  color: var(--bw-text-muted);
+}
+
+/* Code and numbers. */
+code,
+kbd,
+samp,
+pre {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Search triggers and the search field are controls: their outline is the control border (3:1). */
+[data-search],
+[data-search-full],
+[cmdk-input],
+#nd-search-input,
+[role="dialog"] input {
+  border: 1px solid var(--bw-border-control);
+  border-radius: var(--bw-radius-sm);
+}
+[role="dialog"] input {
+  min-height: 40px;
+}
+
+/* Focus: 2px ring, 2px offset, on every interactive element. */
+:where(a, button, input, select, textarea, summary, [role="button"], [tabindex]):focus-visible {
+  outline: var(--bw-focus-width) solid var(--bw-focus);
+  outline-offset: var(--bw-focus-offset);
+  box-shadow: none;
+}
+
+/* Links in prose are underlined and read in brand text. */
+.prose a:not([data-card]) {
+  color: var(--bw-brand-text);
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+/* Table headers read as mono labels. */
+.prose th {
+  font: 500 11px / 1 var(--font-code), ui-monospace, monospace;
+  letter-spacing: var(--bw-track-label);
+  text-transform: uppercase;
+  color: var(--bw-text-muted);
+}
+
+/* The nav wordmark, typed. */
+.bw-wordmark {
+  font-family: var(--font-heading), "Helvetica Neue", Arial, sans-serif;
+  font-stretch: 125%;
+  font-weight: 800;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: var(--bw-track-display);
+  color: var(--bw-text);
+}
+
+/* Hero: the supplied mark A on a dotted trail, with thin corner brackets. One file per theme. */
+.bw-hero {
+  position: relative;
+  padding: var(--bw-space-6) var(--bw-space-5);
+}
+@media (min-width: 640px) {
+  .bw-hero {
+    padding: var(--bw-space-8) var(--bw-space-7);
+  }
+}
+.bw-hero::before,
+.bw-hero::after,
+.bw-hero > .bw-corner-bl,
+.bw-hero > .bw-corner-br {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border: 0 solid var(--bw-border-strong);
+}
+.bw-hero::before {
+  top: 0;
+  left: 0;
+  border-top-width: 1px;
+  border-left-width: 1px;
+}
+.bw-hero::after {
+  top: 0;
+  right: 0;
+  border-top-width: 1px;
+  border-right-width: 1px;
+}
+.bw-hero > .bw-corner-bl {
+  bottom: 0;
+  left: 0;
+  border-bottom-width: 1px;
+  border-left-width: 1px;
+}
+.bw-hero > .bw-corner-br {
+  bottom: 0;
+  right: 0;
+  border-bottom-width: 1px;
+  border-right-width: 1px;
+}
+.bw-hero-mark {
+  display: block;
+  height: 160px;
+  width: auto;
+}
+@media (min-width: 960px) {
+  .bw-hero-mark {
+    height: 240px;
+  }
+}
+.bw-hero-mark-dark {
+  display: none;
+}
+.dark .bw-hero-mark-light {
+  display: none;
+}
+.dark .bw-hero-mark-dark {
+  display: block;
+}
+
+/* Docs home. */
+.bw-home-links a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--bw-space-5);
+  font-weight: 600;
+  border: 1px solid var(--bw-border-control);
+  border-radius: var(--bw-radius-md);
+  color: var(--bw-text);
+  transition: background-color var(--bw-dur-fast) var(--bw-ease-standard);
+}
+.bw-home-links a:hover {
+  background: var(--bw-surface-sunken);
+}
+.bw-home-links a.bw-primary {
+  background: var(--bw-brand);
+  color: var(--bw-on-brand);
+  border-color: transparent;
+  clip-path: polygon(0 0, calc(100% - var(--bw-chamfer)) 0, 100% var(--bw-chamfer), 100% 100%, var(--bw-chamfer) 100%, 0 calc(100% - var(--bw-chamfer)));
+}
+.bw-home-links a.bw-primary:hover {
+  background: var(--bw-brand);
+  filter: brightness(1.06);
+}
+.bw-home-links a.bw-primary:active {
+  transform: translateY(1px);
+}
+.bw-home-links a.bw-primary:focus-visible {
+  outline: none;
+}
+.bw-focus-poly {
+  display: inline-flex;
+}
+.bw-focus-poly:has(> :focus-visible) {
+  filter: drop-shadow(2px 0 0 var(--bw-bg)) drop-shadow(-2px 0 0 var(--bw-bg)) drop-shadow(0 2px 0 var(--bw-bg)) drop-shadow(0 -2px 0 var(--bw-bg))
+    drop-shadow(2px 0 0 var(--bw-focus)) drop-shadow(-2px 0 0 var(--bw-focus)) drop-shadow(0 2px 0 var(--bw-focus)) drop-shadow(0 -2px 0 var(--bw-focus));
+}
+.bw-trail {
+  height: 3px;
+  background-image: radial-gradient(circle, var(--bw-border-strong) 1.5px, transparent 1.6px);
+  background-size: 12px 3px;
+  background-repeat: repeat-x;
 }
