@@ -12,6 +12,7 @@ import { ThresholdSliders } from "./policy-form";
 import { type LastPreview, PreviewPanel, type RecentRun } from "./preview-panel";
 import { QuestionForm } from "./question-form";
 import { type Finding, findingsFor, listQuestions, type Spec, toJsonText, updateCompositePolicy } from "./spec-edit";
+import { useUnsavedGuard } from "./unsaved-guard";
 
 export interface DraftEditorProps {
   slug: string;
@@ -94,29 +95,8 @@ export function DraftEditor({ slug, draftVersion, initialSpec, initialEtag, init
     return () => clearTimeout(timer);
   }, [parsed.raw, slug, text]);
 
-  // Unsaved edits: the browser asks on a reload or tab close, and we ask on an in-app link (the set
-  // tabs, the nav, the crumbs), which never fires beforeunload. The capture listener on document
-  // runs before Next's Link handler, so stopping it there cancels the client navigation.
-  useEffect(() => {
-    if (!dirty) return;
-    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
-    const onClick = (e: MouseEvent) => {
-      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-      const a = e.target instanceof Element ? e.target.closest("a[href]") : null;
-      if (!(a instanceof HTMLAnchorElement) || (a.target !== "" && a.target !== "_self") || a.hasAttribute("download")) return;
-      const to = new URL(a.href, window.location.href);
-      if (to.origin !== window.location.origin || to.pathname === window.location.pathname) return;
-      if (window.confirm("The draft has unsaved changes. Leave this page and lose them?")) return;
-      e.preventDefault();
-      e.stopPropagation();
-    };
-    window.addEventListener("beforeunload", warn);
-    document.addEventListener("click", onClick, true);
-    return () => {
-      window.removeEventListener("beforeunload", warn);
-      document.removeEventListener("click", onClick, true);
-    };
-  }, [dirty]);
+  // Unsaved edits: ask before a reload, a tab close, an in-app link, or back and forward.
+  useUnsavedGuard(dirty);
 
   const editSpec = useCallback((next: Spec) => setText(toJsonText(next)), []);
 
