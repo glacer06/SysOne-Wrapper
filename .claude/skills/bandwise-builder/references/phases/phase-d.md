@@ -40,9 +40,9 @@ Built in five slices, one PR each:
 - [x] `POST /api/v1/sets/{ref}/run` with the standard envelope, platform key on the server, served only for the `internal` org (D2b; live once D2e sets the env)
 - [x] App tokens (`sk_live_`) minted by a platform script for the internal org, stored hashed, scoped to a set allowlist (D2a)
 - [x] The management operations the CLI needs, with audit rows: `set.create`, `draft.update`, `set.publish`, `channel.rollback`, `rollout.change`, `run.list`, `usage.get`, plus the reads and approvals the console needs (D2c)
-- [ ] `bandwise spec push|pull|diff`, `bandwise publish`, `bandwise rollback`, `bandwise rollout` against app.bandwise.dev with a Bandwise token
+- [ ] `bandwise spec push|pull|diff`, `bandwise publish`, `bandwise rollback`, `bandwise rollout` against app.bandwise.dev with a Bandwise token. CLI side built in D2d (`packages/cli/src/remote`); live once D2e lands
 - [ ] Runs write `runs`, `usage_daily` and the savings ledger; `bandwise report --remote` reads them
-- [ ] Hooks switch from `--live` to the hosted endpoint by setting `BANDWISE_TOKEN`; receipts keep working
+- [ ] Hooks switch from `--live` to the hosted endpoint by setting `BANDWISE_TOKEN`; receipts keep working. CLI side built in D2d (`packages/cli/src/live/hook-remote.ts`)
 - [ ] Import the `.bandwise/sets/` specs into the internal org; publish and roll back one set live with no redeploy
 
 ## D3: Minimal console

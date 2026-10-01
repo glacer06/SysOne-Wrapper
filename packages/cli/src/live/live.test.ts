@@ -411,12 +411,14 @@ describe("bandwise hook", () => {
 });
 
 describe("the key rule", () => {
-  it("only live/key.ts reads a provider key variable", () => {
+  it("only live/key.ts reads a provider key variable, and only remote/credentials.ts the Bandwise token", () => {
     const src = at("../");
     const files = (dir: string): string[] =>
       readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? (e.name === "__fixtures__" ? [] : files(join(dir, e.name))) : e.name.endsWith(".ts") && !e.name.endsWith(".test.ts") ? [join(dir, e.name)] : []));
-    const readers = files(src).filter((f) => /TYPESAFE_API_KEY|OPENROUTER_API_KEY|AI_GATEWAY_API_KEY|process\.env/.test(readFileSync(f, "utf8")) && !f.endsWith("main.ts"));
-    expect(readers.map((f) => f.slice(src.length))).toEqual(["live/key.ts"]);
+    const readers = (re: RegExp): string[] => files(src).filter((f) => re.test(readFileSync(f, "utf8")) && !f.endsWith("main.ts")).map((f) => f.slice(src.length));
+    expect(readers(/TYPESAFE_API_KEY|OPENROUTER_API_KEY|AI_GATEWAY_API_KEY/)).toEqual(["live/key.ts"]);
+    expect(readers(/process\.env/)).toEqual(["live/key.ts", "remote/credentials.ts"]);
+    expect(readers(/"BANDWISE_TOKEN"|"BANDWISE_BASE_URL"/)).toEqual(["remote/credentials.ts"]);
     // main.ts only names the variables in its usage text; it never reads process.env.
     expect(readFileSync(join(src, "main.ts"), "utf8")).not.toContain("process.env");
   });
