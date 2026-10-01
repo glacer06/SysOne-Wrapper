@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
-import { BandLegend, BandRuler, bandClass } from "~/components/band-ruler";
+import { BandBadge, BandLegend, ConfidenceRuler } from "~/components/confidence-ruler";
 import { EarlyAccessForm } from "~/components/early-access-form";
 import { SavingsCalculator } from "~/components/savings-calculator";
 import { calculatorSetup, systemOneModel } from "~/lib/bill";
 import { formatUsd } from "~/lib/format";
 import { decisions, policy, question, templateId, templateTitle } from "~/lib/decision-example";
+import { heroReceipt, receiptInputTokens } from "~/lib/receipt";
 import { groupLabels, typeLabels, useCases, type UseCase } from "~/lib/use-cases";
 import { docsUrl, kitUrl, npmPackages, npmUrl, productName, tagline } from "~/site";
 
 export const metadata: Metadata = {
-  title: { absolute: `${productName}: confidence bands for System One decisions` },
+  title: { absolute: `${productName}: small model, heavy lifting` },
   description: tagline,
 };
 
@@ -26,23 +27,27 @@ function WithCode({ text }: { text: string }) {
   );
 }
 
-const bandWord = (d: (typeof decisions)[number]) =>
-  d.value === true ? `${d.band}, yes` : d.value === false ? `${d.band}, no` : `${d.band}, unsure`;
+const answerWord = (d: (typeof decisions)[number]) => (d.value === true ? "yes" : d.value === false ? "no" : "unsure");
+const actionWord = (a: "auto" | "review") => (a === "auto" ? "acts" : "a person");
+
+const rulerLabel = `Confidence scale from 0 to 1, split into bands at ${policy.falseAt}, ${policy.falseAt + policy.reviewMargin}, ${(policy.trueAt - policy.reviewMargin).toFixed(1)} and ${policy.trueAt}`;
 
 function Hero() {
-  const first = decisions[0];
+  const r = heroReceipt();
+  const d = r.decision;
   return (
     <section className="hero" aria-labelledby="hero-title">
       <div className="wrap hero-grid">
-        <div>
+        <div className="hero-copy">
           <p className="label">Early access</p>
-          <h1 id="hero-title" style={{ marginTop: "var(--s-4)" }}>
-            Let a small model make the call. Know when it should not.
+          <h1 id="hero-title" className="display">
+            Small model. Heavy lifting.
           </h1>
+          <p className="support">It knows how sure it is.</p>
           <p className="lede">
-            {productName} runs your yes or no, pick-one and score decisions on TypeSafe&apos;s System One models, reads how sure
-            each answer is, and turns that into an action: act, send to a person, fall back, or ask a larger LLM. Every run
-            records what it cost and what it saved.
+            {productName} runs your yes-or-no, pick-one and score decisions on TypeSafe&apos;s System One models. Every answer
+            comes back with a band, a reason and a cost. You set the lines. Each band gets an action: act, send to a person,
+            fall back to a default, or ask a larger LLM. Every run records what it cost and what it saved.
           </p>
           <div className="hero-actions">
             <a className="btn btn-primary" href="#early-access">
@@ -54,38 +59,56 @@ function Hero() {
           </div>
           <p className="hero-status">The hosted cloud is in early access. The kit is free and open source today.</p>
         </div>
-        {first ? (
-          <div className="readout" aria-label="One decision from the log-line pager template">
-            <div className="readout-title">
-              <span>{templateId}</span>
-              <span style={{ color: "var(--ink-3)" }}>illustrative run</span>
+
+        <div className="hero-demo">
+          <ConfidenceRuler
+            policy={policy}
+            label={`${rulerLabel}. The answer sits at ${d.noul.toFixed(2)}, in the ${d.band} band.`}
+            caption={
+              <>
+                Example thresholds from the <a href={templateDocs(templateId)}>{templateTitle}</a> template
+              </>
+            }
+            carry={{ score: d.noul }}
+            readout={
+              <span className="data">
+                {d.noul.toFixed(2)} · {d.band.toUpperCase()} · {formatUsd(r.costMicro)}
+              </span>
+            }
+          />
+
+          <article className="decision" aria-label="One decision, read in four parts">
+            <div className="decision-inner">
+              <p className="decision-input data">
+                {d.service} {d.level}: {d.message}
+              </p>
+              <h2 className="decision-title">{r.state}</h2>
+              <dl className="decision-rows">
+                <div>
+                  <dt>Band</dt>
+                  <dd>
+                    <BandBadge band={d.band} score={d.noul} /> <span className="muted">leaning {answerWord(d)}</span>
+                  </dd>
+                </div>
+                <div>
+                  <dt>Why</dt>
+                  <dd>{r.why}</dd>
+                </div>
+                <div>
+                  <dt>Cost</dt>
+                  <dd>
+                    <span className="data strong">{formatUsd(r.costMicro)}</span> on {systemOneModel.label}. The same call on{" "}
+                    {r.comparatorLabel}: <span className="data">{formatUsd(r.comparatorMicro)}</span>.
+                  </dd>
+                </div>
+              </dl>
+              <p className="caveat">
+                Illustrative. The confidence is not recorded model output. The costs come from our price book for a{" "}
+                {receiptInputTokens}-token call, at list prices with no discounts.
+              </p>
             </div>
-            <dl>
-              <dt>Log line</dt>
-              <dd>
-                {first.service} {first.level}: {first.message}
-              </dd>
-              <dt>Question</dt>
-              <dd className="question-text">{question}</dd>
-              <dt>Confidence</dt>
-              <dd>
-                {first.noul.toFixed(2)} that the answer is yes
-                <BandRuler policy={policy} markers={[{ value: first.noul, n: 1 }]} label="Confidence scale" showReads={false} />
-              </dd>
-              <dt>Band</dt>
-              <dd>
-                <span className="chip">
-                  <i className={`swatch ${bandClass[first.band]}`} aria-hidden="true" />
-                  {bandWord(first)}
-                </span>
-              </dd>
-              <dt>Action</dt>
-              <dd>
-                <span className="chip chip-signal">{first.action}</span> {first.outcome}
-              </dd>
-            </dl>
-          </div>
-        ) : null}
+          </article>
+        </div>
       </div>
     </section>
   );
@@ -97,7 +120,7 @@ function HowItWorks() {
       <div className="wrap">
         <div className="section-head">
           <p className="label">How a decision flows</p>
-          <h2 id="how-title">One question, one number, one action.</h2>
+          <h2 id="how-title">One question. One number. One action.</h2>
         </div>
         <ol className="flow-steps">
           <li>
@@ -108,17 +131,17 @@ function HowItWorks() {
           <li>
             <span className="num">02</span>
             <h3>Confidence</h3>
-            <p>A System One model such as Jev answers with a confidence. For a yes or no question it is the probability of yes.</p>
+            <p>A System One model such as Jev answers with a confidence. For a yes-or-no question, it is the probability of yes.</p>
           </li>
           <li>
             <span className="num">03</span>
             <h3>Band</h3>
-            <p>Your thresholds sort that number into high, medium or low. The thresholds live in the spec, so changing them is a reviewed version.</p>
+            <p>Your thresholds sort that number into High, Medium or Low. They live in the spec, so a change is a reviewed version.</p>
           </li>
           <li>
             <span className="num">04</span>
             <h3>Action</h3>
-            <p>Each band maps to an action: act on its own, send to a person, fall back to a default, or escalate to a larger LLM.</p>
+            <p>Each band maps to an action: act on its own, send to a person, fall back to a default, or ask a larger LLM.</p>
           </li>
         </ol>
 
@@ -128,47 +151,45 @@ function HowItWorks() {
               From the <a href={templateDocs(templateId)}>{templateTitle}</a> template
             </p>
             <p className="example-question">{question}</p>
-            <p className="example-policy">
-              trueAt {policy.trueAt}, falseAt {policy.falseAt}, review margin {policy.reviewMargin}
+            <p className="example-policy data">
+              trueAt {policy.trueAt} · falseAt {policy.falseAt} · reviewMargin {policy.reviewMargin}
             </p>
-            <p className="caveat" style={{ marginTop: "var(--s-5)" }}>
-              Above 0.8 the answer is a confident yes and the set pages someone. Below 0.2 it is a confident no and the line is
-              only logged. Anything in between goes to a queue a person reads during working hours, so an unsure model never
-              wakes anyone up.
+            <p className="caveat">
+              At {policy.trueAt} and above, the answer is a confident yes and the set pages someone. At {policy.falseAt} and
+              below, it is a confident no and the line is only logged. Anything between goes to a queue a person reads during
+              working hours. An unsure model never wakes anyone up.
             </p>
           </div>
           <div>
-            <BandRuler
+            <ConfidenceRuler
               policy={policy}
               markers={decisions.map((d, i) => ({ value: d.noul, n: i + 1 }))}
-              label={`Confidence scale from 0 to 1 split into bands at ${policy.falseAt}, ${policy.falseAt + policy.reviewMargin}, ${policy.trueAt - policy.reviewMargin} and ${policy.trueAt}`}
+              label={rulerLabel}
+              caption="Example thresholds, set in the template's spec"
             />
             <BandLegend />
             <ol className="lines">
               {decisions.map((d, i) => (
                 <li key={d.service}>
-                  <span className="marker" aria-hidden="true">
+                  <span className="marker data" aria-hidden="true">
                     {i + 1}
                   </span>
-                  <p className="log">
+                  <p className="log data">
                     <b>
                       {d.service} {d.level}
                     </b>{" "}
                     {d.message}
                   </p>
                   <p className="verdict">
-                    <span className="chip">{d.noul.toFixed(2)}</span>
-                    <span className="chip">
-                      <i className={`swatch ${bandClass[d.band]}`} aria-hidden="true" />
-                      {bandWord(d)}
-                    </span>
-                    <span className={`chip${d.action === "auto" ? " chip-signal" : ""}`}>{d.action}</span>
+                    <BandBadge band={d.band} score={d.noul} />
+                    <span className="data">{answerWord(d)}</span>
+                    <span className="data">{actionWord(d.action)}</span>
                     <span className="outcome">{d.outcome}</span>
                   </p>
                 </li>
               ))}
             </ol>
-            <p className="caveat" style={{ marginTop: "var(--s-4)" }}>
+            <p className="caveat">
               The confidence values are illustrative, not recorded model output. The bands and actions are what the
               template&apos;s policy does with them.
             </p>
@@ -187,13 +208,13 @@ function WhySmall() {
           <p className="label">Why a small model</p>
           <h2 id="why-title">Cheap and fast, at mid-tier accuracy.</h2>
           <p>
-            Jev costs {formatUsd(systemOneModel.price.inputPerMtokMicroUsd)} per million input tokens, and output is not billed. It scores below
-            the largest models. That is exactly why the bands exist.
+            Jev costs <span className="data">{formatUsd(systemOneModel.price.inputPerMtokMicroUsd)}</span> per million input
+            tokens, and output is not billed. It scores below the largest models. That is why the bands exist.
           </p>
         </div>
         <div className="bench">
           <div className="table-scroll">
-            <table className="data">
+            <table className="data-table">
               <caption>TypeSafe&apos;s 4-workflow benchmark, as summarized by DataCamp (2026-09-27)</caption>
               <thead>
                 <tr>
@@ -236,14 +257,14 @@ function WhySmall() {
                 </tr>
               </tbody>
             </table>
-            <p className="caveat" style={{ marginTop: "var(--s-3)" }}>
+            <p className="caveat">
               A vendor benchmark. The reference answers are the average of two frontier models, not human labels. Source:{" "}
               <a href="https://www.datacamp.com/blog/system-one-models-jev">DataCamp</a>.
             </p>
           </div>
           <div className="prose">
             <p>
-              Most of the answers in a workflow are easy. Let the small model take the ones it is sure of, and send the rest to a
+              Most answers in a workflow are easy. Let the small model take the ones it is sure of, and send the rest to a
               person or to one of those larger models. TypeSafe reports its models as up to 194x faster and 445x cheaper than
               LLMs on its own workflow evaluations (<a href="https://vercel.com/blog/ai-gateway-jev-model-launch">Vercel blog</a>). That is TypeSafe&apos;s framing, and your numbers will differ.
             </p>
@@ -252,8 +273,8 @@ function WhySmall() {
               So {productName} measures accuracy on your own labeled decisions, per band, before a band is allowed to act.
             </p>
             <p>
-              New sets start in shadow: they log what they would have done and act on nothing. Controlled lets only the high band
-              act. Full turns everything on. A person can pause a set at any stage.
+              New sets start in shadow: they log what they would have done and act on nothing. Controlled lets only the High
+              band act. Full turns everything on. A person can pause a set at any stage.
             </p>
           </div>
         </div>
@@ -270,8 +291,8 @@ function Calculator() {
           <p className="label">Savings calculator</p>
           <h2 id="calc-title">The bill, split where it grows.</h2>
           <p>
-            System One calls are cheap enough that the part worth watching is how often you escalate to an LLM. Move the rate
-            and watch which lane grows.
+            System One calls cost little enough that the number worth watching is how often you escalate to an LLM. Move the
+            rate and watch which lane grows.
           </p>
         </div>
         <SavingsCalculator setup={calculatorSetup()} />
@@ -293,7 +314,7 @@ function UseCases() {
           <h2 id="templates-title">Nine decisions to start from.</h2>
           <p>
             Each template is a working spec with example and borderline states. They are checked to run, not measured for
-            accuracy, so tune them on your own data before anything acts on its own.
+            accuracy. Tune them on your own data before anything acts on its own.
           </p>
         </div>
         <div className="cases">
@@ -357,7 +378,7 @@ function Headless() {
                 {"    "}--rollout shadow --json
               </code>
             </pre>
-            <p className="caveat" style={{ marginTop: "var(--s-3)" }}>
+            <p className="caveat">
               It prints each decision with its band and action, the System One cost and the estimated savings. Local mode answers
               from fixtures, so use it to check your spec and wiring, not accuracy.
             </p>
@@ -413,7 +434,7 @@ function Providers() {
           </p>
         </div>
         <div className="table-scroll">
-          <table className="data">
+          <table className="data-table">
             <thead>
               <tr>
                 <th scope="col">Route</th>
@@ -456,7 +477,7 @@ function Kit() {
     <section className="section" id="kit" aria-labelledby="kit-title">
       <div className="wrap kit">
         <div>
-          <div className="section-head" style={{ marginBottom: "var(--s-6)" }}>
+          <div className="section-head">
             <p className="label">The free kit</p>
             <h2 id="kit-title">Start on your own machine, for free.</h2>
             <p>
@@ -465,7 +486,7 @@ function Kit() {
               licensed under Apache-2.0.
             </p>
           </div>
-          <div className="hero-actions" style={{ marginTop: 0 }}>
+          <div className="hero-actions">
             <a className="btn btn-secondary" href={kitUrl}>
               bandwise-kit on GitHub
             </a>
@@ -477,12 +498,16 @@ function Kit() {
         <ul className="pkg-list">
           {npmPackages.map((p) => (
             <li key={p.name}>
-              <a href={npmUrl(p.name)}>{p.name}</a>
+              <a className="data" href={npmUrl(p.name)}>
+                {p.name}
+              </a>
               <p>{p.what}</p>
             </li>
           ))}
           <li>
-            <a href={`${docsUrl}/docs/find-decisions`}>find-decisions skill</a>
+            <a className="data" href={`${docsUrl}/docs/find-decisions`}>
+              find-decisions skill
+            </a>
             <p>
               Runs in Claude Code inside your repository and drafts specs for the decisions it finds. It sends nothing to any
               service.
@@ -498,7 +523,7 @@ function EarlyAccess() {
   return (
     <section className="section access" id="early-access" aria-labelledby="access-title">
       <div className="wrap access-grid">
-        <div className="section-head" style={{ marginBottom: 0 }}>
+        <div className="section-head">
           <p className="label">Early access</p>
           <h2 id="access-title">Request early access to the cloud.</h2>
           <p>

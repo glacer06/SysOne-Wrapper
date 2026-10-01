@@ -1,15 +1,15 @@
 import Link from "next/link";
 import { docsUrl, kitUrl, productName } from "~/site";
 
-/** The mark: a short measuring staff with its top range filled, drawn in the ink and signal colors. */
-export function Mark({ size = 22 }: { size?: number }) {
+/** The supplied horizontal lockup A (brand/marks), light or dark to match the theme. */
+export function Lockup({ width = 168 }: { width?: number }) {
+  // The lockup's viewBox is 2168 by 744.
+  const height = Math.round((width * 744) / 2168);
   return (
-    <svg width={size} height={size} viewBox="0 0 22 22" aria-hidden="true" focusable="false">
-      <rect x="1" y="1" width="20" height="20" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <rect x="1.75" y="1.75" width="18.5" height="7" fill="var(--signal)" />
-      <path d="M1 8.75h20M1 13.5h20" stroke="currentColor" strokeWidth="1.25" />
-      <path d="M6 13.5v7.5M11 13.5v7.5M16 13.5v7.5" stroke="currentColor" strokeWidth="1" />
-    </svg>
+    <picture className="lockup">
+      <source srcSet="/brand/bandwise-lockup-horizontal-A-dark.svg" media="(prefers-color-scheme: dark)" />
+      <img src="/brand/bandwise-lockup-horizontal-A-light.svg" alt={productName} width={width} height={height} />
+    </picture>
   );
 }
 
@@ -17,9 +17,8 @@ export function SiteHeader() {
   return (
     <header className="site-header">
       <div className="wrap">
-        <Link href="/" className="wordmark" aria-label={`${productName} home`}>
-          <Mark />
-          {productName}
+        <Link href="/" className="home-link" aria-label={`${productName} home`}>
+          <Lockup width={160} />
         </Link>
         <nav className="site-nav" aria-label="Main">
           <Link href="/#how">How it works</Link>
@@ -29,7 +28,8 @@ export function SiteHeader() {
           <a href={docsUrl}>Docs</a>
         </nav>
         <Link href="/#early-access" className="btn btn-primary btn-small">
-          Request early access
+          <span className="cta-long">Request early access</span>
+          <span className="cta-short">Early access</span>
         </Link>
       </div>
     </header>

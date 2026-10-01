@@ -1,16 +1,13 @@
 import Link from "next/link";
-import { docsUrl, independenceNote, kitUrl, productName } from "~/site";
-import { Mark } from "./site-header";
+import { docsUrl, independenceNote, kitUrl } from "~/site";
+import { Lockup } from "./site-header";
 
 export function SiteFooter() {
   return (
     <footer className="site-footer">
       <div className="wrap footer-grid">
-        <div>
-          <p className="wordmark" aria-hidden="true">
-            <Mark />
-            {productName}
-          </p>
+        <div className="footer-brand">
+          <Lockup width={160} />
           <p className="independence">{independenceNote}</p>
           <p className="footer-meta">Jev and System One are names of TypeSafe models.</p>
         </div>
