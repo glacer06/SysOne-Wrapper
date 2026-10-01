@@ -30,8 +30,10 @@ describe("tokens", () => {
   });
 
   it("parses nothing that is not exactly a token", () => {
+    // The secret is random base64url and may contain "_", so every bad case below is built by
+    // position, never by matching on "_", or a rare draw would still be a well-formed token.
     const { token } = createTokenHasher(PEPPER).mint("sk_live_", ORG);
-    for (const bad of ["", "sk_live_", `${token}x`, ` ${token}`, token.replace("sk_live_", "sk_prod_"), token.toUpperCase(), token.replace(/_([^_]+)$/, "_short")]) {
+    for (const bad of ["", "sk_live_", `${token}x`, ` ${token}`, token.replace("sk_live_", "sk_prod_"), token.toUpperCase(), token.slice(0, -1), `${token.slice(0, -1)}=`]) {
       expect(parseToken(bad)).toBeNull();
     }
   });
