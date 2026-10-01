@@ -46,7 +46,7 @@ function Correction({ choices, suggestedJson }: { choices: readonly Choice[] | n
     <fieldset className="flex min-w-0 flex-col gap-2">
       <legend className="mb-1 text-sm font-medium text-bw-text">The right answer</legend>
       {others.map((c, i) => (
-        <label key={c.json} className="flex items-center gap-2 text-sm text-bw-text">
+        <label key={c.json} className="flex cursor-pointer items-center gap-2 text-sm text-bw-text max-sm:min-h-11">
           <input type="radio" name="value" value={c.json} defaultChecked={i === 0} required />
           {c.label}
         </label>

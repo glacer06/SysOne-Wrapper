@@ -105,7 +105,7 @@ export default async function ReviewItemPage({ params, searchParams }: { params:
               {
                 label: "Run",
                 value: (
-                  <Link href={`/runs/${run.id}`} className="underline underline-offset-2">
+                  <Link href={`/runs/${run.id}`} className="bw-hit underline underline-offset-2">
                     Open the run
                   </Link>
                 ),

@@ -117,7 +117,7 @@ export function SavingsView({ usage, sets, rangeLabel, rangeParam }: { usage: Us
                 <Td className="whitespace-nowrap">
                   <span className="flex flex-col items-start gap-1">
                     <SetLabel sets={sets} setId={s.setId} compact />
-                    <Link href={`/runs?set=${encodeURIComponent(s.slug)}&range=${rangeParam}`} className="text-xs text-bw-text-muted underline underline-offset-2">
+                    <Link href={`/runs?set=${encodeURIComponent(s.slug)}&range=${rangeParam}`} data-row-link="" className="text-xs text-bw-text-muted underline underline-offset-2">
                       Open its runs
                     </Link>
                   </span>

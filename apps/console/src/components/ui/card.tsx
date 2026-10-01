@@ -61,7 +61,7 @@ export function PageHeader({ title, description, actions, crumbs }: { title: str
             {crumbs.map((c, i) => (
               <li key={c.href} className="flex items-center gap-1">
                 {i === 0 ? null : <span aria-hidden>/</span>}
-                <Link href={c.href} className="underline-offset-2 hover:text-bw-text hover:underline">
+                <Link href={c.href} className="bw-hit underline-offset-2 hover:text-bw-text hover:underline">
                   {c.label}
                 </Link>
               </li>

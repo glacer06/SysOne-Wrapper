@@ -126,7 +126,7 @@ export function RequestCard({ item, set, change, now, decide }: { item: Approval
               "The org, not one set."
             ) : (
               <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <Link href={`/sets/${encodeURIComponent(ref)}/releases`} className="font-mono underline underline-offset-2">
+                <Link href={`/sets/${encodeURIComponent(ref)}/releases`} className="bw-hit font-mono underline underline-offset-2">
                   {ref}
                 </Link>
                 {set === null

@@ -199,6 +199,52 @@ body {
   }
 }
 
+/* Phone tap targets (DESIGN-STANDARDS.md: 44px at phone widths). Nothing here moves layout.
+   - A row (a table body row, or any .bw-row) is one target: its link marked data-row-link
+     stretches over the row with ::after. Other controls in the row sit above that overlay.
+   - .bw-hit grows a text link's hit area to at least 44 by 44 around its center with ::before,
+     so it looks and lays out the same. */
+@layer components {
+  @media (max-width: 639px) {
+    .bw-table tbody tr,
+    .bw-row {
+      position: relative;
+    }
+    :is(.bw-table tbody tr, .bw-row) [data-row-link]::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+    :is(.bw-table tbody tr, .bw-row) :is(a, button, input, select, textarea, summary, label, [tabindex]):not([data-row-link]) {
+      position: relative;
+      z-index: 2;
+    }
+    .bw-hit {
+      position: relative;
+    }
+    .bw-hit::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: max(100%, 44px);
+      height: max(100%, 44px);
+      transform: translate(-50%, -50%);
+    }
+  }
+}
+/* Outside the layer so it wins over the global :focus-visible: the ring goes round the row. */
+@media (max-width: 639px) {
+  :is(.bw-table tbody tr, .bw-row) [data-row-link]:focus-visible {
+    outline: none;
+  }
+  :is(.bw-table tbody tr, .bw-row) [data-row-link]:focus-visible::after {
+    outline: var(--bw-focus-width) solid var(--bw-focus);
+    outline-offset: calc(-1 * var(--bw-focus-width));
+  }
+}
+
 /* The danger button keeps white text on light and ink on dark, as the kit's reference does. Kept
    here so it follows both the system theme and an explicit data-theme. */
 .bw-on-low {

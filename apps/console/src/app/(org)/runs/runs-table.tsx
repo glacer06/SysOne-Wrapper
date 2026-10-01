@@ -33,7 +33,7 @@ export function RunsTable({ runs, rulers, sets, now }: { runs: readonly RunSumma
           return (
             <tr key={r.id} className="hover:bg-bw-surface-sunken">
               <Td className="whitespace-nowrap">
-                <Link href={`/runs/${r.id}`} className="inline-flex min-h-6 items-center text-bw-text underline underline-offset-2" title={r.createdAt}>
+                <Link href={`/runs/${r.id}`} data-row-link="" className="inline-flex min-h-6 items-center text-bw-text underline underline-offset-2" title={r.createdAt}>
                   {formatWhen(r.createdAt, now)}
                 </Link>
                 <span className="ml-2 text-xs text-bw-text-muted">{SOURCE_LABEL[r.source]}</span>

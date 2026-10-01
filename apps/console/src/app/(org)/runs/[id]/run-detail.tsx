@@ -139,7 +139,7 @@ export function RunDetailView({ run, sets, spec }: { run: RunDetail; sets: SetDi
                 {run.reviewItems.map((i) => (
                   <tr key={i.id}>
                     <Td className="font-mono text-xs">
-                      <Link href={`/review/${i.id}?run=${run.id}`} className="underline underline-offset-2">
+                      <Link href={`/review/${i.id}?run=${run.id}`} data-row-link="" className="underline underline-offset-2">
                         {i.decisionId}
                       </Link>
                     </Td>

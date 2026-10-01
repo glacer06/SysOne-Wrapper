@@ -162,11 +162,12 @@ export function SetsOverview({
             aria-label="Question sets"
           >
             {shown.map((s) => (
-              <li key={s.slug} className="flex flex-col gap-3 px-4 py-4">
+              <li key={s.slug} className="bw-row flex flex-col gap-3 px-4 py-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <Link
                       href={`/sets/${encodeURIComponent(s.slug)}`}
+                      data-row-link=""
                       className="font-medium text-bw-text underline-offset-2 hover:underline"
                     >
                       {s.name}

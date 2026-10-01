@@ -645,3 +645,79 @@ pre {
   background-repeat: repeat-x;
 }
 
+/*
+ * Phone tap targets (DESIGN-STANDARDS.md: 44px at phone widths). Fumadocs' own controls are 22 to
+ * 40px. Each one grows its box, never its icon. Where a control sits inside a line or a heading,
+ * a negative margin gives the extra space back so nothing else moves. Selectors use fumadocs' data
+ * attributes, ids and roles, not its generated classes.
+ */
+@media (max-width: 639px) {
+  /* Header and nav: the wordmark link, search, sidebar and menu toggles. */
+  #nd-subnav > a[href="/"],
+  #nd-nav a[href="/"] {
+    min-height: 44px;
+  }
+  [data-search],
+  button[aria-controls="nd-sidebar-mobile"],
+  #nd-nav button[aria-label="Toggle Menu"] {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* The theme toggle is a bordered pill: keep its look and grow the hit area around it. */
+  [data-theme-toggle] {
+    position: relative;
+    overflow: visible;
+  }
+  [data-theme-toggle]::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+
+  /* Rows in the sidebar drawer and the "On this page" popover. */
+  #nd-sidebar-mobile a,
+  #nd-sidebar-mobile button:not([data-theme-toggle]),
+  [data-toc-popover-trigger] {
+    min-height: 44px;
+  }
+  [data-toc-popover-content] a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+  }
+
+  /* Copy buttons: on code blocks (24px), next to headings (24px) and on API fields (22px). */
+  button[aria-live="polite"] {
+    min-width: 44px;
+    min-height: 44px;
+    margin: -10px;
+  }
+  :not(figure) > div > button[aria-live="polite"]:not(:is(h1, h2, h3, h4, h5, h6) > *) {
+    margin: -11px;
+  }
+
+  /* Heading self-links: vertical padding on an inline box grows the target, not the line. */
+  #nd-page :is(h2, h3) > a[data-card] {
+    padding-block: 8px;
+  }
+
+  /* API pages: language and status tabs, the auth picker and the response accordions. */
+  /* A min-width replaces the flex item's min-width: auto, so keep tabs from shrinking under their
+     labels. The tab list already scrolls sideways when the tabs run long. */
+  #nd-page [role="tablist"] > [role="tab"] {
+    flex-shrink: 0;
+    justify-content: center;
+    min-width: 44px;
+    min-height: 44px;
+  }
+  #nd-page [role="combobox"],
+  #nd-page button[aria-expanded][data-orientation="vertical"] {
+    min-height: 44px;
+  }
+}
+

@@ -46,14 +46,14 @@ export function SetLabel({ sets, setId, compact = false, stage = true }: { sets:
   if (s === undefined) return <span className="font-mono text-xs text-bw-text-muted">{setId.slice(0, 8)}</span>;
   if (!stage) {
     return (
-      <Link href={`/sets/${encodeURIComponent(s.slug)}`} className="font-medium text-bw-text underline-offset-2 hover:underline" title={s.name}>
+      <Link href={`/sets/${encodeURIComponent(s.slug)}`} className="bw-hit font-medium text-bw-text underline-offset-2 hover:underline" title={s.name}>
         {s.slug}
       </Link>
     );
   }
   return (
     <span className="inline-flex flex-wrap items-center gap-2">
-      <Link href={`/sets/${encodeURIComponent(s.slug)}`} className="font-medium text-bw-text underline-offset-2 hover:underline" title={s.name}>
+      <Link href={`/sets/${encodeURIComponent(s.slug)}`} className="bw-hit font-medium text-bw-text underline-offset-2 hover:underline" title={s.name}>
         {s.slug}
       </Link>
       {s.production === null ? (

@@ -137,7 +137,7 @@ export function PolicyForm({ policy, options, onChange, marker, answeredOption =
   const editActions = { actions: policy.actions, onActions: (actions: BandActions) => onChange({ ...policy, actions }) };
   return (
     <div className="flex flex-col gap-4">
-      <label className="flex min-h-10 items-center gap-2 text-sm text-bw-text">
+      <label className="flex min-h-10 cursor-pointer items-center gap-2 text-sm text-bw-text max-sm:min-h-11">
         <input type="checkbox" checked={policy.gating} onChange={(e) => onChange({ ...policy, gating: e.target.checked })} className="h-4 w-4 accent-bw-brand" />
         Gating: this answer decides the run band and the overall action
       </label>
@@ -173,7 +173,7 @@ export function PolicyForm({ policy, options, onChange, marker, answeredOption =
             const pubOwn = pub?.type === "choice" ? pub.perOption?.[key] : undefined;
             return (
               <div key={key} className="flex flex-col gap-2">
-                <label className="flex min-h-10 items-center gap-2 text-sm text-bw-text">
+                <label className="flex min-h-10 cursor-pointer items-center gap-2 text-sm text-bw-text max-sm:min-h-11">
                   <input type="checkbox" checked={own !== undefined} onChange={(e) => onChange(togglePerOption(policy, key, e.target.checked))} className="h-4 w-4 accent-bw-brand" />
                   <span className="font-mono">{key}</span>
                 </label>

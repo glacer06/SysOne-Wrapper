@@ -4,12 +4,13 @@ import { cx } from "./cx";
 
 /**
  * A ruled table that scrolls sideways inside its own box on narrow screens. Numbers are mono.
- * The box takes focus so a keyboard can scroll it too (WCAG 2.1.1).
+ * The box takes focus so a keyboard can scroll it too (WCAG 2.1.1). On phones each body row is one
+ * tap target: mark the row's main link with `data-row-link` and it covers the row (globals.css).
  */
 export function Table({ caption, children }: { caption?: string; children: ReactNode }) {
   return (
     <div tabIndex={0} role="region" aria-label={caption ?? "Table"} className="relative overflow-x-auto rounded-md border border-bw-border bg-bw-surface">
-      <table className="w-full border-collapse text-left text-sm [&_tbody_tr:last-child>td]:border-b-0 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-bw-surface-sunken">
+      <table className="bw-table w-full border-collapse text-left text-sm [&_tbody_tr:last-child>td]:border-b-0 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-bw-surface-sunken">
         {caption === undefined ? null : <caption className="sr-only">{caption}</caption>}
         {children}
       </table>
