@@ -2,6 +2,7 @@ packages:
   - apps/*
   - packages/*
   - scripts/*
+  - brand
 
 # One place for shared tool and library versions. Packages reference them as "catalog:".
 catalog:

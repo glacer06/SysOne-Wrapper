@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@bandwise/billing": "workspace:*",
+    "@bandwise/brand": "workspace:*",
     "@bandwise/core": "workspace:*",
     "@bandwise/db": "workspace:*",
     "@bandwise/llm-client": "workspace:*",
