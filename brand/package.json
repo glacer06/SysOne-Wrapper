@@ -1,8 +1,8 @@
 {
   "name": "@bandwise/brand",
-  "version": "1.2.0",
+  "version": "1.5.0",
   "private": true,
-  "description": "Bandwise brand kit v1 (ADR-022): design tokens, reference component CSS, marks, icons and social images.",
+  "description": "Bandwise brand kit v1.5 (ADR-022): design tokens, reference component CSS, marks, icons, social images, layered and unloaded ants.",
   "exports": {
     "./tokens.css": "./tokens/bandwise-tokens.css",
     "./theme.css": "./tokens/bandwise-theme.css",
@@ -11,13 +11,15 @@
     "./marks/*": "./marks/*",
     "./icons/*": "./icons/*",
     "./social/*": "./social/*",
-    "./layers/*": "./layers/*"
+    "./layers/*": "./layers/*",
+    "./unloaded/*": "./unloaded/*"
   },
   "files": [
     "tokens",
     "marks",
     "icons",
     "social",
-    "layers"
+    "layers",
+    "unloaded"
   ]
 }

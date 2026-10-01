@@ -1,3 +1,13 @@
+# bandwise kit v1.5 (2026-10-01)
+
+From PJ, via Nick. Artwork only: tokens, components, the motion demo, the B monogram and favicons are unchanged.
+
+1. Pointed feet on the ant in marks A and C, loaded and unloaded (from v1.4).
+2. Mark A's curved trail follows the original dot-center route: 18 equal circles evenly spaced, no gaps under the feet. Feet raised slightly to clear it. Updated marks A and C, ant layers, lockups, app icons and avatars, and social images.
+3. New `unloaded/`: the ant without the B, side view A and top view C, facing right or up-right, light and dark, SVG and PNG. Each SVG separates the body and six legs with pivot metadata for animation. A carries a straight trail of 18 equal dots and the teal endpoint; C has no trail. Static, animation-ready art, not a finished walk cycle.
+
+Local, not from the kit: `.bw-alert` keeps the 1px rule (Nick, ALERT-1PX).
+
 # bandwise kit v1.2 changes
 
 Fixed (contrast and tokens)

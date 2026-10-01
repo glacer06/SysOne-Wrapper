@@ -2,11 +2,11 @@
 
 Read this before building any Bandwise UI, doc or marketing page. It is the visual spec for every surface: www.bandwise.dev (`apps/web`), the console on app.bandwise.dev (`apps/console`), docs.bandwise.dev (`apps/docs`), plugin listings and CLI output.
 
-Source: the brand kit v1 that PJ delivered on 2026-10-01, locked in by Nick the same day (ADR-022), updated to v1.2 the same day (`brand/CHANGES.md`). Files:
+Source: the brand kit v1 that PJ delivered on 2026-10-01, locked in by Nick the same day (ADR-022), updated to v1.2 and then v1.5 the same day (`brand/CHANGES.md`). Files:
 
 - Tokens: `brand/tokens/bandwise-tokens.css` (CSS variables) and `brand/tokens/bandwise-tokens.json` (DTCG).
 - Reference components: `brand/tokens/bandwise-components.css`.
-- Marks, lockups, monogram: `brand/marks/`. Layered ant and load files for motion: `brand/layers/`. Icons and favicons: `brand/icons/`. Social images: `brand/social/`.
+- Marks, lockups, monogram: `brand/marks/`. Layered ant and load files for motion: `brand/layers/`. The ant without the B, facing right or up-right: `brand/unloaded/`. Icons and favicons: `brand/icons/`. Social images: `brand/social/`.
 - Motion concept: `brand/bandwise-motion-demo.html`. Full visual guide: `bandwise-brand-guidelines-v1.pdf` (26 pages), kept in the Drive folder "Bandwise brand kit v1" (https://drive.google.com/drive/folders/1Wr7Q8eotXDFfNU-5sj0-yqeQ9QVyfPsN), not in git.
 - Voice: `BRAND-VOICE.md`. Strategy and principles: `PRODUCT.md`. Gates: `DESIGN-STANDARDS.md`.
 
@@ -32,6 +32,7 @@ Personality: calm, candid, street-smart. It should feel like a tool crib, with s
 5. **Marks are supplied files.**
    - Never redraw, recolor or regenerate the ant.
    - Use the SVGs in `brand/marks/` and `brand/icons/`, and the split ant and load files in `brand/layers/` for motion.
+   - Use the unloaded ants in `brand/unloaded/` where the B would be too much: small trail moments, walking motion, progress. They are never a logo; the logo always carries the B.
    - The faceted B may be used as a graphic: see "The faceted B as a graphic" below.
 6. **Accessibility floor.**
    - Every text pair passes WCAG 2.2 AA.
