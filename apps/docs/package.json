@@ -17,6 +17,7 @@
     "generate:templates": "BANDWISE_WRITE_GENERATED=1 vitest run test/templates.test.ts"
   },
   "dependencies": {
+    "@bandwise/brand": "workspace:*",
     "fumadocs-core": "catalog:",
     "fumadocs-mdx": "catalog:",
     "fumadocs-openapi": "catalog:",
