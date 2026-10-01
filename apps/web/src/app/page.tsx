@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { BandBadge, BandLegend, ConfidenceRuler } from "~/components/confidence-ruler";
+import { SendToAgent } from "~/components/send-to-agent";
 import { CopyLine } from "~/components/copy-line";
 import { EarlyAccessForm } from "~/components/early-access-form";
 import { HowSteps, type CodeLine, type HowStep } from "~/components/how-steps";
@@ -20,17 +21,6 @@ export const metadata: Metadata = {
 };
 
 const templateDocs = (id: string) => `${docsUrl}/docs/templates/${id}`;
-
-/** Inline `code` spans in template questions. */
-function WithCode({ text }: { text: string }) {
-  return (
-    <>
-      {text.split(/(`[^`]+`)/g).map((part, i) =>
-        part.startsWith("`") ? <code key={i}>{part.slice(1, -1)}</code> : <span key={i}>{part}</span>,
-      )}
-    </>
-  );
-}
 
 const answerWord = (d: (typeof decisions)[number]) => (d.value === true ? "yes" : d.value === false ? "no" : "unsure");
 const actionWord = (a: "auto" | "review") => (a === "auto" ? "acts" : "a person");
@@ -424,10 +414,6 @@ function UseCases() {
                       </p>
                       <p className="case-job">{u.job}</p>
                     </div>
-                    <p className="case-asks">
-                      <span className="label">Asks</span>
-                      <WithCode text={u.asks} />
-                    </p>
                     <p className="case-types" aria-label="Question types">
                       {u.types.map((t) => (
                         <span className="chip" key={t}>
@@ -435,6 +421,7 @@ function UseCases() {
                         </span>
                       ))}
                     </p>
+                    <SendToAgent title={u.title} docsPage={templateDocs(u.id)} id={u.id} />
                   </li>
                 ))}
               </ul>

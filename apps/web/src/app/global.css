@@ -876,13 +876,14 @@ picture {
    the readout shows. `.is-playing` runs it once from the start. */
 
 .ruler-carry {
-  --carry-w: 72px;
+  /* 25% smaller than the first cut (Nick, 2026-10-01). */
+  --carry-w: 54px;
 }
 
 .carry-lane {
   position: relative;
   /* Room above the ant for the lifted load. */
-  height: 128px;
+  height: 96px;
   overflow: clip;
 }
 
@@ -896,7 +897,7 @@ picture {
   bottom: 0;
   left: var(--x);
   width: var(--carry-w);
-  height: 110px;
+  height: 83px;
   margin-left: calc(var(--carry-w) / -2);
 }
 
@@ -1629,7 +1630,8 @@ input[type="range"] {
 
 @media (min-width: 960px) {
   .case {
-    grid-template-columns: minmax(0, 4fr) minmax(0, 6fr) minmax(0, 2fr);
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: start;
     gap: var(--bw-space-6);
   }
 }
@@ -1654,17 +1656,6 @@ input[type="range"] {
   color: var(--bw-text-muted);
 }
 
-.case-asks {
-  font-size: var(--bw-text-small);
-  line-height: var(--bw-lh-small);
-  overflow-wrap: anywhere;
-}
-
-.case-asks .label {
-  display: block;
-  margin-bottom: var(--bw-space-1);
-}
-
 code {
   font-size: 0.9em;
   padding: 0.05em 0.3em;
@@ -1674,7 +1665,8 @@ code {
 
 .case-types {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  white-space: nowrap;
   gap: var(--bw-space-2);
   align-content: start;
 }
@@ -2098,14 +2090,15 @@ code {
 }
 
 .footer-lockup {
-  display: block;
-  margin-top: var(--bw-space-8);
+  display: inline-block;
+  margin-top: var(--bw-space-7);
   padding: var(--bw-space-2) 0;
 }
 
+/* Small and left-aligned (Nick, 2026-10-01). 200px keeps the lockup above its 160px minimum. */
 .footer-lockup img {
   display: block;
-  width: 100%;
+  width: 200px;
   height: auto;
 }
 
@@ -2205,4 +2198,88 @@ code {
 
 .legal strong {
   font-weight: 600;
+}
+
+/* Send a template to an agent: a small disclosure menu. */
+.send-agent {
+  position: relative;
+}
+
+.send-agent > summary {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bw-space-2);
+  min-height: 44px;
+  padding: 0 var(--bw-space-3);
+  border: var(--bw-border-width) solid var(--bw-border-control);
+  border-radius: var(--bw-radius-sm);
+  font: 500 var(--bw-text-small) / 1 var(--bw-font-body);
+  color: var(--bw-text);
+  white-space: nowrap;
+}
+
+.send-agent > summary::-webkit-details-marker {
+  display: none;
+}
+
+.send-agent > summary:focus-visible {
+  outline: var(--bw-focus-width) solid var(--bw-focus);
+  outline-offset: var(--bw-focus-offset);
+}
+
+.send-agent-menu {
+  position: absolute;
+  right: 0;
+  z-index: 10;
+  margin-top: var(--bw-space-2);
+  min-width: 248px;
+  padding: var(--bw-space-2);
+  list-style: none;
+  background: var(--bw-surface);
+  border: var(--bw-border-width) solid var(--bw-border);
+  border-radius: var(--bw-radius-md);
+  box-shadow: var(--bw-shadow-overlay);
+}
+
+.send-agent-menu a,
+.send-agent-menu button {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  padding: 0 var(--bw-space-3);
+  background: none;
+  border: 0;
+  border-radius: var(--bw-radius-sm);
+  font: 400 var(--bw-text-small) / 1.3 var(--bw-font-body);
+  color: var(--bw-text);
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.send-agent-menu a:hover,
+.send-agent-menu button:hover {
+  background: var(--bw-surface-sunken);
+}
+
+.send-agent-menu a:focus-visible,
+.send-agent-menu button:focus-visible {
+  outline: var(--bw-focus-width) solid var(--bw-focus);
+  outline-offset: -2px;
+}
+
+.send-agent-status {
+  padding: var(--bw-space-2) var(--bw-space-3) 0;
+  font-size: var(--bw-text-caption);
+  color: var(--bw-text-muted);
+}
+
+@media (max-width: 959px) {
+  .send-agent-menu {
+    right: auto;
+    left: 0;
+  }
 }
