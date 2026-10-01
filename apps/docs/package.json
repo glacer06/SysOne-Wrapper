@@ -18,6 +18,9 @@
   },
   "dependencies": {
     "@bandwise/brand": "workspace:*",
+    "@fontsource-variable/archivo": "5.3.0",
+    "@fontsource-variable/jetbrains-mono": "5.3.0",
+    "@fontsource-variable/schibsted-grotesk": "5.3.0",
     "fumadocs-core": "catalog:",
     "fumadocs-mdx": "catalog:",
     "fumadocs-openapi": "catalog:",

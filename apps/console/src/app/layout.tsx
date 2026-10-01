@@ -1,16 +1,35 @@
 import "./globals.css";
 
 import type { Metadata, Viewport } from "next";
-import { Archivo, JetBrains_Mono, Schibsted_Grotesk } from "next/font/google";
+import localFont from "next/font/local";
 import type { ReactNode } from "react";
 
 import tokens from "@bandwise/brand/tokens.json";
 
-// The brand's three faces (DESIGN.md), self-hosted at build by next/font. Archivo needs the width
-// axis for its 125% display stretch.
-const archivo = Archivo({ subsets: ["latin"], axes: ["wdth"], variable: "--font-archivo", display: "swap" });
-const schibsted = Schibsted_Grotesk({ subsets: ["latin"], variable: "--font-schibsted", display: "swap" });
-const jetbrains = JetBrains_Mono({ subsets: ["latin"], variable: "--font-jetbrains", display: "swap" });
+// The brand's three faces (DESIGN.md), OFL, bundled from @fontsource-variable so the build never
+// fetches fonts over the network. Archivo carries its width axis for the 125% display stretch.
+const archivo = localFont({
+  src: "../../node_modules/@fontsource-variable/archivo/files/archivo-latin-wdth-normal.woff2",
+  weight: "100 900",
+  style: "normal",
+  declarations: [{ prop: "font-stretch", value: "62% 125%" }],
+  variable: "--font-archivo",
+  display: "swap",
+});
+const schibsted = localFont({
+  src: "../../node_modules/@fontsource-variable/schibsted-grotesk/files/schibsted-grotesk-latin-wght-normal.woff2",
+  weight: "400 900",
+  style: "normal",
+  variable: "--font-schibsted",
+  display: "swap",
+});
+const jetbrains = localFont({
+  src: "../../node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2",
+  weight: "100 800",
+  style: "normal",
+  variable: "--font-jetbrains",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Bandwise console",

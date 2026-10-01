@@ -22,3 +22,4 @@ Mistakes already corrected in this project. Read at the start of a session so th
 - **Chamfered buttons, badges and decision cards need their wrapper.** Use `.bw-focus-poly` or `.bw-decision-wrap`, so the focus ring follows the chamfer. A plain `outline` is clipped by `clip-path`.
 - **Headers use the typed wordmark, not the lockup image.** The lockup at header size reads small and awkward (Nick).
 - **2026-10-01: Side stripes are 1px at most.** Alerts, toasts and emphasized cards use a 1px band-colored rule with a tinted background, not the kit's 3px stripe (Nick picked ALERT-1PX). For extra emphasis, outline the whole card instead.
+- **2026-10-01: Fonts are bundled, not fetched.** The apps load Archivo, Schibsted Grotesk and JetBrains Mono with `next/font/local` from `@fontsource-variable` packages. `next/font/google` downloads at build time and failed CI when the fetch did (PR #25).
