@@ -9,7 +9,7 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 const brand = (path: string) => readFileSync(join(root, "../../brand", path), "utf8");
 const attrs = (svg: string, name: string) => [...svg.matchAll(new RegExp(` ${name}="([^"]*)"`, "g"))].map((m) => m[1]);
 
-describe("the unloaded ant (brand kit v1.5)", () => {
+describe("the unloaded ant (brand kit v1.6)", () => {
   for (const [theme, inline] of [
     ["light", UNLOADED_ANT_LIGHT],
     ["dark", UNLOADED_ANT_DARK],

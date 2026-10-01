@@ -903,7 +903,7 @@ picture {
 }
 
 /* The carry: the signature motion from brand/bandwise-motion-demo.html, with the unloaded
-   side-view ant (brand kit v1.5) carrying the B on its back (Nick, 2026-10-01).
+   side-view ant (brand kit v1.6) carrying the B on its back (Nick, 2026-10-01).
    Rest state is the end frame: the ant stands at the score, the B is down on the lit band, the
    readout shows. `.is-playing` runs it once from the start: the ant walks in from the left with
    its legs in an alternating tripod gait, the band lights up, the B sets down, the readout fades in.
@@ -1008,20 +1008,20 @@ picture {
 
 /* Each leg turns about its supplied shoulder pivot (the inline transform-origin). The front legs
    turn inside their resting-pose wrappers, which keep their own transforms. Tripod one:
-   front-near, middle-far, rear-near. Tripod two swings opposite. */
+   front-2, middle-1, rear-2 (v1.5 near, far, near). Tripod two swings opposite. */
 .carry-art [class^="leg-"] {
   transform-box: view-box;
 }
 
-.carry-art .leg-front-near,
-.carry-art .leg-middle-far,
-.carry-art .leg-rear-near {
+.carry-art .leg-front-2,
+.carry-art .leg-middle-1,
+.carry-art .leg-rear-2 {
   transform: rotate(calc(sin(var(--walk) * var(--steps) * 360deg) * var(--stride)));
 }
 
-.carry-art .leg-front-far,
-.carry-art .leg-middle-near,
-.carry-art .leg-rear-far {
+.carry-art .leg-front-1,
+.carry-art .leg-middle-2,
+.carry-art .leg-rear-1 {
   transform: rotate(calc(sin(var(--walk) * var(--steps) * 360deg) * var(--stride) * -1));
 }
 
