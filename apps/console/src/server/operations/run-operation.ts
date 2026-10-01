@@ -34,7 +34,15 @@ import { approvalInputHash, DEFAULT_CONSOLE_ORIGIN, describeApproval, openApprov
 import { bareEtag } from "../manage/spec-diff";
 import type { AuditRecord, OperationEnv, RegisteredOperation } from "./define";
 import { OperationError } from "./errors";
-import { checkIdempotencyKey, IDEMPOTENCY_TTL_MS, idempotencyActorKey, idempotencyRequestHash, isStoredResponse, type StoredResponse } from "./idempotency";
+import {
+  checkIdempotencyKey,
+  IDEMPOTENCY_TTL_MS,
+  idempotencyActorKey,
+  idempotencyGrant,
+  idempotencyRequestHash,
+  isStoredResponse,
+  type StoredResponse,
+} from "./idempotency";
 import { getOperation, isOperationId, type OperationOutput } from "./registry";
 
 export interface RunOperationOptions {
@@ -195,7 +203,7 @@ export async function runOperation<K extends OperationId>(
   const actorKey = idempotencyActorKey(tenant);
   const idempotency =
     options.idempotencyKey !== undefined && actorKey !== null && !op.descriptor.readOnly && options.dryRun !== true && approvalId === null
-      ? { actorKey, key: options.idempotencyKey, requestHash: idempotencyRequestHash(id, call.input, ifMatch) }
+      ? { actorKey, key: options.idempotencyKey, requestHash: idempotencyRequestHash(id, call.input, ifMatch, idempotencyGrant(tenant)) }
       : null;
 
   const state: { authorized: boolean; audit: AuditRecord | null; unchanged: boolean; etag?: string; approvals: string[] } = {
@@ -218,7 +226,10 @@ export async function runOperation<K extends OperationId>(
       );
       if (!claimed) {
         if (row.requestHash !== idempotency.requestHash) {
-          throw new OperationError("idempotency_key_reused", "This Idempotency-Key was already used for a different request. Send a new key.");
+          throw new OperationError(
+            "idempotency_key_reused",
+            "This Idempotency-Key was already used for a different request, or with different access. Send a new key.",
+          );
         }
         if (!isStoredResponse(row.response)) throw new Error("the stored idempotent response has no body");
         const replay: RunOperationResult<K> = { kind: "ok", output: row.response.body as OperationOutput<K>, replayed: true };

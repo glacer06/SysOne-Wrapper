@@ -41,9 +41,34 @@ export function idempotencyActorKey(ctx: TenantContext): string | null {
   }
 }
 
-/** The request a key was first used for: the operation, its validated input and If-Match. */
-export function idempotencyRequestHash(id: OperationId, input: unknown, ifMatch: string | undefined): string {
-  return `sha256:${hashJson({ opId: id, input, ifMatch: ifMatch ?? null })}`;
+/**
+ * What the caller was allowed to do when it used the key: the role and, for tokens, the scopes,
+ * set allowlist and channel. A replay runs no handler, so no authorize step checks the caller
+ * again. Binding the key to this instead means a caller whose role or token was narrowed since
+ * cannot read back a response it got with the wider access: the request no longer matches, and the
+ * key is refused as reused.
+ */
+export function idempotencyGrant(ctx: TenantContext): unknown {
+  const a = ctx.actor;
+  const sorted = (xs: readonly string[] | null) => (xs === null ? null : [...xs].sort());
+  switch (a.type) {
+    case "user":
+      return { role: a.role, platformRole: a.platformRole, impersonatorId: a.impersonatorId };
+    case "agent":
+      return { role: a.role, scopes: sorted(a.scopes), setIds: sorted(a.setIds) };
+    case "apiKey":
+      return { scopes: sorted(a.scopes), setIds: sorted(a.setIds), channel: a.channel, mode: a.mode };
+    case "system":
+      return null;
+  }
+}
+
+/**
+ * The request a key was first used for: the operation, its validated input and If-Match, and the
+ * caller's grant (idempotencyGrant).
+ */
+export function idempotencyRequestHash(id: OperationId, input: unknown, ifMatch: string | undefined, grant: unknown = null): string {
+  return `sha256:${hashJson({ opId: id, input, ifMatch: ifMatch ?? null, grant })}`;
 }
 
 /** What the stored `response` column holds for a successful call. */

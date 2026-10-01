@@ -3,7 +3,7 @@
 // (src/cross-tenant.test.ts) is generated from TENANT_REPOSITORY_NAMES and fails when a tenant
 // repository or method has no coverage.
 
-import { and, asc, desc, eq, getTableColumns, gt, gte, inArray, type InferInsertModel, type InferSelectModel, isNull, lt, lte, ne, or, type SQL, sql } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, gt, gte, inArray, type InferInsertModel, type InferSelectModel, isNull, lt, lte, ne, not, or, type SQL, sql } from "drizzle-orm";
 
 import type { Action, Band, Channel, ModelPrice, Page, PageReq, PointerChannel, ReviewItemKind, ReviewItemStatus, RunRecordSource, RunStatus, SystemOneProvider } from "@bandwise/core/contracts";
 
@@ -619,6 +619,9 @@ export function buildRepositories(opts: RepoOptions) {
        * row created before `liveSince` (an expired key). A live row is left as it is and returned
        * with `claimed: false`. A concurrent claim of the same key blocks on the unique index until
        * the other transaction ends, then sees its committed row, or claims the key if it rolled back.
+       *
+       * Every claim also deletes the org's other expired rows, so a stored response does not
+       * outlive the key's lifetime by more than the time until the org's next keyed call.
        */
       async claim(
         tx: TenantTx,
@@ -626,6 +629,15 @@ export function buildRepositories(opts: RepoOptions) {
         liveSince: Date,
       ): Promise<{ claimed: boolean; row: InferSelectModel<typeof s.idempotencyKeys> }> {
         const t = s.idempotencyKeys;
+        await drizzleOf(tx)
+          .delete(t)
+          .where(
+            and(
+              eq(t.orgId, tx.orgId),
+              lt(t.createdAt, liveSince),
+              not(and(eq(t.actorKey, values.actorKey), eq(t.key, values.key)) as SQL),
+            ),
+          );
         const fresh = { ...values, orgId: tx.orgId, responseStatus: 0, response: null };
         const [row] = await drizzleOf(tx)
           .insert(t)
