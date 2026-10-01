@@ -101,6 +101,14 @@ Org setting `agentApprovals`:
 
 Always gated, whatever the setting: key rotation or revocation, member role changes, PII and retention changes, org deletion, creating `admin:write` tokens, and lowering `agentApprovals` itself. Without that last item, an agent with `admin:write` could switch the gate off.
 
+## Console sessions
+
+- Better Auth (ADR-002) with email and password and TOTP two-factor, set up in `apps/console/src/server/auth/config.ts`. Its HTTP handler is not mounted: Server Actions call it, so sign-up, social sign-in and account changes from the browser do not exist. Sign-up is also disabled in the config.
+- Two-factor is required before any console page: a session without it reaches only the setup page.
+- A session is created only for a member of the console org (`internal` until Phase 2), plus the optional `BANDWISE_CONSOLE_EMAILS` allowlist. The membership is read again on every request.
+- Attempt limits per IP and per email, one generic error for every failed sign-in, and an account lockout after 10 wrong codes. Library errors are never echoed or logged with their arguments.
+- Cookies are `HttpOnly`, `SameSite=Lax`, and `Secure` with the `__Secure-` prefix on https. Reset tokens and two-factor challenge ids are stored hashed. Session tokens are stored as the library stores them (plain); hashing them is a Phase 2 follow-up.
+
 ## Authorization
 
 - `can(ctx, action, resource)` in `packages/core/src/authz.ts`. Every operation calls it through `runOperation`, so Server Actions and route handlers get the same check.
