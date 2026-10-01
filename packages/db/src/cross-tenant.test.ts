@@ -687,6 +687,29 @@ const PROBES: Record<string, Probe> = {
     const key = await inB(async (tx) => (await r.idempotencyKeys.get(tx, created["idempotencyKeys"]?.b ?? ""))?.key);
     expect(key).toBeTruthy();
     expect(await inA((tx) => r.idempotencyKeys.lookup(tx, "a", key ?? ""))).toBeNull();
+    expect(await inA((tx) => r.idempotencyKeys.lookup(tx, "a", key ?? "", new Date(0)))).toBeNull();
+    // In org B a row created before liveSince reads as absent.
+    expect(await inB((tx) => r.idempotencyKeys.lookup(tx, "a", key ?? "", new Date(0)))).not.toBeNull();
+    expect(await inB((tx) => r.idempotencyKeys.lookup(tx, "a", key ?? "", future()))).toBeNull();
+  },
+  "idempotencyKeys.claim": async (r) => {
+    const key = uniq("claim");
+    const values = { actorKey: "same-token", key, opId: "set.create", requestHash: "sha256:b", createdAt: new Date() };
+    const inBOrg = await inB((tx) => r.idempotencyKeys.claim(tx, values, new Date(0)));
+    expect(inBOrg.claimed).toBe(true);
+    await inB((tx) => filtered.idempotencyKeys.update(tx, inBOrg.row.id, { responseStatus: 201, response: { body: "b" } }));
+    // Org A with the same actor key and key claims its own row and never sees, reuses or expires org B's.
+    const inAOrg = await inA((tx) => r.idempotencyKeys.claim(tx, { ...values, requestHash: "sha256:a" }, future()));
+    expect(inAOrg.claimed).toBe(true);
+    expect(inAOrg.row.orgId).toBe(A.orgId);
+    expect(inAOrg.row.id).not.toBe(inBOrg.row.id);
+    const kept = await inB((tx) => r.idempotencyKeys.lookup(tx, "same-token", key));
+    expect(kept).toMatchObject({ id: inBOrg.row.id, requestHash: "sha256:b", responseStatus: 201 });
+    // In org B a live row is returned, not claimed; an expired one is taken over.
+    const again = await inB((tx) => r.idempotencyKeys.claim(tx, { ...values, requestHash: "sha256:c" }, new Date(0)));
+    expect(again).toMatchObject({ claimed: false, row: { id: inBOrg.row.id, requestHash: "sha256:b" } });
+    const expired = await inB((tx) => r.idempotencyKeys.claim(tx, { ...values, requestHash: "sha256:c" }, future()));
+    expect(expired).toMatchObject({ claimed: true, row: { id: inBOrg.row.id, requestHash: "sha256:c", responseStatus: 0, response: null } });
   },
 };
 

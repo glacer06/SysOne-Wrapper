@@ -31,6 +31,8 @@ export class OperationError extends Error {
   readonly currentEtag: string | undefined;
   /** Set when a failed run row was written. */
   readonly runId: string | undefined;
+  /** With rate_limited: how long to wait, sent as the Retry-After header (api.md, Errors). */
+  retryAfterMs: number | undefined;
 
   constructor(code: ErrorCode, message: string, extras: OperationErrorExtras = {}) {
     super(message);

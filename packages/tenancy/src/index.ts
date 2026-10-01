@@ -56,4 +56,5 @@ export {
   type TokenPrefix,
 } from "./tokens.js";
 
-export { generateEnrollmentCode, hashAttemptKey, hashEnrollmentCode } from "./console-auth.js";
+export { createSessionTokenHasher, generateEnrollmentCode, hashAttemptKey, hashEnrollmentCode } from "./console-auth.js";
+export { hashRunLimitKey } from "./run-limit-key.js";

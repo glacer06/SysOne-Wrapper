@@ -8,7 +8,7 @@
 import { sql } from "drizzle-orm";
 import { boolean, index, integer, pgTable, text, unique, uuid } from "drizzle-orm/pg-core";
 
-import { createdAt, json, pk, textArray, textEnum, ts } from "./columns.js";
+import { createdAt, json, microUsd, pk, textArray, textEnum, ts } from "./columns.js";
 import { E } from "./enums.js";
 
 export const users = pgTable("users", {
@@ -113,6 +113,22 @@ export const authAttempts = pgTable(
     count: integer().notNull().default(0),
   },
   (t) => [index("auth_attempts_window_start_idx").on(t.windowStart)],
+);
+
+/**
+ * Hosted run limits (migration 0008): one fixed window per limit key, for the per-token run rate
+ * and the per-token daily spend cap, so both hold across every server instance. key_hash is a
+ * SHA-256 of a key that names an org and a token, key or user id, so the table holds no org data
+ * and no person in the clear. `used` counts runs for a rate key and micro-USD for a spend key.
+ */
+export const runLimits = pgTable(
+  "run_limits",
+  {
+    keyHash: text().primaryKey(),
+    windowStart: ts().notNull(),
+    used: microUsd().notNull().default(0),
+  },
+  (t) => [index("run_limits_window_start_idx").on(t.windowStart)],
 );
 
 /**

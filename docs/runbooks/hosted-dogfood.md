@@ -11,7 +11,7 @@ No secret value goes into this file, a ticket, chat, a commit or a shell history
 
 ## 0. Before you start
 
-- [ ] **PJ.** Security review signed off and merged on `main`: D2a (merged, PR #20), D2b run endpoint (PR #21), D2c management operations, D2d CLI remote mode, and this D2e bootstrap script.
+- [x] **PJ.** Security review and merge on `main`: D2a (PR #20), and D2b to D3 with this bootstrap script (PR #21, merged 2026-10-01 on Nick's go after PJ's three review passes).
 - [x] **Hook token, decided 2026-10-01 (Nick).** The hooks get a run-only `sa_live_` agent token: scope `run` only, role ceiling `viewer`, the four dogfood sets, 90 days. It follows `security.md` (the CLI uses agent tokens only), it dies when Nick's membership goes, and it can do nothing but run those four sets. The Claude Code session can read every variable the hooks see, so this is the only Bandwise token that shell ever holds.
 - [ ] **Nick.** The `bandwise-console` Vercel project and the `bandwise_console` login role exist from the early-access go-live ([early-access.md](early-access.md)). If not, do that runbook first.
 - [ ] **Nick.** `jq` installed (`brew install jq`) for the checks below.
@@ -20,12 +20,14 @@ No secret value goes into this file, a ticket, chat, a commit or a shell history
 
 Migrations run from the Database migrate workflow, never from a laptop ([database.md](database.md)). `pnpm db:migrate` is the same migrator; the workflow runs it with `DATABASE_URL` set to the `DATABASE_URL_MIGRATE` secret of the GitHub environment, which is the direct connection as `postgres`.
 
-1. **Nick.** Actions, Database migrate, Run workflow, `preview` first: `gh workflow run db-migrate.yml -f environment=preview`. The log line is `applied N migration(s), seeded M platform row(s)`.
-2. **Nick** starts the same workflow on `production`; **PJ** approves the run as the required reviewer, so no one moves production alone.
+There is one database today, production. The `preview` GitHub environment has no `DATABASE_URL_MIGRATE`, so a preview run stops at "Check the secret is set" without connecting. Skip it until a preview database exists.
+
+1. **Nick** starts the workflow on `production`: `gh workflow run db-migrate.yml -f environment=production`. **PJ** approves the run as the required reviewer, so no one moves production alone. The log line is `applied N migration(s), seeded M platform row(s)`.
+2. Done 2026-10-01: run #7 applied 0006 and 0007 after PJ's approval, and the checks below passed (7 rows, the seed, the role check, no security advisors). The follow-up PR adds 0008 (`run_limits`); run the workflow again when it merges and expect 8 rows.
 3. **Nick.** Verify in the Supabase SQL editor (it runs as `postgres`):
 
    ```sql
-   -- One row per file in packages/db/migrations on main: 7 once PR #21 merges (0006 two-factor columns, 0007 sign-in limits and enrollment codes).
+   -- One row per file in packages/db/migrations on main: 7 on 2026-10-01, 8 once 0008 run_limits merges.
    select count(*) from bandwise_migrations;
    -- The model registry seed is there: expect jev-1.13.0 among the rows.
    select id, kind, status from system_one_models order by id;
@@ -241,7 +243,11 @@ Every step above can be undone without touching data:
 ## Hook safeguards and what they do not cover
 
 - **The hooks fail open.** Any error, a timeout, a revoked token or a server that is down ends the hook with exit 0 and no output. Nothing blocks, and Claude Code carries on as if the hook were not there. That matches live mode. A revoked hook token therefore turns blocking off silently. Watch for `unauthenticated` or `network_error` statuses in `pnpm bandwise report --since 1d`.
-- **No per-token spend cap yet.** A leaked hook token can only run the four allowlisted sets, but each run is a real call on the platform key, and D2 runs with open limits (`allowAllLimiter`). The control is revocation: the SQL in section 8 is ready to paste, and the server refuses a revoked token within a minute. A per-token rate and spend cap comes with the Phase 2 limits.
+- **Per-token and per-org rate and spend caps.** Every hosted run is a real call on the platform key, so each caller (an agent or app token, or the person in a console session for draft previews) gets two limits, and the org gets the same two over all its callers, so minting another token buys no more budget. They are constants in `apps/console/src/server/run/limits.ts`:
+  - **Rate:** 120 runs per minute per caller (`HOSTED_RUNS_PER_WINDOW`) and 300 per org (`HOSTED_ORG_RUNS_PER_WINDOW`), in fixed one-minute windows. Past either the API answers `429 rate_limited` with `Retry-After` set to the seconds left in the window.
+  - **Spend:** 5 USD of System One and escalation cost per UTC day per caller (`HOSTED_DAILY_SPEND_CAP_MICRO_USD`) and 20 USD per org (`HOSTED_ORG_DAILY_SPEND_CAP_MICRO_USD`). Each run reserves 1 cent (`HOSTED_RUN_SPEND_RESERVE_MICRO_USD`) from both before it calls System One, and the reservation is settled to the cost in the run's envelope when the run is stored, in the same transaction. Once a reservation would pass either cap the API answers `402 token_budget_exceeded` until midnight UTC. A run can finish over the cap only by what it cost beyond its 1 cent; the next one is refused.
+
+  All counts live in `run_limits` (migration 0008), one row per key, so they hold across every Vercel instance. Keys are SHA-256 hashes of the org and the token, key or user id. A refused run still gets a run row with status `rate_limited` or `quota_exceeded`, and the envelope carries its `runId`. The hook fails open on both, and the receipt shows the code: look for `rate_limited` or `token_budget_exceeded` in `pnpm bandwise report --since 1d`. A leaked token can therefore spend at most 5 USD a day on the four allowlisted sets, and all tokens together at most 20 USD. Revocation is still the way to stop it: the SQL in section 8 is ready to paste, and the server refuses a revoked token within a minute. To lift a cap for one day, delete that key's row; the hash is `sha256("bandwise-run-limit:spend:<org id>:agent:<token id>")` (or `:app:<key id>`, `:user:<user id>`, or `:org` for the org cap).
 - **Revoke and lost-phone reset are manual SQL** with a hand-written audit row until D3 ops exist. PJ accepted this for dogfood on 2026-10-01. Keep section 8 current.
 
 When this runbook is done, tick the D2e items in `.claude/skills/bandwise-builder/references/phases/phase-d.md` and note the date in [dogfood.md](dogfood.md).
