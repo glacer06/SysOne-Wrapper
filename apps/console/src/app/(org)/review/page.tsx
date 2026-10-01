@@ -2,12 +2,16 @@ import Link from "next/link";
 
 import { FilterForm, optionsOf } from "~/components/observe/filter-form";
 import { hasFilters, hrefWith, param, reviewListInput, type SearchParams } from "~/components/observe/filters";
-import { formatValue, formatWhen, REASON_LABEL, REVIEW_STATUS_LABEL } from "~/components/format";
-import { loadSets, SetLabel, setOptions } from "~/components/observe/sets";
+import { mapLimit } from "~/components/observe/map-limit";
+import { loadSets, setOptions } from "~/components/observe/sets";
+import { loadSpecs } from "~/components/observe/specs";
 import { OperationFailed } from "~/components/shell/operation-failed";
-import { BandBadge, buttonClasses, cx, EmptyState, InlineAlert, PageHeader, Table, Td, Th } from "~/components/ui";
+import { buttonClasses, cx, EmptyState, InlineAlert, PageHeader } from "~/components/ui";
 import { consoleOperation } from "~/server/console-operation";
-import type { ReviewItemView } from "~/server/operations/views";
+import type { ReviewItemView, RunDetail } from "~/server/operations/views";
+
+import { ReviewQueue } from "./queue";
+import { type QueueEntry, queueEntry } from "./queue-data";
 
 const TABS = [
   { value: undefined, label: "Open" },
@@ -23,9 +27,24 @@ const DONE: Record<string, string> = {
   confirmed: "Confirmed. The agent's answer now counts.",
 };
 
-function suggestedOf(i: ReviewItemView): string {
-  const s = i.suggested;
-  return typeof s === "object" && s !== null && !Array.isArray(s) && "value" in s ? formatValue(s["value"]) : formatValue(s);
+/**
+ * Every item on the page with its run and the lines of the version it ran on, so the pane moves
+ * between items without a request. review.list carries no scores or state, so each run is read
+ * through run.get, once per run and a few at a time.
+ */
+async function entriesOf(items: readonly ReviewItemView[], sets: Awaited<ReturnType<typeof loadSets>>, now: Date): Promise<QueueEntry[]> {
+  const runIds = [...new Set(items.flatMap((i) => (i.runId === null ? [] : [i.runId])))];
+  const runs = await mapLimit(runIds, 8, async (id) => {
+    const got = await consoleOperation("run.get", { id });
+    return got.status === "ok" ? (got.output as RunDetail) : null;
+  });
+  const byId = new Map(runs.flatMap((r) => (r === null ? [] : [[r.id, r] as const])));
+  const specs = await loadSpecs([...byId.values()], sets);
+  return items.map((i) => {
+    const run = i.runId === null ? null : (byId.get(i.runId) ?? null);
+    const spec = run === null ? null : (specs.get(run.versionId)?.spec ?? null);
+    return queueEntry(i, run, spec, sets.get(i.setId)?.slug ?? i.setId.slice(0, 8), now);
+  });
 }
 
 export default async function ReviewPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
@@ -52,46 +71,12 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
         <EmptyState title="No items with this status" />
       );
     } else {
+      const entries = await entriesOf(page.data, sets, now);
+      const asked = param(sp, "item");
+      const initial = entries.some((e) => e.id === asked) ? (asked ?? null) : (entries[0]?.id ?? null);
       body = (
         <>
-          <Table caption="Review items, newest first">
-            <thead>
-              <tr>
-                <Th>Decision</Th>
-                <Th>Set</Th>
-                <Th>Run said</Th>
-                <Th>Band</Th>
-                <Th>Why it is here</Th>
-                <Th>Status</Th>
-                <Th>When</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {page.data.map((i) => (
-                <tr key={i.id} className="hover:bg-bw-surface-sunken">
-                  <Td className="font-mono text-xs">
-                    {i.runId === null ? (
-                      i.decisionId
-                    ) : (
-                      <Link href={`/review/${i.id}?run=${i.runId}`} className="underline underline-offset-2">
-                        {i.decisionId}
-                      </Link>
-                    )}
-                  </Td>
-                  <Td>
-                    <SetLabel sets={sets} setId={i.setId} compact stage={false} />
-                  </Td>
-                  <Td>{suggestedOf(i)}</Td>
-                  <Td>
-                    <BandBadge band={i.band} />
-                  </Td>
-                  <Td className="text-bw-text-muted">{REASON_LABEL[i.reason]}</Td>
-                  <Td className="whitespace-nowrap">{REVIEW_STATUS_LABEL[i.status]}</Td>
-                  <Td className="whitespace-nowrap text-bw-text-muted">{formatWhen(i.createdAt, now)}</Td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
+          <ReviewQueue entries={entries} initialId={initial} startOpen={asked !== undefined && initial === asked} />
           <div className="mt-4 flex justify-end gap-2">
             {param(sp, "cursor") === undefined ? null : (
               <Link href={hrefWith("/review", sp, {})} className={buttonClasses("ghost", "sm")}>
@@ -113,7 +98,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
     <>
       <PageHeader
         title="Review"
-        description="Medium and low band decisions waiting for a person, and audit samples. Each answer you give becomes a labeled decision the set is measured against."
+        description="Decisions waiting for a person, and audit samples. Each answer you give becomes a labeled decision the set is measured against."
       />
       {done === undefined ? null : (
         <InlineAlert kind="success" className="mb-4">
@@ -126,7 +111,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
           return (
             <Link
               key={t.label}
-              href={hrefWith("/review", sp, { status: t.value, done: undefined })}
+              href={hrefWith("/review", sp, { status: t.value, done: undefined, item: undefined })}
               aria-current={current ? "page" : undefined}
               className={cx("-mb-px border-b-2 px-0.5 py-3 text-sm transition-colors duration-(--bw-dur-fast)", current ? "border-bw-brand font-medium text-bw-text" : "border-transparent text-bw-text-muted hover:text-bw-text")}
             >

@@ -2,14 +2,41 @@ import Link from "next/link";
 
 import { FilterForm, optionsOf } from "~/components/observe/filter-form";
 import { hasFilters, hrefWith, param, RANGES, runListInput, type SearchParams } from "~/components/observe/filters";
-import { ACTION_LABEL, formatLatency, formatUsd, formatWhen, SOURCE_LABEL, STATUS_LABEL } from "~/components/format";
-import { loadSets, SetLabel, setOptions } from "~/components/observe/sets";
+import { SOURCE_LABEL, STATUS_LABEL } from "~/components/format";
+import { decisionsOf } from "~/components/observe/decisions";
+import { mapLimit } from "~/components/observe/map-limit";
+import { decidingMarker, runRulers } from "~/components/observe/ruler-math";
+import { loadSets, setOptions } from "~/components/observe/sets";
+import { loadSpecs } from "~/components/observe/specs";
 import { OperationFailed } from "~/components/shell/operation-failed";
-import { Badge, BandBadge, buttonClasses, EmptyState, PageHeader, RolloutBadge, Table, Td, Th } from "~/components/ui";
+import { buttonClasses, EmptyState, PageHeader } from "~/components/ui";
 import { consoleOperation } from "~/server/console-operation";
-import type { RunSummary } from "~/server/operations/views";
+import type { RunDetail, RunSummary } from "~/server/operations/views";
+
+import { type RowRuler, RunsTable } from "./runs-table";
 
 const FILTER_KEYS = ["set", "channel", "status", "source", "band", "action"] as const;
+
+/**
+ * Each row's tiny ruler: the decision that set the run band, at the lines of the version it ran on.
+ * run.list carries no scores, so each row reads its run through run.get (the same operation the
+ * detail page uses), a few at a time.
+ */
+async function rowRulers(runs: readonly RunSummary[], sets: Awaited<ReturnType<typeof loadSets>>): Promise<RowRuler[]> {
+  const [details, specs] = await Promise.all([
+    mapLimit(runs, 8, async (r) => {
+      const got = await consoleOperation("run.get", { id: r.id });
+      return got.status === "ok" ? (got.output as RunDetail) : null;
+    }),
+    loadSpecs(runs, sets),
+  ]);
+  return runs.map((r, i) => {
+    const d = details[i];
+    const spec = specs.get(r.versionId);
+    if (d === null || d === undefined || spec === undefined) return null;
+    return decidingMarker(runRulers(spec.spec, decisionsOf(d.decisions), d.answers, d.runBand));
+  });
+}
 
 export default async function RunsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const sp = await searchParams;
@@ -32,6 +59,7 @@ export default async function RunsPage({ searchParams }: { searchParams: Promise
     body = <OperationFailed message="Runs are not served yet." />;
   } else {
     const page = res.output as { data: RunSummary[]; nextCursor: string | null };
+    const rulers = await rowRulers(page.data, sets);
     body =
       page.data.length === 0 ? (
         hasFilters(sp, FILTER_KEYS) ? (
@@ -46,48 +74,7 @@ export default async function RunsPage({ searchParams }: { searchParams: Promise
         )
       ) : (
         <>
-          <Table caption="Runs, newest first">
-            <thead>
-              <tr>
-                <Th>When</Th>
-                <Th>Set</Th>
-                <Th>Stage at run</Th>
-                <Th>Band</Th>
-                <Th>Action</Th>
-                <Th>Status</Th>
-                <Th className="text-right">Cost</Th>
-                <Th className="text-right">Saved</Th>
-                <Th className="text-right">Latency</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {page.data.map((r) => (
-                <tr key={r.id} className="hover:bg-bw-surface-sunken">
-                  <Td className="whitespace-nowrap">
-                    <Link href={`/runs/${r.id}`} className="text-bw-text underline underline-offset-2" title={r.createdAt}>
-                      {formatWhen(r.createdAt, now)}
-                    </Link>
-                    <span className="ml-2 text-xs text-bw-text-muted">{SOURCE_LABEL[r.source]}</span>
-                  </Td>
-                  <Td>
-                    <SetLabel sets={sets} setId={r.setId} compact stage={false} />
-                    <span className="ml-1 text-xs text-bw-text-muted">{r.channel}</span>
-                  </Td>
-                  <Td>
-                    <RolloutBadge stage={r.rollout} />
-                  </Td>
-                  <Td>
-                    <BandBadge band={r.runBand} />
-                  </Td>
-                  <Td className="whitespace-nowrap">{ACTION_LABEL[r.overallAction]}</Td>
-                  <Td>{r.status === "ok" ? <Badge tone="good">OK</Badge> : <Badge tone="danger">{STATUS_LABEL[r.status]}</Badge>}</Td>
-                  <Td numeric>{formatUsd(r.systemOneCostMicroUsd)}</Td>
-                  <Td numeric>{formatUsd(r.savingsMicroUsd)}</Td>
-                  <Td numeric>{formatLatency(r.latencyMs)}</Td>
-                </tr>
-              ))}
-            </tbody>
-          </Table>
+          <RunsTable runs={page.data} rulers={rulers} sets={sets} now={now} />
           <div className="mt-4 flex items-center justify-between text-sm text-bw-text-muted">
             <span>
               {page.data.length} {page.data.length === 1 ? "run" : "runs"} on this page
@@ -111,7 +98,7 @@ export default async function RunsPage({ searchParams }: { searchParams: Promise
     <>
       <PageHeader
         title="Runs"
-        description="Every run of every set: the band, the action it allowed, what it cost and what it saved. Open a run for its decisions and answers."
+        description="Every run of every set. Each row draws the decision that set its band on that set's own lines. Open a run for every decision, what it cost and what it saved."
       />
       <FilterForm action="/runs" fields={fields} sp={sp} clearHref="/runs" />
       {body}

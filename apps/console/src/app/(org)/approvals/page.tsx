@@ -22,11 +22,14 @@ export default async function ApprovalsPage() {
         <OperationFailed message={result.message} />
       ) : items.length === 0 ? (
         <EmptyState mark title="No requests waiting">
-          When an agent token asks to publish to a live production channel, widen a rollout or lift a pause, the request waits here.
-          You see the requests your role can decide.
+          <p className="font-medium text-bw-text">Moves toward safety apply right away. Nothing waits on you.</p>
+          <p className="mt-2">
+            When an agent token asks to publish to a live production channel, widen a rollout or lift a pause, the request waits here. You see the requests your role
+            can decide.
+          </p>
         </EmptyState>
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-10">
           <p className="text-sm text-bw-text-muted">
             {items.length} {items.length === 1 ? "request is" : "requests are"} waiting, newest first.
           </p>

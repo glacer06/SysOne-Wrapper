@@ -93,6 +93,27 @@ describe("runs", () => {
     expect(await html(RunsPage({ searchParams: sp({ set: "nope" }) }))).toContain("No set nope is visible to this caller.");
   });
 
+  it("draws the run on the lines of the version it used, read through version.get", async () => {
+    answers["run.get"] = { status: "ok", output: detail };
+    answers["version.list"] = { status: "ok", output: { data: [{ id: SET, version: 3 }], nextCursor: null } };
+    answers["version.get"] = { status: "ok", output: { id: SET, version: 3, spec: { policies: { is_done: { type: "noul", gating: true, noul: { trueAt: 0.7, falseAt: 0.3, reviewMargin: 0.1 }, actions: {} } } } } };
+    const { default: RunPage } = await import("./runs/[id]/page");
+    const out = await html(RunPage({ params: Promise.resolve({ id: RUN }) }));
+    expect(inputs["version.get"]).toMatchObject({ ref: "done-check", n: 3 });
+    expect(out).toContain("done-check v3");
+    expect(out).toContain("0.60");
+    expect(out).toContain("0.70");
+    expect(out).toContain("sets the run band");
+    expect(out).toContain("Run band, set by is_done");
+  });
+
+  it("says when the ruler cannot be drawn instead of guessing a line", async () => {
+    answers["run.get"] = { status: "ok", output: detail };
+    const { default: RunPage } = await import("./runs/[id]/page");
+    const out = await html(RunPage({ params: Promise.resolve({ id: RUN }) }));
+    expect(out).toContain("it could not be read");
+  });
+
   it("shows a run's decisions, cost, warnings and review items, and says when state was not kept", async () => {
     answers["run.get"] = { status: "ok", output: detail };
     const { default: RunPage } = await import("./runs/[id]/page");
@@ -123,7 +144,10 @@ describe("savings", () => {
     const { default: SavingsPage } = await import("./savings/page");
     const out = await html(SavingsPage({ searchParams: sp() }));
     expect(out).toContain("$0.0089");
-    expect(out).toContain(`${today}: $0.0089`);
+    expect(out).toContain(`${today}: spent $0.00012, LLM estimate $0.009`);
+    expect(out).toContain("Saved, last 7 days · estimated");
+    expect(out).toContain("The same calls on the LLM would have cost about $0.009.");
+    expect(out).toContain("How this is computed");
     expect(out).toContain("Shadow");
     expect((out.match(/<rect/g) ?? []).length).toBeGreaterThanOrEqual(8);
   });
@@ -146,8 +170,11 @@ describe("review", () => {
       },
     };
     const { default: ReviewPage } = await import("./review/page");
+    answers["run.get"] = { status: "ok", output: detail };
     const out = await html(ReviewPage({ searchParams: sp({ done: "resolved" }) }));
-    expect(out).toContain(`/review/${ITEM}?run=${RUN}`);
+    expect(out).toContain(`/runs/${RUN}`);
+    expect(out).toContain('role="radiogroup"');
+    expect(out).toContain("P(yes) 0.62");
     expect(out).toContain("The policy sent this band to review");
     expect(out).toContain("Saved. The answer is now a labeled decision");
     expect(inputs["review.list"]).toMatchObject({ status: "open" });

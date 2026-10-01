@@ -50,3 +50,40 @@ export function layoutBars(days: readonly DayValue[], top: number, width: number
     return { day: d.day, value: d.value, x: i * slot + (slot - barWidth) / 2, y: height - h, width: barWidth, height: h };
   });
 }
+
+export interface PairDay {
+  day: string;
+  /** System One spend. */
+  spend: number;
+  /** What the same calls would have cost on the LLM. */
+  llm: number;
+}
+
+export interface PairBars {
+  day: string;
+  spend: Bar;
+  llm: Bar;
+}
+
+/**
+ * Two bars per day on one axis, spend then the LLM estimate, so the gap between them reads at a
+ * glance (SAVE-A). Both share `top`, never a second scale. `gap` is the space between days and
+ * `inner` the hairline between a day's two bars.
+ */
+export function layoutPairs(days: readonly PairDay[], top: number, width: number, height: number, gap = 4, inner = 1, minHeight = 0): PairBars[] {
+  if (days.length === 0) return [];
+  const slot = width / days.length;
+  const barWidth = Math.max(0.5, (slot - gap - inner) / 2);
+  // A day with any spend keeps a sliver of bar, so a small number never reads as zero.
+  const h = (v: number) => (top <= 0 || !(v > 0) ? 0 : Math.max(minHeight, Math.min(1, v / top) * height));
+  return days.map((d, i) => {
+    const left = i * slot + (slot - (barWidth * 2 + inner)) / 2;
+    const hs = h(d.spend);
+    const hl = h(d.llm);
+    return {
+      day: d.day,
+      spend: { day: d.day, value: d.spend, x: left, y: height - hs, width: barWidth, height: hs },
+      llm: { day: d.day, value: d.llm, x: left + barWidth + inner, y: height - hl, width: barWidth, height: hl },
+    };
+  });
+}

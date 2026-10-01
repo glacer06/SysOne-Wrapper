@@ -1,0 +1,17 @@
+/* The one moving thing on the run page: the heavy marker walks from 0 to the run band's score once,
+   on load (DESIGN.md motion, step 1). Reduced motion shows the end state. */
+.walk {
+  animation: walk var(--bw-dur-walk) var(--bw-ease-walk) both;
+}
+
+@keyframes walk {
+  from {
+    left: -1px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .walk {
+    animation: none;
+  }
+}
