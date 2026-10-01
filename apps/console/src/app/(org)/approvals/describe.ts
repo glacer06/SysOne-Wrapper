@@ -80,3 +80,95 @@ export function timeLeft(expiresAt: string, now: Date): string {
   const days = Math.floor(hours / 24);
   return `in ${days} days`;
 }
+
+const CHANNEL = (v: unknown) => (str(v) === "staging" ? "staging" : "production");
+
+/** What the agent wants to do, as one plain sentence with the set and channel it touches. */
+export function requestSentence(opId: string, input: Record<string, unknown>): string {
+  const ref = setRefOf(input);
+  const on = ref === null ? "" : ` on ${ref}`;
+  switch (opId) {
+    case "set.publish":
+      return `Publish the draft${on} to ${CHANNEL(input["channel"])}.`;
+    case "channel.promote":
+      return `Promote what staging serves${on} to production.`;
+    case "rollout.change": {
+      const to = str(input["stage"]);
+      const label = to !== undefined && to in STAGE_LABEL ? STAGE_LABEL[to as RolloutStage] : (to ?? "another stage");
+      return `Move ${CHANNEL(input["channel"])}${on} to ${label}.`;
+    }
+    case "set.update":
+      return `Change the settings${on}.`;
+    case "agent_token.create":
+      return "Create a new agent token.";
+    case "app_token.create":
+      return "Create a new app token.";
+    case "settings.update":
+      return "Change the org's settings.";
+    case "experiment.start":
+      return `Start an experiment${on}.`;
+    case "experiment.promote":
+      return `Promote an experiment's challenger${on}.`;
+    default:
+      return `Run ${opId}${on}.`;
+  }
+}
+
+/** How the change is undone if it turns out wrong. Moves toward safety never wait for approval. */
+export function undoNote(opId: string): string {
+  switch (opId) {
+    case "set.publish":
+    case "channel.promote":
+    case "experiment.promote":
+      return "Published versions can be rolled back in one step, and rollback never waits for approval.";
+    case "rollout.change":
+      return "The stage can be moved back or paused at any time, and those moves never wait for approval.";
+    case "agent_token.create":
+    case "app_token.create":
+      return "A token can be revoked at any time.";
+    default:
+      return "Every change is on the audit log, and moves toward safety never wait for approval.";
+  }
+}
+
+export type TrailState = "done" | "current" | "todo";
+
+export interface TrailStep {
+  label: string;
+  /** "2026-10-01 07:05 UTC", or null for a step with no time of its own. */
+  at: string | null;
+  detail: string;
+  state: TrailState;
+}
+
+type RequestStatus = "pending" | "approved" | "rejected" | "expired" | "executed";
+
+const DECIDED: Record<Exclude<RequestStatus, "pending">, string> = {
+  approved: "Approved. It runs as the agent's token.",
+  executed: "Approved, and it ran.",
+  rejected: "Denied. Nothing ran.",
+  expired: "Expired without a decision. Nothing ran.",
+};
+
+/** The request's trail: proposed, waiting, decided. */
+export function trailSteps(
+  item: { status: RequestStatus; createdAt: string; expiresAt: string; decidedAt?: string; requestedBy: { name?: string; tokenName?: string } },
+  now: Date,
+  time: (iso: string) => string,
+): TrailStep[] {
+  const by = item.requestedBy.tokenName === undefined ? "an agent token" : `the token "${item.requestedBy.tokenName}"`;
+  const proposed: TrailStep = { label: "Proposed", at: time(item.createdAt), detail: `${item.requestedBy.name ?? "A member"}, through ${by}.`, state: "done" };
+  if (item.status === "pending") {
+    return [
+      proposed,
+      { label: "Waiting on a person", at: null, detail: `Anyone whose role can decide it, which includes you. Expires ${timeLeft(item.expiresAt, now)}.`, state: "current" },
+      { label: "Decided", at: null, detail: "Nothing runs until then.", state: "todo" },
+    ];
+  }
+  const at = item.status === "expired" ? item.expiresAt : item.decidedAt;
+  return [
+    proposed,
+    { label: "Waited", at: null, detail: "Held for a person.", state: "done" },
+    { label: "Decided", at: at === undefined ? null : time(at), detail: DECIDED[item.status], state: "current" },
+  ];
+}

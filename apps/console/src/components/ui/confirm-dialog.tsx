@@ -40,15 +40,15 @@ export function ConfirmDialog({ open, title, children, confirmLabel, tone = "pri
         e.preventDefault();
         if (!pending) onCancel();
       }}
-      className="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-md border border-rule bg-paper-raised p-0 text-ink backdrop:bg-black/40"
+      className="m-auto w-[min(32rem,calc(100vw-2rem))] rounded-md border border-bw-border bg-bw-surface p-0 text-bw-text shadow-(--bw-shadow-overlay) backdrop:bg-bw-overlay"
     >
       <div className="px-5 py-4">
         <h2 id={titleId} className="text-base font-semibold">
           {title}
         </h2>
-        {children === undefined ? null : <div className="mt-3 flex flex-col gap-2 text-sm leading-6 text-ink-2">{children}</div>}
+        {children === undefined ? null : <div className="mt-3 flex flex-col gap-2 text-sm leading-6 text-bw-text-muted">{children}</div>}
       </div>
-      <div className="flex justify-end gap-2 border-t border-rule px-5 py-3">
+      <div className="flex justify-end gap-2 border-t border-bw-border px-5 py-3">
         <Button onClick={onCancel} disabled={pending} autoFocus>
           Cancel
         </Button>

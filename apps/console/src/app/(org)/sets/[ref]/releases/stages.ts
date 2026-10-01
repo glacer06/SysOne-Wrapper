@@ -51,6 +51,41 @@ export function describeMove(channel: string, from: RolloutStage, to: RolloutSta
   return lines;
 }
 
+export interface NextMove {
+  to: RolloutStage;
+  /** The button: "Move to controlled". */
+  label: string;
+  /** The gate, written under the button. */
+  gate: string;
+}
+
+/**
+ * The one forward move a channel offers (ROLL-A): the next stop on the trail, or out of a pause
+ * back to shadow. Null at full. The gate line says what the move needs from a person here and
+ * from an agent (rolloutChangeRisk on the operation): moves that let decisions act ask this
+ * person to confirm, and wait for a person's approval when an agent asks.
+ */
+export function nextMove(stage: RolloutStage): NextMove | null {
+  switch (stage) {
+    case "inactive":
+      return { to: "shadow", label: "Move to shadow", gate: "No approval needed. Runs log and never act." };
+    case "shadow":
+      return { to: "controlled", label: "Move to controlled", gate: "You confirm it here. Needs a pinned model. An agent asking waits for a person to approve." };
+    case "controlled":
+      return { to: "full", label: "Move to full", gate: "Needs the admin role and a pinned model. An agent asking waits for a person to approve." };
+    case "paused":
+      return { to: "shadow", label: "Resume in shadow", gate: "You confirm it here. Runs log and never act. An agent asking waits for a person to approve." };
+    case "full":
+      return null;
+  }
+}
+
+/** The stages a person can pick besides the next move: every other stage but paused, which has its own button. */
+export function otherStages(stage: RolloutStage): RolloutStage[] {
+  const next = nextMove(stage)?.to;
+  return STAGE_ORDER.filter((s) => s !== stage && s !== "paused" && s !== next);
+}
+
 /** "2026-10-01 07:05 UTC": one format on the server and in the browser, so hydration agrees. */
 export function formatTime(iso: string): string {
   const d = new Date(iso);

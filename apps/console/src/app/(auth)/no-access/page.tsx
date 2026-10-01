@@ -14,8 +14,8 @@ export default async function NoAccessPage() {
   if (state.kind === "ready") redirect("/sets");
   return (
     <>
-      <h1 className="mb-1 text-xl font-semibold text-ink">No console access</h1>
-      <p className="mb-6 text-sm text-ink-2">
+      <h1 className="bw-auth-title mb-2">No console access</h1>
+      <p className="mb-6 text-sm text-bw-text-muted">
         {state.user.email} is not a member of the internal team. Ask a console owner to add you, then sign in again.
       </p>
       <form action={signOutAction}>

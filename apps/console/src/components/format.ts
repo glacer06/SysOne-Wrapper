@@ -1,6 +1,6 @@
 // Plain-text formatting for every console page. Pure, so it is unit tested.
 
-import type { Action, ReviewItemReason, ReviewItemStatus, RunRecordSource, RunStatus } from "@bandwise/core";
+import type { Action, Band, ReviewItemReason, ReviewItemStatus, RolloutStage, RunRecordSource, RunStatus } from "@bandwise/core";
 
 /**
  * Integer micro-USD as dollars. Per-run System One costs are fractions of a cent, so small amounts
@@ -99,4 +99,42 @@ export function formatValue(value: unknown): string {
   if (typeof value === "number") return Number.isInteger(value) ? String(value) : value.toFixed(3);
   if (typeof value === "string") return value;
   return JSON.stringify(value);
+}
+
+/**
+ * A run's state in one sentence, the first line of the four-part answer (BRAND-VOICE.md). The
+ * overall action is what the policy's thresholds say; shadow, inactive and paused never act on it.
+ */
+export function runStateLine(action: Action, rollout: RolloutStage): string {
+  const said: Record<Action, string> = {
+    auto: "Strong trail. The policy says ship it.",
+    review: "Not done yet. The policy asks a person to look.",
+    fallback: "Faint trail. The policy sends it to the fallback.",
+    escalate_to_llm: "Faint trail. The policy sends it to an LLM.",
+  };
+  if (rollout === "shadow") return `${said[action]} Shadow logged it and nothing acted.`;
+  if (rollout === "inactive") return `${said[action]} The channel is inactive, so nothing acted.`;
+  if (rollout === "paused") return `${said[action]} The set is paused, so nothing acted.`;
+  return said[action];
+}
+
+/** A review item's state in one sentence. */
+export function reviewStateLine(status: ReviewItemStatus): string {
+  switch (status) {
+    case "open":
+      return "Waiting on you. Is this answer right?";
+    case "pending_confirmation":
+      return "An agent answered. A person should confirm it.";
+    case "resolved":
+      return "Resolved. This answer is now a labeled decision.";
+    case "dismissed":
+      return "Dismissed. It left the queue without an answer.";
+  }
+}
+
+/** How many decisions landed in each band, as one fact: "2 decisions: 1 high, 1 medium". */
+export function bandCountLine(bands: readonly Band[]): string {
+  if (bands.length === 0) return "No decisions were stored.";
+  const parts = (["high", "medium", "low"] as const).map((b) => [b, bands.filter((x) => x === b).length] as const).filter(([, n]) => n > 0);
+  return `${bands.length} ${bands.length === 1 ? "decision" : "decisions"}: ${parts.map(([b, n]) => `${n} ${b}`).join(", ")}`;
 }

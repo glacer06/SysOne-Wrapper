@@ -8,11 +8,13 @@ import { type AttemptLimiter, LIMITS } from "./attempts";
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH, type ConsoleAuth } from "./config";
 import type { EnrollmentStore } from "./enrollment";
 
-export const SIGN_IN_FAILED = "Sign-in failed. Check your email and password, or try again in a few minutes.";
-export const CODE_FAILED = "That code did not work. Check your authenticator app, or try again in a few minutes.";
-export const SETUP_FAILED = "That password or enrollment code did not work. Check both, or ask for a new code.";
-export const RESET_FAILED = "The password was not changed. The link may have expired; ask for a new one.";
-export const PASSWORD_LENGTH = `Use ${MIN_PASSWORD_LENGTH} to ${MAX_PASSWORD_LENGTH} characters.`;
+// Each message says what happened, what did not happen, and the next step (BRAND-VOICE.md), and
+// stays the same whatever the cause.
+export const SIGN_IN_FAILED = "Couldn't sign you in. No session was started. Check your email and password, or wait a few minutes and try again.";
+export const CODE_FAILED = "That code didn't work. Nothing changed yet. Enter the current code from your authenticator app, or wait a few minutes and try again.";
+export const SETUP_FAILED = "Couldn't start two-factor setup. Nothing changed on your account. Check your password and enrollment code, or ask an admin for a new code.";
+export const RESET_FAILED = "Couldn't set the password. Your old password still applies. The link may have expired or been used, so ask a console owner for a new one.";
+export const PASSWORD_LENGTH = `That password doesn't fit. Nothing changed. Use ${MIN_PASSWORD_LENGTH} to ${MAX_PASSWORD_LENGTH} characters.`;
 
 export interface FlowDeps {
   auth: ConsoleAuth;

@@ -20,11 +20,11 @@ export function TextArea({ label, hint, value, onValueChange, className, rows, .
   const lines = Math.min(12, Math.max(rows ?? 2, value.split("\n").length + Math.floor(value.length / 90)));
   return (
     <div className="flex flex-col gap-1.5">
-      <label htmlFor={id} className="text-sm font-medium text-ink">
+      <label htmlFor={id} className="text-sm font-medium text-bw-text">
         {label}
       </label>
       {hint === undefined ? null : (
-        <p id={`${id}-hint`} className="text-xs text-ink-3">
+        <p id={`${id}-hint`} className="text-xs text-bw-text-muted">
           {hint}
         </p>
       )}
@@ -34,7 +34,7 @@ export function TextArea({ label, hint, value, onValueChange, className, rows, .
         rows={lines}
         aria-describedby={hint === undefined ? undefined : `${id}-hint`}
         onChange={(e) => onValueChange(e.target.value)}
-        className={cx("w-full rounded-sm border border-edge bg-paper-sunk px-3 py-2 text-sm leading-6 text-ink placeholder:text-ink-3", className)}
+        className={cx("w-full rounded-sm border border-bw-border-control bg-bw-surface-sunken px-3 py-2 text-sm leading-6 text-bw-text placeholder:text-bw-text-muted", className)}
         {...rest}
       />
     </div>
@@ -53,15 +53,15 @@ export function StructuredEditor({ label, value, onChange, placeholder }: { labe
   if (shape.kind === "json") {
     return (
       <div className="flex flex-col gap-1.5">
-        <span className="text-sm font-medium text-ink">{label}</span>
-        <pre className="max-h-48 overflow-auto rounded-sm border border-rule bg-paper-sunk p-3 font-mono text-xs text-ink-2">{JSON.stringify(value, null, 2)}</pre>
-        <p className="text-xs text-ink-3">This value is nested, so edit it in the JSON view.</p>
+        <span className="text-sm font-medium text-bw-text">{label}</span>
+        <pre className="max-h-48 overflow-auto rounded-sm border border-bw-border bg-bw-surface-sunken p-3 font-mono text-xs text-bw-text-muted">{JSON.stringify(value, null, 2)}</pre>
+        <p className="text-xs text-bw-text-muted">This value is nested, so edit it in the JSON view.</p>
       </div>
     );
   }
   return (
-    <fieldset className="flex flex-col gap-3 rounded-sm border border-rule p-3">
-      <legend className="px-1 text-sm font-medium text-ink">{label}</legend>
+    <fieldset className="flex min-w-0 flex-col gap-3 rounded-sm border border-bw-border p-3">
+      <legend className="px-1 text-sm font-medium text-bw-text">{label}</legend>
       {shape.fields.map((f) =>
         f.list ? (
           <ListArea key={f.key} label={f.key} value={f.value} onValueChange={(text) => onChange(setStructuredField(value as Structured, f.key, text, true))} />
@@ -163,9 +163,9 @@ export function CommitInput({ label, value, onCommit, invalid }: { label: string
           if (e.key === "Escape") setText(value);
         }}
         aria-invalid={problem === null ? undefined : true}
-        className="h-9 w-full rounded-sm border border-edge bg-paper-sunk px-2 font-mono text-sm text-ink aria-[invalid=true]:border-danger"
+        className="h-9 w-full rounded-sm border border-bw-border-control bg-bw-surface-sunken px-2 max-sm:h-11 font-mono text-sm text-bw-text aria-[invalid=true]:border-bw-low"
       />
-      {problem === null ? null : <p className="text-xs text-danger">{problem}</p>}
+      {problem === null ? null : <p className="text-xs text-bw-low-text">{problem}</p>}
     </div>
   );
 }

@@ -27,6 +27,11 @@
         "$type": "color",
         "$description": ""
       },
+      "slate-500": {
+        "$value": "#7E8E93",
+        "$type": "color",
+        "$description": "control outlines"
+      },
       "slate-400": {
         "$value": "#8A9A9F",
         "$type": "color",
@@ -91,6 +96,11 @@
         "$value": "#8B7CF6",
         "$type": "color",
         "$description": ""
+      },
+      "violet-300": {
+        "$value": "#A498F9",
+        "$type": "color",
+        "$description": "dark medium text"
       },
       "violet-100": {
         "$value": "#E7E4FD",
@@ -167,7 +177,19 @@
         "dark": {
           "$value": "#3B4D55",
           "$type": "color"
-        }
+        },
+        "$description": "hairlines and table rules only"
+      },
+      "border-control": {
+        "light": {
+          "$value": "#7E8E93",
+          "$type": "color"
+        },
+        "dark": {
+          "$value": "#66777C",
+          "$type": "color"
+        },
+        "$description": "input and secondary button outlines, 3:1"
       },
       "text": {
         "light": {
@@ -255,7 +277,7 @@
           "$type": "color"
         },
         "dark": {
-          "$value": "#8B7CF6",
+          "$value": "#A498F9",
           "$type": "color"
         }
       },
@@ -288,6 +310,28 @@
           "$value": "#4FD1B5",
           "$type": "color"
         }
+      },
+      "overlay": {
+        "light": {
+          "$value": "rgba(13, 20, 23, 0.56)",
+          "$type": "color"
+        },
+        "dark": {
+          "$value": "rgba(0, 0, 0, 0.64)",
+          "$type": "color"
+        },
+        "$description": "scrim behind dialogs"
+      },
+      "shadow-overlay": {
+        "light": {
+          "$value": "0 8px 24px rgba(13, 20, 23, 0.16), 0 1px 3px rgba(13, 20, 23, 0.12)",
+          "$type": "shadow"
+        },
+        "dark": {
+          "$value": "0 8px 24px rgba(0, 0, 0, 0.56), 0 1px 3px rgba(0, 0, 0, 0.48)",
+          "$type": "shadow"
+        },
+        "$description": "dialogs, popovers, toasts only"
       }
     }
   },
@@ -303,7 +347,7 @@
         "$type": "fontFamily"
       },
       "mono": {
-        "$value": "'JetBrains Mono', ui-monospace, Menlo, monospace",
+        "$value": "'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace",
         "$type": "fontFamily"
       }
     },
@@ -531,16 +575,20 @@
   "band": {
     "low": {
       "max": 0.55,
-      "action": "ask a person"
+      "action": "ask a person",
+      "$description": "example value"
     },
     "medium": {
       "min": 0.55,
       "max": 0.8,
-      "action": "get evidence"
+      "action": "get evidence",
+      "$description": "example value"
     },
     "high": {
       "min": 0.8,
-      "action": "ship"
-    }
+      "action": "ship",
+      "$description": "example value"
+    },
+    "$description": "Example thresholds only. In the product, each set's own spec defines its thresholds (examples so far run 0.35 to 0.80)."
   }
 }

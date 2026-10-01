@@ -1,0 +1,1 @@
+bandwise. A decision card: Not done yet. Band Medium 0.71. Why: 7 tests in auth/ regressed. Cost: $0.00003, saved about $0.004. The ant carries the B along a dotted trail. Example values, not measured.

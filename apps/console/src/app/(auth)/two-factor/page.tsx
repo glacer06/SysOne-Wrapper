@@ -12,12 +12,12 @@ export default async function TwoFactorPage() {
   if ((await getConsoleState()).kind === "ready") redirect("/sets");
   return (
     <>
-      <h1 className="mb-1 text-xl font-semibold text-ink">Two-factor check</h1>
-      <p className="mb-6 text-sm text-ink-2">Enter the code from your authenticator app. It changes every 30 seconds.</p>
+      <h1 className="bw-auth-title mb-2">Two-factor check</h1>
+      <p className="mb-6 text-sm text-bw-text-muted">Enter the code from your authenticator app. It changes every 30 seconds.</p>
       <TwoFactorForm />
-      <p className="mt-6 text-xs text-ink-3">
+      <p className="mt-6 text-xs text-bw-text-muted">
         The check expires after 10 minutes.{" "}
-        <Link href="/sign-in" className="underline underline-offset-2 hover:text-ink">
+        <Link href="/sign-in" className="underline underline-offset-2 hover:text-bw-text">
           Start again
         </Link>
       </p>

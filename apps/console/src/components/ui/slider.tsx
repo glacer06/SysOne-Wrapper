@@ -22,10 +22,10 @@ export function Slider({ label, value, onValueChange, min = 0, max = 1, step = 0
   return (
     <div className={cx("flex flex-col gap-1.5", className)}>
       <div className="flex items-baseline justify-between gap-3">
-        <label htmlFor={id} className="text-sm font-medium text-ink">
+        <label htmlFor={id} className="text-sm font-medium text-bw-text">
           {label}
         </label>
-        <output htmlFor={id} className="font-mono text-sm tabular-nums text-ink">
+        <output htmlFor={id} className="font-mono text-sm tabular-nums text-bw-text">
           {format(value)}
         </output>
       </div>
@@ -38,7 +38,7 @@ export function Slider({ label, value, onValueChange, min = 0, max = 1, step = 0
         value={value}
         onChange={(e) => onValueChange(Number(e.target.value))}
         aria-valuetext={format(value)}
-        className="h-6 w-full cursor-pointer accent-[var(--signal)]"
+        className="h-6 w-full cursor-pointer accent-bw-brand"
         {...rest}
       />
     </div>

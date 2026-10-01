@@ -11,6 +11,7 @@ import { saveDraftAction, validateDraftAction } from "../actions";
 import { ThresholdSliders } from "./policy-form";
 import { type LastPreview, PreviewPanel, type RecentRun } from "./preview-panel";
 import { QuestionForm } from "./question-form";
+import type { RecentScores } from "./recent-scores";
 import { type Finding, findingsFor, listQuestions, type Spec, toJsonText, updateCompositePolicy } from "./spec-edit";
 import { useUnsavedGuard } from "./unsaved-guard";
 
@@ -23,6 +24,10 @@ export interface DraftEditorProps {
   canEdit: boolean;
   recentRuns: RecentRun[];
   synthetic: boolean;
+  /** Recent scores per question from real runs, for the rulers. Null when runs could not be read. */
+  recentScores: RecentScores | null;
+  /** The spec the production channel serves (or staging when production has none), for the "vs published" column. */
+  published: { label: string; spec: Spec } | null;
 }
 
 type SaveProblem =
@@ -46,7 +51,13 @@ function parseText(text: string): { spec: Spec; raw: unknown } | { problem: stri
 
 const LINT_DELAY_MS = 700;
 
-export function DraftEditor({ slug, draftVersion, initialSpec, initialEtag, initialFindings, canEdit, recentRuns, synthetic }: DraftEditorProps) {
+/** The published level thresholds of a composite with the same id, for its ruler's faint ticks. */
+function publishedComposite(published: DraftEditorProps["published"], id: string) {
+  const t = published?.spec.composites?.find((c) => c.id === id)?.policy?.levelThresholds;
+  return published === null || t === undefined ? null : { label: published.label, thresholds: t };
+}
+
+export function DraftEditor({ slug, draftVersion, initialSpec, initialEtag, initialFindings, canEdit, recentRuns, synthetic, recentScores, published }: DraftEditorProps) {
   const router = useRouter();
   const toast = useToast();
   const [text, setText] = useState(() => toJsonText(initialSpec));
@@ -145,8 +156,8 @@ export function DraftEditor({ slug, draftVersion, initialSpec, initialEtag, init
         {"problem" in parsed ? parsed.problem : null}. Fix it in the JSON view, or reset to the saved draft.
       </InlineAlert>
     ) : (
-      <fieldset disabled={!canEdit} className="flex flex-col gap-5">
-        {spec.stages.length > 1 ? <p className="text-sm text-ink-2">Questions run in {spec.stages.length} stages, in the order below.</p> : null}
+      <fieldset disabled={!canEdit} className="flex min-w-0 flex-col gap-5">
+        {spec.stages.length > 1 ? <p className="text-sm text-bw-text-muted">Questions run in {spec.stages.length} stages, in the order below.</p> : null}
         {listQuestions(spec).map(({ stage, id, question }) => (
           <QuestionForm
             key={`${stage}-${id}`}
@@ -156,17 +167,28 @@ export function DraftEditor({ slug, draftVersion, initialSpec, initialEtag, init
             findings={findingsFor(findings ?? [], { stage, id })}
             answer={answers[id]}
             onSpec={editSpec}
+            recent={recentScores === null ? null : (recentScores[id] ?? [])}
+            published={published === null ? null : { label: published.label, policy: published.spec.policies[id] }}
+            readOnly={!canEdit}
           />
         ))}
         {(spec.composites ?? []).map((c, i) =>
           c.policy === undefined ? null : (
-            <article key={c.id} className="flex flex-col gap-3 rounded-md border border-rule bg-paper-raised p-5">
+            <article key={c.id} className="flex flex-col gap-3 rounded-md border border-bw-border bg-bw-surface p-5">
               <header className="flex flex-wrap items-center gap-2">
-                <h3 className="mr-auto text-base font-semibold text-ink">{c.id}</h3>
+                <h3 className="mr-auto text-base font-semibold text-bw-text">{c.id}</h3>
                 <Badge>Composite</Badge>
               </header>
-              <p className="text-sm text-ink-2">A weighted blend of {c.terms.length} terms. Its level picks the action; edit terms in the JSON view.</p>
-              <ThresholdSliders value={c.policy.levelThresholds} marker={null} axis="Composite value" context={c.id} onChange={(t) => editSpec(updateCompositePolicy(spec, i, t))} />
+              <p className="text-sm text-bw-text-muted">A weighted blend of {c.terms.length} terms. Its level picks the action; edit terms in the JSON view.</p>
+              <ThresholdSliders
+                value={c.policy.levelThresholds}
+                marker={null}
+                axis="Composite value"
+                context={c.id}
+                disabled={!canEdit}
+                published={publishedComposite(published, c.id)}
+                onChange={(t) => editSpec(updateCompositePolicy(spec, i, t))}
+              />
             </article>
           ),
         )}
@@ -176,22 +198,22 @@ export function DraftEditor({ slug, draftVersion, initialSpec, initialEtag, init
   const jsonView = (
     <div className="flex flex-col gap-2">
       <CodeEditor label="Draft spec (JSON)" rows={28} value={text} onChange={setText} readOnly={!canEdit} />
-      {"problem" in parsed && parsed.raw !== undefined ? <p className="text-xs text-danger">{parsed.problem}</p> : null}
+      {"problem" in parsed && parsed.raw !== undefined ? <p className="text-xs text-bw-low-text">{parsed.problem}</p> : null}
     </div>
   );
 
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_400px]">
       <div className="flex min-w-0 flex-col gap-4">
-        <div className="sticky top-0 z-10 -mx-1 flex flex-wrap items-center gap-3 border-b border-rule bg-paper px-1 py-3">
-          <span className="text-sm text-ink-2" role="status" aria-live="polite">
+        <div className="sticky top-0 z-10 -mx-1 flex flex-wrap items-center gap-3 border-b border-bw-border bg-bw-bg px-1 py-3">
+          <span className="text-sm text-bw-text-muted" role="status" aria-live="polite">
             {!canEdit ? "Read only: editors and above can change the draft." : saving ? "Saving..." : dirty ? "Unsaved changes" : "All changes saved"}
           </span>
           <span className="flex gap-2">
             {errors.length > 0 ? <Badge tone="danger">{errors.length === 1 ? "1 error" : `${errors.length} errors`}</Badge> : null}
             {warnings.length > 0 ? <Badge tone="info">{warnings.length === 1 ? "1 warning" : `${warnings.length} warnings`}</Badge> : null}
             {findings !== null && errors.length === 0 && warnings.length === 0 ? <Badge tone="good">Lints pass</Badge> : null}
-            {linting ? <span className="text-xs text-ink-3">Checking...</span> : null}
+            {linting ? <span className="text-xs text-bw-text-muted">Checking...</span> : null}
           </span>
           <span className="ml-auto flex gap-2">
             {dirty && canEdit ? (
@@ -280,19 +302,19 @@ export function DraftEditor({ slug, draftVersion, initialSpec, initialEtag, init
         />
         <Card title="Checks" description="Lints from draft.validate on what is on screen, saved or not. Publish needs zero errors.">
           {findings === null ? (
-            <p className="text-sm text-ink-3">Checking the draft...</p>
+            <p className="text-sm text-bw-text-muted">Checking the draft...</p>
           ) : findings.length === 0 ? (
-            <p className="text-sm text-ink-2">No errors or warnings.</p>
+            <p className="text-sm text-bw-text-muted">No errors or warnings.</p>
           ) : (
             <ul className="flex flex-col gap-2 text-sm">
               {[...errors, ...warnings].map((f, i) => (
                 <li key={i} className="flex flex-col gap-0.5">
                   <span className="flex items-center gap-2">
                     <Badge tone={f.severity === "error" ? "danger" : "info"}>{f.severity === "error" ? "Error" : "Warning"}</Badge>
-                    <span className="font-mono text-xs text-ink-3">{f.rule}</span>
+                    <span className="font-mono text-xs text-bw-text-muted">{f.rule}</span>
                   </span>
-                  <span className="text-ink">{f.message}</span>
-                  {f.path === "" ? null : <span className="font-mono text-xs text-ink-3">{f.path}</span>}
+                  <span className="text-bw-text">{f.message}</span>
+                  {f.path === "" ? null : <span className="font-mono text-xs text-bw-text-muted">{f.path}</span>}
                 </li>
               ))}
             </ul>

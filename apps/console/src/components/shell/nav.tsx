@@ -27,11 +27,11 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
               aria-current={current ? "page" : undefined}
               onClick={onNavigate}
               className={cx(
-                "flex items-center gap-2 rounded-sm px-3 py-2 text-sm",
-                current ? "bg-paper-sunk font-medium text-ink" : "text-ink-2 hover:bg-paper-sunk hover:text-ink",
+                "flex min-h-10 items-center gap-3 rounded-sm px-3 py-2 text-[0.9375rem] transition-colors duration-(--bw-dur-fast) max-md:min-h-11",
+                current ? "bg-bw-surface-sunken font-semibold text-bw-text" : "text-bw-text-muted hover:bg-bw-surface-sunken hover:text-bw-text",
               )}
             >
-              <span aria-hidden className={cx("h-4 w-0.5 rounded-full", current ? "bg-signal" : "bg-transparent")} />
+              <span aria-hidden className={cx("h-4 w-[3px]", current ? "bg-bw-brand" : "bg-transparent")} />
               {item.label}
             </Link>
           </li>
@@ -42,37 +42,37 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
 }
 
 /** Desktop: a fixed column. Phone: a menu button that opens the same links. */
-export function SideNav({ header, footer }: { header: React.ReactNode; footer: React.ReactNode }) {
+export function SideNav({ header, compactHeader, footer }: { header: React.ReactNode; compactHeader: React.ReactNode; footer: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   useEffect(() => setOpen(false), [pathname]);
 
   return (
     <>
-      <div className="flex items-center justify-between border-b border-rule bg-paper px-4 py-3 md:hidden">
-        {header}
+      <div className="flex items-center justify-between gap-3 border-b border-bw-border bg-bw-surface px-4 py-2 md:hidden">
+        {compactHeader}
         <button
           type="button"
           aria-expanded={open}
           aria-controls="mobile-nav"
           onClick={() => setOpen(!open)}
-          className="rounded-sm border border-edge px-3 py-1.5 text-sm text-ink"
+          className="h-11 rounded-sm border border-bw-border-control px-4 text-sm font-semibold text-bw-text hover:bg-bw-surface-sunken"
         >
           {open ? "Close" : "Menu"}
         </button>
       </div>
       {open ? (
-        <nav id="mobile-nav" aria-label="Console" className="border-b border-rule bg-paper px-3 py-3 md:hidden">
+        <nav id="mobile-nav" aria-label="Console" className="border-b border-bw-border bg-bw-surface px-3 py-3 md:hidden">
           <NavLinks onNavigate={() => setOpen(false)} />
-          <div className="mt-3 border-t border-rule pt-3">{footer}</div>
+          <div className="mt-3 border-t border-bw-border pt-3">{footer}</div>
         </nav>
       ) : null}
-      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-rule bg-paper md:flex">
+      <aside className="sticky top-0 hidden h-dvh w-60 shrink-0 flex-col border-r border-bw-border bg-bw-surface md:flex">
         <div className="px-5 pt-5 pb-4">{header}</div>
         <nav aria-label="Console" className="flex-1 overflow-y-auto px-3">
           <NavLinks />
         </nav>
-        <div className="border-t border-rule px-3 py-3">{footer}</div>
+        <div className="border-t border-bw-border px-3 py-3">{footer}</div>
       </aside>
     </>
   );

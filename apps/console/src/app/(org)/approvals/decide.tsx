@@ -32,11 +32,11 @@ export function DecideButtons({ id, label, warning }: { id: string; label: strin
         <div className="flex-1">
           <Input label="Note" placeholder="Optional, saved on the audit row" value={note} onChange={(e) => setNote(e.target.value)} disabled={busy} />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col gap-2 sm:flex-row [&>*]:max-sm:w-full">
           <Button variant="primary" onClick={() => setAsking("approved")} disabled={busy}>
             Approve
           </Button>
-          <Button variant="danger" onClick={() => setAsking("rejected")} disabled={busy}>
+          <Button onClick={() => setAsking("rejected")} disabled={busy}>
             Deny
           </Button>
         </div>
@@ -51,7 +51,7 @@ export function DecideButtons({ id, label, warning }: { id: string; label: strin
         onConfirm={() => decide("approved")}
       >
         <p>The request runs now, exactly as the agent sent it, as the agent&apos;s token. The audit log names you as the approver.</p>
-        {warning === null ? null : <p className="text-danger">{warning}</p>}
+        {warning === null ? null : <p className="text-bw-low-text">{warning}</p>}
       </ConfirmDialog>
       <ConfirmDialog
         open={asking === "rejected"}

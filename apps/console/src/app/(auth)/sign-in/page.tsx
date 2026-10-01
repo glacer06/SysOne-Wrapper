@@ -13,8 +13,8 @@ export default async function SignInPage() {
   if (state.kind === "needs-two-factor") redirect("/setup-two-factor");
   return (
     <>
-      <h1 className="mb-1 text-xl font-semibold text-ink">Sign in</h1>
-      <p className="mb-6 text-sm text-ink-2">Use the email and password for your console account.</p>
+      <h1 className="bw-auth-title mb-2">Sign in</h1>
+      <p className="mb-6 text-sm text-bw-text-muted">Use the email and password for your console account.</p>
       <SignInForm />
     </>
   );

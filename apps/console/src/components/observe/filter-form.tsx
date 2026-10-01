@@ -19,7 +19,7 @@ export interface FilterField {
  */
 export function FilterForm({ action, fields, sp, clearHref, keep = [] }: { action: string; fields: readonly FilterField[]; sp: SearchParams; clearHref: string; keep?: readonly string[] }) {
   return (
-    <form method="get" action={action} className="mb-5 rounded-md border border-rule bg-paper-raised p-4" aria-label="Filters">
+    <form method="get" action={action} className="mb-5 rounded-md border border-bw-border bg-bw-surface p-4" aria-label="Filters">
       {/* Params set outside the form, such as the review tab, survive a filter change. */}
       {keep.map((k) => {
         const v = param(sp, k);
