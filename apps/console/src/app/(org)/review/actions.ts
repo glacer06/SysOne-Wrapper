@@ -79,6 +79,11 @@ export async function settleQueueItem(input: QueueSettle): Promise<{ ok: true } 
       : input.op === "dismiss"
         ? await consoleOperation("review.dismiss", { id: parsed.id })
         : await consoleOperation("review.confirm", { id: parsed.id, ...(parsed.value === undefined ? {} : { resolution: { value: parsed.value } }) });
+  // A retry after a lost response finds the item already closed. The decision landed, so that is success.
+  if (res.status === "error" && res.code === "already_exists") {
+    refresh(parsed.runId);
+    return { ok: true };
+  }
   if (res.status !== "ok") return { ok: false, message: res.status === "error" ? res.message : "The review queue is not served yet." };
   refresh(parsed.runId);
   return { ok: true };

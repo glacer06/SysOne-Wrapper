@@ -13,7 +13,7 @@ import type { EnrollmentStore } from "./enrollment";
 export const SIGN_IN_FAILED = "Couldn't sign you in. No session was started. Check your email and password, or wait a few minutes and try again.";
 export const CODE_FAILED = "That code didn't work. Nothing changed yet. Enter the current code from your authenticator app, or wait a few minutes and try again.";
 export const SETUP_FAILED = "Couldn't start two-factor setup. Nothing changed on your account. Check your password and enrollment code, or ask an admin for a new code.";
-export const RESET_FAILED = "Couldn't set the password. Your old password, if any, still applies. The link may have expired or been used, so ask a console owner for a new one.";
+export const RESET_FAILED = "Couldn't set the password. Your old password still applies. The link may have expired or been used, so ask a console owner for a new one.";
 export const PASSWORD_LENGTH = `That password doesn't fit. Nothing changed. Use ${MIN_PASSWORD_LENGTH} to ${MAX_PASSWORD_LENGTH} characters.`;
 
 export interface FlowDeps {

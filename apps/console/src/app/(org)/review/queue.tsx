@@ -86,16 +86,30 @@ export function ReviewQueue({ entries, initialId, startOpen }: { entries: readon
     }
   }, []);
 
-  // Leaving the page sends what is waiting: Undo is for the next 6 seconds, not a way to lose work.
+  // Undo is for the next 6 seconds, not a way to lose work. What is waiting is sent at once when the
+  // page is hidden or left: in-app navigation (unmount), switching tabs or apps, and pagehide on a
+  // close or reload, which starts the request while the page is still alive. Closing the tab with
+  // something waiting asks first. Best effort: if the browser kills the page mid-request, the item
+  // stays open in the queue and nothing is resolved by mistake.
   useEffect(() => {
     const all = timers.current;
+    const flush = () => {
+      for (const { p } of [...all.values()]) void commit(p);
+    };
+    const onHide = () => {
+      if (document.visibilityState === "hidden") flush();
+    };
     const warn = (e: BeforeUnloadEvent) => {
       if (all.size > 0) e.preventDefault();
     };
     window.addEventListener("beforeunload", warn);
+    window.addEventListener("pagehide", flush);
+    document.addEventListener("visibilitychange", onHide);
     return () => {
       window.removeEventListener("beforeunload", warn);
-      for (const { p } of [...all.values()]) void commit(p);
+      window.removeEventListener("pagehide", flush);
+      document.removeEventListener("visibilitychange", onHide);
+      flush();
     };
   }, [commit]);
 
