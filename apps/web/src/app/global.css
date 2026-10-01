@@ -2337,8 +2337,19 @@ code {
   line-height: var(--bw-lh-h3);
 }
 
+.legal h3 {
+  margin: var(--bw-space-5) 0 var(--bw-space-2);
+  font-size: var(--bw-text-body);
+  font-weight: 600;
+}
+
 .legal p + p {
   margin-top: var(--bw-space-3);
+}
+
+.legal code {
+  font-family: var(--bw-font-mono);
+  font-size: 0.9em;
 }
 
 .legal ul {

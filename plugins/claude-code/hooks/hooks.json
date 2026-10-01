@@ -1,0 +1,28 @@
+{
+  "description": "Bandwise Gate: done-check on Stop and action-risk-gate on PreToolUse, through hosted Bandwise. Without BANDWISE_TOKEN each hook ends silently.",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx -y @bandwise/cli@0.3 hook Stop --set \"${CLAUDE_PLUGIN_ROOT}/sets/done-check.json\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "npx -y @bandwise/cli@0.3 hook PreToolUse --set \"${CLAUDE_PLUGIN_ROOT}/sets/action-risk-gate.json\" --drop content_preview",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  }
+}

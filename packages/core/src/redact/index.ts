@@ -1,11 +1,12 @@
-// Redaction for what a hook sends to System One (ADR-020). Hook state is Claude Code's own input:
-// prompts, commands and file contents, which can carry secrets. Only the fields the spec's input
-// schema names are sent, strings are cut to the schema's maxLength, and secret-shaped text is
-// replaced before the call. Pattern redaction is best effort: it cannot promise that every private
-// value is gone, so `--drop <field>` exists for fields that must never leave the machine.
+// Input shaping and secret redaction for anything sent to System One from an agent host (ADR-020,
+// ADR-021). Hook input and MCP tool input are prompts, commands and file contents, which can carry
+// secrets. Only the fields the spec's input schema names are kept, strings are cut to the schema's
+// maxLength, and secret-shaped text is replaced. Pattern redaction is best effort: it cannot
+// promise that every private value is gone.
 //
-// The same rules live in @bandwise/core (src/redact), which the server's MCP path uses. This copy
-// stays because hosted hook mode loads without core; a test fails if the two drift apart.
+// Pure, with no imports, so the server's MCP path and the CLI's hook path apply the same rules.
+// The CLI keeps a byte-for-byte copy in packages/cli/src/live/redact.ts, because its hosted hook
+// mode loads without core installed; a CLI test fails if the two drift apart.
 
 const SECRET_PATTERNS: readonly RegExp[] = [
   /-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]*?(?:-----END [A-Z ]*PRIVATE KEY-----|$)/g,

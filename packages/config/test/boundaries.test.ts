@@ -161,8 +161,11 @@ const cases: Case[] = [
   { name: "web -> system-one-client", file: "apps/web/src/x.ts", code: `import "@bandwise/system-one-client";`, violates: true },
   { name: "docs -> system-one-client", file: "apps/docs/src/x.ts", code: `import "@bandwise/system-one-client";`, violates: true },
 
-  // mcp-server calls /api/v1 over HTTP only.
+  // mcp-server never reaches the database or the System One SDK. The console serves it (ADR-021).
   { name: "mcp-server -> db", file: "packages/mcp-server/src/x.ts", code: `import "@bandwise/db";`, violates: true },
+  { name: "mcp-server -> system-one-client", file: "packages/mcp-server/src/x.ts", code: `import "@bandwise/system-one-client";`, violates: true },
+  { name: "mcp-server -> core contracts", file: "packages/mcp-server/src/x.ts", code: `import "@bandwise/core/contracts";`, violates: false },
+  { name: "console server -> mcp-server", file: "apps/console/src/server/x.ts", code: `import "@bandwise/mcp-server";`, violates: false },
 
   // Server packages depend on core, and only console wires them together.
   { name: "system-one-client -> core", file: "packages/system-one-client/src/x.ts", code: `import "@bandwise/core";`, violates: false },

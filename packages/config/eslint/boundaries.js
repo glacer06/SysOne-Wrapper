@@ -132,6 +132,8 @@ export const allowedElementDeps = {
     "evals",
     "plugin-sdk",
     "plugins-builtin",
+    // ADR-021: the console serves /mcp and builds the Bandwise Gate tools from mcp-server.
+    "mcp-server",
   ],
   "example-embed": ["client", "client-server", "react", "core-contracts", "core-openapi"],
   // The public docs site. Its tests check the documented spec against core's parser; the site

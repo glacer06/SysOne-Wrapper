@@ -115,6 +115,15 @@ The plugin opens to outside users only if the internal shadow period shows Bandw
 
 Reversal: remove the plugin from our marketplace and the connector from the directory, and turn off `/mcp`. Revoking the OAuth grants revokes their agent tokens. Nothing in the API, the CLI or the console depends on the MCP slice.
 
+## Implementation notes (2026-10-01, NSI-743)
+
+These follow the decision and change no part of it.
+
+- `bandwise_get_savings` runs `usage.get` (scope `usage:read`), not `report.get`. `usage.get` is the operation that returns spend and savings per set today; `report.get` is still a stub. The OAuth default grant in section 4 therefore uses `usage:read` where it says `reports:read`.
+- A tool appears in `tools/list` only when the token holds its scope and the operation has a handler. `feedback.report` has none yet, so `bandwise_report_feedback` is defined but hidden until it does.
+- The check tools do not take `content_preview`. The hook drops it too, so file contents never reach the gate.
+- The boundary rules let the console import `@bandwise/mcp-server`, which section 2 needs. `mcp-server` itself still imports only core contracts, never the database or the SDK.
+
 ## Decisions (Nick, 2026-10-01)
 
 1. The name is **Bandwise Gate** in both stores.

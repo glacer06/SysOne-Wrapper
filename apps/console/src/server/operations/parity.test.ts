@@ -7,6 +7,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { NON_OPERATION_ROUTES, OPERATION_CATALOG } from "@bandwise/core";
+import { GATE_TOOLS } from "@bandwise/mcp-server";
 import { describe, expect, it } from "vitest";
 
 import { renderOpenApi, type OpenApiDocument } from "./openapi";
@@ -77,7 +78,16 @@ describe("parity: catalog, registry and openapi.json", () => {
     expect(OPERATION_CATALOG.find((e) => e.id === "set.run")?.path).toBe("/api/v1/sets/{ref}/run");
   });
   it.todo("every bandwise CLI command maps to an operation that is not session only (Phase 3)");
-  it.todo("every MCP server tool in packages/mcp-server maps to its registry entry (Phase 3)");
+
+  it.each(GATE_TOOLS.map((tool) => [tool.name, tool] as const))("MCP tool %s maps to a registry operation an agent may call, and is not high risk", (_name, tool) => {
+    const entry = OPERATION_CATALOG.find((e) => e.id === tool.operation);
+    expect(entry).toBeDefined();
+    expect(OPERATIONS[tool.operation]).toBeDefined();
+    expect(tool.scope).toBe(entry?.scope);
+    expect(OPERATIONS[tool.operation].descriptor.actors).toContain("agent");
+    expect(entry?.risk.startsWith("high")).toBe(false);
+  });
+  it.todo("the full curated MCP tool list in packages/mcp-server maps to registry entries (Phase 3)");
 });
 
 function sourceFiles(dir: string): string[] {
