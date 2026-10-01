@@ -34,8 +34,11 @@ async function agentToken(org: SeededOrg, scopes: Scope[]): Promise<string> {
   return token;
 }
 
-function req(token: string | null, method: string, path: string, extra: Partial<ApiRequest> = {}): ApiRequest {
+type Extra = Partial<ApiRequest> & { body?: string | null; bodyTooLarge?: boolean };
+
+function req(token: string | null, method: string, path: string, extra: Extra = {}): ApiRequest {
   const url = new URL(`https://app.bandwise.dev${path}`);
+  const { body = null, bodyTooLarge = false, ...rest } = extra;
   return {
     method,
     path: url.pathname,
@@ -43,10 +46,9 @@ function req(token: string | null, method: string, path: string, extra: Partial<
     authorization: token === null ? null : `Bearer ${token}`,
     ifMatch: null,
     idempotencyKey: null,
-    body: null,
-    bodyTooLarge: false,
+    readBody: () => Promise.resolve({ text: body, tooLarge: bodyTooLarge }),
     requestId: "req-1",
-    ...extra,
+    ...rest,
   };
 }
 
@@ -88,27 +90,27 @@ describe("matchRoute", () => {
 describe("handleApiRequest", () => {
   it("answers the same 401 for a missing, malformed and unknown token", async () => {
     const forged = hasher.mint("sa_live_", internal.orgId).token;
-    const answers = await Promise.all([null, "nonsense", forged].map((tk) => handleApiRequest(req(tk, "GET", "/api/v1/sets"), deps())));
+    const answers = await Promise.all([null, "nonsense", forged].map((tk) => handleApiRequest(req(tk, "GET", "/api/v1/sets"), () => deps())));
     expect(answers.map((a) => a.status)).toEqual([401, 401, 401]);
     expect(new Set(answers.map((a) => JSON.stringify(a.body))).size).toBe(1);
   });
 
   it("serves only the internal org", async () => {
     const other = await agentToken(acme, ["sets:read"]);
-    const res = await handleApiRequest(req(other, "GET", "/api/v1/sets"), deps());
+    const res = await handleApiRequest(req(other, "GET", "/api/v1/sets"), () => deps());
     expect(res.status).toBe(404);
     expect(code(res)).toBe("not_found");
   });
 
   it("answers 404, never 500, for unknown routes and operations that are not served yet", async () => {
-    const unknown = await handleApiRequest(req(writer, "GET", "/api/v1/nothing-here"), deps());
-    const stub = await handleApiRequest(req(writer, "GET", "/api/v1/projects"), deps());
+    const unknown = await handleApiRequest(req(writer, "GET", "/api/v1/nothing-here"), () => deps());
+    const stub = await handleApiRequest(req(writer, "GET", "/api/v1/projects"), () => deps());
     expect([unknown.status, stub.status]).toEqual([404, 404]);
     expect((stub.body as { error: { message: string } }).error.message).toContain("project.list is not served yet");
   });
 
   it("reads the draft with an ETag header and replaces it with If-Match", async () => {
-    const got = await handleApiRequest(req(writer, "GET", "/api/v1/sets/inbox-triage/draft"), deps());
+    const got = await handleApiRequest(req(writer, "GET", "/api/v1/sets/inbox-triage/draft"), () => deps());
     expect(got.status).toBe(200);
     const etag = got.headers["etag"] ?? "";
     expect(etag).toMatch(/^".+"$/);
@@ -116,62 +118,84 @@ describe("handleApiRequest", () => {
     const q = spec.stages[0]?.questions["needs_reply"];
     if (q !== undefined) q.meta.label = "Changed over HTTP";
 
-    const stale = await handleApiRequest(req(writer, "PUT", "/api/v1/sets/inbox-triage/draft", { body: JSON.stringify(spec), ifMatch: '"sha256:old"' }), deps());
+    const stale = await handleApiRequest(req(writer, "PUT", "/api/v1/sets/inbox-triage/draft", { body: JSON.stringify(spec), ifMatch: '"sha256:old"' }), () => deps());
     expect(stale.status).toBe(412);
     expect((stale.body as { error: { currentEtag: string } }).error.currentEtag).toBe(etag.slice(1, -1));
 
-    const put = await handleApiRequest(req(writer, "PUT", "/api/v1/sets/inbox-triage/draft", { body: JSON.stringify(spec), ifMatch: etag }), deps());
+    const put = await handleApiRequest(req(writer, "PUT", "/api/v1/sets/inbox-triage/draft", { body: JSON.stringify(spec), ifMatch: etag }), () => deps());
     expect(put.status).toBe(200);
     expect(put.headers["etag"]).toBe(`"${(put.body as { etag: string }).etag}"`);
   });
 
   it("previews and publishes, then lists versions from the query", async () => {
-    const etag = (await handleApiRequest(req(writer, "GET", "/api/v1/sets/inbox-triage/draft"), deps())).headers["etag"] ?? "";
+    const etag = (await handleApiRequest(req(writer, "GET", "/api/v1/sets/inbox-triage/draft"), () => deps())).headers["etag"] ?? "";
     const body = JSON.stringify({ channel: "production", changelog: "over HTTP" });
-    const preview = await handleApiRequest(req(writer, "POST", "/api/v1/sets/inbox-triage/publish?dryRun=true", { body, ifMatch: etag }), deps());
+    const preview = await handleApiRequest(req(writer, "POST", "/api/v1/sets/inbox-triage/publish?dryRun=true", { body, ifMatch: etag }), () => deps());
     expect(preview.status).toBe(200);
     expect(preview.body).toMatchObject({ approvalRequired: false, gates: [] });
 
-    const published = await handleApiRequest(req(writer, "POST", "/api/v1/sets/inbox-triage/publish", { body, ifMatch: etag }), deps());
+    const published = await handleApiRequest(req(writer, "POST", "/api/v1/sets/inbox-triage/publish", { body, ifMatch: etag }), () => deps());
     expect(published.status).toBe(200);
     expect(published.body).toMatchObject({ version: 2 });
 
-    const versions = await handleApiRequest(req(writer, "GET", "/api/v1/sets/inbox-triage/versions?limit=1"), deps());
+    const versions = await handleApiRequest(req(writer, "GET", "/api/v1/sets/inbox-triage/versions?limit=1"), () => deps());
     expect(versions.body).toMatchObject({ data: [{ version: 2 }], nextCursor: "2" });
-    const diff = await handleApiRequest(req(writer, "GET", "/api/v1/sets/inbox-triage/diff?from=1&to=production"), deps());
+    const diff = await handleApiRequest(req(writer, "GET", "/api/v1/sets/inbox-triage/diff?from=1&to=production"), () => deps());
     expect(diff.status).toBe(200);
   });
 
   it("answers 201 for set.create and 202 for a gated agent call", async () => {
     const created = await handleApiRequest(
       req(writer, "POST", "/api/v1/sets", { body: JSON.stringify({ slug: "made-over-http", name: "Made", goalId: internal.goalId }) }),
-      deps(),
+      () => deps(),
     );
     expect(created.status).toBe(201);
     const gated = await handleApiRequest(
       req(writer, "PUT", "/api/v1/sets/inbox-triage/channels/production/rollout", { body: JSON.stringify({ stage: "controlled", reason: "go" }) }),
-      deps(),
+      () => deps(),
     );
     expect(gated.status).toBe(202);
     expect(gated.body).toMatchObject({ approval: { status: "pending" } });
   });
 
   it("refuses bad input with 400 and a JSON Pointer, and a missing scope with 403", async () => {
-    const badJson = await handleApiRequest(req(writer, "POST", "/api/v1/sets", { body: "{" }), deps());
+    const badJson = await handleApiRequest(req(writer, "POST", "/api/v1/sets", { body: "{" }), () => deps());
     const pathInBody = await handleApiRequest(
       req(writer, "PUT", "/api/v1/sets/inbox-triage/channels/production/rollout", { body: JSON.stringify({ ref: "other", stage: "shadow", reason: "x" }) }),
-      deps(),
+      () => deps(),
     );
-    const unknownQuery = await handleApiRequest(req(writer, "GET", "/api/v1/runs?colour=red"), deps());
-    const tooLarge = await handleApiRequest(req(writer, "POST", "/api/v1/sets", { bodyTooLarge: true }), deps());
+    const unknownQuery = await handleApiRequest(req(writer, "GET", "/api/v1/runs?colour=red"), () => deps());
+    const tooLarge = await handleApiRequest(req(writer, "POST", "/api/v1/sets", { bodyTooLarge: true }), () => deps());
     expect([badJson.status, pathInBody.status, unknownQuery.status, tooLarge.status]).toEqual([400, 400, 400, 400]);
     expect((unknownQuery.body as { error: { details: { path: string }[] } }).error.details[0]?.path).toBe("");
     expect(MAX_API_BODY_BYTES).toBeGreaterThan(0);
 
     const reader = await agentToken(internal, ["sets:read"]);
-    const denied = await handleApiRequest(req(reader, "GET", "/api/v1/usage"), deps());
+    const denied = await handleApiRequest(req(reader, "GET", "/api/v1/usage"), () => deps());
     expect(denied.status).toBe(403);
     expect(denied.body).toMatchObject({ error: { code: "insufficient_scope", requiredScope: "usage:read" } });
+  });
+
+  it("answers 400 when the body cannot be read, and reads no body for a GET", async () => {
+    const broken = await handleApiRequest(req(writer, "POST", "/api/v1/sets", { readBody: () => Promise.reject(new Error("aborted")) }), () => deps());
+    expect(broken.status).toBe(400);
+    expect(code(broken)).toBe("invalid_request");
+    const get = await handleApiRequest(req(writer, "GET", "/api/v1/sets", { readBody: () => Promise.reject(new Error("read")) }), () => deps());
+    expect(get.status).toBe(200);
+  });
+
+  it("answers the generic 503 when the deps cannot be built", async () => {
+    const lines: string[] = [];
+    const res = await handleApiRequest(
+      req(writer, "GET", "/api/v1/sets"),
+      () => {
+        throw new Error("BANDWISE_TOKEN_PEPPER is not set");
+      },
+      (m) => lines.push(m),
+    );
+    expect(res.status).toBe(503);
+    expect(JSON.stringify(res.body)).not.toContain("PEPPER");
+    expect(lines).toEqual(["Error"]);
   });
 
   it("hides an unexpected error's message and logs only its type", async () => {
@@ -185,7 +209,7 @@ describe("handleApiRequest", () => {
         return Promise.reject(new TypeError("secret state text"));
       },
     };
-    const res = await handleApiRequest(req(writer, "GET", "/api/v1/sets"), deps(flaky));
+    const res = await handleApiRequest(req(writer, "GET", "/api/v1/sets"), () => deps(flaky));
     expect(res.status).toBe(503);
     expect(JSON.stringify(res.body)).not.toContain("secret");
     expect(logged.at(-1)).toBe("TypeError");

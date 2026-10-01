@@ -12,20 +12,19 @@ import { readLimitedBody } from "~/server/early-access";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+const log = (message: string, requestId: string) => console.error(`api ${requestId}: ${message}`);
+
+/** Throws when the env is incomplete; handleApiRequest turns that into the generic 503. */
 function deps(): ApiDeps {
   const pepper = getEnv().BANDWISE_TOKEN_PEPPER;
   if (pepper === undefined) throw new Error("BANDWISE_TOKEN_PEPPER is not set");
-  return {
-    db: getDb(),
-    hasher: createTokenHasher(pepper),
-    logError: (message, requestId) => console.error(`api ${requestId}: ${message}`),
-  };
+  return { db: getDb(), hasher: createTokenHasher(pepper), logError: log };
 }
 
+/** The body is read only after auth and route matching, inside the handler's error boundary. */
 async function handle(req: Request): Promise<Response> {
   const requestId = crypto.randomUUID();
   const url = new URL(req.url);
-  const body = req.method === "GET" || req.method === "DELETE" ? { text: null, tooLarge: false } : await readLimitedBody(req, MAX_API_BODY_BYTES);
   const res = await handleApiRequest(
     {
       method: req.method,
@@ -34,11 +33,11 @@ async function handle(req: Request): Promise<Response> {
       authorization: req.headers.get("authorization"),
       ifMatch: req.headers.get("if-match"),
       idempotencyKey: req.headers.get("idempotency-key"),
-      body: body.text,
-      bodyTooLarge: body.tooLarge,
+      readBody: () => readLimitedBody(req, MAX_API_BODY_BYTES),
       requestId,
     },
-    deps(),
+    deps,
+    log,
   );
   return Response.json(res.body, { status: res.status, headers: { ...res.headers, "x-request-id": requestId } });
 }

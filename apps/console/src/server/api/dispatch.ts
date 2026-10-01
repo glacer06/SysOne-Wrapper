@@ -30,8 +30,8 @@ export interface ApiRequest {
   authorization: string | null;
   ifMatch: string | null;
   idempotencyKey: string | null;
-  body: string | null;
-  bodyTooLarge: boolean;
+  /** Called only after auth and route matching, so an unauthenticated caller costs no body read. */
+  readBody: () => Promise<{ text: string | null; tooLarge: boolean }>;
   requestId: string;
 }
 
@@ -96,15 +96,20 @@ function refuse(e: OperationError, requestId: string): ApiResponse {
 const notFound = (message: string) => new OperationError("not_found", message);
 
 /** The operation input: the JSON body by the request layout, then the query, then the path. */
-function assembleInput(op: RegisteredOperation, req: ApiRequest, params: Record<string, string>): Record<string, unknown> {
+function assembleInput(
+  op: RegisteredOperation,
+  req: ApiRequest,
+  body: { text: string | null; tooLarge: boolean },
+  params: Record<string, string>,
+): Record<string, unknown> {
   const layout = op.request;
   const input: Record<string, unknown> = {};
 
-  if (layout.body.kind !== "none" && req.body !== null && req.body.trim() !== "") {
-    if (req.bodyTooLarge) throw new OperationError("invalid_request", `The body is larger than ${MAX_API_BODY_BYTES} bytes.`);
+  if (layout.body.kind !== "none" && body.text !== null && body.text.trim() !== "") {
+    if (body.tooLarge) throw new OperationError("invalid_request", `The body is larger than ${MAX_API_BODY_BYTES} bytes.`);
     let parsed: unknown;
     try {
-      parsed = JSON.parse(req.body);
+      parsed = JSON.parse(body.text);
     } catch {
       throw new OperationError("invalid_request", "The body is not valid JSON.");
     }
@@ -119,7 +124,7 @@ function assembleInput(op: RegisteredOperation, req: ApiRequest, params: Record<
         input[k] = v;
       }
     }
-  } else if (req.bodyTooLarge) {
+  } else if (body.tooLarge) {
     throw new OperationError("invalid_request", `The body is larger than ${MAX_API_BODY_BYTES} bytes.`);
   }
 
@@ -134,10 +139,21 @@ function assembleInput(op: RegisteredOperation, req: ApiRequest, params: Record<
   return input;
 }
 
-/** Handle one /api/v1 management request. Never throws. */
-export async function handleApiRequest(req: ApiRequest, deps: ApiDeps): Promise<ApiResponse> {
+/**
+ * Handle one /api/v1 management request. Never throws. `loadDeps` runs inside the error boundary,
+ * so a missing env variable is the generic 503 like any other unexpected failure; `fallbackLog` is
+ * used when the deps cannot be built.
+ */
+export async function handleApiRequest(
+  req: ApiRequest,
+  loadDeps: () => ApiDeps,
+  fallbackLog?: (message: string, requestId: string) => void,
+): Promise<ApiResponse> {
   const { requestId } = req;
+  let log = fallbackLog;
   try {
+    const deps = loadDeps();
+    log = deps.logError ?? fallbackLog;
     // Auth first, so an unauthenticated caller learns nothing about routes, sets or bodies.
     const auth = await authenticateBearer(req.authorization, { db: deps.db, hasher: deps.hasher, now: deps.now ?? (() => new Date()), requestId });
     if (auth.orgSlug !== HOSTED_RUN_ORG_SLUG) throw notFound("The management API is open only to the internal org for now.");
@@ -155,7 +171,15 @@ export async function handleApiRequest(req: ApiRequest, deps: ApiDeps): Promise<
     if (req.ifMatch !== null) options.ifMatch = req.ifMatch;
     if (req.idempotencyKey !== null) options.idempotencyKey = req.idempotencyKey;
 
-    const input = assembleInput(op, req, params);
+    let body: { text: string | null; tooLarge: boolean } = { text: null, tooLarge: false };
+    if (req.method !== "GET" && req.method !== "DELETE") {
+      try {
+        body = await req.readBody();
+      } catch {
+        throw new OperationError("invalid_request", "The body could not be read.");
+      }
+    }
+    const input = assembleInput(op, req, body, params);
     const result = await runOperation(op.id, auth.ctx as never, input, options, deps);
     switch (result.kind) {
       case "dryRun":
@@ -174,7 +198,7 @@ export async function handleApiRequest(req: ApiRequest, deps: ApiDeps): Promise<
     // Never echo or log an unexpected error's message: a database error can quote a spec or state.
     // The api.md code table has no generic server error, so this answers like the run route: a
     // retryable 503 with a fixed message.
-    deps.logError?.(e instanceof Error ? e.name : "unknown error", requestId);
+    log?.(e instanceof Error ? e.name : "unknown error", requestId);
     return { status: 503, body: errorEnvelope("system_one_unavailable", { message: "The request could not be completed.", requestId }), headers: { ...json } };
   }
 }
