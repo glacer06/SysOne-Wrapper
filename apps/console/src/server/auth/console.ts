@@ -12,8 +12,9 @@ import { cache } from "react";
 import { getEnv } from "~/env";
 
 import { getDb } from "../db";
-import { createAttemptLimiter } from "./attempts";
+import { type AttemptLimiter, createDbAttemptLimiter } from "./attempts";
 import { createConsoleAuth, parseAllowedEmails, type ConsoleAuth } from "./config";
+import { dbEnrollmentStore } from "./enrollment";
 import type { FlowDeps } from "./flows";
 import { type ConsoleContext, type ConsoleState, resolveConsoleState } from "./session";
 
@@ -39,12 +40,12 @@ export function getAuth(): ConsoleAuth {
   return auth;
 }
 
-/** One limiter per server instance. */
-const limiter = createAttemptLimiter();
+let limiter: AttemptLimiter | undefined;
 
-/** What a Server Action hands to the flows in flows.ts. */
+/** What a Server Action hands to the flows in flows.ts. The limits live in the database, shared by every instance. */
 export async function flowDeps(): Promise<FlowDeps> {
-  return { auth: getAuth(), limiter, headers: new Headers(await headers()) };
+  limiter ??= createDbAttemptLimiter(getDb());
+  return { auth: getAuth(), limiter, enrollment: dbEnrollmentStore(getDb()), headers: new Headers(await headers()) };
 }
 
 /** Once per request: layouts and pages share it. */

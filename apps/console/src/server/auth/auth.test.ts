@@ -8,6 +8,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { createAttemptLimiter } from "./attempts";
 import { createConsoleAuth, parseAllowedEmails, type ConsoleAuth } from "./config";
+import { dbEnrollmentStore, issueEnrollmentCode } from "./enrollment";
 import { CODE_FAILED, type FlowDeps, resetPassword, SIGN_IN_FAILED, signIn, signOut, startTotpSetup, verifyCode } from "./flows";
 import { issueResetToken, provisionConsoleMember } from "./provision";
 import { contextForUser, resolveConsoleState } from "./session";
@@ -45,6 +46,7 @@ class Browser {
     return {
       auth,
       limiter,
+      enrollment: dbEnrollmentStore(t.db),
       headers: this.headers(),
       onHeaders: (h) => {
         for (const c of h.getSetCookie()) {
@@ -219,9 +221,18 @@ describe("two-factor", () => {
     const first = await auth.api.getSession({ headers: b.headers() });
     expect((await resolveConsoleState(t.db, first, "req")).kind).toBe("needs-two-factor");
 
-    // Setup needs the password again.
-    expect((await startTotpSetup({ password: "wrong password, long enough" }, b.deps(auth))).ok).toBe(false);
-    const started = await startTotpSetup({ password: PASSWORD }, b.deps(auth));
+    // Setup needs the password again and the enrollment code an admin issued. The password alone,
+    // a wrong code, or another person's code all fail.
+    const userId = first?.user.id ?? "";
+    const pjId = (await t.db.withNoTenant((tx) => authRepositories.users.getByEmail(tx, "pj@bandwise.test")))?.id ?? "";
+    expect((await startTotpSetup({ password: PASSWORD, enrollmentCode: "" }, b.deps(auth))).ok).toBe(false);
+    const pjCode = await issueEnrollmentCode(t.db, pjId);
+    const code = await issueEnrollmentCode(t.db, userId);
+    expect((await startTotpSetup({ password: PASSWORD, enrollmentCode: pjCode }, b.deps(auth))).ok).toBe(false);
+    expect((await startTotpSetup({ password: PASSWORD, enrollmentCode: "AAAA-AAAA-AAAA-AAAA" }, b.deps(auth))).ok).toBe(false);
+    expect((await startTotpSetup({ password: "wrong password, long enough", enrollmentCode: code }, b.deps(auth))).ok).toBe(false);
+    // Case and dashes do not matter.
+    const started = await startTotpSetup({ password: PASSWORD, enrollmentCode: code.toLowerCase().replace(/-/g, " ") }, b.deps(auth));
     if (!started.ok) throw new Error("setup did not start");
     expect(started.enrollment.backupCodes.length).toBeGreaterThan(0);
     const uri = started.enrollment.totpURI;
@@ -234,6 +245,8 @@ describe("two-factor", () => {
     expect(await verifyCode({ code: await totp(uri, Date.now()) }, b.deps(auth))).toEqual({ ok: true, next: "console" });
     const ready = await resolveConsoleState(t.db, await auth.api.getSession({ headers: b.headers() }), "req");
     expect(ready.kind).toBe("ready");
+    // Two-factor is on, so the enrollment code is used up.
+    expect(await dbEnrollmentStore(t.db).matches(userId, code)).toBe(false);
 
     // The next sign-in stops at the challenge with no session, and a code completes it.
     await signOut(b.deps(auth));

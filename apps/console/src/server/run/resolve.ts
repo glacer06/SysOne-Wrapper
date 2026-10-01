@@ -10,6 +10,7 @@ import {
   type RunSettings,
   type TenantContext,
   parseSetRef,
+  roleAtLeast,
 } from "@bandwise/core";
 import { repos, type TenantTx } from "@bandwise/db";
 
@@ -28,12 +29,16 @@ export interface RunTarget {
 
 const notFound = (ref: string) => new OperationError("not_found", `No set ${ref} is visible to this token.`);
 
-/** May this caller run a set's mutable draft (`slug@draft`)? api.md: sk_test_ and agents with sets:write. */
+/**
+ * May this caller run a set's mutable draft (`slug@draft`)? api.md: sk_test_ and agents with
+ * sets:write. A person needs the editor role: a console preview in sdk mode is a real call on the
+ * platform key, so viewers do not spend it (Nick, 2026-10-01).
+ */
 function canRunDraft(ctx: TenantContext): boolean {
   const a = ctx.actor;
   if (a.type === "apiKey") return a.mode === "test";
   if (a.type === "agent") return a.scopes.includes("sets:write");
-  return a.type === "user";
+  return a.type === "user" && roleAtLeast(a.role, "editor");
 }
 
 export async function resolveRun(tx: TenantTx, ctx: TenantContext, target: RunTarget): Promise<ResolvedRun> {

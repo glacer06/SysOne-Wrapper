@@ -4,10 +4,12 @@
 //   pnpm --filter @bandwise/console console-member --org <uuid> --email <email> --name <text> [--role owner] [--out <file>]
 //
 // Creates the user row (if new) and the internal-org membership (if missing), each with an audit
-// row, then writes a one-time password reset link to --out (default
-// ~/.bandwise/console-reset-link.txt, outside the repo) with mode 0600. Nothing secret prints:
-// hand the file's link to the person over a private channel and delete the file. The link lasts
-// 24 hours. They set a password, sign in, and set up two-factor.
+// row, then writes a one-time password reset link and a two-factor enrollment code to --out
+// (default ~/.bandwise/console-reset-link.txt, outside the repo) with mode 0600. Nothing secret
+// prints: hand both to the person over a private channel and delete the file. Both last 24 hours.
+// They set a password, sign in, and set up two-factor with the enrollment code. Without the code a
+// password alone cannot enroll an authenticator. Run it again for a lost phone (after removing the
+// old two-factor row, see hosted-dogfood.md) or an expired code; a new code replaces the old one.
 //
 // Reads DATABASE_URL, AUTH_SECRET and BETTER_AUTH_URL from the shell. Run it from a trusted shell.
 
@@ -20,6 +22,7 @@ import { Role } from "@bandwise/core";
 import { createDatabase } from "@bandwise/db";
 
 import { createConsoleAuth } from "../src/server/auth/config";
+import { issueEnrollmentCode } from "../src/server/auth/enrollment";
 import { issueResetToken, provisionConsoleMember } from "../src/server/auth/provision";
 
 function fail(message: string): never {
@@ -64,12 +67,13 @@ try {
     { orgId, userId: member.userId, email },
   );
   const link = `${baseURL.replace(/\/$/, "")}/reset-password?token=${encodeURIComponent(token)}`;
+  const enrollmentCode = await issueEnrollmentCode(db, member.userId);
   // A fresh file renamed into place, so the link is 0600 even when --out already exists with a wider mode.
   await mkdir(dirname(out), { recursive: true, mode: 0o700 });
   const tmp = `${out}.${process.pid}-${Date.now()}.tmp`;
-  await writeFile(tmp, `${link}\n`, { mode: 0o600, flag: "wx" });
+  await writeFile(tmp, `Reset link: ${link}\nTwo-factor enrollment code: ${enrollmentCode}\n`, { mode: 0o600, flag: "wx" });
   await rename(tmp, out);
-  process.stderr.write(`console-member: reset link written to ${out} (mode 0600). It lasts 24 hours and works once.\n`);
+  process.stderr.write(`console-member: reset link and enrollment code written to ${out} (mode 0600). Both last 24 hours and work once.\n`);
 } catch (e) {
   // Our own errors carry no secrets; anything else is reduced to its type.
   fail(e instanceof Error && e.message.length < 200 ? e.message : "failed.");

@@ -6,16 +6,19 @@ import { z } from "zod";
 
 import { type AttemptLimiter, LIMITS } from "./attempts";
 import { MAX_PASSWORD_LENGTH, MIN_PASSWORD_LENGTH, type ConsoleAuth } from "./config";
+import type { EnrollmentStore } from "./enrollment";
 
 export const SIGN_IN_FAILED = "Sign-in failed. Check your email and password, or try again in a few minutes.";
 export const CODE_FAILED = "That code did not work. Check your authenticator app, or try again in a few minutes.";
-export const PASSWORD_FAILED = "That password did not work. Try again in a few minutes.";
+export const SETUP_FAILED = "That password or enrollment code did not work. Check both, or ask for a new code.";
 export const RESET_FAILED = "The password was not changed. The link may have expired; ask for a new one.";
 export const PASSWORD_LENGTH = `Use ${MIN_PASSWORD_LENGTH} to ${MAX_PASSWORD_LENGTH} characters.`;
 
 export interface FlowDeps {
   auth: ConsoleAuth;
   limiter: AttemptLimiter;
+  /** Admin-issued enrollment codes (enrollment.ts). Two-factor setup needs one. */
+  enrollment: EnrollmentStore;
   /** The request headers: cookies for the library, the client IP for the limits. */
   headers: Headers;
   /**
@@ -27,9 +30,22 @@ export interface FlowDeps {
 
 export type FlowResult<T extends string> = { ok: true; next: T } | { ok: false; error: string };
 
-/** Vercel sets x-real-ip and overwrites any value the client sent. */
+/**
+ * Vercel sets x-real-ip and overwrites any value the client sent. x-forwarded-for is not read: a
+ * client can set it anywhere Vercel is not in front, which would let it pick its own IP bucket.
+ * Without x-real-ip every request shares one bucket, and the per-email limit still applies.
+ */
 export function clientIp(headers: Headers): string {
-  return headers.get("x-real-ip")?.trim() || headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  return headers.get("x-real-ip")?.trim() || "unknown";
+}
+
+async function sessionUserId(deps: FlowDeps): Promise<string | null> {
+  try {
+    const session = await deps.auth.api.getSession({ headers: deps.headers });
+    return session?.user.id ?? null;
+  } catch {
+    return null;
+  }
 }
 
 async function call<T>(deps: FlowDeps, run: () => Promise<{ headers: Headers; response: T }>): Promise<T> {
@@ -48,7 +64,7 @@ export async function signIn(raw: unknown, deps: FlowDeps): Promise<FlowResult<"
   const fail = { ok: false as const, error: SIGN_IN_FAILED };
   const input = SignInInput.safeParse(raw);
   const email = input.success ? input.data.email : "";
-  const allowed = deps.limiter.take([
+  const allowed = await deps.limiter.take([
     { key: `sign-in:ip:${clientIp(deps.headers)}`, limit: LIMITS.signInPerIp },
     { key: `sign-in:email:${email}`, limit: LIMITS.signInPerEmail },
   ]);
@@ -76,7 +92,10 @@ const BackupCode = z.string().trim().min(6).max(40);
  */
 export async function verifyCode(raw: { code: unknown; backup?: boolean }, deps: FlowDeps): Promise<FlowResult<"console">> {
   const fail = { ok: false as const, error: CODE_FAILED };
-  if (!deps.limiter.take([{ key: `code:ip:${clientIp(deps.headers)}`, limit: LIMITS.codePerIp }])) return fail;
+  if (!(await deps.limiter.take([{ key: `code:ip:${clientIp(deps.headers)}`, limit: LIMITS.codePerIp }]))) return fail;
+  // A session exists only during setup (sign-in completes it after the code). Read it before the
+  // check, which can replace the session.
+  const setupUserId = await sessionUserId(deps);
   try {
     if (raw.backup === true) {
       const code = BackupCode.safeParse(raw.code);
@@ -91,6 +110,8 @@ export async function verifyCode(raw: { code: unknown; backup?: boolean }, deps:
         deps.auth.api.verifyTOTP({ body: { code: code.data, trustDevice: false }, headers: deps.headers, returnHeaders: true }),
       );
     }
+    // Two-factor is on: the enrollment code has done its job and cannot be used again.
+    if (setupUserId !== null) await deps.enrollment.consume(setupUserId);
     return { ok: true, next: "console" };
   } catch {
     return fail;
@@ -102,15 +123,21 @@ export interface TotpEnrollment {
   backupCodes: string[];
 }
 
-/** Starts TOTP setup for the signed-in user. Needs the password again. */
+/**
+ * Starts TOTP setup for the signed-in user. Needs the password again and the enrollment code an
+ * admin issued with the reset link, so a password alone cannot enroll an authenticator.
+ */
 export async function startTotpSetup(
-  raw: { password: unknown },
+  raw: { password: unknown; enrollmentCode: unknown },
   deps: FlowDeps,
 ): Promise<{ ok: true; enrollment: TotpEnrollment } | { ok: false; error: string }> {
-  const fail = { ok: false as const, error: PASSWORD_FAILED };
-  if (!deps.limiter.take([{ key: `code:ip:${clientIp(deps.headers)}`, limit: LIMITS.codePerIp }])) return fail;
+  const fail = { ok: false as const, error: SETUP_FAILED };
+  if (!(await deps.limiter.take([{ key: `code:ip:${clientIp(deps.headers)}`, limit: LIMITS.codePerIp }]))) return fail;
   const password = z.string().min(1).max(MAX_PASSWORD_LENGTH).safeParse(raw.password);
-  if (!password.success) return fail;
+  const code = z.string().trim().min(8).max(40).safeParse(raw.enrollmentCode);
+  if (!password.success || !code.success) return fail;
+  const userId = await sessionUserId(deps);
+  if (userId === null || !(await deps.enrollment.matches(userId, code.data))) return fail;
   try {
     const res = await call(deps, () =>
       deps.auth.api.enableTwoFactor({ body: { password: password.data }, headers: deps.headers, returnHeaders: true }),
@@ -127,7 +154,7 @@ const ResetInput = z.object({ token: z.string().min(10).max(200), password: z.st
 /** Sets a new password from a reset link. Ends every session of the account. */
 export async function resetPassword(raw: unknown, deps: FlowDeps): Promise<FlowResult<"sign-in">> {
   const fail = { ok: false as const, error: RESET_FAILED };
-  if (!deps.limiter.take([{ key: `reset:ip:${clientIp(deps.headers)}`, limit: LIMITS.resetPerIp }])) return fail;
+  if (!(await deps.limiter.take([{ key: `reset:ip:${clientIp(deps.headers)}`, limit: LIMITS.resetPerIp }]))) return fail;
   const input = ResetInput.safeParse(raw);
   if (!input.success) return fail;
   // Length is about the new password only, so saying so reveals nothing about the account.

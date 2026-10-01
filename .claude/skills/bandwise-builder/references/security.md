@@ -108,6 +108,9 @@ Always gated, whatever the setting: key rotation or revocation, member role chan
 - A session is created only for a member of the console org (`internal` until Phase 2), plus the optional `BANDWISE_CONSOLE_EMAILS` allowlist. The membership is read again on every request.
 - Attempt limits per IP and per email, one generic error for every failed sign-in, and an account lockout after 10 wrong codes. Library errors are never echoed or logged with their arguments.
 - Cookies are `HttpOnly`, `SameSite=Lax`, and `Secure` with the `__Secure-` prefix on https. Reset tokens and two-factor challenge ids are stored hashed. Session tokens are stored as the library stores them (plain); hashing them is a Phase 2 follow-up.
+- Two-factor enrollment is admin-issued: `console-member` writes a one-time enrollment code (hashed in `console_enrollments`, 24 hours) with the reset link, setup needs it with the password, and it is used up when two-factor turns on.
+- Sign-in attempt limits (per email and per IP) live in `auth_attempts` with hashed keys, so they hold across instances. The IP comes from `x-real-ip` only.
+- A person needs the editor role to run a set's draft (`slug@draft`), which is what a console preview does, because each live preview is a paid call on the platform key.
 
 ## Authorization
 

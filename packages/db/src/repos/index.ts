@@ -641,6 +641,70 @@ export const authRepositories = {
   verificationTokens: globalRepo(s.verificationTokens),
   twoFactors: globalRepo(s.twoFactors),
   deviceCodes: globalRepo(s.deviceCodes),
+  authAttempts: {
+    table: "auth_attempts",
+    /**
+     * Counts one attempt for every key, in one transaction with the rows locked, so two instances
+     * cannot both slip under a limit. False when any key is already at its limit; then nothing is
+     * counted. Windows older than a day are deleted on the way.
+     */
+    async take(tx: AnyTx, unsorted: readonly { keyHash: string; max: number; windowMs: number }[], now: Date): Promise<boolean> {
+      const t = s.authAttempts;
+      const db = drizzleOf(tx);
+      if (unsorted.length === 0) return true;
+      // One lock order for every caller, so two sign-ins sharing keys cannot deadlock.
+      const keys = [...unsorted].sort((x, y) => (x.keyHash < y.keyHash ? -1 : x.keyHash > y.keyHash ? 1 : 0));
+      await db.delete(t).where(lt(t.windowStart, new Date(now.getTime() - 24 * 60 * 60 * 1000)));
+      await db
+        .insert(t)
+        .values(keys.map((k) => ({ keyHash: k.keyHash, windowStart: now, count: 0 })))
+        .onConflictDoNothing();
+      const rows = await db
+        .select()
+        .from(t)
+        .where(inArray(t.keyHash, keys.map((k) => k.keyHash)))
+        .orderBy(asc(t.keyHash))
+        .for("update");
+      const byHash = new Map(rows.map((r) => [r.keyHash, r]));
+      const current = keys.map((k) => {
+        const row = byHash.get(k.keyHash);
+        const live = row !== undefined && now.getTime() - row.windowStart.getTime() < k.windowMs;
+        return { k, start: live ? row.windowStart : now, count: live ? row.count : 0 };
+      });
+      if (current.some((c) => c.count >= c.k.max)) return false;
+      for (const c of current) {
+        await db.update(t).set({ windowStart: c.start, count: c.count + 1 }).where(eq(t.keyHash, c.k.keyHash));
+      }
+      return true;
+    },
+  },
+  consoleEnrollments: {
+    table: "console_enrollments",
+    /** Issues (or replaces) the user's enrollment code. Only its hash is stored. */
+    async issue(tx: AnyTx, userId: string, codeHash: string, expiresAt: Date): Promise<void> {
+      const t = s.consoleEnrollments;
+      await drizzleOf(tx)
+        .insert(t)
+        .values({ userId, codeHash, expiresAt })
+        .onConflictDoUpdate({ target: t.userId, set: { codeHash, expiresAt, createdAt: sql`now()` } });
+    },
+    /** True when the user holds an unexpired code with this hash. */
+    async matches(tx: AnyTx, userId: string, codeHash: string, now: Date): Promise<boolean> {
+      const t = s.consoleEnrollments;
+      const rows = await drizzleOf(tx)
+        .select({ userId: t.userId })
+        .from(t)
+        .where(and(eq(t.userId, userId), eq(t.codeHash, codeHash), gt(t.expiresAt, now)))
+        .limit(1);
+      return rows.length === 1;
+    },
+    /** Deletes the user's code. Returns whether one was there. */
+    async consume(tx: AnyTx, userId: string): Promise<boolean> {
+      const t = s.consoleEnrollments;
+      const rows = await drizzleOf(tx).delete(t).where(eq(t.userId, userId)).returning({ userId: t.userId });
+      return rows.length === 1;
+    },
+  },
   /** The signed-in user's memberships across orgs, before any org is picked. */
   async myMemberships(tx: UserTx) {
     return drizzleOf(tx)

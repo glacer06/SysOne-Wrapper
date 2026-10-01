@@ -88,9 +88,20 @@ export function SetupTwoFactor() {
   if (enrollment === undefined) {
     return (
       <form action={start} className="flex flex-col gap-4" noValidate>
-        <p className="text-sm text-ink-2">Every console account needs two-factor sign-in. Confirm your password to start.</p>
+        <p className="text-sm text-ink-2">
+          Every console account needs two-factor sign-in. Enter your password and the enrollment code that came with your reset link.
+        </p>
         {started.error ? <InlineAlert kind="error">{started.error}</InlineAlert> : null}
         <Input label="Password" name="password" type="password" autoComplete="current-password" required autoFocus />
+        <Input
+          label="Enrollment code"
+          name="enrollmentCode"
+          autoComplete="off"
+          spellCheck={false}
+          hint="Four groups of four letters and numbers, like ABCD-EFGH-JKLM-NPQR. Ask an admin for a new one if it has expired."
+          required
+          className="font-mono"
+        />
         <Button type="submit" variant="primary" pending={starting}>
           {starting ? "Starting" : "Set up two-factor"}
         </Button>

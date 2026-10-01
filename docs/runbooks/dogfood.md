@@ -153,7 +153,7 @@ pnpm -s bandwise launch -- -p "Rename getUser to fetchUser everywhere"
 
 Once the `internal` org is up on app.bandwise.dev (D2e) with the `.bandwise/sets/` specs imported and each set's production channel published, the same hooks can call the hosted endpoint instead of TypeSafe. Nothing in `.claude/settings.json` changes. The switch is one variable.
 
-1. Get two tokens for the `internal` org, minted as in [hosted-dogfood.md](hosted-dogfood.md) section 4. The hook token is run only, limited to the dogfood sets, and is the only Bandwise token the Claude Code session ever sees, because the hooks can read every variable in that shell. The CLI token is an `sa_live_` agent token with `run`, `sets:read`, `sets:write`, `release:production`, `runs:read` and `usage:read`, and it is loaded for one command at a time. PJ decides whether the hook token is an `sk_live_` app token or a run-only `sa_live_` agent token (hosted-dogfood.md section 0).
+1. Get two tokens for the `internal` org, minted as in [hosted-dogfood.md](hosted-dogfood.md) section 4. The hook token is run only, limited to the dogfood sets, and is the only Bandwise token the Claude Code session ever sees, because the hooks can read every variable in that shell. The CLI token is an `sa_live_` agent token with `run`, `sets:read`, `sets:write`, `release:production`, `runs:read` and `usage:read`, and it is loaded for one command at a time. The hook token is a run-only `sa_live_` agent token with role ceiling `viewer` (Nick, 2026-10-01).
 2. Keep both in the Keychain and load them in `~/.zshrc` as hosted-dogfood.md section 5 shows:
 
    ```sh

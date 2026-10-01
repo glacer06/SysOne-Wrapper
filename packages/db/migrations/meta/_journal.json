@@ -43,6 +43,13 @@
       "when": 1790826110684,
       "tag": "0006_two_factor_verification",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790855299230,
+      "tag": "0007_auth_attempts_and_enrollments",
+      "breakpoints": true
     }
   ]
 }

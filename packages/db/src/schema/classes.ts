@@ -78,7 +78,12 @@ export const AUTH_TABLES = [
   "verification_tokens",
   "two_factors",
   "device_codes",
+  "auth_attempts",
+  "console_enrollments",
 ] as const;
+
+/** The auth tables migration 0001 granted. Frozen: 0001 is applied; later ones grant in their own migration. */
+export const AUTH_TABLES_0001 = ["users", "sessions", "accounts", "verification_tokens", "two_factors", "device_codes"] as const;
 
 /** Tables whose SELECT policy also admits the pre-org lookup on app.user_id (ADR-002). */
 export const USER_POLICY_TABLES = ["memberships", "invitations"] as const;

@@ -39,7 +39,7 @@ export interface SetupState extends FormState {
 export async function startSetupAction(_prev: SetupState, form: FormData): Promise<SetupState> {
   const state = await getConsoleState();
   if (state.kind !== "needs-two-factor") redirect(state.kind === "signed-out" ? "/sign-in" : "/sets");
-  const res = await startTotpSetup({ password: text(form, "password") }, await flowDeps());
+  const res = await startTotpSetup({ password: text(form, "password"), enrollmentCode: text(form, "enrollmentCode") }, await flowDeps());
   if (!res.ok) return { error: res.error };
   const uri = res.enrollment.totpURI;
   const qrSvg = await QRCode.toString(uri, { type: "svg", margin: 1, errorCorrectionLevel: "M" });

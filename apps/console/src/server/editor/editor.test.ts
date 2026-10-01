@@ -140,6 +140,13 @@ describe("previewDraft", () => {
     expect(res.status).toBe("refused");
   });
 
+  it("needs the editor role, because a live preview is a paid model call", async () => {
+    for (const dryRun of [false, true]) {
+      const res = await previewDraft(session(internal, VIC, "viewer"), "internal", { ref: "inbox-triage", state, dryRun }, runDeps());
+      expect(res).toMatchObject({ status: "refused", message: expect.stringContaining("editor role") });
+    }
+  });
+
   it("refuses a version ref and any org but internal", async () => {
     expect((await previewDraft(owner(), "internal", { ref: "inbox-triage@1", state, dryRun: true }, runDeps())).status).toBe("refused");
     const ada = session(acme, "ada@acme.test", "owner");

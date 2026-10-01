@@ -5,7 +5,7 @@
 // Results are plain data for the client. Operation errors carry messages written for people;
 // anything else becomes a generic message, so an unexpected error never reaches the browser.
 
-import { can, type ErrorDetail, type JsonValue, parseSetRef, type RunDryRunResult, type RunResult, type TenantContext } from "@bandwise/core";
+import { can, type ErrorDetail, type JsonValue, parseSetRef, roleAtLeast, type RunDryRunResult, type RunResult, type TenantContext } from "@bandwise/core";
 
 import { OperationError, OperationNotImplementedError } from "../operations/errors";
 import { type OperationDeps, runOperation } from "../operations/run-operation";
@@ -95,6 +95,10 @@ export async function previewDraft(
   if (parsed === null || parsed.selector.kind !== "channel") return { status: "refused", message: "Open the set by its slug to preview its draft.", details: [] };
   const allowed = can(ctx, "set.run", { orgId: ctx.orgId, draft: true });
   if (!allowed.allowed) return { status: "refused", message: "Your role cannot run this set.", details: [] };
+  // Each live preview is a real call on the platform key, so it needs the editor role (resolve.ts).
+  if (ctx.actor.type === "user" && !roleAtLeast(ctx.actor.role, "editor")) {
+    return { status: "refused", message: "Previews need the editor role, because each one is a paid model call.", details: [] };
+  }
   try {
     const result = await runSetForCaller(
       ctx,

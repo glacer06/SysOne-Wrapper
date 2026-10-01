@@ -12,7 +12,7 @@ No secret value goes into this file, a ticket, chat, a commit or a shell history
 ## 0. Before you start
 
 - [ ] **PJ.** Security review signed off and merged on `main`: D2a (merged, PR #20), D2b run endpoint (PR #21), D2c management operations, D2d CLI remote mode, and this D2e bootstrap script.
-- [ ] **PJ.** Decide the hook token (section 6). This runbook gives the hooks a run-only `sk_live_` app token, because the Claude Code session can read every variable the hooks see. `security.md` says the CLI uses agent tokens only. If PJ keeps that rule for hooks, mint a second agent token instead with only `run`, role ceiling `viewer` and the same set allowlist, and use it wherever this runbook says app token.
+- [x] **Hook token, decided 2026-10-01 (Nick).** The hooks get a run-only `sa_live_` agent token: scope `run` only, role ceiling `viewer`, the four dogfood sets, 90 days. It follows `security.md` (the CLI uses agent tokens only), it dies when Nick's membership goes, and it can do nothing but run those four sets. The Claude Code session can read every variable the hooks see, so this is the only Bandwise token that shell ever holds.
 - [ ] **Nick.** The `bandwise-console` Vercel project and the `bandwise_console` login role exist from the early-access go-live ([early-access.md](early-access.md)). If not, do that runbook first.
 - [ ] **Nick.** `jq` installed (`brew install jq`) for the checks below.
 
@@ -25,7 +25,7 @@ Migrations run from the Database migrate workflow, never from a laptop ([databas
 3. **Nick.** Verify in the Supabase SQL editor (it runs as `postgres`):
 
    ```sql
-   -- One row per file in packages/db/migrations on main (5 on 2026-10-01).
+   -- One row per file in packages/db/migrations on main: 7 once PR #21 merges (0006 two-factor columns, 0007 sign-in limits and enrollment codes).
    select count(*) from bandwise_migrations;
    -- The model registry seed is there: expect jev-1.13.0 among the rows.
    select id, kind, status from system_one_models order by id;
@@ -78,7 +78,7 @@ It creates, in one transaction, only what is missing:
 
 - the org `internal` in platform key mode, on plan `internal`;
 - Nick as owner and PJ as admin (an existing user row with the same email is reused);
-- project `dogfood`, its goal, and the app `Claude Code hooks` that the hook token belongs to;
+- project `dogfood`, its goal, and the app `Claude Code hooks` (unused for now: the hooks run on an agent token, section 4);
 - one set per `.bandwise/sets/*.json`, slug = file name, published as version 1 on `production` at `shadow`, with an open draft version 2;
 - an audit row for every step, with `source: bootstrap-internal` in the diff.
 
@@ -109,7 +109,7 @@ order by created_at;
 
 Expect `org.create`, two `member.add`, `project.create`, `goal.create`, `app.create`, and one `set.create` and one `set.publish` per set.
 
-**Console sign-in.** With `AUTH_SECRET` and `BETTER_AUTH_URL` also set in the shell, run `console-member` once for Nick and once for PJ with the org uuid above and the same roles. It reuses the user and membership the bootstrap made and writes a one-time reset link to `~/.bandwise/console-reset-link.txt`. Then each person sets a password and two-factor. See `docs/runbooks/console-access.md`.
+**Console sign-in.** With `AUTH_SECRET` and `BETTER_AUTH_URL` also set in the shell, run `console-member` once for Nick and once for PJ with the org uuid above and the same roles. It reuses the user and membership the bootstrap made and writes a one-time reset link and a two-factor enrollment code to `~/.bandwise/console-reset-link.txt`. Hand both to the person over a private channel. They set a password, then set up two-factor with the code. A password alone cannot enroll an authenticator. See `docs/runbooks/console-access.md`.
 
 ## 4. Mint the tokens
 
@@ -121,11 +121,12 @@ read -s "BANDWISE_TOKEN_PEPPER?Token pepper: " && export BANDWISE_TOKEN_PEPPER
 
 Each command prints the token once, on stdout, and its row id on stderr. Send the token to the clipboard, paste it into the Keychain prompt (it asks twice), then clear the clipboard. That way it never shows on screen and never sits in a process argument. `-U` replaces an older item with the same name.
 
-**Hook token** (an `sk_live_` app token: run only, the four dogfood sets, production channel):
+**Hook token** (an `sa_live_` agent token: `run` only, role ceiling `viewer`, the four dogfood sets, 90 days):
 
 ```sh
-pnpm -s --filter @bandwise/console mint-token app \
-  --org <org uuid> --app <app uuid> --scopes run --sets <set_ids line> --days 90 | tr -d '\n' | pbcopy
+pnpm -s --filter @bandwise/console mint-token agent \
+  --org <org uuid> --user <owner uuid> --name nick-hooks --role viewer \
+  --scopes run --sets <set_ids line> --days 90 | tr -d '\n' | pbcopy
 security add-generic-password -U -a "$USER" -s BANDWISE_TOKEN -w
 pbcopy < /dev/null
 ```
@@ -151,11 +152,11 @@ unset DATABASE_URL BANDWISE_TOKEN_PEPPER
 ```sql
 select action, diff from audit_log
 where org_id = (select id from organizations where slug = 'internal')
-  and action in ('app_token.create', 'agent_token.create')
+  and action = 'agent_token.create'
 order by created_at;
 ```
 
-The app token should show `scopes: ["run"]`, the four set ids and `channel: production`; each agent token its six scopes and `roleCeiling: editor`.
+`nick-hooks` should show `scopes: ["run"]`, `roleCeiling: viewer` and the four set ids; each CLI token its six scopes and `roleCeiling: editor`.
 
 ## 5. Shell and hook env
 
@@ -223,17 +224,18 @@ Every step above can be undone without touching data:
 
   ```sql
   begin;
-  update app_tokens set revoked_at = now() where id = '<token id>';  -- agent_tokens for an sa_live_ token
+  update agent_tokens set revoked_at = now() where id = '<token id>';
   insert into audit_log (org_id, actor_type, client, actor_user_id, action, target_type, target_id)
   values ((select id from organizations where slug = 'internal'), 'user', 'console', '<your user uuid>',
-          'app_token.revoke', 'app_token', '<token id>');                -- agent_token.revoke, agent_token
+          'agent_token.revoke', 'agent_token', '<token id>');
   commit;
   ```
 - **The pepper leaked.** Generate a new one, set it in Vercel and the vault, redeploy, and mint every token again. Every old token stops working.
 - **Turn hosted runs off entirely.** Remove `BANDWISE_TOKEN_PEPPER` from Vercel Production and redeploy: every run answers 503 and nothing reaches TypeSafe. Keep the pepper in the vault; putting it back restores every token. Hooks fail open, so sessions keep working. Do not turn it off by removing `SYSTEM_ONE_TRANSPORT`: the server would then answer from synthetic fixtures.
 
-## Known limits for dogfood
+## Sign-in safeguards
 
-- **Sign-in attempt limits are per instance.** The per-email and per-IP password limits live in memory, so on Vercel each instance counts on its own and password guessing is not bounded across instances. TOTP codes are bounded by the database lockout (10 tries, then 15 minutes). `clientIp` trusts the first `x-forwarded-for` entry, which only Vercel's edge sets reliably. Accepted for one-user dogfood after PJ's review on 2026-10-01; a shared store comes before anyone outside the internal org signs in. Keep long, unique passwords from the vault for every console account.
+- **Attempt limits are shared.** The per-email and per-IP sign-in limits live in `auth_attempts` (migration 0007), so they hold across every Vercel instance. Keys are stored as SHA-256 hashes. The IP comes from `x-real-ip`, which Vercel sets; `x-forwarded-for` is never read. TOTP codes also hit the library's database lockout (10 tries, then 15 minutes).
+- **Two-factor enrollment is admin-issued.** Setup needs the enrollment code from `console-member` as well as the password, and the code is used up when two-factor turns on. A lost phone: delete the person's `two_factors` row and set `users.two_factor_enabled` to false (see console-access.md), then run `console-member` again for a new reset link and code.
 
 When this runbook is done, tick the D2e items in `.claude/skills/bandwise-builder/references/phases/phase-d.md` and note the date in [dogfood.md](dogfood.md).

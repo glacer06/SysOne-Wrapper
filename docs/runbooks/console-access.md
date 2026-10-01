@@ -17,13 +17,13 @@ From a trusted shell with `DATABASE_URL`, `AUTH_SECRET` and `BETTER_AUTH_URL` se
 pnpm --filter @bandwise/console console-member --org <internal org uuid> --email pj@example.com --name PJ --role editor
 ```
 
-It creates the user row and the membership (each once, with a `member.add` audit row), then writes a one-time reset link to `~/.bandwise/console-reset-link.txt` (or `--out`), outside the repo, with mode 0600. Nothing secret prints. Send the link to the person over a private channel and delete the file. The link lasts 24 hours and works once; run the script again for a new one.
+It creates the user row and the membership (each once, with a `member.add` audit row), then writes a one-time reset link and a two-factor enrollment code to `~/.bandwise/console-reset-link.txt` (or `--out`), outside the repo, with mode 0600. Nothing secret prints. Send both to the person over a private channel and delete the file. Both last 24 hours and work once; run the script again for new ones. A new code replaces the old one.
 
 ## First sign-in
 
 1. Open the link, set a password (12 to 128 characters).
 2. Sign in with email and password.
-3. The console asks for two-factor before any page: confirm the password, scan the QR code, save the backup codes, enter a code.
+3. The console asks for two-factor before any page: enter the password and the enrollment code, scan the QR code, save the backup codes, enter a code. Without the enrollment code, setup refuses, so someone who learns only the password cannot enroll their own authenticator first.
 
 Every later sign-in asks for a code from the authenticator app or a backup code.
 
@@ -36,4 +36,4 @@ Every later sign-in asks for a code from the authenticator app or a backup code.
 
 ## Lost phone
 
-Sign in with a backup code. If those are gone too, a platform operator deletes the person's `two_factors` row and sets `users.two_factor_enabled` to false, then sends a new reset link; the person sets up two-factor again.
+Sign in with a backup code. If those are gone too, a platform operator deletes the person's `two_factors` row and sets `users.two_factor_enabled` to false, then runs `console-member` again for a new reset link and enrollment code; the person sets up two-factor again.
