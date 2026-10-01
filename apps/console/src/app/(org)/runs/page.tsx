@@ -28,7 +28,7 @@ export default async function RunsPage({ searchParams }: { searchParams: Promise
   let body;
   if (res.status === "error") {
     body = <OperationFailed message={res.message} />;
-  } else if (res.status === "not-built") {
+  } else if (res.status !== "ok") {
     body = <OperationFailed message="Runs are not served yet." />;
   } else {
     const page = res.output as { data: RunSummary[]; nextCursor: string | null };
