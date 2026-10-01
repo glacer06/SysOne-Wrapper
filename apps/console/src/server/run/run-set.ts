@@ -5,8 +5,8 @@
 //
 // D2 serves only the `internal` org, in platform key mode: the System One key comes from the
 // server env and never from a request. Model facts and prices come from the registry seed. The
-// limiter and quota are per caller (limits.ts): a run rate and a daily spend cap per token, key or
-// console user, shared through the database. Phase 2 swaps in the database registry, the price
+// limiter and quota (limits.ts) hold a run rate and a daily spend cap per token, key or console
+// user and per org, shared through the database. Phase 2 swaps in the database registry, the price
 // book and the plan limits behind the same ports.
 
 import {
@@ -36,7 +36,7 @@ import {
 import { type BandwiseDb, createRunSink } from "@bandwise/db";
 
 import { OperationError } from "../operations/errors";
-import { chargeRunSpend, createDbRunLimiter, createDbSpendQuota, HOSTED_RUN_LIMITS, type HostedRunLimits } from "./limits";
+import { createDbRunLimiter, createDbSpendCap, HOSTED_RUN_LIMITS, type HostedRunLimits } from "./limits";
 import { resolveRun } from "./resolve";
 
 /** The only org D2 serves (ADR-020). */
@@ -51,7 +51,7 @@ export interface RunSetDeps {
   newId?: () => string;
   /** Extra price rows, for tests. */
   prices?: MemoryPriceRow[];
-  /** The per-caller run rate and daily spend cap. Default HOSTED_RUN_LIMITS; tests lower them. */
+  /** The run rate and daily spend cap per caller and per org. Default HOSTED_RUN_LIMITS; tests lower them. */
   limits?: HostedRunLimits;
 }
 
@@ -68,13 +68,14 @@ export function serverRunPorts(deps: RunSetDeps): RunPorts {
   const newId = deps.newId ?? (() => crypto.randomUUID());
   const clock = deps.now ?? Date.now;
   const limits = deps.limits ?? HOSTED_RUN_LIMITS;
+  const spend = createDbSpendCap(deps.db, limits, clock);
   return {
     systemOne: deps.transport,
     models: createMemoryModelCatalog(SEED_MODEL_PROFILES, SEED_MODEL_ROUTES),
     keys: staticKeyResolver(deps.platformKeys, "platform"),
     limiter: createDbRunLimiter(deps.db, limits, clock),
-    quota: createDbSpendQuota(deps.db, limits, clock),
-    runs: chargeRunSpend(createRunSink({ db: deps.db }), deps.db, clock),
+    quota: spend.quota,
+    runs: createRunSink({ db: deps.db, onPersist: spend.settle }),
     actions: createMemoryActionRegistry(),
     prices: createMemoryPriceBook([...SEED_SYSTEM_ONE_PRICES, ...SEED_COMPARATOR_PRICES, ...(deps.prices ?? [])]),
     clock,
@@ -116,13 +117,25 @@ export async function runSetForCaller(
   assertRunCaller(ctx, orgSlug);
 
   const resolved = await deps.db.withTenant(ctx, (tx) => resolveRun(tx, ctx, { ref: input.ref, channel: input.channel }));
-  const ports = serverRunPorts(deps);
+  const base = serverRunPorts(deps);
+  // The engine keeps only the code of a rate refusal; the wait goes out as Retry-After.
+  let retryAfterMs: number | undefined;
+  const ports: RunPorts = {
+    ...base,
+    limiter: async (...args) => {
+      const limited = await base.limiter(...args);
+      retryAfterMs = limited.ok ? undefined : limited.retryAfterMs;
+      return limited;
+    },
+  };
   const req = { setRef: input.ref, state: input.state, source: input.source ?? "api", options: input.options ?? {} };
   try {
     if (req.options.dryRun === true) return await dryRunQuestionSet(ctx, req, resolved, ports);
     const result = await runQuestionSet(ctx, req, resolved, ports, { signal, budgetMs: latencyBudgetMs("api") });
     if (LIMIT_STATUSES.has(result.status) && result.error !== undefined) {
-      throw new OperationError(result.error.code, result.error.message, { runId: result.runId });
+      const refusal = new OperationError(result.error.code, result.error.message, { runId: result.runId });
+      if (result.error.code === "rate_limited") refusal.retryAfterMs = retryAfterMs ?? deps.limits?.windowMs ?? HOSTED_RUN_LIMITS.windowMs;
+      throw refusal;
     }
     return result;
   } catch (e) {

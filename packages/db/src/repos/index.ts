@@ -772,6 +772,19 @@ export const authRepositories = {
         .limit(1);
       return rows[0]?.used ?? 0;
     },
+    /**
+     * Gives back up to `amount` from the key's window, never below 0: the unused part of a
+     * reservation. Only the window that starts at `windowStart` is changed, so a reservation from a
+     * window that has since moved on gives nothing back to the newer one.
+     */
+    async release(tx: AnyTx, k: { keyHash: string; windowStart: Date; amount: number }): Promise<void> {
+      const t = s.runLimits;
+      if (k.amount <= 0) return;
+      await drizzleOf(tx)
+        .update(t)
+        .set({ used: sql`greatest(0, ${t.used} - ${k.amount})` })
+        .where(and(eq(t.keyHash, k.keyHash), eq(t.windowStart, k.windowStart)));
+    },
     /** Deletes windows that started before `before`. */
     async prune(tx: AnyTx, before: Date): Promise<void> {
       const t = s.runLimits;

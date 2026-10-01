@@ -1,4 +1,8 @@
 // Hosted run limit windows (migration 0008), as the app role.
+//
+// PGlite runs every transaction on one connection, so calls started together here still run one
+// after another. These tests check the window arithmetic, not that two connections cannot both
+// slip under max; that rests on take() being one INSERT ... ON CONFLICT DO UPDATE statement.
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
@@ -43,6 +47,31 @@ describe("run limits", () => {
     const next = at("2026-10-02T00:00:00Z");
     expect(await t.db.withNoTenant((tx) => r.used(tx, keyHash, next))).toBe(0);
     expect(await t.db.withNoTenant((tx) => r.used(tx, "c".repeat(64), day))).toBe(0);
+  });
+
+  it("counts a charge from a caller whose clock is behind against the newer window", async () => {
+    const keyHash = "e".repeat(64);
+    const day1 = at("2026-10-01T00:00:00Z");
+    const day2 = at("2026-10-02T00:00:00Z");
+    expect(await t.db.withNoTenant((tx) => r.charge(tx, { keyHash, windowStart: day1, amount: 10 }))).toBe(10);
+    expect(await t.db.withNoTenant((tx) => r.charge(tx, { keyHash, windowStart: day2, amount: 3 }))).toBe(3);
+    expect(await t.db.withNoTenant((tx) => r.charge(tx, { keyHash, windowStart: day1, amount: 4 }))).toBe(7);
+    expect(await t.db.withNoTenant((tx) => r.used(tx, keyHash, day2))).toBe(7);
+  });
+
+  it("releases within the same window only, and never below zero", async () => {
+    const keyHash = "f".repeat(64);
+    const day1 = at("2026-10-01T00:00:00Z");
+    const day2 = at("2026-10-02T00:00:00Z");
+    await t.db.withNoTenant((tx) => r.charge(tx, { keyHash, windowStart: day1, amount: 10 }));
+    await t.db.withNoTenant((tx) => r.release(tx, { keyHash, windowStart: day1, amount: 4 }));
+    expect(await t.db.withNoTenant((tx) => r.used(tx, keyHash, day1))).toBe(6);
+    await t.db.withNoTenant((tx) => r.release(tx, { keyHash, windowStart: day1, amount: 100 }));
+    expect(await t.db.withNoTenant((tx) => r.used(tx, keyHash, day1))).toBe(0);
+    // A reservation from day 1 gives nothing back once the key has moved on to day 2.
+    await t.db.withNoTenant((tx) => r.charge(tx, { keyHash, windowStart: day2, amount: 5 }));
+    await t.db.withNoTenant((tx) => r.release(tx, { keyHash, windowStart: day1, amount: 5 }));
+    expect(await t.db.withNoTenant((tx) => r.used(tx, keyHash, day2))).toBe(5);
   });
 
   it("prunes windows older than the cutoff", async () => {
