@@ -1,3 +1,25 @@
+# bandwise kit v1.6 (2026-10-01)
+
+From PJ, via Nick. Checked file by file against v1.5. Tokens (CSS and JSON), components CSS, marks, lockups, the B monogram, icons, favicons, social images, the motion demo and every PNG are byte-identical to v1.5.
+
+Changed files:
+
+1. `layers/bandwise-mark-A-{light,dark}-load.svg`: the viewBox is now `89.59 90.0 1104.72 1155.0`, the same as the ant layers and the full mark A. Before, the load layers stopped at a height of 1044.77. Paths and colors unchanged.
+2. `unloaded/*.svg` (all eight): the six leg groups have neutral names, the same in A and C: `leg-front-1`, `leg-front-2`, `leg-middle-1`, `leg-middle-2`, `leg-rear-1`, `leg-rear-2`. A far becomes 1 and near becomes 2. C left becomes 1 and right becomes 2. Only the `id` values changed. Paths, transforms, pivots and the A resting-pose wrappers (`front-far-pose`, `front-near-pose`) are unchanged.
+3. `unloaded/README.md`: the C viewBox note now reads 1200 square, which matches the files, and a section maps the v1.5 leg names to the new ones. `unloaded/bandwise-ant-unloaded-A-r4-README.md` lists the new leg names.
+
+Written rules (guide PDF and the kit's DESIGN.md and BRAND-VOICE.md): Bandwise and bandwise are both fine in prose, one form per document, and logo lettering stays lowercase. Violet for Medium is final.
+
+Not taken from the kit:
+
+- The kit's DESIGN.md and BRAND-VOICE.md say site and app headers may use the typed wordmark alone with no ant. The repo keeps Nick's header pairing: the unloaded A ant facing right beside the typed wordmark (root `DESIGN.md`).
+- The kit's components CSS still has the 3px alert rule. `.bw-alert` keeps the local 1px rule (ALERT-1PX).
+- No section on the B outline is in the kit or the guide. The rules for the faceted B as a graphic stay in the root `DESIGN.md`.
+
+Still mismatched in the supplied files: `unloaded/bandwise-ant-unloaded-A-r4-README.md` mentions 1000 by 1000 theme-background previews that the kit does not ship. The kit's DESIGN.md still places the ruler segments at 0.55 and 0.80 while calling those values examples. The guide's handoff page does not list `unloaded/`.
+
+The guide PDF (`bandwise-brand-guidelines-v1.6.pdf`, 26 pages) belongs in Drive, not in git.
+
 # bandwise kit v1.5 (2026-10-01)
 
 From PJ, via Nick. Artwork only: tokens, components, the motion demo, the B monogram and favicons are unchanged.

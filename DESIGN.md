@@ -2,12 +2,12 @@
 
 Read this before building any Bandwise UI, doc or marketing page. It is the visual spec for every surface: www.bandwise.dev (`apps/web`), the console on app.bandwise.dev (`apps/console`), docs.bandwise.dev (`apps/docs`), plugin listings and CLI output.
 
-Source: the brand kit v1 that PJ delivered on 2026-10-01, locked in by Nick the same day (ADR-022), updated to v1.2 and then v1.5 the same day (`brand/CHANGES.md`). Files:
+Source: the brand kit v1 that PJ delivered on 2026-10-01, locked in by Nick the same day (ADR-022), updated to v1.2 and v1.5 the same day and to v1.6 after that (`brand/CHANGES.md`). Files:
 
 - Tokens: `brand/tokens/bandwise-tokens.css` (CSS variables) and `brand/tokens/bandwise-tokens.json` (DTCG).
 - Reference components: `brand/tokens/bandwise-components.css`.
-- Marks, lockups, monogram: `brand/marks/`. Layered ant and load files for motion: `brand/layers/`. The ant without the B, facing right or up-right: `brand/unloaded/`. Icons and favicons: `brand/icons/`. Social images: `brand/social/`.
-- Motion concept: `brand/bandwise-motion-demo.html`. Full visual guide: `bandwise-brand-guidelines-v1.pdf` (26 pages), kept in the Drive folder "Bandwise brand kit v1" (https://drive.google.com/drive/folders/1Wr7Q8eotXDFfNU-5sj0-yqeQ9QVyfPsN), not in git.
+- Marks, lockups, monogram: `brand/marks/`. Layered ant and load files for motion: `brand/layers/`. The ant without the B, facing right or up-right: `brand/unloaded/`, with leg groups `leg-front-1`, `leg-front-2`, `leg-middle-1`, `leg-middle-2`, `leg-rear-1` and `leg-rear-2` in both A and C (since v1.6; the mapping from the v1.5 names is in `brand/unloaded/README.md`). Icons and favicons: `brand/icons/`. Social images: `brand/social/`.
+- Motion concept: `brand/bandwise-motion-demo.html`. Full visual guide: `bandwise-brand-guidelines-v1.6.pdf` (26 pages), kept in the Drive folder "Bandwise brand kit v1" (https://drive.google.com/drive/folders/1Wr7Q8eotXDFfNU-5sj0-yqeQ9QVyfPsN), not in git.
 - Voice: `BRAND-VOICE.md`. Strategy and principles: `PRODUCT.md`. Gates: `DESIGN-STANDARDS.md`.
 
 This file replaces the "survey instrument" identity in `apps/web/DESIGN.md` (warm paper, amber signal). That file is kept only as history until `apps/web` is restyled.
@@ -121,7 +121,7 @@ Reference CSS is in `brand/tokens/bandwise-components.css`. The apps rebuild the
   - `bandwise-b-monogram-*` is the B, for the favicon and small sizes;
   - lockups come horizontal and stacked, each with A or C.
 - **Wordmark.** In logo art the wordmark is lowercase "bandwise" in Archivo Expanded 800, and in the lockup files it sits with the ant (A or C).
-- **Headers use the unloaded ant plus the typed wordmark** (Nick, 2026-10-01). Site and app headers (www, the console sidebar and phone header, the docs nav) set "bandwise" as live text in Archivo, font-stretch 125%, weight 800, tracking -0.02em, with the unloaded side-view ant facing right (`brand/unloaded/bandwise-ant-unloaded-A-r4-right-*`) just left of it. The ant is cropped to its box above the trail, so the trail never shows; its body sits between the wordmark's x-height and cap height, its feet on the baseline. It is decorative inside the home link, which keeps its name. This pairing is the one allowed lockup-like use of an unloaded ant. The lockup files read small and cramped at header size, so they stay out of headers. The full logo art, which carries the B, goes where it has room: heroes, footers, sign-in, empty states and brand moments.
+- **Headers use the unloaded ant plus the typed wordmark** (Nick, 2026-10-01). Site and app headers (www, the console sidebar and phone header, the docs nav) set "bandwise" as live text in Archivo, font-stretch 125%, weight 800, tracking -0.02em, with the unloaded side-view ant facing right (`brand/unloaded/bandwise-ant-unloaded-A-r4-right-*`) just left of it. The ant is cropped to its box above the trail, so the trail never shows; its body sits between the wordmark's x-height and cap height, its feet on the baseline. It is decorative inside the home link, which keeps its name. This pairing is the one allowed lockup-like use of an unloaded ant. Anywhere else the typed wordmark appears, it stands alone, with no ant. Guide v1.6 says headers may use the wordmark alone with no ant; this repo keeps Nick's pairing. The lockup files read small and cramped at header size, so they stay out of headers. The full logo art, which carries the B, goes where it has room: heroes, footers, sign-in, empty states and brand moments.
 - **Clear space:** half the height of the B block.
 - **Minimum sizes:**
   - horizontal lockup 160px wide;
@@ -151,7 +151,7 @@ Limits:
 
 Motion is purposeful, never constant. When a decision resolves:
 
-1. The ant walks the ruler (1400ms, `--bw-ease-walk`) and stops at the score. On www this is the unloaded side-view ant facing right with the supplied B on its back, its six leg groups swinging in an alternating tripod gait about their supplied pivots, only while it walks (Nick, 2026-10-01). The split files in `brand/layers/` also work, so the ant and its load move separately.
+1. The ant walks the ruler (1400ms, `--bw-ease-walk`) and stops at the score. On www this is the unloaded side-view ant facing right with the supplied B on its back, its six leg groups swinging in an alternating tripod gait about their supplied pivots (front-1, middle-2, rear-1 against front-2, middle-1, rear-2), only while it walks (Nick, 2026-10-01). The split files in `brand/layers/` also work, so the ant and its load move separately.
 2. The band lights up.
 3. The B sets down at the score with one small overshoot (480ms, `--bw-ease-settle`).
 4. The score and the cost fade in.

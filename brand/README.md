@@ -1,6 +1,6 @@
 # brand
 
-The Bandwise brand kit v1.5 (ADR-022; changes in `CHANGES.md`). The written spec is `DESIGN.md` and `BRAND-VOICE.md` at the repo root. This folder holds the files they point to.
+The Bandwise brand kit v1.6 (ADR-022; changes in `CHANGES.md`). The written spec is `DESIGN.md` and `BRAND-VOICE.md` at the repo root. This folder holds the files they point to.
 
 | Path | What |
 |---|---|
@@ -9,12 +9,13 @@ The Bandwise brand kit v1.5 (ADR-022; changes in `CHANGES.md`). The written spec
 | `tokens/bandwise-components.css` | Reference CSS for the button, input, band badge, decision card, confidence ruler, table, tabs, alert, code block, tooltip and trail divider |
 | `marks/` | `mark-A` (Ascent, primary), `mark-C` (Scout, compact), the `b-monogram`, and the horizontal and stacked lockups. Each comes in dark and light, as SVG and PNG |
 | `icons/` | App icons, avatars, favicons (`favicon.svg`, `favicon.ico`, 16 to 512px PNG) and `apple-touch-icon-180.png` |
-| `layers/` | Marks A and C split into ant and load SVGs (light and dark), for the signature motion. Paths unchanged |
-| `unloaded/` | The ant without the B: A side view and C top view, facing right or up-right, light and dark. SVGs split body and six legs with pivot data for animation. A has a straight dotted trail; C has none |
+| `layers/` | Marks A and C split into ant and load SVGs (light and dark), for the signature motion. Paths unchanged. Each ant and load pair shares its mark's viewBox |
+| `unloaded/` | The ant without the B: A side view and C top view, facing right or up-right, light and dark. SVGs split body and six legs (`leg-front-1` to `leg-rear-2`, the same names in A and C) with pivot data for animation. A has a straight dotted trail; C has none |
 | `social/` | Open Graph images (dark and light) and a header image |
+| `tokens/bandwise-theme.css` | Local, not from the kit: applies the dark semantic values when the system prefers dark and no `data-theme` is set |
 | `bandwise-motion-demo.html` | The signature motion concept: the ant walks the ruler and sets the B down at the score |
 
-The full 26-page visual guide (`bandwise-brand-guidelines-v1.pdf`) lives in the Drive folder "Bandwise brand kit v1" (https://drive.google.com/drive/folders/1Wr7Q8eotXDFfNU-5sj0-yqeQ9QVyfPsN), not in git.
+The full 26-page visual guide (`bandwise-brand-guidelines-v1.6.pdf`) lives in the Drive folder "Bandwise brand kit v1" (https://drive.google.com/drive/folders/1Wr7Q8eotXDFfNU-5sj0-yqeQ9QVyfPsN), not in git.
 
 Rules that matter most:
 
