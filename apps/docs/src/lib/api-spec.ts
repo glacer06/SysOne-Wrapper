@@ -127,6 +127,56 @@ export function customerDocument(raw: ApiDocument): ApiDocument {
   };
 }
 
+const SCHEMA_REF_PREFIX = "#/components/schemas/";
+
+/** Keys whose member schemas the reference renderer writes inline in a type label. */
+const INLINE_UNION_KEYS = ["anyOf", "oneOf", "allOf"] as const;
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
+ * A copy of the document the reference renderer can draw. fumadocs-openapi writes a union's
+ * members and an array's item type inline in the type label, with no guard for a schema that
+ * contains itself. JsonValue is one: string | number | boolean | null | array<JsonValue> | object.
+ * The server render stops when the stack runs out, but in the browser React keeps nesting until
+ * the tab runs out of memory. Each `$ref` that closes such a loop becomes a stub titled with the
+ * schema's name, so the label reads array<JsonValue> and stops there. Loops that pass through an
+ * object's properties are left alone, because the renderer opens those one level per click.
+ * Does not change the input.
+ */
+export function breakInlineSchemaCycles(raw: ApiDocument): ApiDocument {
+  const components = isRecord(raw.components) ? raw.components : undefined;
+  if (!components || !isRecord(components.schemas)) return raw;
+  const schemas = structuredClone(components.schemas);
+
+  const walk = (node: unknown, stack: readonly string[]): void => {
+    if (Array.isArray(node)) {
+      for (const item of node) walk(item, stack);
+      return;
+    }
+    if (!isRecord(node)) return;
+    if (typeof node.$ref === "string") {
+      if (!node.$ref.startsWith(SCHEMA_REF_PREFIX)) return;
+      const name = node.$ref.slice(SCHEMA_REF_PREFIX.length);
+      if (stack.includes(name)) {
+        delete node.$ref;
+        node.title = name;
+        node.description ??= `The same ${name} this value is part of. It contains itself, so the reference stops here.`;
+      } else if (schemas[name] !== undefined) {
+        walk(schemas[name], [...stack, name]);
+      }
+      return;
+    }
+    for (const key of INLINE_UNION_KEYS) walk(node[key], stack);
+    walk(node.items, stack);
+  };
+
+  for (const name of Object.keys(schemas)) walk(schemas[name], [name]);
+  return { ...raw, components: { ...components, schemas } };
+}
+
 /** Read and prepare the document. Throws if the file is missing or not an OpenAPI 3 document. */
 export function loadApiDocument(path: string = OPENAPI_PATH): ApiDocument {
   const raw = JSON.parse(readFileSync(path, "utf8")) as ApiDocument;

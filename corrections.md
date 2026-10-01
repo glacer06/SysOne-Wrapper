@@ -14,4 +14,5 @@ Mistakes already corrected in this project. Read at the start of a session so th
 - **2026-09-30: Only `@bandwise/tenancy` may import `node:crypto`.** Put hashing and random helpers there.
 - **2026-09-30: The kit export scan fails on internal names.** People's names and PR numbers must stay out of `packages/cli` and `packages/core` source.
 - **2026-09-30: Drizzle numbers migrations itself.** After generating, check the number, the journal tag and the snapshot file. They must follow the last applied migration.
+- **2026-10-01: The API reference renderer cannot draw a schema that contains itself.** fumadocs-openapi 12 writes union members and array items inline in the type label with no loop guard, so `JsonValue` crashed `/docs/api/run` and `/docs/api/set` with an out-of-memory error in the browser. Feed the renderer `breakInlineSchemaCycles(apiDocument())`, never the raw document.
 - **2026-10-01: Gmail rewrites links in sent mail** into google.com/url wrappers, which breaks copied commands. Send commands as plain text without links.
