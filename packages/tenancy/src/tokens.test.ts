@@ -23,10 +23,23 @@ describe("tokens", () => {
     expect(h.mint("sk_live_", ORG).token).not.toBe(h.mint("sk_live_", ORG).token);
   });
 
-  it("hashes with the pepper, so another pepper matches nothing", () => {
+  /** The token with its last character changed. Always a different string, whatever it ended in. */
+  const changeLast = (token: string) => `${token.slice(0, -1)}${token.endsWith("A") ? "B" : "A"}`;
+
+  it("hashes with the pepper, so another pepper or a changed token matches nothing", () => {
     const { token, hash } = createTokenHasher(PEPPER).mint("sa_live_", ORG);
     expect(createTokenHasher("q".repeat(40)).matches(token, hash)).toBe(false);
-    expect(createTokenHasher(PEPPER).matches(`${token.slice(0, -1)}A`, hash)).toBe(false);
+    expect(createTokenHasher(PEPPER).matches(changeLast(token), hash)).toBe(false);
+  });
+
+  it("changes a token that already ends in A", () => {
+    // The last base64url character of 32 random bytes carries 4 bits, so a minted secret ends in
+    // "A" about 1 time in 16. This case is fixed rather than drawn.
+    const h = createTokenHasher(PEPPER);
+    const token = `sa_live_0192f5a41b2c7d3e8f40123456789abc_${"x".repeat(42)}A`;
+    expect(changeLast(token)).not.toBe(token);
+    expect(h.matches(changeLast(token), h.hash(token))).toBe(false);
+    expect(h.matches(token, h.hash(token))).toBe(true);
   });
 
   it("parses nothing that is not exactly a token", () => {
