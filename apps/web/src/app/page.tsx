@@ -616,7 +616,7 @@ function BrandMoment() {
             src="/brand/bandwise-lockup-horizontal-A-dark.svg"
             alt={productName}
             width={680}
-            height={Math.round((680 * 744) / 2168)}
+            height={Math.round((680 * 408) / 1798)}
           />
         </picture>
       </DrawOnView>

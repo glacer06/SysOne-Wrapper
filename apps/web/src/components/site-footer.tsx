@@ -79,10 +79,10 @@ export function SiteFooter() {
         </nav>
 
         <Link href="/" className="footer-lockup" aria-label={`${productName} home`}>
-          {/* The supplied horizontal lockup with mark C (Scout), light or dark. viewBox 1926 by 744. */}
+          {/* The supplied horizontal lockup with mark C (Scout), light or dark. viewBox 1650 by 406 (kit v1.7). */}
           <picture>
             <source srcSet="/brand/bandwise-lockup-horizontal-C-dark.svg" media="(prefers-color-scheme: dark)" />
-            <img src="/brand/bandwise-lockup-horizontal-C-light.svg" alt="" width={1926} height={744} />
+            <img src="/brand/bandwise-lockup-horizontal-C-light.svg" alt="" width={1650} height={406} />
           </picture>
         </Link>
 
