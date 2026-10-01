@@ -52,12 +52,31 @@ describe("redaction and state shaping", () => {
 });
 
 describe("redaction cost and the 2026-10-01 security review", () => {
+  // Fields are cut to their schema maxLength (8000 at most today) before redaction, so 16 KB is
+  // twice the largest real input. The bound is loose for shared CI runners with coverage on. The
+  // old patterns took tens of seconds here, and grew with the cube of the length.
+  const units = ["key-", "--key", "token_", "secret", "a://b", "Bearer ", ["-----BEGIN A ", "PRIVATE KEY-----"].join(""), ["sk-", "proj-"].join("")];
+  const timeOf = (text: string): number => {
+    const started = performance.now();
+    redactSecrets(text);
+    return performance.now() - started;
+  };
+
   it("stays fast on input built to make the name patterns backtrack", () => {
-    for (const unit of ["key-", "--key", "token_", "secret", "a://b", "Bearer ", ["-----BEGIN A ", "PRIVATE KEY-----"].join(""), ["sk-", "proj-"].join("")]) {
-      const text = unit.repeat(Math.ceil(64 * 1024 / unit.length));
-      const started = performance.now();
-      redactSecrets(text);
-      expect(performance.now() - started, unit).toBeLessThan(1500);
+    for (const unit of units) {
+      const text = unit.repeat(Math.ceil((16 * 1024) / unit.length));
+      expect(timeOf(text), unit).toBeLessThan(1500);
+    }
+  });
+
+  it("grows about linearly with input size, not with its square or cube", () => {
+    for (const unit of ["key-", "--key"]) {
+      const at = (kb: number) => unit.repeat(Math.ceil((kb * 1024) / unit.length));
+      timeOf(at(4));
+      const small = Math.max(timeOf(at(8)), 1);
+      const large = timeOf(at(32));
+      // Four times the input: linear is about 4x, quadratic 16x, cubic 64x.
+      expect(large / small, unit).toBeLessThan(10);
     }
   });
 
