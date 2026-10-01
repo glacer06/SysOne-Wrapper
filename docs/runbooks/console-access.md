@@ -33,6 +33,8 @@ Every later sign-in asks for a code from the authenticator app or a backup code.
 - A session is created only for a member of the `internal` org (and on the allowlist when set). Membership is read again on every page, so removing a member takes effect at once.
 - Sign-in allows 5 attempts per email and 20 per IP in 15 minutes; codes 10 per IP in 5 minutes. The account locks for 15 minutes after 10 wrong codes. Every failure shows the same message.
 - Cookies are `HttpOnly`, `Secure` on https and `SameSite=Lax`. Sessions last 7 days. Reset tokens and two-factor challenge ids are stored hashed.
+- Session tokens are stored hashed too: `sessions.token` holds an HMAC-SHA256 (64 hex characters) under a key derived from `AUTH_SECRET`, and the cookie carries the raw token. A copy of the `sessions` table cannot be turned into a working cookie. Rotating `AUTH_SECRET` orphans every stored hash, which signs everyone out, as it already did.
+- No existing rows needed moving when hashing shipped: the console had not been deployed, so no `sessions` table held a raw token. A raw token left in a local development database stops matching and that browser signs in again.
 
 ## Lost phone
 

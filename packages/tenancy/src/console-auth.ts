@@ -2,7 +2,7 @@
 // admin-issued two-factor enrollment codes. Here because tenancy is the only package that touches
 // crypto.
 
-import { createHash, randomBytes } from "node:crypto";
+import { createHash, createHmac, randomBytes } from "node:crypto";
 
 /** SHA-256 of a sign-in limit key, so auth_attempts never holds an email or an IP in the clear. */
 export function hashAttemptKey(key: string): string {
@@ -22,4 +22,18 @@ export function generateEnrollmentCode(): string {
 export function hashEnrollmentCode(code: string): string {
   const normal = code.toUpperCase().replace(/[^A-Z0-9]/g, "");
   return createHash("sha256").update(`bandwise-enrollment:${normal}`).digest("hex");
+}
+
+const SESSION_TOKEN_LABEL = "bandwise:console:session-token:v1";
+
+/**
+ * Hashes console session tokens before they reach the sessions table, so a read of that table
+ * cannot be replayed as a cookie. HMAC-SHA256 hex (64 characters) under a key derived from
+ * AUTH_SECRET; the secret itself is never the HMAC key. Changing AUTH_SECRET already signs everyone
+ * out, and it also orphans every stored hash, which is the same outcome.
+ */
+export function createSessionTokenHasher(secret: string): (token: string) => string {
+  if (secret.length === 0) throw new Error("session token hasher: empty secret");
+  const key = createHmac("sha256", secret).update(SESSION_TOKEN_LABEL).digest();
+  return (token) => createHmac("sha256", key).update(token).digest("hex");
 }

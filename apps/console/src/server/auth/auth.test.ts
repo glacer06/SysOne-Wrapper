@@ -4,6 +4,7 @@
 
 import { authRepositories, authStore, repos, seedOrgs, type SeededOrg } from "@bandwise/db";
 import { createTestDatabase, type TestDatabase } from "@bandwise/db/testing";
+import { createSessionTokenHasher } from "@bandwise/tenancy";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 
 import { createAttemptLimiter } from "./attempts";
@@ -134,6 +135,96 @@ async function sessionCount(email: string): Promise<number> {
   const user = await t.db.withNoTenant((tx) => authRepositories.users.getByEmail(tx, email));
   return authStore(t.db).count("sessions", [{ field: "userId", value: user?.id ?? "" }]);
 }
+
+const SESSION_COOKIE = "__Secure-bandwise.session_token";
+
+/** Signs a value the way the library signs its session cookie: HMAC-SHA256 under AUTH_SECRET, base64. */
+async function signedCookie(value: string): Promise<string> {
+  const key = await globalThis.crypto.subtle.importKey("raw", new TextEncoder().encode(SECRET), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]);
+  const mac = new Uint8Array(await globalThis.crypto.subtle.sign("HMAC", key, new TextEncoder().encode(value)));
+  return encodeURIComponent(`${value}.${btoa(String.fromCharCode(...mac))}`);
+}
+
+/** The sessions rows as stored, read past the adapter. */
+async function storedSessions(email: string): Promise<Record<string, unknown>[]> {
+  const user = await t.db.withNoTenant((tx) => authRepositories.users.getByEmail(tx, email));
+  return authStore(t.db).findMany("sessions", { where: [{ field: "userId", value: user?.id ?? "" }] });
+}
+
+describe("session tokens at rest", () => {
+  const EMAIL = "pj@bandwise.test";
+  const hashOf = createSessionTokenHasher(SECRET);
+
+  /** Signs in from a fresh browser and returns it with the raw token inside its cookie. */
+  async function signedIn(auth: ConsoleAuth, ip: string): Promise<{ b: Browser; raw: string }> {
+    const b = new Browser(ip);
+    expect(await signIn({ email: EMAIL, password: PASSWORD }, b.deps(auth))).toEqual({ ok: true, next: "setup" });
+    const cookie = b.jar.get(SESSION_COOKIE) ?? "";
+    const raw = decodeURIComponent(cookie).split(".")[0] ?? "";
+    expect(raw).not.toBe("");
+    // Our signing matches the library's, so the forged cookie below is signed correctly too.
+    expect(await signedCookie(raw)).toBe(cookie);
+    return { b, raw };
+  }
+
+  it("stores an HMAC of the token, never the cookie value, and the cookie still signs in", async () => {
+    const auth = makeAuth();
+    const before = new Set((await storedSessions(EMAIL)).map((r) => r.id));
+    const { b, raw } = await signedIn(auth, "10.6.0.1");
+    const created = (await storedSessions(EMAIL)).filter((r) => !before.has(r.id));
+    expect(created).toHaveLength(1);
+    const stored = created[0]?.token as string;
+    expect(stored).toMatch(/^[0-9a-f]{64}$/);
+    expect(stored).not.toBe(raw);
+    expect(stored).toBe(hashOf(raw));
+    expect((await auth.api.getSession({ headers: b.headers() }))?.user.email).toBe(EMAIL);
+  });
+
+  it("does not sign in with a stored hash copied into a correctly signed cookie", async () => {
+    const auth = makeAuth();
+    const { raw } = await signedIn(auth, "10.6.1.1");
+    const stored = hashOf(raw);
+    expect((await storedSessions(EMAIL)).some((r) => r.token === stored)).toBe(true);
+    const thief = new Browser("10.6.1.2");
+    thief.jar.set(SESSION_COOKIE, await signedCookie(stored));
+    expect(await auth.api.getSession({ headers: thief.headers() })).toBeNull();
+  });
+
+  it("signs out by the cookie: the stored row goes and the cookie stops working", async () => {
+    const auth = makeAuth();
+    const { b, raw } = await signedIn(auth, "10.6.2.1");
+    const old = b.headers();
+    await signOut(b.deps(auth));
+    expect((await storedSessions(EMAIL)).some((r) => r.token === hashOf(raw))).toBe(false);
+    expect(await auth.api.getSession({ headers: old })).toBeNull();
+  });
+
+  it("revokes every session on a password reset", async () => {
+    const auth = makeAuth();
+    const { b } = await signedIn(auth, "10.6.3.1");
+    const old = b.headers();
+    expect(await sessionCount(EMAIL)).toBeGreaterThan(0);
+    await setPassword(internal, EMAIL);
+    expect(await sessionCount(EMAIL)).toBe(0);
+    expect(await auth.api.getSession({ headers: old })).toBeNull();
+  });
+
+  it("keeps the raw token in the cookie when the library refreshes a session", async () => {
+    const auth = makeAuth();
+    const { b, raw } = await signedIn(auth, "10.6.4.1");
+    // Age the session past updateAge, so the next read refreshes it and sets the cookie again.
+    const stored = hashOf(raw);
+    const aged = new Date(Date.now() + 60 * 60 * 1000);
+    await authStore(t.db).update("sessions", [{ field: "token", value: stored }], { expiresAt: aged });
+    const res = await auth.api.getSession({ headers: b.headers(), returnHeaders: true });
+    expect(res.response?.user.email).toBe(EMAIL);
+    const again = res.headers.getSetCookie().find((c) => c.startsWith(`${SESSION_COOKIE}=`)) ?? "";
+    expect(again).not.toBe("");
+    expect(decodeURIComponent(again.slice(SESSION_COOKIE.length + 1).split(";")[0] ?? "").split(".")[0]).toBe(raw);
+    const row = (await storedSessions(EMAIL)).find((r) => r.token === stored);
+    expect((row?.expiresAt as Date).getTime()).toBeGreaterThan(aged.getTime());
+  });
+});
 
 describe("auth config", () => {
   it("reads the console email allowlist", () => {

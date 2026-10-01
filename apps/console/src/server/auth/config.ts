@@ -11,6 +11,7 @@ import { nextCookies } from "better-auth/next-js";
 import { twoFactor } from "better-auth/plugins/two-factor";
 
 import { authStore, type BandwiseDb } from "@bandwise/db";
+import { createSessionTokenHasher } from "@bandwise/tenancy";
 
 import { bandwiseAuthAdapter } from "./adapter";
 import { mayHoldConsoleSession } from "./session";
@@ -24,7 +25,7 @@ export const TOTP_ISSUER = "Bandwise";
 
 export interface ConsoleAuthOptions {
   db: BandwiseDb;
-  /** AUTH_SECRET. Signs cookies and encrypts TOTP secrets and backup codes. */
+  /** AUTH_SECRET. Signs cookies, keys the session token hashes, and encrypts TOTP secrets and backup codes. */
   secret: string;
   /** BETTER_AUTH_URL, the console origin, for example https://app.bandwise.dev. */
   baseURL: string;
@@ -49,7 +50,8 @@ export function createConsoleAuth(opts: ConsoleAuthOptions) {
     basePath: "/api/auth",
     secret: opts.secret,
     trustedOrigins: [opts.baseURL],
-    database: bandwiseAuthAdapter(authStore(opts.db)),
+    // Session tokens are stored as an HMAC under a key derived from the secret (adapter.ts).
+    database: bandwiseAuthAdapter(authStore(opts.db), { hashSessionToken: createSessionTokenHasher(opts.secret) }),
     telemetry: { enabled: false },
     logger: { level: "error", log: quietLog },
     emailAndPassword: {
