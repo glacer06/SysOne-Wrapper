@@ -19,8 +19,11 @@ import {
 } from "@bandwise/core";
 import { z } from "zod";
 
+import { getRun, getUsage, listRuns } from "../manage/runs";
+import { getManifest } from "../manage/sets";
 import { defineOperation, operationGroup, placeholderInput, placeholderOutput } from "./define";
-import { ModelName, SetRef, VersionNumber, listInput, placeholderListOutput } from "./schemas";
+import { ModelName, SetRef, VersionNumber, listInput, listOutput } from "./schemas";
+import { RunDetail, RunSummary, UsageView } from "./views";
 
 export const runOperations = operationGroup(
   defineOperation("set.run", {
@@ -44,6 +47,7 @@ export const runOperations = operationGroup(
     summary: "Read a set's manifest: its interface without instructions, criteria or thresholds.",
     input: z.strictObject({ ref: SetRef }),
     output: Manifest,
+    handler: getManifest,
   }),
 
   defineOperation("run.list", {
@@ -61,23 +65,22 @@ export const runOperations = operationGroup(
       from: IsoTimestamp.optional(),
       to: IsoTimestamp.optional(),
     }),
-    // shape: Phase 3, owner Platform / Tenancy
-    output: placeholderListOutput(),
+    output: listOutput(RunSummary),
+    handler: listRuns,
   }),
 
   defineOperation("run.get", {
     summary: "Read one run with its stage payloads, answers and review items.",
     input: z.strictObject({ id: RunId }),
-    // shape: Phase 3, owner Platform / Tenancy
-    output: placeholderOutput(),
+    output: RunDetail,
+    handler: getRun,
   }),
 
   defineOperation("usage.get", {
-    summary: "Read the org's usage and savings rollups.",
-    // shape: Phase 3, owner Platform / Tenancy
-    input: placeholderInput({}),
-    // shape: Phase 3, owner Platform / Tenancy
-    output: placeholderOutput(),
+    summary: "Read run, spend and savings totals per set over a time range (default: the last 7 days).",
+    input: z.strictObject({ from: IsoTimestamp.optional(), to: IsoTimestamp.optional(), set: SetRef.optional() }),
+    output: UsageView,
+    handler: getUsage,
   }),
 
   defineOperation("browser_token.create", {

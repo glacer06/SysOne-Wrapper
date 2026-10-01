@@ -84,6 +84,28 @@ An approved request runs through `runOperation` with the stored input, the store
 - The parity test runs on every PR ([testing.md](testing.md), Headless API tests). It fails when an operation has no route or no OpenAPI path, when a curated MCP tool or a CLI command maps to no operation or to a session-only operation, or when code under `app/(org)/**` or `app/(platform)/**` imports a repository. The run surface is in the registry too (`set.run` and the rest of [Runs and usage](#runs-and-usage)), so the MCP tool `run_set` and `bandwise run` map to `set.run`.
 - The catalog test in core (`operations.test.ts`) transcribes every row of the Catalog tables below, risk included, with no overrides, and checks that every `high*` row has an entry in `HIGH_RISK_CONDITIONS`. `set.update` and `experiment.start` are `high*` rows like publish, promote, rollout change, token creation and settings.
 
+### What is built (D2c, ADR-020)
+
+The dogfood track serves these operations for the `internal` org. Every other operation still has a stub handler, and the adapter answers `404 not_found` for it ("not served yet"), never 500.
+
+- **Served:** `set.list`, `set.get`, `set.create`, `draft.get`, `draft.update`, `draft.validate`, `set.manifest`, `version.list`, `version.get`, `version.diff`, `set.publish`, `channel.rollback`, `rollout.get`, `rollout.change`, `run.list`, `run.get`, `usage.get`, `approval.list`, `approval.get`, `approval.decide`. Previews (`?dryRun=true`) on publish, rollback and rollout change.
+- **Code:** handlers in `apps/console/src/server/manage/`, response shapes in `server/operations/views.ts`, the HTTP adapter in `server/api/dispatch.ts` behind `app/api/v1/[...path]/route.ts`. `POST /sets/{ref}/run` keeps its own route (D2b); Next matches it before the catch-all.
+- **Handlers** take an `OperationEnv`: the tenant transaction, `authorize(resource, risk)` (can() then the approval gate; a handler calls it before any write), `audit(row)`, `unchanged()` for a mutation that changed nothing, and `etag(value)`. runOperation writes the audit row in the handler's transaction and refuses a mutation that recorded none.
+- **Approvals:** a gated agent call stores `approval_requests` (with the If-Match it was sent with), writes an audit row and returns `202`. A replay from the same token with the same input and If-Match returns the same pending request. `approval.decide` (session only) runs an approved request after its own transaction commits, as the requesting token, re-checking the token, the role and the input hash; the result or the error lands in the request's `result`, and its status becomes `executed` on success.
+- **Response shapes:** sets are `{ id, slug, name, description, projectId, goalId, protected, storageMode, createdAt, draft: { version, versionId, etag } | null, channels: [{ channel, version, versionId, stage, interfaceMajor, updatedAt }] }`. `version.list` items carry `version`, `status`, `specHash`, `interfaceMajor`, `model`, `changelog`, `publishedAt` and `publishedBy`; `version.get` adds `spec` (app tokens get the manifest). Rollback returns `{ channel, fromVersion, toVersion, stage }`, rollout change `{ channel, from, to, version }`, rollout get `{ channel, stage, version, versionId, gates, warnings }`. `run.list` items are run summaries without state; `run.get` adds stages, checks, answers, decisions, warnings, state (when kept) and review items. `usage.get` takes `?from=&to=&set=` (default the last 7 days) and returns `{ from, to, sets: [{ setId, slug, runs, bandHigh, bandMedium, bandLow, errors, inputTokens, outputTokens, systemOneCostMicroUsd, counterfactualMicroUsd, savingsMicroUsd, llmCallsAvoided }], totals }`.
+
+D2 limits, each lifted by a later phase:
+
+- Only the `internal` org; any other org gets 404 on every route. Bearer tokens only: console sessions reach these operations through runOperation once D3 adds sign-in, so `approval.decide` has no HTTP caller yet.
+- A channel's first publish creates its pointer at `shadow`, not `inactive`, so every dogfood set starts in shadow (ADR-020). The pointer always moves: `skipExperiment` and `requireEval: true` are refused with 400 until Phase 3b and Phase 3.
+- `rollout.change` checks no gates (`rollout.get` says so in `warnings`). It refuses `controlled` or `full` for a version whose model is not pinned in the registry (`422 spec_invalid`, rule `model.alias_past_shadow`). The system actor never pauses or lifts a pause.
+- Rollback goes to the version the channel served before the current one came in by publish (release events), so a second rollback walks further back. It does not re-run lints.
+- `set.create` with `fromTemplate` is refused; without `fromVersion` the draft is a one-question starter spec to replace.
+- Model facts and prices come from the registry seed; every registry model counts as reachable (platform key mode). `interface.breaking` treats any channel that is not `inactive` as having consumers.
+- `usage.get` sums the `runs` table; the `usage_daily` rollup lands with the jobs runner.
+- Not yet: idempotency keys (accepted, not stored), event rows, the org's `agentApprovals` setting (read as `required`), approval emails, and expiry as a stored status (a pending request past `expiresAt` reads as `expired`).
+- An unexpected error answers `503 system_one_unavailable` with a fixed message, like the run route, because the api.md code table has no generic server error. Its message is never echoed or logged.
+
 ## Conventions for every route
 
 - Paths are under `/api/v1`. `{ref}` is a set id or slug. `{n}` is a version number.

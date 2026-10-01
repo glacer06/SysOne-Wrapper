@@ -13,6 +13,7 @@ import {
 } from "@bandwise/core";
 import { z } from "zod";
 
+import { decideApproval, getApproval, listApprovals } from "../manage/approvals";
 import { defineOperation, operationGroup, placeholderInput, placeholderOutput, type RiskLevel } from "./define";
 import { isWriteScope, listInput, listOutput, placeholderListOutput } from "./schemas";
 
@@ -83,6 +84,7 @@ export const identityOperations = operationGroup(
     summary: "List pending approvals the caller requested or may decide.",
     input: listInput({}),
     output: listOutput(ApprovalView),
+    handler: listApprovals,
   }),
 
   defineOperation("approval.get", {
@@ -90,14 +92,15 @@ export const identityOperations = operationGroup(
     input: z.strictObject({ id: ApprovalId }),
     output: ApprovalView,
     mcp: "get_approval",
+    handler: getApproval,
   }),
 
   defineOperation("approval.decide", {
     summary: "Approve or reject an agent's request. Console session only.",
     input: z.strictObject({ id: ApprovalId, decision: ApprovalDecision, note: z.string().optional() }),
-    // shape: Phase 2, owner Platform / Tenancy
-    output: placeholderOutput(),
+    output: ApprovalView,
     emits: ["approval.decided"],
+    handler: decideApproval,
   }),
 
   defineOperation("agent_token.list", {

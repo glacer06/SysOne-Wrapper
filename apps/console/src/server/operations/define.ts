@@ -3,6 +3,7 @@
 // risk, phase and actors, so the registry cannot drift from references/management-api.md.
 
 import {
+  type AuthzResource,
   catalogActors,
   catalogEntry,
   describeOperation,
@@ -19,7 +20,9 @@ import {
   type Phase,
   type RiskResource,
   type Scope,
+  type TenantContext,
 } from "@bandwise/core";
+import type { TenantTx } from "@bandwise/db";
 import { z } from "zod";
 
 import { OperationNotImplementedError } from "./errors";
@@ -50,6 +53,46 @@ export interface RequestLayout {
 /** "required": 428 when missing. "conditional": required only for some inputs, checked by the handler. */
 export type IfMatchRule = "required" | "conditional";
 
+/** The audit row a mutation records. runOperation adds the actor, the action and the approval. */
+export interface AuditRecord {
+  targetType: string;
+  targetId: string;
+  diff: unknown;
+}
+
+/**
+ * What a handler gets from runOperation: the caller, the tenant transaction and the hooks that keep
+ * the access checks, the audit row and the approval gate in one place for every operation.
+ */
+export interface OperationEnv {
+  readonly ctx: TenantContext;
+  readonly tx: TenantTx;
+  readonly now: Date;
+  /** The If-Match value without quotes or W/, when the request sent one. */
+  readonly ifMatch: string | undefined;
+  /** Set while an approved agent request runs. */
+  readonly approvalId: string | null;
+  /**
+   * can() for this resource, then the approval gate. Call it before any write. A denial throws; a
+   * gated agent call stops the handler and runOperation stores a pending approval instead. Returns
+   * true when the call would be gated, which a preview reports as approvalRequired.
+   */
+  authorize(resource: Omit<AuthzResource, "orgId">, risk?: RiskResource, notFoundMessage?: string): boolean;
+  /** The audit row for this mutation, written in the same transaction after the handler returns. */
+  audit(row: AuditRecord): void;
+  /** The mutation turned out to change nothing (a repeated publish, the same stage), so no audit row. */
+  unchanged(): void;
+  /** The ETag header of the response. */
+  etag(value: string): void;
+  /** approval.decide: run the approved request after this transaction commits. */
+  runApprovalAfterCommit(approvalId: string): void;
+}
+
+export type OperationHandler<In extends AnyObjectSchema, Out extends z.ZodType> = (
+  env: OperationEnv,
+  input: z.output<In>,
+) => Promise<z.output<Out>>;
+
 /**
  * An input that passed validation, ready for the access checks and the handler. `C` is the context
  * the handler takes: TenantContext, or OperationContext for org-less operations.
@@ -59,11 +102,13 @@ export interface PreparedCall<C extends OperationContext = OperationContext> {
   /** The scope this input needs. "any": any authenticated actor the operation allows. */
   readonly scope: Scope | "any";
   risk(ctx: C, resource: RiskResource): RiskLevel;
-  handle(ctx: C): Promise<unknown>;
+  /** False while the handler is a stub; handle() then throws OperationNotImplementedError. */
+  readonly implemented: boolean;
+  handle(env: OperationEnv | null): Promise<unknown>;
   /** False when the operation does not accept ?dryRun=true. */
   readonly hasPreview: boolean;
-  /** Throws when hasPreview is false. */
-  preview(ctx: C): Promise<DryRunResult>;
+  /** Throws when hasPreview is false, and OperationNotImplementedError while the preview is a stub. */
+  preview(env: OperationEnv | null): Promise<DryRunResult>;
 }
 
 export type PrepareResult<C extends OperationContext = OperationContext> =
@@ -94,6 +139,8 @@ export interface RegisteredOperation<
   readonly successStatus: 200 | 201 | 202;
   /** True when the handler runs without an org (org.create, platform_*): it takes an OperationContext. */
   readonly orgLess: boolean;
+  /** True when the operation has a real handler. The /api/v1 adapter answers 404 for the rest. */
+  readonly implemented: boolean;
   /** Validate raw input and bind it to the operation's functions. */
   prepare(raw: unknown): PrepareResult<OperationContextFor<Id>>;
 }
@@ -120,7 +167,10 @@ export interface OperationSpec<Id extends OperationId, In extends AnyObjectSchem
   /** Accepts ?dryRun=true. The preview is stubbed until the operation's phase. */
   dryRun?: boolean;
   ifMatch?: IfMatchRule;
-  handler?: (ctx: OperationContextFor<Id>, input: z.output<In>) => Promise<z.output<Out>>;
+  /** The real handler. runOperation calls it inside withTenant with an OperationEnv. */
+  handler?: OperationHandler<In, Out>;
+  /** The ?dryRun=true preview. Only with dryRun: true. */
+  preview?: (env: OperationEnv, input: z.output<In>) => Promise<DryRunResult>;
 }
 
 // ---------------------------------------------------------------------------
@@ -190,6 +240,13 @@ function notImplemented(id: OperationId, phase: Phase, what: "handler" | "previe
   };
 }
 
+/** OperationDef.handler for a real operation: it needs the transaction runOperation opens. */
+function throughRunOperation(id: OperationId) {
+  return async (): Promise<never> => {
+    throw new Error(`${id} runs through runOperation, which opens its transaction`);
+  };
+}
+
 export function defineOperation<const Id extends OperationId, In extends AnyObjectSchema, Out extends z.ZodType>(
   id: Id,
   spec: OperationSpec<Id, In, Out>,
@@ -206,6 +263,9 @@ export function defineOperation<const Id extends OperationId, In extends AnyObje
   }
   if ((entry.risk === "high*") !== (spec.risk !== undefined)) {
     throw new Error(`${id}: a risk function is required exactly when the catalog risk is high*`);
+  }
+  if (spec.preview !== undefined && spec.dryRun !== true) {
+    throw new Error(`${id}: a preview needs dryRun: true`);
   }
 
   const request = layout(id, entry, spec);
@@ -226,10 +286,14 @@ export function defineOperation<const Id extends OperationId, In extends AnyObje
     async: spec.async ?? false,
     http: { method: entry.method, path: entry.path },
     emits: [...(spec.emits ?? [])],
-    handler: spec.handler ?? notImplemented(id, phase, "handler"),
+    handler: spec.handler === undefined ? notImplemented(id, phase, "handler") : throughRunOperation(id),
   };
   if (spec.mcp !== undefined) def.mcp = { tool: spec.mcp };
-  if (spec.dryRun === true) def.preview = notImplemented(id, phase, "preview");
+  if (spec.dryRun === true) {
+    def.preview = spec.preview === undefined ? notImplemented(id, phase, "preview") : throughRunOperation(id);
+  }
+  const handler = spec.handler;
+  const previewFn = spec.preview;
 
   const successStatus = def.async ? 202 : id.endsWith(".create") ? 201 : 200;
 
@@ -245,21 +309,29 @@ export function defineOperation<const Id extends OperationId, In extends AnyObje
     placeholder: { input: isPlaceholder(spec.input), output: isPlaceholder(spec.output) },
     successStatus,
     orgLess: runsWithoutOrg(entry),
+    implemented: handler !== undefined,
     prepare(raw) {
       const parsed = def.input.safeParse(raw);
       if (!parsed.success) return { ok: false, error: parsed.error };
       const input = parsed.data;
-      const { scope, risk, handler, preview } = def;
+      const { scope, risk } = def;
+      const needsEnv = (env: OperationEnv | null): OperationEnv => {
+        if (env === null) throw new Error(`${id} needs the OperationEnv runOperation builds`);
+        return env;
+      };
       return {
         ok: true,
         call: {
           input,
           scope: typeof scope === "function" ? scope(input) : scope,
           risk: (ctx, resource) => (typeof risk === "function" ? risk(ctx, input, resource) : risk),
-          handle: (ctx) => handler(ctx, input),
-          hasPreview: preview !== undefined,
-          preview: (ctx) =>
-            preview === undefined ? Promise.reject(new Error(`${id} does not accept dryRun`)) : preview(ctx, input),
+          implemented: handler !== undefined,
+          handle: (env) => (handler === undefined ? notImplemented(id, phase, "handler")() : handler(needsEnv(env), input)),
+          hasPreview: spec.dryRun === true,
+          preview: (env) => {
+            if (spec.dryRun !== true) return Promise.reject(new Error(`${id} does not accept dryRun`));
+            return previewFn === undefined ? notImplemented(id, phase, "preview")() : previewFn(needsEnv(env), input);
+          },
         },
       };
     },
