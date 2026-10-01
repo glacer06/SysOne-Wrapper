@@ -1,6 +1,6 @@
 # Bandwise Gate for Claude Code
 
-Bandwise Gate checks whether a coding agent is really done, and whether an action needs a person. Each answer comes with a confidence band, a reason and a cost.
+Bandwise Gate checks whether a coding agent is really done, and whether an action needs a person. Each answer comes with a confidence band and a cost.
 
 The plugin has four parts:
 

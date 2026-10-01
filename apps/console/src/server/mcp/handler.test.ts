@@ -232,6 +232,27 @@ describe("/mcp check tools", () => {
     expect(JSON.stringify(res.body)).not.toContain(secret);
   });
 
+  it("redacts a quoted secret that arrives without its closing quote (PJ, PR #27)", async () => {
+    const tail = ["Tr0ub", "4dor", "Zq9x"].join("");
+    const token = await agent(internal.orgId, internalUser, ["run"]);
+    const before = transport.calls.length;
+    const res = await call(token, { rpc: callTool("bandwise_check_done", { request: "Set up the db.", last_reply: `Done. config: {"password":"${tail}` }) });
+    const runId = rpcBody(res).result?._meta?.["bandwise/runId"] as string;
+    expect(typeof runId).toBe("string");
+    const sent = JSON.stringify(transport.calls.slice(before).map((c) => c.request));
+    expect(sent).not.toContain(tail);
+    const row = await t.db.withTenant(sys(internal.orgId), (tx) => repos.runs.get(tx, runId));
+    expect(JSON.stringify(row)).not.toContain(tail);
+  });
+
+  it("shows no set-author text in the check result: no Why line, and a no-permission note", async () => {
+    const token = await agent(internal.orgId, internalUser, ["run"]);
+    const res = await call(token, { rpc: callTool("bandwise_check_done", { request: "Fix it.", last_reply: "Fixed, tests pass." }) });
+    const text = String(rpcBody(res).result?.content?.[0]?.text ?? "");
+    expect(text).not.toContain("Why:");
+    expect(text).toContain("grants no permission");
+  });
+
   it("refuses an unknown field, a non-string field and a missing required field, and writes no run row", async () => {
     const token = await agent(internal.orgId, internalUser, ["run"]);
     const before = await runCount();

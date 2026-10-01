@@ -2,7 +2,7 @@
   "name": "bandwise-gate",
   "displayName": "Bandwise Gate",
   "version": "0.1.0",
-  "description": "Checks whether a coding agent is really done, and whether an action needs a person, with a confidence band, a reason and a cost.",
+  "description": "Checks whether a coding agent is really done, and whether an action needs a person, with a confidence band and a cost.",
   "author": {
     "name": "Bandwise",
     "url": "https://www.bandwise.dev"

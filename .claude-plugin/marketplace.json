@@ -9,7 +9,7 @@
     {
       "name": "bandwise-gate",
       "source": "./plugins/claude-code",
-      "description": "Checks whether a coding agent is really done, and whether an action needs a person, with a confidence band, a reason and a cost."
+      "description": "Checks whether a coding agent is really done, and whether an action needs a person, with a confidence band and a cost."
     }
   ]
 }

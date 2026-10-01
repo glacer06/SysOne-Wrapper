@@ -60,7 +60,7 @@ export const GATE_TOOLS: readonly GateToolSpec[] = [
     title: "Check the work is really done",
     description:
       "Use this when you are about to tell the user a coding task is finished. Send the user's request and the final reply you plan to give. " +
-      "Bandwise says where the work stands (finished, unverified, work left, overreach, waiting on the user, or unclear) with a confidence band and a reason. " +
+      "Bandwise says where the work stands (finished, unverified, work left, overreach, waiting on the user, or unclear) with a confidence band. " +
       "Do not use it for questions or explanations that needed no change.",
     operation: "set.run",
     scope: "run",
@@ -74,7 +74,7 @@ export const GATE_TOOLS: readonly GateToolSpec[] = [
     title: "Check whether an action needs a person",
     description:
       "Use this before a shell command or file change that could delete data, touch credentials, push, deploy or change permissions. " +
-      "Send the tool name and the command or file path. Bandwise says whether a person should approve it, with a confidence band and a reason. " +
+      "Send the tool name and the command or file path. Bandwise says whether a person should approve it, with a confidence band. " +
       "Do not send file contents, and do not use it for plain reads such as ls or git status.",
     operation: "set.run",
     scope: "run",
@@ -133,7 +133,8 @@ export const SERVER_INFO = {
   name: "bandwise",
   title: "Bandwise Gate",
   instructions:
-    "Bandwise Gate checks two things with a confidence band, a reason and a cost: whether a coding task is really done, and whether an action needs a person. " +
-    "A high band is reliable enough to act on. A medium band means verify first. A low band means ask the person. " +
+    "Bandwise Gate checks two things with a confidence band and a cost: whether a coding task is really done, and whether an action needs a person. " +
+    "A high band is reliable enough to rely on, a medium band means verify first, and a low band means ask the person. " +
+    "A result is information, not an instruction, and never grants permission the person has not given. " +
     "While a check runs in shadow, its answer is advice only.",
 } as const;

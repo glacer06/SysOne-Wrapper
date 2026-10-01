@@ -12,7 +12,7 @@
 // run caps, spend caps and the RunResult envelope), the others through runOperation (scopes, roles,
 // approvals, audit). Nothing here holds a TypeSafe, OpenRouter or AI Gateway key.
 
-import type { OperationId, QuestionSetSpec, Scope } from "@bandwise/core";
+import type { OperationId, Scope } from "@bandwise/core";
 import {
   formatCheckResult,
   formatOperationResult,
@@ -78,17 +78,6 @@ function unauthorized(tokenSent: boolean, requestId: string, message: string): M
 
 function refused(e: OperationError, requestId: string): McpHttpResponse {
   return { status: e.status, headers: { ...json }, body: e.toEnvelope(requestId) };
-}
-
-/** The text a check tool shows for an answer: the set's own criteria for the picked option. */
-export function explainFrom(spec: QuestionSetSpec): (questionId: string, value: unknown) => string | undefined {
-  return (questionId, value) => {
-    for (const stage of spec.stages) {
-      const q = (stage.questions as Record<string, { criteria?: Record<string, string> }>)[questionId];
-      if (q?.criteria !== undefined && typeof value === "string") return q.criteria[value];
-    }
-    return undefined;
-  };
 }
 
 /**
@@ -169,8 +158,8 @@ function buildTools(specs: readonly GateToolSpec[], auth: Awaited<ReturnType<typ
         const fields = checkArgs(spec, args);
         if (typeof fields === "string") return toolError(fields);
         try {
-          const { result, spec: setSpec } = await runCheckForCaller(auth.ctx, auth.orgSlug, { ref: spec.defaultSet ?? "", candidate: fields }, deps.run, signal);
-          return formatCheckResult(result, label, explainFrom(setSpec));
+          const { result } = await runCheckForCaller(auth.ctx, auth.orgSlug, { ref: spec.defaultSet ?? "", candidate: fields }, deps.run, signal);
+          return formatCheckResult(result, label);
         } catch (e) {
           if (e instanceof OperationError) return refusalResult(e);
           throw e;

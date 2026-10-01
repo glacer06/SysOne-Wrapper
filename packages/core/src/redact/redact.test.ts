@@ -77,3 +77,37 @@ describe("redaction cost and the 2026-10-01 security review", () => {
     expect(redactSecrets("pnpm vitest --passWithNoTests src/a.ts")).toBe("pnpm vitest --passWithNoTests src/a.ts");
   });
 });
+
+describe("unterminated quoted secrets", () => {
+  const secret = "aZ".repeat(4500);
+  const shapes = [
+    (s: string) => `{"password":"${s}"}`,
+    (s: string) => `{'client_secret': '${s}'}`,
+    (s: string) => `DB_PASS="${s}"`,
+    (s: string) => `tool --api-key '${s}' --next`,
+    (s: string) => `api_token = "${s}"`,
+  ];
+
+  it("redacts a quoted value that the length cut leaves open, in both quote styles", () => {
+    const schema = { type: "object", properties: { last_reply: { type: "string", maxLength: 8000 } } };
+    for (const shape of shapes) {
+      const out = shapeState({ last_reply: shape(secret) }, schema)["last_reply"] as string;
+      expect(out, shape("…")).toContain("[redacted]");
+      expect(out, shape("…")).not.toContain("aZaZ");
+    }
+  });
+
+  it("redacts at every cut point through the value, not only one", () => {
+    const text = `{"password":"Tr0ub4dor-and-more-Zq9"} done`;
+    for (let cut = text.indexOf("Tr0") + 1; cut <= text.length; cut++) {
+      const schema = { type: "object", properties: { f: { type: "string", maxLength: cut } } };
+      const out = shapeState({ f: text }, schema)["f"] as string;
+      expect(out, `cut ${cut}`).not.toMatch(/Tr0|ub4|dor|Zq9/);
+    }
+  });
+
+  it("redacts a value that arrives already cut, within the limit", () => {
+    expect(redactSecrets(`{"password":"hunter2-still-going`)).not.toContain("hunter2");
+    expect(redactSecrets(`password: 'hunter2 still going`)).not.toContain("hunter2");
+  });
+});
