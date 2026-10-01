@@ -22,7 +22,7 @@ Personality: calm, candid, street-smart. It should feel like a tool crib, with s
 
 ## Hard rules
 
-1. **Cool palette only.** Ink, cool white, teal and slate, plus violet for Medium and crimson for Low. No cream, tan, clay, coral, orange or rust. No pure black. Nothing near Anthropic's colors.
+1. **Cool palette only.** Ink, cool white, teal and slate, plus violet for Medium (final, Nick 2026-10-01) and crimson for Low. No cream, tan, clay, coral, orange or rust. No pure black. Nothing near Anthropic's colors.
 2. **Semantic tokens only.** Components use `--bw-bg`, `--bw-text`, `--bw-brand` and the rest of the semantic layer. They never use raw hex or primitives. Theme comes from `data-theme="light|dark"` on a root element.
 3. **Teal text rules.**
    - Never use Teal #12A38A as text on light backgrounds.
