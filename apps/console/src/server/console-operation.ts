@@ -5,15 +5,11 @@ import "server-only";
 import type { OperationId } from "@bandwise/core";
 
 import { requireConsole } from "./auth/console";
+import { type ConsoleOperationResult, settle } from "./console-result";
 import { getDb } from "./db";
-import { OperationError, OperationNotImplementedError, type OperationOutput, runOperation, type RunOperationOptions } from "./operations";
+import { runOperation, type RunOperationOptions } from "./operations";
 
-export type ConsoleOperationResult<K extends OperationId> =
-  /** `etag` is the response ETag, for the reads that send one (draft.get). */
-  | { status: "ok"; output: OperationOutput<K>; etag?: string }
-  /** The handler is still a stub. Pages show what is coming instead of an error. */
-  | { status: "not-built" }
-  | { status: "error"; code: string; message: string };
+export type { ConsoleOperationResult } from "./console-result";
 
 export async function consoleOperation<K extends OperationId>(
   id: K,
@@ -21,17 +17,10 @@ export async function consoleOperation<K extends OperationId>(
   options: RunOperationOptions = {},
 ): Promise<ConsoleOperationResult<K>> {
   const { ctx } = await requireConsole();
-  try {
-    const res = await runOperation(id, ctx as Parameters<typeof runOperation<K>>[1], input, options, {
+  return settle(() =>
+    runOperation(id, ctx as Parameters<typeof runOperation<K>>[1], input, options, {
       db: getDb(),
       logError: (message, requestId) => console.error(`console ${requestId}: ${message}`),
-    });
-    if (res.kind !== "ok") return { status: "error", code: "unexpected", message: "The operation did not run." };
-    return res.etag === undefined ? { status: "ok", output: res.output } : { status: "ok", output: res.output, etag: res.etag };
-  } catch (e) {
-    if (e instanceof OperationNotImplementedError) return { status: "not-built" };
-    // Operation errors carry api.md messages written for people. Anything else stays generic.
-    if (e instanceof OperationError) return { status: "error", code: e.code, message: e.message };
-    return { status: "error", code: "internal", message: "Something went wrong. Try again." };
-  }
+    }),
+  );
 }

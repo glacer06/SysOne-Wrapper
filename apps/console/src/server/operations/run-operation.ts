@@ -27,7 +27,7 @@ import { type BandwiseDb, repos, type TenantTx } from "@bandwise/db";
 import type { z } from "zod";
 
 import { liveAgentActor } from "../auth/bearer";
-import { approvalInputHash, approvalView, DEFAULT_CONSOLE_ORIGIN, openApproval } from "../manage/approvals";
+import { approvalInputHash, DEFAULT_CONSOLE_ORIGIN, describeApproval, openApproval } from "../manage/approvals";
 import { bareEtag } from "../manage/spec-diff";
 import type { AuditRecord, OperationEnv, RegisteredOperation } from "./define";
 import { OperationError } from "./errors";
@@ -326,6 +326,6 @@ async function executeApproval(decider: TenantContext, approvalId: string, deps:
     if (outcome !== null) await repos.approvalRequests.update(tx, approvalId, { result: outcome });
     const after = await repos.approvalRequests.get(tx, approvalId);
     if (after === null) throw new Error("the approval disappeared after it ran");
-    return approvalView(after, now);
+    return describeApproval(tx, after, now);
   });
 }
