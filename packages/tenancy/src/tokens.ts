@@ -12,6 +12,8 @@
 
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
+import { OrgId } from "@bandwise/core/contracts";
+
 export const APP_TOKEN_PREFIXES = ["sk_live_", "sk_test_", "pk_live_"] as const;
 export const AGENT_TOKEN_PREFIX = "sa_live_";
 export const TOKEN_PREFIXES = [...APP_TOKEN_PREFIXES, AGENT_TOKEN_PREFIX] as const;
@@ -21,7 +23,6 @@ export type TokenPrefix = (typeof TOKEN_PREFIXES)[number];
 export const MIN_PEPPER_LENGTH = 32;
 
 const TOKEN = /^(sk_live_|sk_test_|pk_live_|sa_live_)([0-9a-f]{32})_([A-Za-z0-9_-]{43})$/;
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 export class TokenPepperError extends Error {
   constructor(message: string) {
@@ -36,13 +37,18 @@ export interface ParsedToken {
   orgId: string;
 }
 
-/** The prefix and org of a well-formed token, or null. Never throws. */
+/**
+ * The prefix and org of a well-formed token, or null. Never throws. The org must pass the same
+ * OrgId schema that withTenant applies, so 32 hex characters that are not a valid uuid (wrong
+ * version or variant bits) end here as null, and the caller's 401, not as a ZodError later.
+ */
 export function parseToken(raw: string): ParsedToken | null {
   const m = TOKEN.exec(raw);
   if (m === null) return null;
   const hex = m[2] as string;
-  const orgId = `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
-  return { prefix: m[1] as TokenPrefix, orgId };
+  const orgId = OrgId.safeParse(`${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`);
+  if (!orgId.success) return null;
+  return { prefix: m[1] as TokenPrefix, orgId: orgId.data };
 }
 
 export interface TokenHasher {
@@ -67,7 +73,8 @@ export function createTokenHasher(pepper: string): TokenHasher {
       return a.length === b.length && timingSafeEqual(a, b);
     },
     mint(prefix, orgId) {
-      if (!UUID.test(orgId)) throw new Error("mint needs the org id as a lowercase uuid.");
+      // The same check parseToken applies, so a minted token always parses back to its org.
+      if (orgId !== orgId.toLowerCase() || !OrgId.safeParse(orgId).success) throw new Error("mint needs the org id as a lowercase uuid.");
       const token = `${prefix}${orgId.replaceAll("-", "")}_${randomBytes(32).toString("base64url")}`;
       return { token, hash: hash(token) };
     },

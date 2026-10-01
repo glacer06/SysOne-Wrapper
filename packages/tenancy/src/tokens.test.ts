@@ -36,6 +36,16 @@ describe("tokens", () => {
     }
   });
 
+  it("parses no org that is hex but not a valid uuid, and mints none", () => {
+    const secret = "A".repeat(43);
+    // Version nibble a, variant nibble a: 32 hex characters the token regex accepts, but not a uuid.
+    expect(parseToken(`sk_live_${"a".repeat(32)}_${secret}`)).toBeNull();
+    // ORG with its variant nibble changed from 8 to c.
+    expect(parseToken(`sa_live_0192f5a41b2c7d3ecf40123456789abc_${secret}`)).toBeNull();
+    expect(() => createTokenHasher(PEPPER).mint("sk_live_", "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa")).toThrow("lowercase uuid");
+    expect(() => createTokenHasher(PEPPER).mint("sk_live_", ORG.toUpperCase())).toThrow("lowercase uuid");
+  });
+
   it("refuses a missing or short pepper and a malformed org", () => {
     expect(() => createTokenHasher("short")).toThrow(TokenPepperError);
     expect(() => tokenHasherFromEnv({})).toThrow("BANDWISE_TOKEN_PEPPER is not set.");

@@ -129,6 +129,12 @@ describe("app tokens", () => {
     await rejects(`Bearer ${token.replace("sk_test_", "sk_live_")}`);
   });
 
+  it("refuses a token whose org part is hex but not a valid uuid, with the same 401", async () => {
+    // Version nibble 'a' and variant nibble 'a' are not a valid uuid, though the token regex accepts them.
+    await rejects(`Bearer sk_live_${"a".repeat(32)}_${"A".repeat(43)}`);
+    await rejects(`Bearer sa_live_${"0".repeat(32)}_${"A".repeat(43)}`);
+  });
+
   it("refuses a missing or malformed header", async () => {
     const { token } = await appToken(acme);
     for (const h of [null, "", token, `Basic ${token}`, `Bearer  ${token}`, `Bearer ${token} extra`, "Bearer sk_live_nope"]) await rejects(h);
