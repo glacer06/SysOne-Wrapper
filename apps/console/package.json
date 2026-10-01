@@ -15,7 +15,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "test": "vitest run",
     "mint-token": "tsx --conditions=@bandwise/source scripts/mint-token.ts",
-    "console-member": "tsx --conditions=@bandwise/source scripts/console-member.ts"
+    "console-member": "tsx --conditions=@bandwise/source scripts/console-member.ts",
+    "bootstrap-internal": "tsx --conditions=@bandwise/source scripts/bootstrap-internal.ts"
   },
   "dependencies": {
     "@bandwise/billing": "workspace:*",
