@@ -132,9 +132,9 @@ describe("runOperation", () => {
   });
 
   it("reaches the stubbed handler with a valid call", async () => {
-    const error = await failure(runOperation("review.resolve", appToken, { id: ID, resolution: "approve" }));
+    const error = await failure(runOperation("review.assign", appToken, { id: ID, assigneeId: ID }));
     expect(error).toBeInstanceOf(OperationNotImplementedError);
-    expect(error).toMatchObject({ operationId: "review.resolve", phase: "3" });
+    expect(error).toMatchObject({ operationId: "review.assign", phase: "3" });
   });
 
   it("runs org.create and platform operations with an org-less context, and nothing else", async () => {

@@ -49,8 +49,8 @@ Built in five slices, one PR each:
 - [x] Sign-in for Nick and PJ with Better Auth and two-factor (ADR-002), `internal` org only. Email and password plus TOTP, sign-up closed, members added by `pnpm --filter @bandwise/console console-member`; the app shell and placeholder pages for Sets, Runs, Savings, Review and Approvals call operations through `consoleOperation` (`apps/console/src/server/console-operation.ts`). See `docs/runbooks/console-access.md`.
 - [ ] Question editor (form and JSON) and threshold sliders with a live preview on sample state
 - [ ] Publish, version history and one-click rollback, each calling the same operation as the CLI
-- [ ] Runs explorer and a savings view per set
-- [ ] Review queue for medium and low band decisions
+- [x] Runs explorer and a savings view per set. Built 2026-10-01: `/runs` filters by time, set, channel, status, source and band, and `/runs/{id}` shows decisions, bands, policy and allowed actions, route, cost, savings, warnings and the state when it was kept. `/savings` shows spend, estimated savings and LLM calls avoided per set and per UTC day (`usage.get` gained `days`), with a plain SVG chart and a table of the same numbers. Every set shows its production stage next to its slug
+- [x] Review queue for medium and low band decisions. Built 2026-10-01: `/review` with status tabs and filters, and `/review/{id}` to agree with one keystroke, correct with a reason, or dismiss after a confirm. `review.list`, `review.resolve`, `review.dismiss` and `review.confirm` have real handlers with audit rows and `run_feedback` truth rows; an agent's answer waits for a person to confirm it
 
 ## Exit gate
 - A week of receipts from real Claude Code sessions on this repo, with `bandwise report` showing System One spend and estimated savings per set.
