@@ -20,6 +20,8 @@ The device flow, `POST /api/v1/auth/device/code` and `POST /api/v1/auth/device/t
 
 ## Endpoints (run surface)
 
+D2 status (ADR-020): the run endpoint is built and serves only the `internal` org, in platform key mode; any other org gets `404 not_found`. A pinned `slug@N` must be a published version. An app token that asks for a channel other than its own gets `400 invalid_request`. Code: `apps/console/src/server/run/`.
+
 | Method | Path | Scope | Notes |
 |---|---|---|---|
 | POST | `/api/v1/sets/{ref}/run` | `run` | `ref` is an id or slug. `slug@7` pins a version. `slug@draft` as above. `?channel=production` or `staging` only for sessions and agent tokens; app tokens use their bound channel. `409 set_not_live` when the channel's rollout stage is `inactive`. |

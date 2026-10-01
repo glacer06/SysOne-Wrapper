@@ -31,14 +31,14 @@ Use Bandwise on Bandwise before anyone else does: Claude Code sessions on this r
 ## D2: Hosted, internal only
 
 Built in five slices, one PR each:
-- D2a: token auth. `sk_live_` and `sa_live_` tokens carry their org id, so the lookup runs in that org's tenant scope with no migration and no pre-org query. HMAC pepper `BANDWISE_TOKEN_PEPPER`, the same 401 for every failure, and a platform `mint-token` script with audit rows. PJ reviews it for Security.
-- D2b: `POST /api/v1/sets/{ref}/run` for the `internal` org: ref and channel resolution, the rollout stage, platform key mode, the run engine with the fixture and SDK transports, and the run sink.
+- D2a: token auth. `sk_live_` and `sa_live_` tokens carry their org id, so the lookup runs in that org's tenant scope with no migration and no pre-org query. HMAC pepper `BANDWISE_TOKEN_PEPPER`, the same 401 for every failure, and a platform `mint-token` script with audit rows. Merged 2026-10-01 (PR #20) after two rounds of PJ's Security review.
+- D2b: `POST /api/v1/sets/{ref}/run` for the `internal` org: ref and channel resolution, the rollout stage, platform key mode, the run engine with the fixture and SDK transports, and the run sink. Built 2026-10-01: `apps/console/src/server/run/` (resolve, run-set, http) and the route. Any org other than `internal` gets 404. The model registry and prices come from the seed, and the limiter and quota are open until Phase 2. The server imports the transports from `@bandwise/system-one-client/server`, which loads no fixture or contract folders, so the Next build can bundle it.
 - D2c: handlers and routes for the management operations the CLI needs, each with its audit row.
 - D2d: the CLI's remote commands (`spec push|pull|diff`, `publish`, `rollback`, `rollout`, `report --remote`) and `bandwise hook` calling the hosted endpoint when `BANDWISE_TOKEN` is set.
 - D2e: operations. Migrations on the Supabase database, the env on Vercel (`TYPESAFE_API_KEY`, `DATABASE_URL`, `BANDWISE_TOKEN_PEPPER`), the `internal` org and its members, the imported `.bandwise/sets/`, minted tokens, and one live publish and rollback. Needs Nick and PJ.
 
-- [ ] `POST /api/v1/sets/{ref}/run` with the standard envelope, platform key on the server, served only for the `internal` org
-- [ ] App tokens (`sk_live_`) minted by a platform script for the internal org, stored hashed, scoped to a set allowlist
+- [x] `POST /api/v1/sets/{ref}/run` with the standard envelope, platform key on the server, served only for the `internal` org (D2b; live once D2e sets the env)
+- [x] App tokens (`sk_live_`) minted by a platform script for the internal org, stored hashed, scoped to a set allowlist (D2a)
 - [ ] The management operations the CLI needs, with audit rows: `set.create`, `draft.update`, `version.publish`, `release.rollback`, `rollout.change`, `run.list`, `usage.get`
 - [ ] `bandwise spec push|pull|diff`, `bandwise publish`, `bandwise rollback`, `bandwise rollout` against app.bandwise.dev with a Bandwise token
 - [ ] Runs write `runs`, `usage_daily` and the savings ledger; `bandwise report --remote` reads them
