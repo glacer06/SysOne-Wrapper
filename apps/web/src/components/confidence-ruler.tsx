@@ -58,6 +58,7 @@ export function ConfidenceRuler({
   caption,
   carry,
   readout,
+  compact = false,
 }: {
   policy: { trueAt: number; falseAt: number; reviewMargin: number };
   markers?: ReadonlyArray<{ value: number; n: number }>;
@@ -65,6 +66,8 @@ export function ConfidenceRuler({
   caption?: ReactNode;
   carry?: { score: number };
   readout?: ReactNode;
+  /** A small ruler for tight spots, such as under the hero's exhibit card. */
+  compact?: boolean;
 }) {
   const segs = segments(policy);
   const edges = [0, ...segs.map((s) => s.to)];
@@ -118,7 +121,10 @@ export function ConfidenceRuler({
   );
 
   return (
-    <figure className={`ruler${carry ? " ruler-carry" : ""}`} style={carry ? ({ "--x": pct(carry.score) } as object) : undefined}>
+    <figure
+      className={`ruler${carry ? " ruler-carry" : ""}${compact ? " ruler-compact" : ""}`}
+      style={carry ? ({ "--x": pct(carry.score) } as object) : undefined}
+    >
       {caption ? <figcaption className="label ruler-caption">{caption}</figcaption> : null}
       {carry ? <CarryScene>{body}</CarryScene> : body}
     </figure>

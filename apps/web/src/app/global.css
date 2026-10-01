@@ -155,13 +155,13 @@ picture {
 
 /* Grid children may shrink below their content, so a long code line scrolls inside its box. */
 .hero-grid > *,
+.how > *,
 .example > *,
 .bench > *,
 .calc > *,
 .headless > *,
 .kit > *,
-.access-grid > *,
-.footer-grid > * {
+.access-grid > * {
   min-width: 0;
 }
 
@@ -400,49 +400,98 @@ picture {
   }
 }
 
-/* Copy first; mark A, then the ruler and the decision card. From 960px the mark sits beside the
-   copy and the ruler and the card share the row below, so neither half is left empty. */
+/* HERO-A, exhibit on a plate. The headline and the rest of the copy sit on the left; one decision
+   card on a flat plate in a 1px frame sits on the right, with this set's lines under it. On a
+   phone the order is headline, card, then the lede, the install line and the buttons. */
 .hero-grid {
   display: grid;
   gap: var(--bw-space-7);
-  grid-template-areas: "copy" "mark" "demo";
+  grid-template-areas: "head" "exhibit" "rest";
 }
 
-.hero-copy {
-  grid-area: copy;
+.hero-head {
+  grid-area: head;
+  display: grid;
+  gap: var(--bw-space-5);
 }
 
-.hero-mark {
-  grid-area: mark;
-  justify-self: start;
+.exhibit {
+  grid-area: exhibit;
 }
 
-.hero-mark img {
-  display: block;
-  width: clamp(200px, 56vw, 340px);
-  height: auto;
+/* The headline shares the row with the exhibit, so it tops out smaller than a full-width display. */
+.hero-head .display {
+  font-size: clamp(36px, 3.4vw + 18px, 76px);
 }
 
-.hero-demo {
-  grid-area: demo;
+.hero-rest {
+  grid-area: rest;
+  display: grid;
+  gap: var(--bw-space-5);
+  justify-items: start;
 }
 
 @media (min-width: 960px) {
   .hero-grid {
-    grid-template-columns: minmax(0, 1fr) minmax(280px, 360px);
-    grid-template-areas: "copy mark" "demo demo";
+    grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+    grid-template-rows: auto 1fr;
+    grid-template-areas: "head exhibit" "rest exhibit";
     column-gap: var(--bw-space-8);
-    row-gap: var(--bw-space-8);
-    align-items: center;
+    row-gap: var(--bw-space-6);
+    align-items: start;
   }
+}
 
-  .hero-mark {
-    justify-self: end;
+@media (min-width: 1280px) {
+  .hero-grid {
+    grid-template-columns: minmax(0, 6fr) minmax(0, 5fr);
+    column-gap: var(--bw-space-9);
   }
+}
 
-  .hero-mark img {
-    width: clamp(280px, 26vw, 360px);
+/* The plate: flat, sunken, a 1px frame, no shadow. The ruler's marker halo and segment gaps take
+   the plate's color instead of the page's. */
+.exhibit {
+  --ruler-ground: var(--bw-surface-sunken);
+  margin: 0;
+  display: grid;
+  gap: var(--bw-space-5);
+  padding: var(--bw-space-4);
+  background: var(--bw-surface-sunken);
+  border: var(--bw-border-width) solid var(--bw-border);
+  border-radius: var(--bw-radius-0);
+}
+
+@media (min-width: 640px) {
+  .exhibit {
+    padding: var(--bw-space-6);
   }
+}
+
+@media (max-width: 639px) {
+  .exhibit .decision-inner {
+    padding: var(--bw-space-4);
+  }
+}
+
+.exhibit-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--bw-space-4);
+  margin-bottom: calc(-1 * var(--bw-space-2));
+}
+
+.exhibit-mark img {
+  display: block;
+  width: clamp(96px, 24vw, 152px);
+  height: auto;
+}
+
+.exhibit-caveat {
+  margin-top: 0;
+  font-size: var(--bw-text-caption);
+  line-height: var(--bw-lh-caption);
 }
 
 /* The faceted B as a faint dotted wireframe, cropped at the right edge, behind the hero.
@@ -514,11 +563,6 @@ picture {
   }
 }
 
-.hero-copy {
-  display: grid;
-  gap: var(--bw-space-5);
-}
-
 .display {
   font-family: var(--bw-font-display);
   font-stretch: 125%;
@@ -549,20 +593,6 @@ picture {
 .hero-status {
   font-size: var(--bw-text-small);
   color: var(--bw-text-muted);
-}
-
-.hero-demo {
-  display: grid;
-  gap: var(--bw-space-6);
-  align-content: start;
-}
-
-/* From 960px the ruler and the card sit side by side under the copy and the mark. */
-@media (min-width: 960px) {
-  .hero-demo {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    align-items: start;
-  }
 }
 
 /* Band badge: the reference .bw-badge, with the number beside the word */
@@ -723,7 +753,7 @@ picture {
 }
 
 .ruler-seg + .ruler-seg {
-  border-left: 2px solid var(--bw-bg);
+  border-left: 2px solid var(--ruler-ground, var(--bw-bg));
 }
 
 .seg-high {
@@ -746,7 +776,7 @@ picture {
   margin-left: -1px;
   background: var(--bw-text);
   /* A 1px halo in the page color on each side keeps the marker readable on any band. */
-  box-shadow: 0 0 0 1px var(--bw-bg);
+  box-shadow: 0 0 0 1px var(--ruler-ground, var(--bw-bg));
 }
 
 .ruler-marker span {
@@ -816,6 +846,29 @@ picture {
   display: inline-flex;
   align-items: center;
   gap: var(--bw-space-2);
+}
+
+/* The small ruler under the exhibit card: a thinner track, the same thresholds. */
+.ruler-compact {
+  --ruler-h: 6px;
+  gap: var(--bw-space-1);
+}
+
+.ruler-compact .ruler-caption {
+  margin-bottom: 0;
+}
+
+.ruler-compact .ruler-scale {
+  margin-top: var(--bw-space-4);
+}
+
+.ruler-compact .ruler-marker {
+  bottom: -5px;
+  height: calc(var(--ruler-h) + 10px);
+}
+
+.ruler-compact .ruler-marker span {
+  display: none;
 }
 
 /* The carry: the signature motion from brand/bandwise-motion-demo.html.
@@ -929,51 +982,206 @@ picture {
   }
 }
 
-/* How it works */
+/* How it works: HOW-B, command then receipt. Three step rows with a counter on the left, one code
+   block on the right with the lines the picked step explains outlined in teal (1px). */
 
-.flow-steps {
-  list-style: none;
-  margin: 0 0 var(--bw-space-8);
-  padding: 0;
+.how {
   display: grid;
   gap: var(--bw-space-6);
 }
 
-@media (min-width: 640px) {
-  .flow-steps {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+@media (min-width: 960px) {
+  .how {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    gap: var(--bw-space-8);
+    align-items: start;
   }
+}
+
+.how-counter {
+  margin-bottom: var(--bw-space-3);
+  font-size: var(--bw-text-small);
+  color: var(--bw-text-muted);
+}
+
+.how-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--bw-space-2);
+}
+
+.how-step {
+  border: var(--bw-border-width) solid var(--bw-border);
+  background: transparent;
+}
+
+.how-step.is-active {
+  background: var(--bw-surface);
+  border-color: var(--bw-border-control);
+}
+
+.how-step-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--bw-space-4);
+  width: 100%;
+  min-height: 48px;
+  padding: var(--bw-space-3) var(--bw-space-4);
+  border: 0;
+  background: none;
+  color: var(--bw-text);
+  font: 500 var(--bw-text-body) / 1.3 var(--bw-font-body);
+  text-align: left;
+  cursor: pointer;
+}
+
+.how-step-btn:hover .how-step-title {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.how-step.is-active .how-step-title {
+  font-weight: 700;
+}
+
+.how-step-num {
+  font-size: var(--bw-text-caption);
+  font-weight: 600;
+  color: var(--bw-text-muted);
+}
+
+.how-step-body {
+  padding: 0 var(--bw-space-4) var(--bw-space-4) calc(var(--bw-space-4) * 2 + 2ch);
+  font-size: var(--bw-text-small);
+  line-height: var(--bw-lh-small);
+  color: var(--bw-text-muted);
+}
+
+.how-step-body[hidden] {
+  display: none;
+}
+
+.how-code {
+  margin: 0;
+  display: grid;
+  gap: var(--bw-space-2);
+}
+
+.how-terminal {
+  padding: var(--bw-space-4) var(--bw-space-3);
+}
+
+.code-line {
+  display: block;
+  width: max-content;
+  min-width: 100%;
+  padding: 0 var(--bw-space-2);
+  border: var(--bw-border-width) solid transparent;
+  white-space: pre;
+}
+
+.code-line.is-lit {
+  border-color: var(--bw-brand);
+  background: var(--bw-high-bg);
+}
+
+.code-tag {
+  margin-left: 2ch;
+  font-size: 11px;
+  letter-spacing: var(--bw-track-label);
+  text-transform: uppercase;
+  color: var(--bw-brand-text);
+}
+
+/* Claims strip: each number with its caveat and source in the same block. */
+.claims {
+  list-style: none;
+  margin: var(--bw-space-7) 0 var(--bw-space-8);
+  padding: 0;
+  display: grid;
+  gap: var(--bw-space-5);
+  border-top: var(--bw-border-width) solid var(--bw-border);
+  padding-top: var(--bw-space-5);
 }
 
 @media (min-width: 960px) {
-  .flow-steps {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: var(--bw-space-5);
+  .claims {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--bw-space-6);
   }
 }
 
-.flow-steps li {
+.claims li {
   display: grid;
   gap: var(--bw-space-2);
   align-content: start;
-  padding-top: var(--bw-space-4);
-  border-top: 3px dotted var(--bw-border-strong);
 }
 
-.flow-steps li:last-child {
-  border-top-color: var(--bw-brand);
-  border-top-style: solid;
+.claim {
+  font-size: var(--bw-text-h4);
+  line-height: var(--bw-lh-h4);
+  font-weight: 600;
 }
 
-.flow-steps .num {
-  font: 600 var(--bw-text-caption) / 1 var(--bw-font-mono);
-  color: var(--bw-text-muted);
-}
-
-.flow-steps p {
-  color: var(--bw-text-muted);
+.claim-caveat {
   font-size: var(--bw-text-small);
   line-height: var(--bw-lh-small);
+  color: var(--bw-text-muted);
+}
+
+/* The install line in the hero: one command and a copy button. */
+.copy-line {
+  display: grid;
+  gap: var(--bw-space-2);
+  width: 100%;
+  max-width: 460px;
+}
+
+.copy-line-box {
+  display: flex;
+  align-items: stretch;
+  border: var(--bw-border-width) solid var(--bw-border-control);
+  border-radius: var(--bw-radius-sm);
+  background: var(--bw-surface);
+}
+
+.copy-line-cmd {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 var(--bw-space-3);
+  background: none;
+  font: 400 var(--bw-text-small) / 1.4 var(--bw-font-mono);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.copy-line-prompt {
+  margin-right: 1ch;
+  color: var(--bw-brand-text);
+  user-select: none;
+}
+
+.copy-line-btn {
+  flex: none;
+  min-width: 72px;
+  min-height: 44px;
+  padding: 0 var(--bw-space-3);
+  border: 0;
+  border-left: var(--bw-border-width) solid var(--bw-border-control);
+  background: transparent;
+  color: var(--bw-text);
+  font: 500 var(--bw-text-caption) / 1 var(--bw-font-mono);
+  letter-spacing: var(--bw-track-label);
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.copy-line-btn:hover {
+  background: var(--bw-surface-sunken);
 }
 
 .example {
@@ -1840,73 +2048,110 @@ code {
   overflow: hidden;
 }
 
-/* Footer */
+/* Footer: FOOT-B. Link columns, then the supplied horizontal lockup across the content width,
+   then the legal row ending in a muted version stamp. */
 
 .site-footer {
   border-top: var(--bw-border-width) solid var(--bw-border);
-  padding: var(--bw-space-7) 0 var(--bw-space-8);
+  padding: var(--bw-space-8) 0 var(--bw-space-6);
   font-size: var(--bw-text-small);
 }
 
-.footer-grid {
+.footer-cols {
   display: grid;
-  gap: var(--bw-space-6);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--bw-space-6) var(--bw-space-5);
 }
 
 @media (min-width: 960px) {
-  .footer-grid {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: start;
+  .footer-cols {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 }
 
-.footer-brand {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: var(--bw-space-5);
+.footer-col {
+  min-width: 0;
 }
 
-.footer-mark img {
+.footer-col h2 {
+  margin-bottom: var(--bw-space-2);
+  font: 500 var(--bw-text-caption) / var(--bw-lh-caption) var(--bw-font-mono);
+  letter-spacing: var(--bw-track-label);
+}
+
+.footer-col ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.footer-col a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--bw-text);
+  overflow-wrap: anywhere;
+}
+
+.footer-col a.data {
+  font-size: var(--bw-text-small);
+}
+
+.footer-lockup {
   display: block;
-  width: 120px;
+  margin-top: var(--bw-space-8);
+  padding: var(--bw-space-2) 0;
+}
+
+.footer-lockup img {
+  display: block;
+  width: 100%;
   height: auto;
 }
 
-.footer-brand-text {
-  flex: 1 1 280px;
+.footer-notes {
   display: grid;
-  gap: var(--bw-space-3);
-  justify-items: start;
-}
-
-.footer-brand-text .home-link {
-  min-height: 44px;
+  gap: var(--bw-space-2);
+  margin-top: var(--bw-space-6);
 }
 
 .independence {
-  max-width: 60ch;
-  margin-top: var(--bw-space-2);
+  max-width: 68ch;
 }
 
 .footer-meta {
   color: var(--bw-text-muted);
 }
 
-.footer-links {
+.footer-legal {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 var(--bw-space-5);
+  margin-top: var(--bw-space-6);
+  padding-top: var(--bw-space-3);
+  border-top: var(--bw-border-width) solid var(--bw-border);
+}
+
+.footer-legal ul {
   list-style: none;
   margin: 0;
   padding: 0;
   display: flex;
-  flex-wrap: wrap;
   gap: 0 var(--bw-space-5);
 }
 
-.footer-links a {
+.footer-legal a {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
   color: var(--bw-text);
+}
+
+.footer-stamp {
+  margin-left: auto;
+  font-size: var(--bw-text-caption);
+  color: var(--bw-text-muted);
 }
 
 /* Privacy and terms */

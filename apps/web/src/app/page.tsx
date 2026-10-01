@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { BandBadge, BandLegend, ConfidenceRuler } from "~/components/confidence-ruler";
+import { CopyLine } from "~/components/copy-line";
 import { EarlyAccessForm } from "~/components/early-access-form";
+import { HowSteps, type CodeLine, type HowStep } from "~/components/how-steps";
 import { BWireframe } from "~/components/b-wireframe";
 import { DrawOnView } from "~/components/draw-on-view";
 import { SavingsCalculator } from "~/components/savings-calculator";
@@ -35,6 +37,11 @@ const actionWord = (a: "auto" | "review") => (a === "auto" ? "acts" : "a person"
 
 const rulerLabel = `Confidence scale from 0 to 1, split into bands at ${policy.falseAt}, ${policy.falseAt + policy.reviewMargin}, ${(policy.trueAt - policy.reviewMargin).toFixed(1)} and ${policy.trueAt}`;
 
+/** Dollars with enough digits to show a micro-USD amount exactly, as the RunResult wire carries it. */
+const wireUsd = (micro: number) => String(Number((micro / 1e6).toFixed(6)));
+
+const installCommand = "npm install -g @bandwise/cli";
+
 function Hero() {
   const r = heroReceipt();
   const d = r.decision;
@@ -42,48 +49,22 @@ function Hero() {
     <section className="hero" aria-labelledby="hero-title">
       <BWireframe className="hero-bwire" />
       <div className="wrap hero-grid">
-        <div className="hero-copy">
+        <div className="hero-head">
           <p className="label">Early access</p>
           <h1 id="hero-title" className="display">
             Small model. Heavy lifting.
           </h1>
           <p className="support">It knows how sure it is.</p>
-          <p className="lede">
-            {productName} runs your yes-or-no, pick-one and score decisions on TypeSafe&apos;s System One models. Every answer
-            comes back with a band, a reason and a cost. You set the lines. Each band gets an action: act, send to a person,
-            fall back to a default, or ask a larger LLM. Every run records what it cost and what it saved.
-          </p>
-          <div className="hero-actions">
-            <span className="focus-poly">
-              <a className="btn btn-primary" href="#early-access">
-                Request early access
-              </a>
-            </span>
-            <a className="btn btn-secondary" href="#kit">
-              Get the free kit
-            </a>
-          </div>
-          <p className="hero-status">The hosted cloud is in early access. The kit is free and open source today.</p>
         </div>
 
-        <MarkA width={340} className="hero-mark" />
-
-        <div className="hero-demo">
-          <ConfidenceRuler
-            policy={policy}
-            label={`${rulerLabel}. The answer sits at ${d.noul.toFixed(2)}, in the ${d.band} band.`}
-            caption={
-              <>
-                Example thresholds from the <a href={templateDocs(templateId)}>{templateTitle}</a> template
-              </>
-            }
-            carry={{ score: d.noul }}
-            readout={
-              <span className="data">
-                {d.noul.toFixed(2)} · {d.band.toUpperCase()} · {formatUsd(r.costMicro)}
-              </span>
-            }
-          />
+        {/* The exhibit: one receipt on a flat plate in a 1px frame, with this set's lines under it. */}
+        <figure className="exhibit" aria-labelledby="exhibit-title">
+          <div className="exhibit-head">
+            <p className="label" id="exhibit-title">
+              Exhibit 01 · one receipt
+            </p>
+            <MarkA width={152} className="exhibit-mark" />
+          </div>
 
           <article className="decision" aria-label="One decision, read in four parts">
             <div className="decision-inner">
@@ -110,12 +91,45 @@ function Hero() {
                   </dd>
                 </div>
               </dl>
-              <p className="caveat">
-                Illustrative. The confidence is not recorded model output. The costs come from our price book for a{" "}
-                {receiptInputTokens}-token call, at list prices with no discounts.
-              </p>
             </div>
           </article>
+
+          <ConfidenceRuler
+            policy={policy}
+            label={`${rulerLabel}. The answer sits at ${d.noul.toFixed(2)}, in the ${d.band} band.`}
+            caption={
+              <>
+                This set&apos;s lines, an example from the <a href={templateDocs(templateId)}>{templateTitle}</a> template
+              </>
+            }
+            markers={[{ value: d.noul, n: 1 }]}
+            compact
+          />
+
+          <figcaption className="caveat exhibit-caveat">
+            Illustrative. The confidence is not recorded model output. The costs come from our price book for a{" "}
+            {receiptInputTokens}-token call, at list prices with no discounts.
+          </figcaption>
+        </figure>
+
+        <div className="hero-rest">
+          <p className="lede">
+            {productName} runs your yes-or-no, pick-one and score decisions on TypeSafe&apos;s System One models. Every answer
+            comes back with a band, a reason and a cost. You set the lines. Each band gets an action: act, send to a person,
+            fall back to a default, or ask a larger LLM. Every run records what it cost and what it saved.
+          </p>
+          <CopyLine label="Install the CLI" command={installCommand} />
+          <div className="hero-actions">
+            <span className="focus-poly">
+              <a className="btn btn-primary" href="#early-access">
+                Request early access
+              </a>
+            </span>
+            <a className="btn btn-secondary" href="#kit">
+              Get the free kit
+            </a>
+          </div>
+          <p className="hero-status">The hosted cloud is in early access. The kit is free and open source today.</p>
         </div>
       </div>
     </section>
@@ -123,6 +137,63 @@ function Hero() {
 }
 
 function HowItWorks() {
+  const r = heroReceipt();
+  const d = r.decision;
+  const lower = (policy.trueAt - policy.reviewMargin).toFixed(1);
+  const steps: HowStep[] = [
+    {
+      title: "Write the question",
+      body: (
+        <p>
+          Write it once in a versioned spec, with the answers it may give: yes or no, one option from a list, or a level on a
+          rubric. A System One model such as Jev answers with a confidence. For a yes-or-no question, it is the probability of
+          yes.
+        </p>
+      ),
+    },
+    {
+      title: "Set the line",
+      body: (
+        <p>
+          Your thresholds sort that number into High, Medium or Low, and each band maps to an action. In this example the yes
+          line is <span className="data">{policy.trueAt}</span> with a review margin of{" "}
+          <span className="data">{policy.reviewMargin}</span>, so <span className="data">{d.noul.toFixed(2)}</span> lands
+          between <span className="data">{lower}</span> and <span className="data">{policy.trueAt}</span> and goes to a person.
+          The lines live in the spec, so a change is a reviewed version.
+        </p>
+      ),
+    },
+    {
+      title: "Read the receipt",
+      body: (
+        <p>
+          Every run returns the same envelope: the answer, its band, the action and what the call cost against a larger LLM. The
+          CLI, the HTTP API and the console all read this one shape.
+        </p>
+      ),
+    },
+  ];
+  const code: CodeLine[] = [
+    { text: `$ npx @bandwise/cli run --local ${templateId}.spec.json line.json --json`, steps: [1], tag: "question" },
+    { text: "{" },
+    { text: '  "answers": {' },
+    { text: `    "page": { "type": "noul", "noul": ${d.noul} }`, steps: [1, 3], tag: "why" },
+    { text: "  }," },
+    { text: '  "decisions": {' },
+    { text: '    "page": {' },
+    { text: `      "value": ${String(d.value)},` },
+    { text: `      "band": "${d.band}",`, steps: [2, 3], tag: "band" },
+    { text: `      "action": "${d.action}"`, steps: [2], tag: "action" },
+    { text: "    }" },
+    { text: "  }," },
+    { text: '  "cost": {' },
+    { text: `    "systemOneCostUsd": ${wireUsd(r.costMicro)},`, steps: [3], tag: "cost" },
+    { text: `    "counterfactualLlmCostUsd": ${wireUsd(r.comparatorMicro)},` },
+    { text: `    "savingsUsd": ${wireUsd(r.comparatorMicro - r.costMicro)}` },
+    { text: "  }" },
+    { text: "}" },
+  ];
+
   return (
     <section className="section" id="how" aria-labelledby="how-title">
       <div className="wrap">
@@ -130,28 +201,37 @@ function HowItWorks() {
           <p className="label">How a decision flows</p>
           <h2 id="how-title">One question. One number. One action.</h2>
         </div>
-        <ol className="flow-steps">
+
+        <HowSteps steps={steps} code={code} codeLabel="Excerpt of the RunResult, as JSON" initial={3} />
+        <p className="caveat">
+          An excerpt with illustrative values: the confidence is not recorded model output. The costs come from our price book
+          for a {receiptInputTokens}-token call, against {r.comparatorLabel} at list prices. Local mode answers from fixtures, so
+          use it to check your spec and wiring, not accuracy.
+        </p>
+
+        <ul className="claims" aria-label="Claims and their caveats">
           <li>
-            <span className="num">01</span>
-            <h3>Question</h3>
-            <p>You write it once in a versioned spec, with the answers it may give: yes or no, one option from a list, or a level on a rubric.</p>
+            <p className="claim data">{formatUsd(systemOneModel.price.inputPerMtokMicroUsd)} per million input tokens</p>
+            <p className="claim-caveat">
+              Jev&apos;s list price. Output is not billed. Read from the price book in our model registry, which holds the live
+              value.
+            </p>
           </li>
           <li>
-            <span className="num">02</span>
-            <h3>Confidence</h3>
-            <p>A System One model such as Jev answers with a confidence. For a yes-or-no question, it is the probability of yes.</p>
+            <p className="claim data">67.8% at about $0.0004 and 0.4 s per case</p>
+            <p className="claim-caveat">
+              Jev on TypeSafe&apos;s 4-workflow benchmark. A vendor benchmark whose reference answers are the average of two
+              frontier models, not human labels. Source: <a href="https://www.datacamp.com/blog/system-one-models-jev">DataCamp</a>.
+            </p>
           </li>
           <li>
-            <span className="num">03</span>
-            <h3>Band</h3>
-            <p>Your thresholds sort that number into High, Medium or Low. They live in the spec, so a change is a reviewed version.</p>
+            <p className="claim data">Up to 194x faster, 445x cheaper</p>
+            <p className="claim-caveat">
+              TypeSafe reports this against LLMs on its own workflow evaluations. Your numbers will differ. Source:{" "}
+              <a href="https://vercel.com/blog/ai-gateway-jev-model-launch">Vercel blog</a>.
+            </p>
           </li>
-          <li>
-            <span className="num">04</span>
-            <h3>Action</h3>
-            <p>Each band maps to an action: act on its own, send to a person, fall back to a default, or ask a larger LLM.</p>
-          </li>
-        </ol>
+        </ul>
 
         <div className="example">
           <div>
@@ -171,28 +251,34 @@ function HowItWorks() {
           <div>
             <ConfidenceRuler
               policy={policy}
-              markers={decisions.map((d, i) => ({ value: d.noul, n: i + 1 }))}
-              label={rulerLabel}
+              markers={decisions.flatMap((x, i) => (x === d ? [] : [{ value: x.noul, n: i + 1 }]))}
+              label={`${rulerLabel}. Lines ${decisions.map((x, i) => `${i + 1} at ${x.noul.toFixed(2)}`).join(", ")}.`}
               caption="Example thresholds, set in the template's spec"
+              carry={{ score: d.noul }}
+              readout={
+                <span className="data">
+                  Line {decisions.indexOf(d) + 1}: {d.noul.toFixed(2)} · {d.band.toUpperCase()} · {formatUsd(r.costMicro)}
+                </span>
+              }
             />
             <BandLegend />
             <ol className="lines">
-              {decisions.map((d, i) => (
-                <li key={d.service}>
+              {decisions.map((x, i) => (
+                <li key={x.service}>
                   <span className="marker data" aria-hidden="true">
                     {i + 1}
                   </span>
                   <p className="log data">
                     <b>
-                      {d.service} {d.level}
+                      {x.service} {x.level}
                     </b>{" "}
-                    {d.message}
+                    {x.message}
                   </p>
                   <p className="verdict">
-                    <BandBadge band={d.band} score={d.noul} />
-                    <span className="data">{answerWord(d)}</span>
-                    <span className="data">{actionWord(d.action)}</span>
-                    <span className="outcome">{d.outcome}</span>
+                    <BandBadge band={x.band} score={x.noul} />
+                    <span className="data">{answerWord(x)}</span>
+                    <span className="data">{actionWord(x.action)}</span>
+                    <span className="outcome">{x.outcome}</span>
                   </p>
                 </li>
               ))}
