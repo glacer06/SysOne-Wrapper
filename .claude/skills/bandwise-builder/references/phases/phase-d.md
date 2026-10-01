@@ -48,7 +48,7 @@ Built in five slices, one PR each:
 ## D3: Minimal console
 - [x] Sign-in for Nick and PJ with Better Auth and two-factor (ADR-002), `internal` org only. Email and password plus TOTP, sign-up closed, members added by `pnpm --filter @bandwise/console console-member`; the app shell and placeholder pages for Sets, Runs, Savings, Review and Approvals call operations through `consoleOperation` (`apps/console/src/server/console-operation.ts`). See `docs/runbooks/console-access.md`.
 - [ ] Question editor (form and JSON) and threshold sliders with a live preview on sample state
-- [ ] Publish, version history and one-click rollback, each calling the same operation as the CLI
+- [x] Publish, version history and one-click rollback, each calling the same operation as the CLI. Built 2026-10-01: the Releases panel (`app/(org)/sets/[ref]/releases/`, `ReleasesPanel`) shows each channel's version and rollout stage with a stage control, rollback and pause, publishes the draft with a changelog after a dry run that lists lints and the diff, and diffs any two versions, the draft or a channel. Moves into controlled or full, out of a pause, rollback and pause ask first. The Approvals page (`app/(org)/approvals/`, and `/approvals/{id}` for the link an agent prints) lists pending agent requests with who asked, the exact input, the diff or stage move, and why it waited, with Approve and Deny through `approval.decide`. The click logic is `server/console-actions/releases.ts`, tested on PGlite.
 - [ ] Runs explorer and a savings view per set
 - [ ] Review queue for medium and low band decisions
 

@@ -10294,6 +10294,15 @@
           "reason": {
             "type": "string"
           },
+          "input": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "ifMatch": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "requestedBy": {
             "type": "object",
             "properties": {
@@ -10304,12 +10313,22 @@
               "tokenId": {
                 "type": "string",
                 "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "tokenName": {
+                "type": "string"
               }
             },
             "required": [
               "userId",
               "tokenId"
             ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           },
           "expiresAt": {
             "type": "string",
@@ -10332,7 +10351,10 @@
           "opId",
           "status",
           "reason",
+          "input",
+          "ifMatch",
           "requestedBy",
+          "createdAt",
           "expiresAt"
         ]
       },

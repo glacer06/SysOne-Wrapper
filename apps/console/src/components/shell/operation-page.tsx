@@ -32,8 +32,8 @@ export async function OperationPage({ title, description, operation, input = {},
         {coming}
       </NotBuiltYet>
     );
-  } else if (result.status === "error") {
-    body = <OperationFailed message={result.message} />;
+  } else if (result.status !== "ok") {
+    body = <OperationFailed message={result.status === "error" ? result.message : "The operation did not run."} />;
   } else {
     const rows = (result.output as { data?: unknown[] } | undefined)?.data ?? [];
     body =

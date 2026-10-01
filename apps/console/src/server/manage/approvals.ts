@@ -12,7 +12,7 @@ import {
   roleAtLeast,
   type TenantContext,
 } from "@bandwise/core";
-import { repos, type TenantTx } from "@bandwise/db";
+import { authRepositories, repos, type TenantTx } from "@bandwise/db";
 
 import type { OperationEnv } from "../operations/define";
 import { OperationError } from "../operations/errors";
@@ -31,7 +31,12 @@ export interface ApprovalViewOut {
   opId: string;
   status: "pending" | "approved" | "rejected" | "expired" | "executed";
   reason: string;
-  requestedBy: { userId: string; tokenId: string };
+  /** The input the agent sent, which runs unchanged on approval. */
+  input: JsonValue;
+  /** The If-Match value it was sent with: the draft ETag the agent saw. */
+  ifMatch: string | null;
+  requestedBy: { userId: string; tokenId: string; name?: string; tokenName?: string };
+  createdAt: string;
   expiresAt: string;
   decidedBy?: string;
   decidedAt?: string;
@@ -54,13 +59,30 @@ export function approvalView(row: ApprovalRow, now: Date): ApprovalViewOut {
     opId: row.opId,
     status: effectiveStatus(row, now),
     reason: row.reason,
+    input: (row.input ?? null) as JsonValue,
+    ifMatch: row.ifMatch,
     requestedBy: { userId: row.requestedByUserId, tokenId: row.requestedByTokenId },
+    createdAt: iso(row.createdAt),
     expiresAt: iso(row.expiresAt),
   };
   if (row.decidedByUserId !== null) view.decidedBy = row.decidedByUserId;
   const decidedAt = isoOrNull(row.decidedAt);
   if (decidedAt !== null) view.decidedAt = decidedAt;
   if (row.result !== null && row.result !== undefined) view.result = row.result as JsonValue;
+  return view;
+}
+
+/**
+ * approvalView plus who asked: the member's name and the token's name, so the inbox can say
+ * "PJ, through the cli token". The name is read only for a member of this org.
+ */
+export async function describeApproval(tx: TenantTx, row: ApprovalRow, now: Date): Promise<ApprovalViewOut> {
+  const view = approvalView(row, now);
+  const token = await repos.agentTokens.get(tx, row.requestedByTokenId);
+  if (token !== null) view.requestedBy.tokenName = token.name;
+  const member = await repos.memberships.getByUser(tx, row.requestedByUserId);
+  const user = member === null ? null : await authRepositories.users.get(tx, row.requestedByUserId);
+  if (user !== null) view.requestedBy.name = user.name;
   return view;
 }
 
@@ -144,7 +166,7 @@ export async function listApprovals(env: OperationEnv, input: { limit: number; c
   for (const row of page.data) {
     // A person sees the requests their role can decide; a token sees its own.
     if (actor.type === "user" && !roleAtLeast(actor.role, await requiredRoleFor(env.tx, row))) continue;
-    data.push(approvalView(row, env.now));
+    data.push(await describeApproval(env.tx, row, env.now));
   }
   return { data, nextCursor: page.nextCursor };
 }
@@ -159,7 +181,7 @@ async function visibleApproval(env: OperationEnv, id: string): Promise<ApprovalR
 }
 
 export async function getApproval(env: OperationEnv, input: { id: string }): Promise<ApprovalViewOut> {
-  return approvalView(await visibleApproval(env, input.id), env.now);
+  return describeApproval(env.tx, await visibleApproval(env, input.id), env.now);
 }
 
 export async function decideApproval(env: OperationEnv, input: { id: string; decision: "approved" | "rejected"; note?: string | undefined }): Promise<ApprovalViewOut> {
@@ -181,5 +203,5 @@ export async function decideApproval(env: OperationEnv, input: { id: string; dec
     diff: { opId: row.opId, decision: input.decision, note: input.note ?? null, requestedByTokenId: row.requestedByTokenId },
   });
   if (input.decision === "approved") env.runApprovalAfterCommit(row.id);
-  return approvalView(updated ?? row, env.now);
+  return describeApproval(env.tx, updated ?? row, env.now);
 }

@@ -18,15 +18,21 @@ import { defineOperation, operationGroup, placeholderInput, placeholderOutput, t
 import { isWriteScope, listInput, listOutput, placeholderListOutput } from "./schemas";
 
 /**
- * GET /approvals/{id}: { id, opId, status, reason, requestedBy, expiresAt, decidedBy?, decidedAt?, result? }.
- * requestedBy and decidedBy carry the approval_requests columns they name.
+ * GET /approvals/{id}: { id, opId, status, reason, input, ifMatch, requestedBy, createdAt, expiresAt,
+ * decidedBy?, decidedAt?, result? }. requestedBy and decidedBy carry the approval_requests columns
+ * they name; requestedBy adds the member's and the token's names when they can be read.
  */
 export const ApprovalView = z.object({
   id: ApprovalId,
   opId: z.string().min(1),
   status: ApprovalStatus,
   reason: z.string(),
-  requestedBy: z.object({ userId: UserId, tokenId: TokenId }),
+  /** The input the agent sent. It runs unchanged on approval. */
+  input: JsonValue,
+  /** The If-Match value sent with the request: the draft ETag the agent saw. */
+  ifMatch: z.string().nullable(),
+  requestedBy: z.object({ userId: UserId, tokenId: TokenId, name: z.string().optional(), tokenName: z.string().optional() }),
+  createdAt: IsoTimestamp,
   expiresAt: IsoTimestamp,
   decidedBy: UserId.optional(),
   decidedAt: IsoTimestamp.optional(),
