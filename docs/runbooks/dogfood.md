@@ -37,7 +37,7 @@ The three dogfood hooks are wired in this repo's `.claude/settings.json`, all in
 
 ## Hosted mode (D2e)
 
-To move the hooks from your own key to app.bandwise.dev, follow [hosted-dogfood.md](hosted-dogfood.md) in order: migrations, the Vercel env, `bootstrap-internal` for the `internal` org and the `.bandwise/sets/` specs, the minted tokens, the checks, and the rollback plan. It marks which steps need PJ. Not started as of 2026-10-01.
+To move the hooks from your own key to app.bandwise.dev, follow [hosted-dogfood.md](hosted-dogfood.md) in order: migrations, the Vercel env, `bootstrap-internal` for the `internal` org and the `.bandwise/sets/` specs, the minted tokens, the checks, and the rollback plan. It marks which steps need PJ. The code is on PR #21; nothing is deployed as of 2026-10-01.
 
 ## 1. Install
 
@@ -153,30 +153,30 @@ pnpm -s bandwise launch -- -p "Rename getUser to fetchUser everywhere"
 
 Once the `internal` org is up on app.bandwise.dev (D2e) with the `.bandwise/sets/` specs imported and each set's production channel published, the same hooks can call the hosted endpoint instead of TypeSafe. Nothing in `.claude/settings.json` changes. The switch is one variable.
 
-1. Get a token for the `internal` org. Until the console mints them, a platform admin runs the D2a mint script and hands it over once. Agent tokens start `sa_live_`. Ask for `run`, `sets:read`, `sets:write`, `release:production`, `runs:read` and `usage:read`.
-2. Keep it in the Keychain, like the TypeSafe key, and load it in `~/.zshrc`:
+1. Get two tokens for the `internal` org, minted as in [hosted-dogfood.md](hosted-dogfood.md) section 4. The hook token is run only, limited to the dogfood sets, and is the only Bandwise token the Claude Code session ever sees, because the hooks can read every variable in that shell. The CLI token is an `sa_live_` agent token with `run`, `sets:read`, `sets:write`, `release:production`, `runs:read` and `usage:read`, and it is loaded for one command at a time. PJ decides whether the hook token is an `sk_live_` app token or a run-only `sa_live_` agent token (hosted-dogfood.md section 0).
+2. Keep both in the Keychain and load them in `~/.zshrc` as hosted-dogfood.md section 5 shows:
 
    ```sh
-   security add-generic-password -a "$USER" -s BANDWISE_TOKEN -w
    export BANDWISE_TOKEN="$(security find-generic-password -a "$USER" -s BANDWISE_TOKEN -w 2>/dev/null)"
+   bwa() { BANDWISE_TOKEN="$(security find-generic-password -a "$USER" -s BANDWISE_AGENT_TOKEN -w 2>/dev/null)" pnpm -s bandwise "$@"; }
    ```
 
-   `BANDWISE_BASE_URL` defaults to `https://app.bandwise.dev`. Set it only for a local console, as `http://localhost:3000`. The CLI refuses plain http to any other host, so the token never crosses a network in clear text.
-3. Check the token and the sets before any hook uses them:
+   Never export the agent token. `bwa` sets it for the one command it runs. `BANDWISE_BASE_URL` defaults to `https://app.bandwise.dev`. Set it only for a local console, as `http://localhost:3000`. The CLI refuses plain http to any other host, so a token never crosses a network in clear text.
+3. Check the CLI token and the sets before any hook uses them:
 
    ```sh
-   pnpm -s bandwise spec diff .bandwise/sets/done-check.json
-   pnpm -s bandwise report --remote --since 1d
+   bwa spec diff .bandwise/sets/done-check.json
+   bwa report --remote --since 1d
    ```
 
    `spec diff` exits 0 when the server draft matches the file, 2 when it differs, and 1 with one line that names the problem (for example `error unauthenticated (HTTP 401)` with "check BANDWISE_TOKEN").
-4. Open a new terminal, start a new Claude Code session, send one prompt, then run `pnpm bandwise report --since 1h` for the local receipts and `pnpm bandwise report --remote --since 1h` for the server's runs. Both should show `model-tier`.
+4. Open a new terminal, start a new Claude Code session, send one prompt, then run `pnpm bandwise report --since 1h` for the local receipts and `bwa report --remote --since 1h` for the server's runs. Both should show `model-tier`.
 
 What changes in hosted mode:
 - The hook sends `POST /api/v1/sets/<slug>/run` with the token. The slug is the spec file name (`done-check`, `action-risk-gate`, `model-tier`), or `--remote-set <slug>` on the hook command. It does not need `TYPESAFE_API_KEY`: the server runs the model with the platform key.
 - The local spec file still decides which fields leave the machine, with the same redaction, and `--drop content_preview` still keeps file contents local for the risk gate.
-- The server's rollout stage decides whether a hook acts, and `--rollout` on the hook command is ignored. Moving a set to `controlled` becomes `pnpm -s bandwise rollout done-check controlled --reason "a week of clean shadow receipts"`, and stepping back is `pnpm -s bandwise rollout done-check shadow --reason "..."`, with no settings change and no new session. `paused` and `inactive` never act. A move that needs a person exits 3 and prints the approval id and the console link.
-- Editing a question or a threshold is: edit `.bandwise/sets/<set>.json`, `pnpm -s bandwise spec push .bandwise/sets/<set>.json`, read the lint lines, `pnpm -s bandwise publish <set> --changelog "..."`. The next hook call uses the new version. `pnpm -s bandwise rollback <set>` restores the previous one.
+- The server's rollout stage decides whether a hook acts, and `--rollout` on the hook command is ignored. Moving a set to `controlled` becomes `bwa rollout done-check controlled --reason "a week of clean shadow receipts"`, and stepping back is `bwa rollout done-check shadow --reason "..."`, with no settings change and no new session. `paused` and `inactive` never act. A move that needs a person exits 3 and prints the approval id and the console link.
+- Editing a question or a threshold is: edit `.bandwise/sets/<set>.json`, `bwa spec push .bandwise/sets/<set>.json`, read the lint lines, `bwa publish <set> --changelog "..."`. The next hook call uses the new version. `bwa rollback <set>` restores the previous one.
 - Receipts keep landing in `~/.bandwise/receipts.jsonl` with `provider: "bandwise"` and a `remote` field (host, version, channel, run id), so the local report still works. They never hold the token.
 - Any error answer, a timeout (3 seconds by default) or a server that cannot be reached ends the hook with exit 0 and no output, and writes a receipt with the error code as its status (`unauthenticated`, `set_not_live`, `network_error`, `timeout`).
 
