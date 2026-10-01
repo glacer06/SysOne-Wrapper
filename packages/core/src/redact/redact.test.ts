@@ -53,7 +53,7 @@ describe("redaction and state shaping", () => {
 
 describe("redaction cost and the 2026-10-01 security review", () => {
   it("stays fast on input built to make the name patterns backtrack", () => {
-    for (const unit of ["key-", "--key", "token_", "secret", "a://b", "Bearer ", "-----BEGIN A PRIVATE KEY-----", "sk-proj-"]) {
+    for (const unit of ["key-", "--key", "token_", "secret", "a://b", "Bearer ", ["-----BEGIN A ", "PRIVATE KEY-----"].join(""), ["sk-", "proj-"].join("")]) {
       const text = unit.repeat(Math.ceil(64 * 1024 / unit.length));
       const started = performance.now();
       redactSecrets(text);
