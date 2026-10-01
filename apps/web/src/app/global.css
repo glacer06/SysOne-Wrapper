@@ -1487,6 +1487,12 @@ input[type="range"] {
     color var(--bw-dur-fast) var(--bw-ease-standard);
 }
 
+@media (max-width: 639px) {
+  .period-tabs button {
+    min-height: 44px;
+  }
+}
+
 .period-tabs button[aria-pressed="true"] {
   background: var(--bw-text);
   color: var(--bw-bg);
@@ -1643,6 +1649,15 @@ input[type="range"] {
 .case-title a {
   color: var(--bw-text);
   text-decoration: none;
+}
+
+/* A 44px touch target on phones without moving the row: the padding is taken back by the margin. */
+@media (max-width: 639px) {
+  .case-title a {
+    display: inline-block;
+    padding-block: 11px;
+    margin-block: -11px;
+  }
 }
 
 .case-title a:hover {
@@ -2081,6 +2096,7 @@ code {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
+  min-width: 44px;
   color: var(--bw-text);
   overflow-wrap: anywhere;
 }
@@ -2138,6 +2154,7 @@ code {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
+  min-width: 44px;
   color: var(--bw-text);
 }
 

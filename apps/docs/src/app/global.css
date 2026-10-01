@@ -39,6 +39,24 @@
   --color-fd-diff-add: var(--bw-high-bg);
   --color-fd-diff-add-symbol: var(--bw-high-text);
 
+  /*
+   * fumadocs-openapi colors its method and status badges with Tailwind's palette. Green at 600 is
+   * 3.2:1 on white, and yellow and orange are warm. Each badge also prints its method or code, so
+   * the hue is never the only signal; map the hues onto band and brand text tokens.
+   */
+  --color-green-400: var(--bw-high-text);
+  --color-green-500: var(--bw-high-text);
+  --color-green-600: var(--bw-high-text);
+  --color-blue-400: var(--bw-brand-text);
+  --color-blue-600: var(--bw-brand-text);
+  --color-yellow-400: var(--bw-medium-text);
+  --color-yellow-600: var(--bw-medium-text);
+  --color-orange-400: var(--bw-medium-text);
+  --color-orange-600: var(--bw-medium-text);
+  --color-red-400: var(--bw-low-text);
+  --color-red-500: var(--bw-low-text);
+  --color-red-600: var(--bw-low-text);
+
   /* Shadows only on overlays: popovers and dialogs. Everything else stays flat. */
   --shadow-sm: 0 0 transparent;
   --shadow-md: var(--bw-shadow-overlay);
@@ -309,6 +327,7 @@ pre {
 }
 .bw-codetabs-tab {
   min-height: 44px;
+  min-width: 44px;
   padding: 0 2px;
   font: 500 var(--bw-text-caption) / 1 var(--font-code), ui-monospace, monospace;
   letter-spacing: var(--bw-track-label);
@@ -600,7 +619,9 @@ pre {
 .bw-agents a {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   min-height: 44px;
+  min-width: 44px;
   font-family: var(--font-code), ui-monospace, monospace;
   color: var(--bw-text-muted);
   text-decoration: underline;

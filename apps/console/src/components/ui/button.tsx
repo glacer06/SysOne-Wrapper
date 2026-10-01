@@ -18,7 +18,7 @@ export function buttonClasses(variant: ButtonVariant = "secondary", size: "sm" |
     "inline-flex items-center justify-center gap-2 rounded-sm font-semibold whitespace-nowrap",
     "transition-[background-color,border-color,transform] duration-(--bw-dur-fast) ease-(--bw-ease-standard) active:translate-y-px",
     "disabled:cursor-not-allowed disabled:opacity-40 disabled:active:translate-y-0",
-    size === "sm" ? "h-8 px-3 text-sm" : "h-10 px-5 text-sm max-sm:min-h-11",
+    size === "sm" ? "h-8 px-3 text-sm max-sm:min-h-11" : "h-10 px-5 text-sm max-sm:min-h-11",
     VARIANTS[variant],
   );
 }

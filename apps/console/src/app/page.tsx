@@ -40,7 +40,7 @@ export default async function HomePage() {
             Request early access on www.bandwise.dev
           </a>
         </FocusPoly>
-        <Link href="/sign-in" className="text-sm font-semibold text-bw-brand-text underline underline-offset-4 hover:text-bw-text">
+        <Link href="/sign-in" className="text-sm font-semibold text-bw-brand-text underline underline-offset-4 hover:text-bw-text max-sm:inline-flex max-sm:min-h-11 max-sm:items-center">
           Team sign-in
         </Link>
       </p>

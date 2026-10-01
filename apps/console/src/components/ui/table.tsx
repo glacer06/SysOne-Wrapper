@@ -2,10 +2,13 @@ import type { ReactNode, TdHTMLAttributes, ThHTMLAttributes } from "react";
 
 import { cx } from "./cx";
 
-/** A ruled table that scrolls sideways inside its own box on narrow screens. Numbers are mono. */
+/**
+ * A ruled table that scrolls sideways inside its own box on narrow screens. Numbers are mono.
+ * The box takes focus so a keyboard can scroll it too (WCAG 2.1.1).
+ */
 export function Table({ caption, children }: { caption?: string; children: ReactNode }) {
   return (
-    <div className="relative overflow-x-auto rounded-md border border-bw-border bg-bw-surface">
+    <div tabIndex={0} role="region" aria-label={caption ?? "Table"} className="relative overflow-x-auto rounded-md border border-bw-border bg-bw-surface">
       <table className="w-full border-collapse text-left text-sm [&_tbody_tr:last-child>td]:border-b-0 [&_tbody_tr]:transition-colors [&_tbody_tr:hover]:bg-bw-surface-sunken">
         {caption === undefined ? null : <caption className="sr-only">{caption}</caption>}
         {children}

@@ -67,7 +67,7 @@ function Health({ row }: { row: SetRow }) {
     return (
       <Link
         href={`/review?set=${encodeURIComponent(row.slug)}`}
-        className="inline-flex min-h-10 items-center rounded-sm"
+        className="inline-flex min-h-10 items-center rounded-sm max-sm:min-h-11"
         aria-label={`${row.openReviews} open review items for ${row.slug}`}
       >
         <Badge tone="info">

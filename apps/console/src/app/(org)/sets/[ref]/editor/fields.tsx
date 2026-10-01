@@ -60,7 +60,7 @@ export function StructuredEditor({ label, value, onChange, placeholder }: { labe
     );
   }
   return (
-    <fieldset className="flex flex-col gap-3 rounded-sm border border-bw-border p-3">
+    <fieldset className="flex min-w-0 flex-col gap-3 rounded-sm border border-bw-border p-3">
       <legend className="px-1 text-sm font-medium text-bw-text">{label}</legend>
       {shape.fields.map((f) =>
         f.list ? (
@@ -163,7 +163,7 @@ export function CommitInput({ label, value, onCommit, invalid }: { label: string
           if (e.key === "Escape") setText(value);
         }}
         aria-invalid={problem === null ? undefined : true}
-        className="h-9 w-full rounded-sm border border-bw-border-control bg-bw-surface-sunken px-2 font-mono text-sm text-bw-text aria-[invalid=true]:border-bw-low"
+        className="h-9 w-full rounded-sm border border-bw-border-control bg-bw-surface-sunken px-2 max-sm:h-11 font-mono text-sm text-bw-text aria-[invalid=true]:border-bw-low"
       />
       {problem === null ? null : <p className="text-xs text-bw-low-text">{problem}</p>}
     </div>

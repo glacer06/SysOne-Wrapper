@@ -49,7 +49,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en" className={`${body.variable} ${heading.variable} ${code.variable}`} suppressHydrationWarning>
       <body className="flex min-h-screen flex-col">
         {/* The toggle sets the fumadocs `dark` class and the brand `data-theme` together. */}
-        <RootProvider>{children}</RootProvider>
+        <RootProvider theme={{ attribute: ["class", "data-theme"] }}>{children}</RootProvider>
       </body>
     </html>
   );

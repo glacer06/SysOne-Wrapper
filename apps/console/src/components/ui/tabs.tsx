@@ -51,7 +51,7 @@ export function Tabs({ items, defaultTab, label }: { items: readonly TabItem[]; 
               tabIndex={selected ? 0 : -1}
               onClick={() => setActive(item.id)}
               className={cx(
-                "-mb-px border-b-2 px-0.5 py-3 text-sm font-medium transition-colors duration-(--bw-dur-fast)",
+                "-mb-px min-w-11 border-b-2 px-0.5 py-3 text-center text-sm font-medium transition-colors duration-(--bw-dur-fast)",
                 selected ? "border-bw-brand text-bw-text" : "border-transparent text-bw-text-muted hover:text-bw-text",
               )}
             >

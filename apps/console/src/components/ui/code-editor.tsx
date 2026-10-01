@@ -35,7 +35,7 @@ export function CodeEditor({ label, value, onChange, json = true, rows = 18, rea
         autoCapitalize="off"
         autoCorrect="off"
         aria-invalid={invalid || undefined}
-        aria-describedby={`${id}-status`}
+        aria-describedby={readOnly ? `${id}-status` : `${id}-status ${id}-keys`}
         onChange={(e) => onChange(e.target.value)}
         onKeyDown={(e) => {
           if (e.key !== "Tab" || e.shiftKey || readOnly || e.currentTarget.dataset["escaped"] === "1") return;
@@ -59,6 +59,8 @@ export function CodeEditor({ label, value, onChange, json = true, rows = 18, rea
       <p id={`${id}-status`} className={cx("text-xs", invalid ? "text-bw-low-text" : "text-bw-text-muted")} aria-live="polite">
         {check === null ? "" : check.ok ? "Valid JSON" : `Invalid JSON${check.line === null ? "" : ` near line ${check.line}`}: ${check.message}`}
       </p>
+      {/* Tab is taken for indenting, so say how to leave the field (WCAG 2.1.2). */}
+      {readOnly ? null : <p id={`${id}-keys`} className="text-xs text-bw-text-muted">Tab indents. Press Escape, then Tab, to leave the field.</p>}
     </div>
   );
 }

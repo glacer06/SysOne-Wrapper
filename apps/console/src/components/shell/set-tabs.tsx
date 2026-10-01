@@ -27,7 +27,7 @@ export function SetTabs({ slug }: { slug: string }) {
           href={t.href}
           aria-current={t.current ? "page" : undefined}
           className={cx(
-            "-mb-px shrink-0 border-b-2 px-0.5 py-3 text-sm font-medium transition-colors duration-(--bw-dur-fast)",
+            "-mb-px min-w-11 shrink-0 border-b-2 px-0.5 py-3 text-center text-sm font-medium transition-colors duration-(--bw-dur-fast)",
             t.current ? "border-bw-brand text-bw-text" : "border-transparent text-bw-text-muted hover:text-bw-text",
           )}
         >

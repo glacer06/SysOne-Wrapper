@@ -243,7 +243,7 @@ export function ThresholdRuler(props: RulerProps) {
         {extra}
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" tabIndex={0} role="region" aria-label={`${context}: recent runs per band under the draft`}>
         <table className="w-full border-collapse text-left text-sm">
           <caption className="sr-only">{`${context}: recent runs per band under the draft`}</caption>
           <thead>

@@ -74,7 +74,7 @@ export function TwoFactorForm() {
       <Button type="submit" variant="primary" pending={pending}>
         {pending ? "Checking" : "Continue"}
       </Button>
-      <button type="button" className="-my-1 min-h-10 self-start text-sm font-medium text-bw-brand-text underline underline-offset-4 hover:text-bw-text" onClick={() => setBackup(!backup)}>
+      <button type="button" className="-my-1 min-h-10 self-start text-sm font-medium max-sm:min-h-11 text-bw-brand-text underline underline-offset-4 hover:text-bw-text" onClick={() => setBackup(!backup)}>
         {backup ? "Use the authenticator app instead" : "Use a backup code instead"}
       </button>
     </form>

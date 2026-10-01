@@ -111,7 +111,7 @@ export default async function ReviewPage({ searchParams }: { searchParams: Promi
               key={t.label}
               href={hrefWith("/review", sp, { status: t.value, done: undefined, item: undefined })}
               aria-current={current ? "page" : undefined}
-              className={cx("-mb-px border-b-2 px-0.5 py-3 text-sm transition-colors duration-(--bw-dur-fast)", current ? "border-bw-brand font-medium text-bw-text" : "border-transparent text-bw-text-muted hover:text-bw-text")}
+              className={cx("-mb-px min-w-11 border-b-2 px-0.5 py-3 text-center text-sm transition-colors duration-(--bw-dur-fast)", current ? "border-bw-brand font-medium text-bw-text" : "border-transparent text-bw-text-muted hover:text-bw-text")}
             >
               {t.label}
             </Link>

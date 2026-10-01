@@ -89,7 +89,7 @@ function RunView({ preview, spec }: { preview: Extract<LastPreview, { kind: "run
           <span className="font-mono">{edited.route ?? "none"}</span>. Highlighted cells below changed. No new call was made.
         </InlineAlert>
       ) : null}
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Decisions from the preview run">
         <table className="w-full text-left text-sm">
           <caption className="sr-only">Decisions from the preview run</caption>
           <thead>

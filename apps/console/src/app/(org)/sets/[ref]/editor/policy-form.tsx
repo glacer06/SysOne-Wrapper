@@ -165,7 +165,7 @@ export function PolicyForm({ policy, options, onChange, marker, answeredOption =
         />
       )}
       {policy.type === "choice" && options.length > 0 ? (
-        <fieldset className="flex flex-col gap-3 rounded-sm border border-bw-border p-3">
+        <fieldset className="flex min-w-0 flex-col gap-3 rounded-sm border border-bw-border p-3">
           <legend className="px-1 text-sm font-medium text-bw-text">Stricter bars per option</legend>
           <p className="text-xs text-bw-text-muted">Turn one on for a risky option that should need more confidence before it acts.</p>
           {options.map((key) => {
