@@ -161,7 +161,7 @@ pre {
   font-size: 20px;
 }
 .bw-header-ant {
-  --ant-h: 0.95em;
+  --ant-h: 0.57em; /* 40% smaller than the first cut (Nick, 2026-10-01). */
   position: relative;
   display: inline-block;
   flex-shrink: 0;

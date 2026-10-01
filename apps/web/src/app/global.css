@@ -234,7 +234,7 @@ picture {
    baseline. The box crops the supplied drawing (1400 units square) to the ant, 1014 by 357 units,
    which leaves the trail out. */
 .header-ant {
-  --ant-h: 0.95em;
+  --ant-h: 0.57em; /* 40% smaller than the first cut (Nick, 2026-10-01). */
   position: relative;
   display: inline-block;
   flex-shrink: 0;
