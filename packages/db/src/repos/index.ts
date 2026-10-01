@@ -678,6 +678,64 @@ export const authRepositories = {
       return true;
     },
   },
+  runLimits: {
+    table: "run_limits",
+    /**
+     * Adds `amount` to the key's window in one locked upsert, so two instances cannot both slip
+     * under `max`. A newer window replaces an older one; a caller whose clock is behind counts
+     * against the newer window. Returns ok false, and counts nothing, when the window would pass
+     * `max`.
+     */
+    async take(tx: AnyTx, k: { keyHash: string; windowStart: Date; amount: number; max: number }): Promise<{ ok: boolean; used: number }> {
+      const t = s.runLimits;
+      if (k.amount > k.max) return { ok: false, used: 0 };
+      const rows = await drizzleOf(tx)
+        .insert(t)
+        .values({ keyHash: k.keyHash, windowStart: k.windowStart, used: k.amount })
+        .onConflictDoUpdate({
+          target: t.keyHash,
+          set: {
+            windowStart: sql`greatest(${t.windowStart}, excluded.window_start)`,
+            used: sql`case when excluded.window_start > ${t.windowStart} then excluded.used else ${t.used} + excluded.used end`,
+          },
+          setWhere: sql`excluded.window_start > ${t.windowStart} or ${t.used} + excluded.used <= ${k.max}`,
+        })
+        .returning({ used: t.used });
+      const row = rows[0];
+      return row === undefined ? { ok: false, used: k.max } : { ok: true, used: row.used };
+    },
+    /** Adds `amount` to the key's window with no limit: a cost that was already spent. */
+    async charge(tx: AnyTx, k: { keyHash: string; windowStart: Date; amount: number }): Promise<number> {
+      const t = s.runLimits;
+      const rows = await drizzleOf(tx)
+        .insert(t)
+        .values({ keyHash: k.keyHash, windowStart: k.windowStart, used: k.amount })
+        .onConflictDoUpdate({
+          target: t.keyHash,
+          set: {
+            windowStart: sql`greatest(${t.windowStart}, excluded.window_start)`,
+            used: sql`case when excluded.window_start > ${t.windowStart} then excluded.used else ${t.used} + excluded.used end`,
+          },
+        })
+        .returning({ used: t.used });
+      return rows[0]?.used ?? k.amount;
+    },
+    /** What the key used in the window that starts at `windowStart` (or a newer one), 0 for none. */
+    async used(tx: AnyTx, keyHash: string, windowStart: Date): Promise<number> {
+      const t = s.runLimits;
+      const rows = await drizzleOf(tx)
+        .select({ used: t.used })
+        .from(t)
+        .where(and(eq(t.keyHash, keyHash), gte(t.windowStart, windowStart)))
+        .limit(1);
+      return rows[0]?.used ?? 0;
+    },
+    /** Deletes windows that started before `before`. */
+    async prune(tx: AnyTx, before: Date): Promise<void> {
+      const t = s.runLimits;
+      await drizzleOf(tx).delete(t).where(lt(t.windowStart, before));
+    },
+  },
   consoleEnrollments: {
     table: "console_enrollments",
     /** Issues (or replaces) the user's enrollment code. Only its hash is stored. */

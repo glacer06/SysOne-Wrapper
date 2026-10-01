@@ -132,6 +132,7 @@ Production Postgres is Supabase (ADR-018). A fresh project grants `anon`, `authe
 - Evals, playground compare, Studio calibration, try-model and repeat runs use a separate **eval** limiter bucket. By default it gets 25 percent of the org's RPM and the lowest priority in the global budget, so an agent iterating on a set cannot starve production runs.
 - The global budget is a per-model setting: about 1,000 RPM for `jev-1.13.0`, roughly 83 percent of the published 1,200. Limiter keys include the model.
 - Per-token limits apply to agent tokens as they do to app tokens. The daily spend cap is above.
+- Hosted runs today (`POST /api/v1/sets/{ref}/run` and console draft previews, `apps/console/src/server/run/limits.ts`): every caller, keyed by org plus agent token, app key or console user, gets 120 runs per minute (`429 rate_limited`) and 5 USD of System One and escalation cost per UTC day (`402 token_budget_exceeded`). Spend is the envelope cost of each stored run, linked fallback runs included, so one run in flight can finish over the cap. Both counts live in `run_limits` (migration 0008, an auth-class table with SHA-256 keys, no org data in the clear), updated in one locked upsert so they hold across instances. These are named constants, not yet the per-token `rpm_limit` and `daily_spend_cap_micro_usd` columns; Phase 2 reads those and the plan limits behind the same ports.
 
 ## Platform admin
 
