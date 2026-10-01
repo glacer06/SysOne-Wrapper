@@ -106,6 +106,22 @@ describe("bandwise hook with BANDWISE_TOKEN", () => {
     expect(raw).not.toContain(TOKEN);
   });
 
+  it("fails open on the server's rate limit and spend cap, and records each refusal code", async () => {
+    const refusals = [
+      { status: 429, code: "rate_limited", retryable: true },
+      { status: 402, code: "token_budget_exceeded", retryable: false },
+    ];
+    for (const r of refusals) {
+      const api = hostedFetch({ status: r.status, body: { error: { code: r.code, message: "Refused.", requestId: "r", retryable: r.retryable, runId: "0193a000-0000-7000-8000-0000000000r9" } } });
+      const { out, receipts, raw } = await hook([], api.fetch);
+      expect(api.sent).toHaveLength(1);
+      expect(out).toEqual({ exitCode: 0, stdout: "", stderr: "" });
+      expect(receipts).toHaveLength(1);
+      expect(receipts[0]).toMatchObject({ status: r.code, provider: "bandwise", acted: false });
+      expect(raw).not.toContain(TOKEN);
+    }
+  });
+
   it("fails open on a network error, a bad body and a timeout", async () => {
     const thrown = await hook([], hostedFetch("throw").fetch);
     expect(thrown.out.stdout).toBe("");

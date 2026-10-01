@@ -57,3 +57,4 @@ export {
 } from "./tokens.js";
 
 export { createSessionTokenHasher, generateEnrollmentCode, hashAttemptKey, hashEnrollmentCode } from "./console-auth.js";
+export { hashRunLimitKey } from "./run-limit-key.js";

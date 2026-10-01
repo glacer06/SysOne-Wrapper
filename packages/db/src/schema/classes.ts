@@ -70,7 +70,10 @@ export const PLATFORM_TABLES = [
  */
 export const PRIVATE_PLATFORM_TABLES = ["early_access_signups"] as const;
 
-/** Better Auth tables and the device flow: no tenant RLS (data-model.md, ADR-002). */
+/**
+ * Better Auth tables, the device flow and the hashed limit windows (auth_attempts, run_limits): no
+ * tenant RLS (data-model.md, ADR-002).
+ */
 export const AUTH_TABLES = [
   "users",
   "sessions",
@@ -80,6 +83,7 @@ export const AUTH_TABLES = [
   "device_codes",
   "auth_attempts",
   "console_enrollments",
+  "run_limits",
 ] as const;
 
 /** The auth tables migration 0001 granted. Frozen: 0001 is applied; later ones grant in their own migration. */
