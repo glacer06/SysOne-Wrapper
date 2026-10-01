@@ -3,9 +3,9 @@
 // (src/cross-tenant.test.ts) is generated from TENANT_REPOSITORY_NAMES and fails when a tenant
 // repository or method has no coverage.
 
-import { and, asc, desc, eq, gte, type InferInsertModel, type InferSelectModel, isNull, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, gt, gte, inArray, type InferInsertModel, type InferSelectModel, isNull, lt, lte, ne, or, type SQL, sql } from "drizzle-orm";
 
-import type { ModelPrice, Page, PageReq, PointerChannel, SystemOneProvider } from "@bandwise/core/contracts";
+import type { Action, Band, Channel, ModelPrice, Page, PageReq, PointerChannel, ReviewItemKind, ReviewItemStatus, RunRecordSource, RunStatus, SystemOneProvider } from "@bandwise/core/contracts";
 
 import { type AnyTx, drizzleOf, type TenantTx, type UserTx } from "../internal/drizzle.js";
 import * as s from "../schema/index.js";
@@ -119,11 +119,86 @@ function releasePointersRepo(opts: RepoOptions) {
   };
 }
 
+/**
+ * A newest-first page on (created_at, id). The cursor is the id of the last row of the previous
+ * page, read back inside the same org scope, so timestamps never travel through a cursor.
+ */
+async function newestFirst<Row extends { id: string }>(
+  run: (after: SQL | undefined, limit: number) => Promise<Row[]>,
+  table: { createdAt: AnyColumnLike; id: AnyColumnLike; tableName: string },
+  page: PageReq,
+): Promise<Page<Row>> {
+  const limit = clampLimit(page.limit);
+  const after =
+    page.cursor === null
+      ? undefined
+      : sql`(${table.createdAt}, ${table.id}) < (select c.created_at, c.id from ${sql.identifier(table.tableName)} c where c.id = ${page.cursor})`;
+  const rows = await run(after, limit + 1);
+  const data = rows.slice(0, limit);
+  return { data, nextCursor: rows.length > limit ? (data.at(-1)?.id ?? null) : null };
+}
+
+type AnyColumnLike = Parameters<typeof eq>[0];
+
+/** run.list filters (management-api.md, Runs and usage). */
+export interface RunPageFilter {
+  setId?: string;
+  /** Limit to these sets: a token's allowlist. */
+  setIds?: readonly string[];
+  versionId?: string;
+  channel?: Channel;
+  source?: RunRecordSource;
+  status?: RunStatus;
+  band?: Band;
+  action?: Action;
+  from?: Date;
+  to?: Date;
+}
+
+/** One set's run totals for usage.get, read straight from runs until the usage_daily rollup lands. */
+export interface RunSetTotals {
+  setId: string;
+  runs: number;
+  bandHigh: number;
+  bandMedium: number;
+  bandLow: number;
+  errors: number;
+  inputTokens: number;
+  outputTokens: number;
+  systemOneCostMicroUsd: number;
+  counterfactualMicroUsd: number;
+  savingsMicroUsd: number;
+  llmCallsAvoided: number;
+}
+
+/** One UTC day of org run totals for the usage.get chart. `day` is YYYY-MM-DD. */
+export interface RunDayTotals {
+  day: string;
+  runs: number;
+  errors: number;
+  systemOneCostMicroUsd: number;
+  counterfactualMicroUsd: number;
+  savingsMicroUsd: number;
+  llmCallsAvoided: number;
+}
+
+/** review.list filters (management-api.md, Review and feedback). */
+export interface ReviewPageFilter {
+  setId?: string;
+  /** Limit to these sets: a token's allowlist. */
+  setIds?: readonly string[];
+  kind?: ReviewItemKind;
+  status?: ReviewItemStatus;
+  band?: Band;
+}
+
 /** Builds every repository. Exported repositories always use `{ orgFilter: true }`. */
 export function buildRepositories(opts: RepoOptions) {
   const questionSets = tenantRepo(s.questionSets, opts);
   const questionSetVersions = tenantRepo(s.questionSetVersions, opts);
   const runs = tenantRepo(s.runs, opts);
+  const releaseEvents = tenantRepo(s.releaseEvents, opts);
+  const approvalRequests = tenantRepo(s.approvalRequests, opts);
   const reviewItems = tenantRepo(s.reviewItems, opts);
   const usageEvents = tenantRepo(s.usageEvents, opts);
   const memberships = tenantRepo(s.memberships, opts);
@@ -199,6 +274,44 @@ export function buildRepositories(opts: RepoOptions) {
         const [row] = await questionSetVersions.findMany(tx, where, 1);
         return row ?? null;
       },
+      /** Published and archived versions, newest first. The cursor is a version number. */
+      async listPublished(tx: TenantTx, setId: string, page: PageReq) {
+        const t = s.questionSetVersions;
+        const limit = clampLimit(page.limit);
+        const before = page.cursor === null ? undefined : lt(t.version, Number(page.cursor));
+        const rows = await drizzleOf(tx)
+          .select()
+          .from(t)
+          .where(questionSetVersions.scope(tx, and(eq(t.setId, setId), ne(t.status, "draft"), before)))
+          .orderBy(desc(t.version))
+          .limit(limit + 1);
+        const data = rows.slice(0, limit);
+        const last = data.at(-1);
+        return { data, nextCursor: rows.length > limit && last !== undefined ? String(last.version) : null };
+      },
+      /** The highest interface major of the set's published versions, 0 when it has none. */
+      async maxInterfaceMajor(tx: TenantTx, setId: string): Promise<number> {
+        const t = s.questionSetVersions;
+        const rows = await drizzleOf(tx)
+          .select({ max: sql<number | null>`max(${t.interfaceMajor})` })
+          .from(t)
+          .where(questionSetVersions.scope(tx, and(eq(t.setId, setId), ne(t.status, "draft"))));
+        return Number(rows[0]?.max ?? 0);
+      },
+      /**
+       * Write to a draft only while it is still a draft holding the spec hash the caller read, so two
+       * concurrent writers cannot both win. Null when the row moved on.
+       */
+      async updateDraftIf(tx: TenantTx, id: string, expectedSpecHash: string, patch: Partial<Omit<InferInsertModel<typeof s.questionSetVersions>, "orgId" | "id">>) {
+        const t = s.questionSetVersions;
+        const { orgId: _o, id: _i, ...set } = patch as typeof patch & { orgId?: unknown; id?: unknown };
+        const rows = await drizzleOf(tx)
+          .update(t)
+          .set(set)
+          .where(questionSetVersions.scope(tx, and(eq(t.id, id), eq(t.status, "draft"), eq(t.specHash, expectedSpecHash))))
+          .returning();
+        return rows[0] ?? null;
+      },
       /** The highest version number of the set, 0 when it has none. */
       async maxVersion(tx: TenantTx, setId: string): Promise<number> {
         const rows = await drizzleOf(tx)
@@ -209,7 +322,19 @@ export function buildRepositories(opts: RepoOptions) {
       },
     },
     releasePointers: releasePointersRepo(opts),
-    releaseEvents: tenantRepo(s.releaseEvents, opts),
+    releaseEvents: {
+      ...releaseEvents,
+      /** One channel's release history, newest first. */
+      async listByChannel(tx: TenantTx, setId: string, channel: PointerChannel, limit?: number) {
+        const t = s.releaseEvents;
+        return drizzleOf(tx)
+          .select()
+          .from(t)
+          .where(releaseEvents.scope(tx, and(eq(t.setId, setId), eq(t.channel, channel))))
+          .orderBy(desc(t.at), desc(t.id))
+          .limit(clampLimit(limit));
+      },
+    },
     experiments: tenantRepo(s.experiments, opts),
     proposals: tenantRepo(s.proposals, opts),
     runs: {
@@ -228,6 +353,99 @@ export function buildRepositories(opts: RepoOptions) {
           .orderBy(desc(s.runs.createdAt))
           .limit(1);
         return rows[0] ?? null;
+      },
+      /** run.list: newest first, filtered, without the state column. */
+      async listPage(tx: TenantTx, filter: RunPageFilter, page: PageReq) {
+        const t = s.runs;
+        if (filter.setIds !== undefined && filter.setIds.length === 0) return { data: [], nextCursor: null };
+        const { state: _state, ...columns } = getTableColumns(t);
+        const where = and(
+          filter.setId === undefined ? undefined : eq(t.setId, filter.setId),
+          filter.setIds === undefined ? undefined : inArray(t.setId, [...filter.setIds]),
+          filter.versionId === undefined ? undefined : eq(t.versionId, filter.versionId),
+          filter.channel === undefined ? undefined : eq(t.channel, filter.channel),
+          filter.source === undefined ? undefined : eq(t.source, filter.source),
+          filter.status === undefined ? undefined : eq(t.status, filter.status),
+          filter.band === undefined ? undefined : eq(t.runBand, filter.band),
+          filter.action === undefined ? undefined : eq(t.overallAction, filter.action),
+          filter.from === undefined ? undefined : gte(t.createdAt, filter.from),
+          filter.to === undefined ? undefined : lte(t.createdAt, filter.to),
+        );
+        return newestFirst(
+          (after, limit) =>
+            drizzleOf(tx)
+              .select(columns)
+              .from(t)
+              .where(runs.scope(tx, and(where, after)))
+              .orderBy(desc(t.createdAt), desc(t.id))
+              .limit(limit),
+          { createdAt: t.createdAt, id: t.id, tableName: "runs" },
+          page,
+        );
+      },
+      /** usage.get: per-set totals over [from, to]. */
+      async totalsBySet(tx: TenantTx, range: { from: Date; to: Date; setIds?: readonly string[] }): Promise<RunSetTotals[]> {
+        const t = s.runs;
+        if (range.setIds !== undefined && range.setIds.length === 0) return [];
+        const n = (expr: SQL) => sql<number>`coalesce(${expr}, 0)::bigint`.mapWith(Number);
+        return drizzleOf(tx)
+          .select({
+            setId: t.setId,
+            runs: n(sql`count(*)`),
+            bandHigh: n(sql`count(*) filter (where ${t.runBand} = 'high')`),
+            bandMedium: n(sql`count(*) filter (where ${t.runBand} = 'medium')`),
+            bandLow: n(sql`count(*) filter (where ${t.runBand} = 'low')`),
+            errors: n(sql`count(*) filter (where ${t.status} <> 'ok')`),
+            inputTokens: n(sql`sum(${t.inputTokens})`),
+            outputTokens: n(sql`sum(${t.outputTokens})`),
+            systemOneCostMicroUsd: n(sql`sum(${t.systemOneCostMicroUsd})`),
+            counterfactualMicroUsd: n(sql`sum(${t.counterfactualMicroUsd})`),
+            savingsMicroUsd: n(sql`sum(${t.savingsMicroUsd})`),
+            llmCallsAvoided: n(sql`sum(${t.llmCallsAvoided})`),
+          })
+          .from(t)
+          .where(
+            runs.scope(
+              tx,
+              and(
+                gte(t.createdAt, range.from),
+                lte(t.createdAt, range.to),
+                range.setIds === undefined ? undefined : inArray(t.setId, [...range.setIds]),
+              ),
+            ),
+          )
+          .groupBy(t.setId)
+          .orderBy(asc(t.setId));
+      },
+      /** usage.get: org totals per UTC day over [from, to], oldest first. Days without runs are left out. */
+      async totalsByDay(tx: TenantTx, range: { from: Date; to: Date; setIds?: readonly string[] }): Promise<RunDayTotals[]> {
+        const t = s.runs;
+        if (range.setIds !== undefined && range.setIds.length === 0) return [];
+        const n = (expr: SQL) => sql<number>`coalesce(${expr}, 0)::bigint`.mapWith(Number);
+        const day = sql<string>`to_char(${t.createdAt} at time zone 'UTC', 'YYYY-MM-DD')`;
+        return drizzleOf(tx)
+          .select({
+            day,
+            runs: n(sql`count(*)`),
+            errors: n(sql`count(*) filter (where ${t.status} <> 'ok')`),
+            systemOneCostMicroUsd: n(sql`sum(${t.systemOneCostMicroUsd})`),
+            counterfactualMicroUsd: n(sql`sum(${t.counterfactualMicroUsd})`),
+            savingsMicroUsd: n(sql`sum(${t.savingsMicroUsd})`),
+            llmCallsAvoided: n(sql`sum(${t.llmCallsAvoided})`),
+          })
+          .from(t)
+          .where(
+            runs.scope(
+              tx,
+              and(
+                gte(t.createdAt, range.from),
+                lte(t.createdAt, range.to),
+                range.setIds === undefined ? undefined : inArray(t.setId, [...range.setIds]),
+              ),
+            ),
+          )
+          .groupBy(day)
+          .orderBy(asc(day));
       },
       async listBySet(tx: TenantTx, setId: string, limit?: number) {
         return drizzleOf(tx)
@@ -249,6 +467,29 @@ export function buildRepositories(opts: RepoOptions) {
       ...reviewItems,
       async listByRun(tx: TenantTx, runId: string) {
         return reviewItems.findMany(tx, eq(s.reviewItems.runId, runId));
+      },
+      /** review.list: newest first, filtered. */
+      async listPage(tx: TenantTx, filter: ReviewPageFilter, page: PageReq) {
+        const t = s.reviewItems;
+        if (filter.setIds !== undefined && filter.setIds.length === 0) return { data: [], nextCursor: null };
+        const where = and(
+          filter.setId === undefined ? undefined : eq(t.setId, filter.setId),
+          filter.setIds === undefined ? undefined : inArray(t.setId, [...filter.setIds]),
+          filter.kind === undefined ? undefined : eq(t.kind, filter.kind),
+          filter.status === undefined ? undefined : eq(t.status, filter.status),
+          filter.band === undefined ? undefined : eq(t.band, filter.band),
+        );
+        return newestFirst(
+          (after, limit) =>
+            drizzleOf(tx)
+              .select()
+              .from(t)
+              .where(reviewItems.scope(tx, and(where, after)))
+              .orderBy(desc(t.createdAt), desc(t.id))
+              .limit(limit),
+          { createdAt: t.createdAt, id: t.id, tableName: "review_items" },
+          page,
+        );
       },
       /** Label items created for a set since `since`: the labeling policy's day counter. */
       async countLabelItemsSince(tx: TenantTx, setId: string, since: Date): Promise<number> {
@@ -308,7 +549,62 @@ export function buildRepositories(opts: RepoOptions) {
       },
     },
     auditLog: appendOnlyRepo(s.auditLog, opts),
-    approvalRequests: tenantRepo(s.approvalRequests, opts),
+    approvalRequests: {
+      ...approvalRequests,
+      /** A pending, unexpired request from this token for the same operation and input. */
+      async findPending(tx: TenantTx, tokenId: string, opId: string, inputHash: string, now: Date) {
+        const t = s.approvalRequests;
+        const where = and(
+          eq(t.requestedByTokenId, tokenId),
+          eq(t.opId, opId),
+          eq(t.inputHash, inputHash),
+          eq(t.status, "pending"),
+          gte(t.expiresAt, now),
+        );
+        const [row] = await approvalRequests.findMany(tx, where, 1);
+        return row ?? null;
+      },
+      /**
+       * Move a request on only from the status the caller expects (and, with `unexpiredAt`, only while
+       * it has not expired), so a double decide or a double run cannot both land. Null when it moved on.
+       */
+      async transition(
+        tx: TenantTx,
+        id: string,
+        from: "pending" | "approved",
+        patch: Partial<Omit<InferInsertModel<typeof s.approvalRequests>, "orgId" | "id">>,
+        unexpiredAt?: Date,
+      ) {
+        const t = s.approvalRequests;
+        const { orgId: _o, id: _i, ...set } = patch as typeof patch & { orgId?: unknown; id?: unknown };
+        const rows = await drizzleOf(tx)
+          .update(t)
+          .set(set)
+          .where(approvalRequests.scope(tx, and(eq(t.id, id), eq(t.status, from), unexpiredAt === undefined ? undefined : gt(t.expiresAt, unexpiredAt))))
+          .returning();
+        return rows[0] ?? null;
+      },
+      /** Pending, unexpired requests, newest first; only one token's when tokenId is set. */
+      async listPending(tx: TenantTx, filter: { tokenId?: string; now: Date }, page: PageReq) {
+        const t = s.approvalRequests;
+        const where = and(
+          eq(t.status, "pending"),
+          gte(t.expiresAt, filter.now),
+          filter.tokenId === undefined ? undefined : eq(t.requestedByTokenId, filter.tokenId),
+        );
+        return newestFirst(
+          (after, limit) =>
+            drizzleOf(tx)
+              .select()
+              .from(t)
+              .where(approvalRequests.scope(tx, and(where, after)))
+              .orderBy(desc(t.createdAt), desc(t.id))
+              .limit(limit),
+          { createdAt: t.createdAt, id: t.id, tableName: "approval_requests" },
+          page,
+        );
+      },
+    },
     idempotencyKeys: {
       ...idempotencyKeys,
       async lookup(tx: TenantTx, actorKey: string, key: string) {
@@ -345,6 +641,70 @@ export const authRepositories = {
   verificationTokens: globalRepo(s.verificationTokens),
   twoFactors: globalRepo(s.twoFactors),
   deviceCodes: globalRepo(s.deviceCodes),
+  authAttempts: {
+    table: "auth_attempts",
+    /**
+     * Counts one attempt for every key, in one transaction with the rows locked, so two instances
+     * cannot both slip under a limit. False when any key is already at its limit; then nothing is
+     * counted. Windows older than a day are deleted on the way.
+     */
+    async take(tx: AnyTx, unsorted: readonly { keyHash: string; max: number; windowMs: number }[], now: Date): Promise<boolean> {
+      const t = s.authAttempts;
+      const db = drizzleOf(tx);
+      if (unsorted.length === 0) return true;
+      // One lock order for every caller, so two sign-ins sharing keys cannot deadlock.
+      const keys = [...unsorted].sort((x, y) => (x.keyHash < y.keyHash ? -1 : x.keyHash > y.keyHash ? 1 : 0));
+      await db.delete(t).where(lt(t.windowStart, new Date(now.getTime() - 24 * 60 * 60 * 1000)));
+      await db
+        .insert(t)
+        .values(keys.map((k) => ({ keyHash: k.keyHash, windowStart: now, count: 0 })))
+        .onConflictDoNothing();
+      const rows = await db
+        .select()
+        .from(t)
+        .where(inArray(t.keyHash, keys.map((k) => k.keyHash)))
+        .orderBy(asc(t.keyHash))
+        .for("update");
+      const byHash = new Map(rows.map((r) => [r.keyHash, r]));
+      const current = keys.map((k) => {
+        const row = byHash.get(k.keyHash);
+        const live = row !== undefined && now.getTime() - row.windowStart.getTime() < k.windowMs;
+        return { k, start: live ? row.windowStart : now, count: live ? row.count : 0 };
+      });
+      if (current.some((c) => c.count >= c.k.max)) return false;
+      for (const c of current) {
+        await db.update(t).set({ windowStart: c.start, count: c.count + 1 }).where(eq(t.keyHash, c.k.keyHash));
+      }
+      return true;
+    },
+  },
+  consoleEnrollments: {
+    table: "console_enrollments",
+    /** Issues (or replaces) the user's enrollment code. Only its hash is stored. */
+    async issue(tx: AnyTx, userId: string, codeHash: string, expiresAt: Date): Promise<void> {
+      const t = s.consoleEnrollments;
+      await drizzleOf(tx)
+        .insert(t)
+        .values({ userId, codeHash, expiresAt })
+        .onConflictDoUpdate({ target: t.userId, set: { codeHash, expiresAt, createdAt: sql`now()` } });
+    },
+    /** True when the user holds an unexpired code with this hash. */
+    async matches(tx: AnyTx, userId: string, codeHash: string, now: Date): Promise<boolean> {
+      const t = s.consoleEnrollments;
+      const rows = await drizzleOf(tx)
+        .select({ userId: t.userId })
+        .from(t)
+        .where(and(eq(t.userId, userId), eq(t.codeHash, codeHash), gt(t.expiresAt, now)))
+        .limit(1);
+      return rows.length === 1;
+    },
+    /** Deletes the user's code. Returns whether one was there. */
+    async consume(tx: AnyTx, userId: string): Promise<boolean> {
+      const t = s.consoleEnrollments;
+      const rows = await drizzleOf(tx).delete(t).where(eq(t.userId, userId)).returning({ userId: t.userId });
+      return rows.length === 1;
+    },
+  },
   /** The signed-in user's memberships across orgs, before any org is picked. */
   async myMemberships(tx: UserTx) {
     return drizzleOf(tx)

@@ -242,24 +242,57 @@ describe("jobs, previews and MCP tools", () => {
   });
 });
 
+/** The operations D2c and D3 serve (ADR-020). Every other handler is still a stub. */
+const IMPLEMENTED: OperationId[] = [
+  "set.list",
+  "set.get",
+  "set.create",
+  "draft.get",
+  "draft.update",
+  "draft.validate",
+  "version.list",
+  "version.get",
+  "version.diff",
+  "set.publish",
+  "channel.rollback",
+  "rollout.get",
+  "rollout.change",
+  "run.list",
+  "run.get",
+  "usage.get",
+  "set.manifest",
+  "approval.list",
+  "approval.get",
+  "approval.decide",
+  "review.list",
+  "review.resolve",
+  "review.dismiss",
+  "review.confirm",
+];
+
 describe("stubbed handlers", () => {
-  /** Operations whose input can be built from path params alone. */
+  it("has real handlers for exactly the D2c operations", () => {
+    expect(listOperations().filter((op) => op.implemented).map((op) => op.id).sort()).toEqual([...IMPLEMENTED].sort());
+  });
+
+  /** Stubbed operations whose input can be built from path params alone. */
   const buildable = listOperations().filter(
     (op) =>
-      op.placeholder.input ||
-      LIST_OPERATIONS.includes(op) ||
-      Object.keys(op.input.shape).every((k) => op.request.path.includes(k)),
+      !op.implemented &&
+      (op.placeholder.input ||
+        LIST_OPERATIONS.includes(op) ||
+        Object.keys(op.input.shape).every((k) => op.request.path.includes(k))),
   );
 
   it("covers most operations", () => {
-    expect(buildable.length).toBeGreaterThan(90);
+    expect(buildable.length).toBeGreaterThan(75);
   });
 
   it.each(buildable.map((op) => [op.id, op] as const))("%s throws not_implemented with its phase", async (id, op) => {
     const prepared = op.prepare(pathInput(id));
     expect(prepared.ok).toBe(true);
     if (!prepared.ok) return;
-    const error = await prepared.call.handle(ctx).catch((e: unknown) => e);
+    const error = await prepared.call.handle(null).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(OperationNotImplementedError);
     expect(error).toMatchObject({ code: "not_implemented", operationId: id, phase: op.phase, status: 501 });
   });

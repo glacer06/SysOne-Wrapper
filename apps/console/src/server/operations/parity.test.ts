@@ -70,7 +70,12 @@ describe("parity: catalog, registry and openapi.json", () => {
     }
   });
 
-  it.todo("every /api/v1 route handler maps to one registry entry (Phase 2, generated from op.http)");
+  it("serves /api/v1 through the generic adapter, the run route and the public OpenAPI document, and nothing else", () => {
+    const v1 = fileURLToPath(new URL("apps/console/src/app/api/v1/", ROOT));
+    const routes = sourceFiles(v1).map((f) => f.slice(v1.length).replaceAll("\\", "/")).sort();
+    expect(routes).toEqual(["[...path]/route.ts", "openapi.json/route.ts", "sets/[ref]/run/route.ts"]);
+    expect(OPERATION_CATALOG.find((e) => e.id === "set.run")?.path).toBe("/api/v1/sets/{ref}/run");
+  });
   it.todo("every bandwise CLI command maps to an operation that is not session only (Phase 3)");
   it.todo("every MCP server tool in packages/mcp-server maps to its registry entry (Phase 3)");
 });

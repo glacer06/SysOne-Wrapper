@@ -105,8 +105,9 @@ describe("buildOpenApiDocument", () => {
   it("flags open shapes and keeps their paths", () => {
     const open = operations.filter((o) => o.op["x-bandwise-placeholder"] !== undefined);
     expect(open.length).toBeGreaterThan(0);
-    const usage = doc.paths["/api/v1/usage"]?.["get"];
-    expect(usage?.["x-bandwise-placeholder"]).toEqual({ input: true, output: true });
+    const project = doc.paths["/api/v1/projects"]?.["post"];
+    expect(project?.["x-bandwise-placeholder"]).toEqual({ input: true, output: true });
+    expect(doc.paths["/api/v1/usage"]?.["get"]?.["x-bandwise-placeholder"]).toBeUndefined();
   });
 
   it("keeps optional input and required If-Match where the registry says so", () => {

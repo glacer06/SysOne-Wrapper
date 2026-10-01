@@ -12,7 +12,21 @@ export {
   type EarlyAccessOutcome,
   type EarlyAccessSubmission,
   type Repositories,
+  type ReviewPageFilter,
+  type RunDayTotals,
+  type RunPageFilter,
+  type RunSetTotals,
 } from "./repos/index.js";
+export {
+  AUTH_MODELS,
+  authStore,
+  type AuthModel,
+  type AuthRow,
+  type AuthStore,
+  type AuthWhere,
+  type AuthWhereOperator,
+  type AuthValue,
+} from "./auth-store.js";
 export { DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT } from "./repos/base.js";
 export {
   ALLOWED_POLICY_SETTINGS,

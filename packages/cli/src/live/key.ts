@@ -1,7 +1,8 @@
-// The one CLI module that reads the environment (ADR-020). The System One key comes from the
+// The one CLI module that reads a provider key (ADR-020). The System One key comes from the
 // variable that matches the provider, of the person running the command. Never from a flag, a spec,
 // a profile or a file. It is never printed or logged: errors name the variable, never a value.
-// The launch profile variables below are not secrets; they live here so one file owns every read.
+// The launch profile variables below are not secrets; they live here so one file owns these reads.
+// The Bandwise token and base URL are read in remote/credentials.ts.
 
 import type { SystemOneProvider } from "@bandwise/core";
 import { PROFILE_ID } from "./profiles.js";

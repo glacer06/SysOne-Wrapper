@@ -94,8 +94,18 @@ describe("runOperation", () => {
       retryable: false,
     });
 
-    const allowed = await failure(runOperation("set.publish", staging, { ref: "s", channel: "staging", changelog: "c" }, { ifMatch: '"h"' }));
+    // experiment.start is still a stub, so passing the scope check ends in not_implemented.
+    const sample = { ref: "s", challengerVersionId: ID, kind: "version", samplePct: 0.1, minRuns: 1, minLabeled: 0 };
+    const denied = await failure(runOperation("experiment.start", staging, { ...sample, channel: "production" }));
+    expect(denied).toMatchObject({ code: "insufficient_scope", requiredScope: "release:production" });
+    const allowed = await failure(runOperation("experiment.start", staging, { ...sample, channel: "staging" }));
     expect(allowed).toBeInstanceOf(OperationNotImplementedError);
+  });
+
+  it("needs a database for an operation with a real handler", async () => {
+    const error = await failure(runOperation("set.get", session, { ref: "s" }));
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toContain("OperationDeps");
   });
 
   it("lets any actor it allows call an any-scope operation", async () => {
@@ -115,16 +125,16 @@ describe("runOperation", () => {
 
   it("runs the stubbed preview on dryRun", async () => {
     const error = await failure(
-      runOperation("rollout.change", session, { ref: "s", channel: "production", stage: "paused", reason: "incident" }, { dryRun: true }),
+      runOperation("channel.promote", session, { ref: "s", channel: "production" }, { dryRun: true }),
     );
     expect(error).toBeInstanceOf(OperationNotImplementedError);
     expect((error as Error).message).toContain("preview");
   });
 
   it("reaches the stubbed handler with a valid call", async () => {
-    const error = await failure(runOperation("review.resolve", appToken, { id: ID, resolution: "approve" }));
+    const error = await failure(runOperation("review.assign", appToken, { id: ID, assigneeId: ID }));
     expect(error).toBeInstanceOf(OperationNotImplementedError);
-    expect(error).toMatchObject({ operationId: "review.resolve", phase: "3" });
+    expect(error).toMatchObject({ operationId: "review.assign", phase: "3" });
   });
 
   it("runs org.create and platform operations with an org-less context, and nothing else", async () => {

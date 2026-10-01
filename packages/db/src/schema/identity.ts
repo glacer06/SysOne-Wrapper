@@ -91,9 +91,42 @@ export const twoFactors = pgTable(
     userId: uuid()
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
+    // Better Auth 1.7 two-factor plugin (migration 0006). verified stays false until the first
+    // TOTP code is checked; the other two lock the account after repeated failed codes.
+    verified: boolean().notNull().default(true),
+    failedVerificationCount: integer().notNull().default(0),
+    lockedUntil: ts(),
   },
   (t) => [index("two_factors_user_id_idx").on(t.userId)],
 );
+
+/**
+ * Console sign-in attempt windows (D3, PJ's review of PR #21). One row per limit key, so the
+ * limits hold across every server instance. key_hash is a SHA-256 of the key, so the table never
+ * holds an email or an IP in the clear.
+ */
+export const authAttempts = pgTable(
+  "auth_attempts",
+  {
+    keyHash: text().primaryKey(),
+    windowStart: ts().notNull(),
+    count: integer().notNull().default(0),
+  },
+  (t) => [index("auth_attempts_window_start_idx").on(t.windowStart)],
+);
+
+/**
+ * Admin-issued two-factor enrollment (D3). console-member writes a one-time code for a user; the
+ * setup page needs it, so a password alone cannot enroll TOTP. Only the code's hash is stored.
+ */
+export const consoleEnrollments = pgTable("console_enrollments", {
+  userId: uuid()
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  codeHash: text().notNull(),
+  expiresAt: ts().notNull(),
+  createdAt: createdAt(),
+});
 
 /** Device flow (RFC 8628). No tenant RLS: only the /api/v1/auth/device/* handlers read it. */
 export const deviceCodes = pgTable("device_codes", {

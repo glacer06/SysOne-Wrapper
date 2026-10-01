@@ -324,7 +324,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Shape lands in Phase 3.",
+            "description": "OK.",
             "content": {
               "application/json": {
                 "schema": {
@@ -363,11 +363,7 @@
         "x-bandwise-phase": "3",
         "x-bandwise-async": false,
         "x-bandwise-destructive": false,
-        "x-bandwise-emits": [],
-        "x-bandwise-placeholder": {
-          "input": false,
-          "output": true
-        }
+        "x-bandwise-emits": []
       }
     },
     "/api/v1/runs/{id}": {
@@ -390,10 +386,12 @@
         ],
         "responses": {
           "200": {
-            "description": "Shape lands in Phase 3.",
+            "description": "OK.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/RunGetResponse"
+                }
               }
             }
           },
@@ -427,26 +425,53 @@
         "x-bandwise-phase": "3",
         "x-bandwise-async": false,
         "x-bandwise-destructive": false,
-        "x-bandwise-emits": [],
-        "x-bandwise-placeholder": {
-          "input": false,
-          "output": true
-        }
+        "x-bandwise-emits": []
       }
     },
     "/api/v1/usage": {
       "get": {
         "operationId": "usage.get",
-        "summary": "Read the org's usage and savings rollups.",
+        "summary": "Read run, spend and savings totals per set over a time range (default: the last 7 days).",
         "tags": [
           "usage"
         ],
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "set",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "Shape lands in Phase 3.",
+            "description": "OK.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/UsageGetResponse"
+                }
               }
             }
           },
@@ -480,11 +505,7 @@
         "x-bandwise-phase": "3",
         "x-bandwise-async": false,
         "x-bandwise-destructive": false,
-        "x-bandwise-emits": [],
-        "x-bandwise-placeholder": {
-          "input": true,
-          "output": true
-        }
+        "x-bandwise-emits": []
       }
     },
     "/api/v1/tokens/browser": {
@@ -1122,7 +1143,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Shape lands in Phase 3.",
+            "description": "OK.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1162,11 +1183,7 @@
         "x-bandwise-async": false,
         "x-bandwise-destructive": false,
         "x-bandwise-emits": [],
-        "x-bandwise-mcp-tool": "list_sets",
-        "x-bandwise-placeholder": {
-          "input": false,
-          "output": true
-        }
+        "x-bandwise-mcp-tool": "list_sets"
       },
       "post": {
         "operationId": "set.create",
@@ -1198,10 +1215,12 @@
         },
         "responses": {
           "201": {
-            "description": "Shape lands in Phase 3.",
+            "description": "Created.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/SetCreateResponse"
+                }
               }
             }
           },
@@ -1235,11 +1254,7 @@
         "x-bandwise-async": false,
         "x-bandwise-destructive": false,
         "x-bandwise-emits": [],
-        "x-bandwise-mcp-tool": "create_set",
-        "x-bandwise-placeholder": {
-          "input": false,
-          "output": true
-        }
+        "x-bandwise-mcp-tool": "create_set"
       }
     },
     "/api/v1/sets/{ref}": {
@@ -1262,10 +1277,12 @@
         ],
         "responses": {
           "200": {
-            "description": "Shape lands in Phase 3.",
+            "description": "OK.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/SetCreateResponse"
+                }
               }
             }
           },
@@ -1299,11 +1316,7 @@
         "x-bandwise-async": false,
         "x-bandwise-destructive": false,
         "x-bandwise-emits": [],
-        "x-bandwise-mcp-tool": "get_set",
-        "x-bandwise-placeholder": {
-          "input": false,
-          "output": true
-        }
+        "x-bandwise-mcp-tool": "get_set"
       },
       "patch": {
         "operationId": "set.update",
@@ -1751,7 +1764,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Shape lands in Phase 3.",
+            "description": "OK.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1789,11 +1802,7 @@
         "x-bandwise-phase": "3",
         "x-bandwise-async": false,
         "x-bandwise-destructive": false,
-        "x-bandwise-emits": [],
-        "x-bandwise-placeholder": {
-          "input": false,
-          "output": true
-        }
+        "x-bandwise-emits": []
       }
     },
     "/api/v1/sets/{ref}/versions/{n}": {
@@ -1826,10 +1835,12 @@
         ],
         "responses": {
           "200": {
-            "description": "Shape lands in Phase 3.",
+            "description": "OK.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/VersionGetResponse"
+                }
               }
             }
           },
@@ -1863,11 +1874,7 @@
         "x-bandwise-phase": "3",
         "x-bandwise-async": false,
         "x-bandwise-destructive": false,
-        "x-bandwise-emits": [],
-        "x-bandwise-placeholder": {
-          "input": false,
-          "output": true
-        }
+        "x-bandwise-emits": []
       }
     },
     "/api/v1/sets/{ref}/diff": {
@@ -2158,10 +2165,12 @@
         },
         "responses": {
           "200": {
-            "description": "Shape lands in Phase 3.",
+            "description": "OK.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ChannelRollbackResponse"
+                }
               }
             }
           },
@@ -2197,11 +2206,7 @@
         "x-bandwise-emits": [
           "release.rolled_back"
         ],
-        "x-bandwise-mcp-tool": "rollback",
-        "x-bandwise-placeholder": {
-          "input": false,
-          "output": true
-        }
+        "x-bandwise-mcp-tool": "rollback"
       }
     },
     "/api/v1/sets/{ref}/channels/{channel}/promote": {
@@ -2436,10 +2441,12 @@
         ],
         "responses": {
           "200": {
-            "description": "Shape lands in Phase 3.",
+            "description": "OK.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/RolloutGetResponse"
+                }
               }
             }
           },
@@ -2473,11 +2480,7 @@
         "x-bandwise-async": false,
         "x-bandwise-destructive": false,
         "x-bandwise-emits": [],
-        "x-bandwise-mcp-tool": "get_rollout_gates",
-        "x-bandwise-placeholder": {
-          "input": false,
-          "output": true
-        }
+        "x-bandwise-mcp-tool": "get_rollout_gates"
       },
       "put": {
         "operationId": "rollout.change",
@@ -2539,10 +2542,12 @@
         },
         "responses": {
           "200": {
-            "description": "Shape lands in Phase 3.",
+            "description": "OK.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/RolloutChangeResponse"
+                }
               }
             }
           },
@@ -2589,11 +2594,7 @@
         "x-bandwise-emits": [
           "rollout.changed"
         ],
-        "x-bandwise-mcp-tool": "change_rollout",
-        "x-bandwise-placeholder": {
-          "input": false,
-          "output": true
-        }
+        "x-bandwise-mcp-tool": "change_rollout"
       }
     },
     "/api/v1/sets/{ref}/experiments": {
@@ -3776,6 +3777,28 @@
             }
           },
           {
+            "name": "set",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          {
+            "name": "band",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "high",
+                "medium",
+                "low"
+              ]
+            }
+          },
+          {
             "name": "limit",
             "in": "query",
             "required": false,
@@ -3798,7 +3821,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Shape lands in Phase 3.",
+            "description": "OK.",
             "content": {
               "application/json": {
                 "schema": {
@@ -3838,11 +3861,7 @@
         "x-bandwise-async": false,
         "x-bandwise-destructive": false,
         "x-bandwise-emits": [],
-        "x-bandwise-mcp-tool": "list_review_items",
-        "x-bandwise-placeholder": {
-          "input": false,
-          "output": true
-        }
+        "x-bandwise-mcp-tool": "list_review_items"
       }
     },
     "/api/v1/review/{id}/assign": {
@@ -3969,10 +3988,12 @@
         },
         "responses": {
           "200": {
-            "description": "Shape lands in Phase 3.",
+            "description": "OK.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResolveResponse"
+                }
               }
             }
           },
@@ -4009,17 +4030,13 @@
         "x-bandwise-emits": [
           "review.resolved"
         ],
-        "x-bandwise-mcp-tool": "resolve_review_item",
-        "x-bandwise-placeholder": {
-          "input": false,
-          "output": true
-        }
+        "x-bandwise-mcp-tool": "resolve_review_item"
       }
     },
     "/api/v1/review/{id}/dismiss": {
       "post": {
         "operationId": "review.dismiss",
-        "summary": "Dismiss a review item.",
+        "summary": "Dismiss a review item. Agents cannot; they resolve with a proposed answer instead.",
         "tags": [
           "review"
         ],
@@ -4044,22 +4061,14 @@
             }
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/ReviewDismissRequest"
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
-            "description": "Shape lands in Phase 3.",
+            "description": "OK.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResolveResponse"
+                }
               }
             }
           },
@@ -4095,11 +4104,7 @@
         "x-bandwise-destructive": false,
         "x-bandwise-emits": [
           "review.resolved"
-        ],
-        "x-bandwise-placeholder": {
-          "input": true,
-          "output": true
-        }
+        ]
       }
     },
     "/api/v1/review/{id}/confirm": {
@@ -4142,10 +4147,12 @@
         },
         "responses": {
           "200": {
-            "description": "Shape lands in Phase 3.",
+            "description": "OK.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ReviewResolveResponse"
+                }
               }
             }
           },
@@ -4176,11 +4183,7 @@
         "x-bandwise-destructive": false,
         "x-bandwise-emits": [
           "review.resolved"
-        ],
-        "x-bandwise-placeholder": {
-          "input": false,
-          "output": true
-        }
+        ]
       }
     },
     "/api/v1/feedback": {
@@ -7812,10 +7815,12 @@
         },
         "responses": {
           "200": {
-            "description": "Shape lands in Phase 2.",
+            "description": "OK.",
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/ApprovalGetResponse"
+                }
               }
             }
           },
@@ -7846,11 +7851,7 @@
         "x-bandwise-destructive": false,
         "x-bandwise-emits": [
           "approval.decided"
-        ],
-        "x-bandwise-placeholder": {
-          "input": false,
-          "output": true
-        }
+        ]
       }
     },
     "/api/v1/agent-tokens": {
@@ -10295,6 +10296,15 @@
           "reason": {
             "type": "string"
           },
+          "input": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "ifMatch": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "requestedBy": {
             "type": "object",
             "properties": {
@@ -10305,12 +10315,22 @@
               "tokenId": {
                 "type": "string",
                 "format": "uuid"
+              },
+              "name": {
+                "type": "string"
+              },
+              "tokenName": {
+                "type": "string"
               }
             },
             "required": [
               "userId",
               "tokenId"
             ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           },
           "expiresAt": {
             "type": "string",
@@ -10333,7 +10353,10 @@
           "opId",
           "status",
           "reason",
+          "input",
+          "ifMatch",
           "requestedBy",
+          "createdAt",
           "expiresAt"
         ]
       },
@@ -10457,6 +10480,44 @@
           }
         },
         "additionalProperties": false
+      },
+      "ChannelRollbackResponse": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "production",
+              "staging"
+            ]
+          },
+          "fromVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "toVersion": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "inactive",
+              "shadow",
+              "controlled",
+              "full",
+              "paused"
+            ]
+          }
+        },
+        "required": [
+          "channel",
+          "fromVersion",
+          "toVersion",
+          "stage"
+        ]
       },
       "Condition": {
         "anyOf": [
@@ -18840,17 +18901,14 @@
         },
         "additionalProperties": false
       },
-      "ReviewDismissRequest": {
-        "type": "object",
-        "properties": {},
-        "additionalProperties": {}
-      },
       "ReviewListResponse": {
         "type": "object",
         "properties": {
           "data": {
             "type": "array",
-            "items": {}
+            "items": {
+              "$ref": "#/components/schemas/ReviewResolveResponse"
+            }
           },
           "nextCursor": {
             "type": [
@@ -18888,6 +18946,171 @@
         ],
         "additionalProperties": false
       },
+      "ReviewResolveResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "runId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "setId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "decisionId": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "action",
+              "label"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "action",
+              "audit",
+              "near_threshold",
+              "challenger_diff",
+              "studio"
+            ]
+          },
+          "sampleRate": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "band": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "suggested": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "pending_confirmation",
+              "resolved",
+              "dismissed"
+            ]
+          },
+          "assigneeId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resolution": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "resolvedBy": {
+            "type": "object",
+            "properties": {
+              "userId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "tokenId": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "userId",
+              "tokenId"
+            ]
+          },
+          "resolvedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "addToDataset": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "runId",
+          "setId",
+          "decisionId",
+          "kind",
+          "reason",
+          "sampleRate",
+          "band",
+          "suggested",
+          "status",
+          "assigneeId",
+          "resolution",
+          "resolvedBy",
+          "resolvedAt",
+          "addToDataset",
+          "createdAt"
+        ]
+      },
       "RolloutChangeRequest": {
         "type": "object",
         "properties": {
@@ -18911,6 +19134,100 @@
           "reason"
         ],
         "additionalProperties": false
+      },
+      "RolloutChangeResponse": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "production",
+              "staging"
+            ]
+          },
+          "from": {
+            "type": "string",
+            "enum": [
+              "inactive",
+              "shadow",
+              "controlled",
+              "full",
+              "paused"
+            ]
+          },
+          "to": {
+            "type": "string",
+            "enum": [
+              "inactive",
+              "shadow",
+              "controlled",
+              "full",
+              "paused"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "channel",
+          "from",
+          "to",
+          "version"
+        ]
+      },
+      "RolloutGetResponse": {
+        "type": "object",
+        "properties": {
+          "channel": {
+            "type": "string",
+            "enum": [
+              "production",
+              "staging"
+            ]
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "inactive",
+              "shadow",
+              "controlled",
+              "full",
+              "paused"
+            ]
+          },
+          "version": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "versionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "gates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GateResult"
+            }
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "channel",
+          "stage",
+          "version",
+          "versionId",
+          "gates",
+          "warnings"
+        ]
       },
       "RunDryRunResult": {
         "type": "object",
@@ -19121,6 +19438,370 @@
         ],
         "additionalProperties": false
       },
+      "RunGetResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "setId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "versionId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "production",
+              "staging",
+              "pinned",
+              "draft"
+            ]
+          },
+          "rollout": {
+            "type": "string",
+            "enum": [
+              "inactive",
+              "shadow",
+              "controlled",
+              "full",
+              "paused"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "console",
+              "playground",
+              "api",
+              "embed",
+              "extension",
+              "mcp",
+              "eval",
+              "cli",
+              "ingest"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "error",
+              "rate_limited",
+              "quota_exceeded"
+            ]
+          },
+          "runBand": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ]
+          },
+          "overallAction": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "review",
+              "fallback",
+              "escalate_to_llm"
+            ]
+          },
+          "route": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "modelRequested": {
+            "type": "string",
+            "minLength": 1
+          },
+          "modelResolved": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "latencyMs": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "inputTokens": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "outputTokens": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "systemOneCostMicroUsd": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "counterfactualMicroUsd": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "savingsMicroUsd": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "errorCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "stages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "skipped": {
+                  "type": "boolean"
+                },
+                "calls": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "modelResolved": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "provider": {
+                        "type": "string",
+                        "enum": [
+                          "typesafe",
+                          "openrouter",
+                          "vercel"
+                        ]
+                      },
+                      "providerCostUsd": {
+                        "type": "number"
+                      },
+                      "typesafeRequestId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "inputTokens": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "outputTokens": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "latencyMs": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      }
+                    },
+                    "required": [
+                      "modelResolved",
+                      "typesafeRequestId",
+                      "inputTokens",
+                      "outputTokens",
+                      "latencyMs"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "id",
+                "skipped",
+                "calls"
+              ]
+            }
+          },
+          "checks": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {
+              "type": "boolean"
+            }
+          },
+          "answers": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "decisions": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "state": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/JsonValue"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reviewItems": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "decisionId": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "action",
+                    "label"
+                  ]
+                },
+                "reason": {
+                  "type": "string",
+                  "enum": [
+                    "action",
+                    "audit",
+                    "near_threshold",
+                    "challenger_diff",
+                    "studio"
+                  ]
+                },
+                "band": {
+                  "type": "string",
+                  "enum": [
+                    "high",
+                    "medium",
+                    "low"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "open",
+                    "pending_confirmation",
+                    "resolved",
+                    "dismissed"
+                  ]
+                },
+                "resolution": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/JsonValue"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "resolvedAt": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "decisionId",
+                "kind",
+                "reason",
+                "band",
+                "status",
+                "resolution",
+                "resolvedAt"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "setId",
+          "versionId",
+          "channel",
+          "rollout",
+          "source",
+          "status",
+          "runBand",
+          "overallAction",
+          "route",
+          "modelRequested",
+          "modelResolved",
+          "latencyMs",
+          "inputTokens",
+          "outputTokens",
+          "systemOneCostMicroUsd",
+          "counterfactualMicroUsd",
+          "savingsMicroUsd",
+          "errorCode",
+          "createdAt",
+          "stages",
+          "checks",
+          "answers",
+          "decisions",
+          "warnings",
+          "state",
+          "reviewItems"
+        ]
+      },
       "RunIngestRequest": {
         "type": "object",
         "properties": {
@@ -19178,7 +19859,167 @@
         "properties": {
           "data": {
             "type": "array",
-            "items": {}
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "setId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "versionId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "channel": {
+                  "type": "string",
+                  "enum": [
+                    "production",
+                    "staging",
+                    "pinned",
+                    "draft"
+                  ]
+                },
+                "rollout": {
+                  "type": "string",
+                  "enum": [
+                    "inactive",
+                    "shadow",
+                    "controlled",
+                    "full",
+                    "paused"
+                  ]
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "console",
+                    "playground",
+                    "api",
+                    "embed",
+                    "extension",
+                    "mcp",
+                    "eval",
+                    "cli",
+                    "ingest"
+                  ]
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "ok",
+                    "error",
+                    "rate_limited",
+                    "quota_exceeded"
+                  ]
+                },
+                "runBand": {
+                  "type": "string",
+                  "enum": [
+                    "high",
+                    "medium",
+                    "low"
+                  ]
+                },
+                "overallAction": {
+                  "type": "string",
+                  "enum": [
+                    "auto",
+                    "review",
+                    "fallback",
+                    "escalate_to_llm"
+                  ]
+                },
+                "route": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "modelRequested": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "modelResolved": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "latencyMs": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "inputTokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "outputTokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "systemOneCostMicroUsd": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "counterfactualMicroUsd": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "savingsMicroUsd": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "errorCode": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "setId",
+                "versionId",
+                "channel",
+                "rollout",
+                "source",
+                "status",
+                "runBand",
+                "overallAction",
+                "route",
+                "modelRequested",
+                "modelResolved",
+                "latencyMs",
+                "inputTokens",
+                "outputTokens",
+                "systemOneCostMicroUsd",
+                "counterfactualMicroUsd",
+                "savingsMicroUsd",
+                "errorCode",
+                "createdAt"
+              ]
+            }
           },
           "nextCursor": {
             "type": [
@@ -19843,6 +20684,146 @@
         ],
         "additionalProperties": false
       },
+      "SetCreateResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "projectId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "goalId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "protected": {
+            "type": "boolean"
+          },
+          "storageMode": {
+            "type": "string",
+            "enum": [
+              "full",
+              "redacted",
+              "hash_only"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "draft": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "versionId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "etag": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "version",
+                  "versionId",
+                  "etag"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "channels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "channel": {
+                  "type": "string",
+                  "enum": [
+                    "production",
+                    "staging"
+                  ]
+                },
+                "version": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "versionId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "stage": {
+                  "type": "string",
+                  "enum": [
+                    "inactive",
+                    "shadow",
+                    "controlled",
+                    "full",
+                    "paused"
+                  ]
+                },
+                "interfaceMajor": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "channel",
+                "version",
+                "versionId",
+                "stage",
+                "interfaceMajor",
+                "updatedAt"
+              ]
+            }
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "description",
+          "projectId",
+          "goalId",
+          "protected",
+          "storageMode",
+          "createdAt",
+          "draft",
+          "channels"
+        ]
+      },
       "SetHealth": {
         "type": "object",
         "properties": {
@@ -20282,7 +21263,9 @@
         "properties": {
           "data": {
             "type": "array",
-            "items": {}
+            "items": {
+              "$ref": "#/components/schemas/SetCreateResponse"
+            }
           },
           "nextCursor": {
             "type": [
@@ -20939,12 +21922,485 @@
           "nextCursor"
         ]
       },
+      "UsageGetResponse": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "to": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "sets": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "runs": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "bandHigh": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "bandMedium": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "bandLow": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "errors": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "inputTokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "outputTokens": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "systemOneCostMicroUsd": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "counterfactualMicroUsd": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "savingsMicroUsd": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "llmCallsAvoided": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "setId": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "slug": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "runs",
+                "bandHigh",
+                "bandMedium",
+                "bandLow",
+                "errors",
+                "inputTokens",
+                "outputTokens",
+                "systemOneCostMicroUsd",
+                "counterfactualMicroUsd",
+                "savingsMicroUsd",
+                "llmCallsAvoided",
+                "setId",
+                "slug"
+              ]
+            }
+          },
+          "totals": {
+            "type": "object",
+            "properties": {
+              "runs": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "bandHigh": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "bandMedium": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "bandLow": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "errors": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "inputTokens": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "outputTokens": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "systemOneCostMicroUsd": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "counterfactualMicroUsd": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "savingsMicroUsd": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              },
+              "llmCallsAvoided": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "runs",
+              "bandHigh",
+              "bandMedium",
+              "bandLow",
+              "errors",
+              "inputTokens",
+              "outputTokens",
+              "systemOneCostMicroUsd",
+              "counterfactualMicroUsd",
+              "savingsMicroUsd",
+              "llmCallsAvoided"
+            ]
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "day": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "runs": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "errors": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "systemOneCostMicroUsd": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "counterfactualMicroUsd": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "savingsMicroUsd": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                "llmCallsAvoided": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "day",
+                "runs",
+                "errors",
+                "systemOneCostMicroUsd",
+                "counterfactualMicroUsd",
+                "savingsMicroUsd",
+                "llmCallsAvoided"
+              ]
+            }
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "sets",
+          "totals",
+          "days"
+        ]
+      },
+      "VersionGetResponse": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "version": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "draft",
+                  "published",
+                  "archived"
+                ]
+              },
+              "specHash": {
+                "type": "string",
+                "minLength": 1
+              },
+              "interfaceMajor": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "interfaceHash": {
+                "type": "string",
+                "minLength": 1
+              },
+              "model": {
+                "type": "string",
+                "minLength": 1
+              },
+              "changelog": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "console",
+                  "api",
+                  "cli",
+                  "mcp",
+                  "studio",
+                  "upgrade",
+                  "proposal"
+                ]
+              },
+              "publishedAt": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "publishedBy": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "tokenId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "userId",
+                  "tokenId"
+                ]
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "spec": {
+                "$ref": "#/components/schemas/QuestionSetSpec"
+              }
+            },
+            "required": [
+              "id",
+              "version",
+              "status",
+              "specHash",
+              "interfaceMajor",
+              "interfaceHash",
+              "model",
+              "changelog",
+              "source",
+              "publishedAt",
+              "publishedBy",
+              "createdAt",
+              "spec"
+            ]
+          },
+          {
+            "$ref": "#/components/schemas/Manifest"
+          }
+        ]
+      },
       "VersionListResponse": {
         "type": "object",
         "properties": {
           "data": {
             "type": "array",
-            "items": {}
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                "version": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "draft",
+                    "published",
+                    "archived"
+                  ]
+                },
+                "specHash": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "interfaceMajor": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "interfaceHash": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "model": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "changelog": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "source": {
+                  "type": "string",
+                  "enum": [
+                    "console",
+                    "api",
+                    "cli",
+                    "mcp",
+                    "studio",
+                    "upgrade",
+                    "proposal"
+                  ]
+                },
+                "publishedAt": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "publishedBy": {
+                  "type": "object",
+                  "properties": {
+                    "userId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "tokenId": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "format": "uuid"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "userId",
+                    "tokenId"
+                  ]
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "required": [
+                "id",
+                "version",
+                "status",
+                "specHash",
+                "interfaceMajor",
+                "interfaceHash",
+                "model",
+                "changelog",
+                "source",
+                "publishedAt",
+                "publishedBy",
+                "createdAt"
+              ]
+            }
           },
           "nextCursor": {
             "type": [

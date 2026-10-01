@@ -1,0 +1,102 @@
+/* Console tokens. The palette is the marketing site's (apps/web/DESIGN.md): warm paper and ink,
+   one amber signal for the high band and the primary action. The console is a work surface, so it
+   uses the system sans and mono faces and quieter type sizes. */
+@import "tailwindcss";
+
+:root {
+  color-scheme: light dark;
+  --paper: oklch(0.972 0.008 85);
+  --paper-raised: oklch(0.985 0.005 85);
+  --paper-sunk: oklch(0.945 0.012 85);
+  --ink: oklch(0.24 0.018 70);
+  --ink-2: oklch(0.4 0.02 70);
+  --ink-3: oklch(0.5 0.02 70);
+  --rule: oklch(0.86 0.012 80);
+  --edge: oklch(0.56 0.02 75);
+  --signal: oklch(0.8 0.16 75);
+  --on-signal: oklch(0.22 0.02 70);
+  --danger: oklch(0.5 0.17 28);
+  --danger-wash: oklch(0.95 0.03 28);
+  --good: oklch(0.45 0.1 150);
+  --good-wash: oklch(0.95 0.03 150);
+  --info-wash: oklch(0.95 0.02 240);
+  --info: oklch(0.45 0.08 240);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: oklch(0.195 0.012 70);
+    --paper-raised: oklch(0.215 0.013 70);
+    --paper-sunk: oklch(0.235 0.014 70);
+    --ink: oklch(0.93 0.012 85);
+    --ink-2: oklch(0.8 0.015 80);
+    --ink-3: oklch(0.7 0.015 80);
+    --rule: oklch(0.33 0.014 70);
+    --edge: oklch(0.6 0.015 75);
+    --signal: oklch(0.82 0.15 78);
+    --on-signal: oklch(0.2 0.02 70);
+    --danger: oklch(0.76 0.13 30);
+    --danger-wash: oklch(0.28 0.05 30);
+    --good: oklch(0.8 0.11 150);
+    --good-wash: oklch(0.27 0.04 150);
+    --info-wash: oklch(0.27 0.03 240);
+    --info: oklch(0.8 0.08 240);
+  }
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-paper-sunk: var(--paper-sunk);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule: var(--rule);
+  --color-edge: var(--edge);
+  --color-signal: var(--signal);
+  --color-on-signal: var(--on-signal);
+  --color-danger: var(--danger);
+  --color-danger-wash: var(--danger-wash);
+  --color-good: var(--good);
+  --color-good-wash: var(--good-wash);
+  --color-info: var(--info);
+  --color-info-wash: var(--info-wash);
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+}
+
+html {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* One visible focus style everywhere: a 2px ink ring with a gap, on paper and on signal. */
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* The medium band is hatched and the low band dotted, so bands read without color too. */
+.band-medium {
+  background-image: repeating-linear-gradient(135deg, currentColor 0 1px, transparent 1px 5px);
+}
+.band-low {
+  background-image: radial-gradient(currentColor 0.8px, transparent 0.8px);
+  background-size: 4px 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}

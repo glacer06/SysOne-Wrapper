@@ -13,19 +13,26 @@ import {
 } from "@bandwise/core";
 import { z } from "zod";
 
+import { decideApproval, getApproval, listApprovals } from "../manage/approvals";
 import { defineOperation, operationGroup, placeholderInput, placeholderOutput, type RiskLevel } from "./define";
 import { isWriteScope, listInput, listOutput, placeholderListOutput } from "./schemas";
 
 /**
- * GET /approvals/{id}: { id, opId, status, reason, requestedBy, expiresAt, decidedBy?, decidedAt?, result? }.
- * requestedBy and decidedBy carry the approval_requests columns they name.
+ * GET /approvals/{id}: { id, opId, status, reason, input, ifMatch, requestedBy, createdAt, expiresAt,
+ * decidedBy?, decidedAt?, result? }. requestedBy and decidedBy carry the approval_requests columns
+ * they name; requestedBy adds the member's and the token's names when they can be read.
  */
 export const ApprovalView = z.object({
   id: ApprovalId,
   opId: z.string().min(1),
   status: ApprovalStatus,
   reason: z.string(),
-  requestedBy: z.object({ userId: UserId, tokenId: TokenId }),
+  /** The input the agent sent. It runs unchanged on approval. */
+  input: JsonValue,
+  /** The If-Match value sent with the request: the draft ETag the agent saw. */
+  ifMatch: z.string().nullable(),
+  requestedBy: z.object({ userId: UserId, tokenId: TokenId, name: z.string().optional(), tokenName: z.string().optional() }),
+  createdAt: IsoTimestamp,
   expiresAt: IsoTimestamp,
   decidedBy: UserId.optional(),
   decidedAt: IsoTimestamp.optional(),
@@ -83,6 +90,7 @@ export const identityOperations = operationGroup(
     summary: "List pending approvals the caller requested or may decide.",
     input: listInput({}),
     output: listOutput(ApprovalView),
+    handler: listApprovals,
   }),
 
   defineOperation("approval.get", {
@@ -90,14 +98,15 @@ export const identityOperations = operationGroup(
     input: z.strictObject({ id: ApprovalId }),
     output: ApprovalView,
     mcp: "get_approval",
+    handler: getApproval,
   }),
 
   defineOperation("approval.decide", {
     summary: "Approve or reject an agent's request. Console session only.",
     input: z.strictObject({ id: ApprovalId, decision: ApprovalDecision, note: z.string().optional() }),
-    // shape: Phase 2, owner Platform / Tenancy
-    output: placeholderOutput(),
+    output: ApprovalView,
     emits: ["approval.decided"],
+    handler: decideApproval,
   }),
 
   defineOperation("agent_token.list", {

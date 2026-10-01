@@ -18,7 +18,7 @@
 
 import {
   APPEND_ONLY_TABLES,
-  AUTH_TABLES,
+  AUTH_TABLES_0001,
   ORG_TABLE,
   PLATFORM_TABLES,
   TENANT_TABLES,
@@ -259,7 +259,7 @@ function platformTables(): string[] {
 }
 
 function authTables(): string[] {
-  return [`GRANT SELECT, INSERT, UPDATE, DELETE ON ${AUTH_TABLES.map(q).join(", ")} TO ${APP_ROLE};`];
+  return [`GRANT SELECT, INSERT, UPDATE, DELETE ON ${AUTH_TABLES_0001.map(q).join(", ")} TO ${APP_ROLE};`];
 }
 
 function constraints(): string[] {

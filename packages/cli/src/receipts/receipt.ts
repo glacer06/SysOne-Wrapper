@@ -70,6 +70,11 @@ export interface Receipt {
   session?: ReceiptSession;
   /** Only on receipts from `bandwise launch`: the profile used and the one the set picked (null for none). */
   launch?: { profile: string; picked: string | null };
+  /**
+   * Only on receipts from a hook that called the hosted endpoint (BANDWISE_TOKEN set): the host,
+   * and the version, channel and run id the server reported (null when no run came back).
+   */
+  remote?: { host: string; version: number | null; channel: string | null; runId: string | null };
 }
 
 /** Where receipts go when no path is given. */

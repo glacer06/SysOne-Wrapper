@@ -26,7 +26,8 @@ describe("parseArgs", () => {
   });
 
   it.each([
-    [["publish"], "unknown command"],
+    [["deploy"], "unknown command"],
+    [["publish"], "needs a set"],
     [["run", "slug"], "needs --local"],
     [["run", "--local", "s.json"], "a spec file and a state file"],
     [["run", "--local", "a", "b", "--provider", "cloudflare"], "--provider must be"],

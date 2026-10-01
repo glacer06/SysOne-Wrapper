@@ -14,6 +14,11 @@
       "@bandwise/source": "./src/fixture/index.ts",
       "types": "./dist/fixture/index.d.ts",
       "import": "./dist/fixture/index.js"
+    },
+    "./server": {
+      "@bandwise/source": "./src/server.ts",
+      "types": "./dist/server.d.ts",
+      "import": "./dist/server.js"
     }
   },
   "files": [

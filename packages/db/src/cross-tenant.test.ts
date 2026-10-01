@@ -552,6 +552,28 @@ const PROBES: Record<string, Probe> = {
   "questionSetVersions.maxVersion": async (r) => {
     expect(await inA((tx) => r.questionSetVersions.maxVersion(tx, B.setId))).toBe(0);
   },
+  "questionSetVersions.listPublished": async (r) => {
+    expect((await inB((tx) => r.questionSetVersions.listPublished(tx, B.setId, { limit: 50, cursor: null }))).data.length).toBeGreaterThan(0);
+    expect(await inA((tx) => r.questionSetVersions.listPublished(tx, B.setId, { limit: 50, cursor: null }))).toEqual({ data: [], nextCursor: null });
+  },
+  "questionSetVersions.maxInterfaceMajor": async (r) => {
+    expect(await inB((tx) => r.questionSetVersions.maxInterfaceMajor(tx, B.setId))).toBeGreaterThan(0);
+    expect(await inA((tx) => r.questionSetVersions.maxInterfaceMajor(tx, B.setId))).toBe(0);
+  },
+  "questionSetVersions.updateDraftIf": async (r) => {
+    const before = await inB((tx) => r.questionSetVersions.get(tx, B.draftVersionId));
+    expect(before?.status).toBe("draft");
+    const hash = before?.specHash ?? "";
+    expect(await inA((tx) => r.questionSetVersions.updateDraftIf(tx, B.draftVersionId, hash, { changelog: "stolen" }))).toBeNull();
+    expect(await inB((tx) => r.questionSetVersions.get(tx, B.draftVersionId))).toEqual(before);
+    // In org B it writes only while the hash still matches.
+    expect(await inB((tx) => r.questionSetVersions.updateDraftIf(tx, B.draftVersionId, "sha256:other", { changelog: "x" }))).toBeNull();
+    expect((await inB((tx) => r.questionSetVersions.updateDraftIf(tx, B.draftVersionId, hash, { changelog: "kept" })))?.changelog).toBe("kept");
+  },
+  "releaseEvents.listByChannel": async (r) => {
+    expect((await inB((tx) => r.releaseEvents.listByChannel(tx, B.setId, "production"))).length).toBeGreaterThan(0);
+    expect(await inA((tx) => r.releaseEvents.listByChannel(tx, B.setId, "production"))).toEqual([]);
+  },
   "releasePointers.get": async (r) => {
     expect(await inA((tx) => r.releasePointers.get(tx, B.setId, "production"))).toBeNull();
   },
@@ -582,6 +604,29 @@ const PROBES: Record<string, Probe> = {
   "runs.listBySet": async (r) => {
     expect(await inA((tx) => r.runs.listBySet(tx, B.setId))).toEqual([]);
   },
+  "runs.listPage": async (r) => {
+    const first = { limit: 200, cursor: null };
+    expect((await inB((tx) => r.runs.listPage(tx, { setId: B.setId }, first))).data.map((x) => x.id)).toContain(B.runId);
+    expect((await inA((tx) => r.runs.listPage(tx, { setId: B.setId }, first))).data).toEqual([]);
+    expect((await inA((tx) => r.runs.listPage(tx, {}, first))).data.map((x) => x.id)).not.toContain(B.runId);
+    // A cursor that names org B's run reads nothing of it.
+    expect((await inA((tx) => r.runs.listPage(tx, {}, { limit: 200, cursor: B.runId }))).data).toEqual([]);
+  },
+  "runs.totalsBySet": async (r) => {
+    const range = { from: new Date(0), to: new Date(Date.now() + 86_400_000) };
+    expect((await inB((tx) => r.runs.totalsBySet(tx, { ...range, setIds: [B.setId] })))[0]?.runs).toBeGreaterThan(0);
+    expect(await inA((tx) => r.runs.totalsBySet(tx, { ...range, setIds: [B.setId] }))).toEqual([]);
+    expect((await inA((tx) => r.runs.totalsBySet(tx, range))).map((x) => x.setId)).not.toContain(B.setId);
+  },
+  "runs.totalsByDay": async (r) => {
+    const range = { from: new Date(0), to: new Date(Date.now() + 86_400_000) };
+    const sum = (days: { runs: number }[]) => days.reduce((n, d) => n + d.runs, 0);
+    expect(sum(await inB((tx) => r.runs.totalsByDay(tx, { ...range, setIds: [B.setId] })))).toBeGreaterThan(0);
+    expect(await inA((tx) => r.runs.totalsByDay(tx, { ...range, setIds: [B.setId] }))).toEqual([]);
+    // Without a set filter, org A's days add up to org A's own runs only.
+    const own = (await inA((tx) => r.runs.totalsBySet(tx, range))).reduce((n, x) => n + x.runs, 0);
+    expect(sum(await inA((tx) => r.runs.totalsByDay(tx, range)))).toBe(own);
+  },
   "runFeedback.getByIdempotencyKey": async (r) => {
     const key = await inB(async (tx) => (await r.runFeedback.get(tx, created["runFeedback"]?.b ?? ""))?.idempotencyKey);
     expect(key).toBeTruthy();
@@ -589,6 +634,15 @@ const PROBES: Record<string, Probe> = {
   },
   "reviewItems.listByRun": async (r) => {
     expect(await inA((tx) => r.reviewItems.listByRun(tx, B.runId))).toEqual([]);
+  },
+  "reviewItems.listPage": async (r) => {
+    const id = created["reviewItems"]?.b ?? "";
+    const first = { limit: 200, cursor: null };
+    expect((await inB((tx) => r.reviewItems.listPage(tx, { setId: B.setId }, first))).data.map((x) => x.id)).toContain(id);
+    expect((await inA((tx) => r.reviewItems.listPage(tx, { setId: B.setId }, first))).data).toEqual([]);
+    expect((await inA((tx) => r.reviewItems.listPage(tx, {}, first))).data.map((x) => x.id)).not.toContain(id);
+    // A cursor that names org B's item reads nothing of it.
+    expect((await inA((tx) => r.reviewItems.listPage(tx, {}, { limit: 200, cursor: id }))).data).toEqual([]);
   },
   "reviewItems.countLabelItemsSince": async (r) => {
     expect(await inB((tx) => r.reviewItems.countLabelItemsSince(tx, B.setId, new Date(0)))).toBeGreaterThan(0);
@@ -605,6 +659,29 @@ const PROBES: Record<string, Probe> = {
     expect((await inB((tx) => r.priceBooks.resolve(tx, model)))?.inputPerMtokMicroUsd).toBe(1);
     // Org A reads the platform row, never org B's override.
     expect((await inA((tx) => r.priceBooks.resolve(tx, model)))?.inputPerMtokMicroUsd).toBe(42_000);
+  },
+  "approvalRequests.findPending": async (r) => {
+    const row = await inB((tx) => r.approvalRequests.get(tx, created["approvalRequests"]?.b ?? ""));
+    expect(row).not.toBeNull();
+    const args = [row?.requestedByTokenId ?? "", row?.opId ?? "", row?.inputHash ?? "", new Date()] as const;
+    expect((await inB((tx) => r.approvalRequests.findPending(tx, ...args)))?.id).toBe(row?.id);
+    expect(await inA((tx) => r.approvalRequests.findPending(tx, ...args))).toBeNull();
+  },
+  "approvalRequests.transition": async (r) => {
+    const row = await inB((tx) => filtered.approvalRequests.insert(tx, CASES["approvalRequests"]?.values(B) as never));
+    expect(await inA((tx) => r.approvalRequests.transition(tx, row.id, "pending", { status: "approved" }))).toBeNull();
+    expect((await inB((tx) => r.approvalRequests.get(tx, row.id)))?.status).toBe("pending");
+    // In org B it moves only from the expected status, and only before expiry when asked.
+    expect(await inB((tx) => r.approvalRequests.transition(tx, row.id, "approved", { status: "executed" }))).toBeNull();
+    expect(await inB((tx) => r.approvalRequests.transition(tx, row.id, "pending", { status: "approved" }, new Date(Date.now() + 30 * 86_400_000)))).toBeNull();
+    expect((await inB((tx) => r.approvalRequests.transition(tx, row.id, "pending", { status: "approved" }, new Date())))?.status).toBe("approved");
+    expect(await inB((tx) => r.approvalRequests.transition(tx, row.id, "pending", { status: "rejected" }))).toBeNull();
+  },
+  "approvalRequests.listPending": async (r) => {
+    const id = created["approvalRequests"]?.b ?? "";
+    const first = { limit: 200, cursor: null };
+    expect((await inB((tx) => r.approvalRequests.listPending(tx, { now: new Date() }, first))).data.map((x) => x.id)).toContain(id);
+    expect((await inA((tx) => r.approvalRequests.listPending(tx, { now: new Date() }, first))).data.map((x) => x.id)).not.toContain(id);
   },
   "idempotencyKeys.lookup": async (r) => {
     const key = await inB(async (tx) => (await r.idempotencyKeys.get(tx, created["idempotencyKeys"]?.b ?? ""))?.key);

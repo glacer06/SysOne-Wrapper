@@ -113,6 +113,10 @@ Key rotation and revocation, member invites, role changes and removals, and crea
 | `report [--since 7d] [--set <slug>] [--receipts <path>]` | none: sums local receipts | D1 |
 | `hook <Stop\|PreToolUse\|UserPromptSubmit> --set <spec.json> [--rollout]` | none: a Claude Code hook over `run --live` | D1 |
 | `hooks install [--sets-dir] [--command] [--rollout]` | none: prints `.claude/settings.json` entries, writes nothing | D1 |
+| `spec pull <set> [--out]`, `spec push <file> [--set] [--goal] [--if-match]`, `spec diff <file> [--version]` | `draft.get`; `set.create` (with `--goal`), `draft.update`, `draft.validate`; `draft.get` or `version.get` | D2 |
+| `publish <set> [--channel]`, `rollback <set> [--channel] [--to]`, `rollout <set> <stage> [--channel] [--reason]` | `set.publish`, `channel.rollback`, `rollout.change` | D2 |
+| `report --remote [--since] [--set]` | `usage.get` | D2 |
+| `hook ...` with `BANDWISE_TOKEN` set | `set.run`: the hosted endpoint, with the server's rollout stage; no provider key | D2 |
 | `models list` | `model.list` | 3 |
 
 - `datasets import` sends JSONL, one `{ state, expected, tags? }` case per line. The server assigns each case's split; a file cannot set it.
@@ -120,6 +124,7 @@ Key rotation and revocation, member invites, role changes and removals, and crea
 - `datasets push <slug>` imports every `bandwise/datasets/<slug>/<name>.jsonl` into the set's dataset `<name>`, creating the dataset when it does not exist. It records, per file, how many lines it sent and their hash in `.bandwise/datasets.json`, and sends only lines added since the last push. If earlier lines changed, it stops with exit 1 and asks for a new dataset name, so a re-push never duplicates cases.
 - `run --local` replaces the old `pnpm bandwise run spec.json state.json`. In this monorepo it is `pnpm bandwise run --local spec.json state.json`. It makes no network call and needs no key.
 - `run --live`, `hook`, `report` and `hooks install` are the local live mode of ADR-020. The key comes only from `TYPESAFE_API_KEY`, `OPENROUTER_API_KEY` or `AI_GATEWAY_API_KEY` in the caller's environment, read in `packages/cli/src/live/key.ts`; only `packages/cli/src/live/transport.ts` loads the SDK transport. Receipts go to `~/.bandwise/receipts.jsonl` and hold decisions and cost, never state. A hook in `shadow` never prints anything, and any error or a 3 second timeout exits 0 with no output. See `docs/runbooks/dogfood.md`.
+- The D2 forms (`spec push <file>`, `publish <set>` with `--channel` defaulting to `production`, `rollout <set> <stage>`) are the dogfood subset of the Phase 3 commands above. They read `BANDWISE_TOKEN` and `BANDWISE_BASE_URL` only in `packages/cli/src/remote/credentials.ts`, send the token only as a bearer header over https (http only to localhost), and pass all output through a scrub of the token. With `BANDWISE_TOKEN` set, `bandwise hook` loads `live/hook-remote.ts`, which imports neither core nor the SDK.
 
 ### Review, feedback, reports and events
 

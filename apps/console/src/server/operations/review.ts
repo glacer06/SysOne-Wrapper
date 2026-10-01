@@ -1,6 +1,7 @@
 // Review and feedback (management-api.md, Review and feedback; api.md, Feedback).
 
 import {
+  Band,
   FailureClass,
   FeedbackBatch,
   JsonValue,
@@ -10,8 +11,10 @@ import {
 } from "@bandwise/core";
 import { z } from "zod";
 
+import { confirmReview, dismissReview, listReview, resolveReview } from "../manage/review";
 import { defineOperation, operationGroup, placeholderInput, placeholderOutput } from "./define";
-import { listInput, placeholderListOutput } from "./schemas";
+import { SetRef, listInput, listOutput } from "./schemas";
+import { ReviewItemView } from "./views";
 
 /** api.md, Feedback: one result per item, in order. Items succeed or fail independently. */
 export const FeedbackReportResults = z.object({
@@ -29,10 +32,10 @@ export const FeedbackReportResults = z.object({
 export const reviewOperations = operationGroup(
   defineOperation("review.list", {
     summary: "List review items with why each was picked.",
-    input: listInput({ kind: ReviewItemKind.optional(), status: ReviewItemStatus.optional() }),
-    // shape: Phase 3, owner Platform / Tenancy
-    output: placeholderListOutput(),
+    input: listInput({ kind: ReviewItemKind.optional(), status: ReviewItemStatus.optional(), set: SetRef.optional(), band: Band.optional() }),
+    output: listOutput(ReviewItemView),
     mcp: "list_review_items",
+    handler: listReview,
   }),
 
   defineOperation("review.assign", {
@@ -52,27 +55,26 @@ export const reviewOperations = operationGroup(
       /** Why the decision was wrong (ADR-012). */
       failureClass: FailureClass.optional(),
     }),
-    // shape: Phase 3, owner Platform / Tenancy
-    output: placeholderOutput(),
+    output: ReviewItemView,
     mcp: "resolve_review_item",
     emits: ["review.resolved"],
+    handler: resolveReview,
   }),
 
   defineOperation("review.dismiss", {
-    summary: "Dismiss a review item.",
-    // shape: Phase 3, owner Platform / Tenancy
-    input: placeholderInput({ id: ReviewItemId }),
-    // shape: Phase 3, owner Platform / Tenancy
-    output: placeholderOutput(),
+    summary: "Dismiss a review item. Agents cannot; they resolve with a proposed answer instead.",
+    input: z.strictObject({ id: ReviewItemId }),
+    output: ReviewItemView,
     emits: ["review.resolved"],
+    handler: dismissReview,
   }),
 
   defineOperation("review.confirm", {
     summary: "Confirm an agent's label or resolution, or replace it. Console session only.",
     input: z.strictObject({ id: ReviewItemId, resolution: JsonValue.optional() }),
-    // shape: Phase 3, owner Platform / Tenancy
-    output: placeholderOutput(),
+    output: ReviewItemView,
     emits: ["review.resolved"],
+    handler: confirmReview,
   }),
 
   defineOperation("feedback.report", {
