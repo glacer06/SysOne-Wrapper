@@ -106,14 +106,35 @@ describe("client", () => {
     expect(slept).toHaveLength(1);
   });
 
-  it("never retries a write on a 503, which can come after a commit, but retries a read", async () => {
+  it("retries a write on a retryable 503 with the same key, so the server replays a committed write", async () => {
+    let calls = 0;
     const busy = { status: 503, body: { error: { code: "system_one_unavailable", message: "busy", requestId: "r", retryable: true } } };
-    const api = fakeApi({ "POST /sets/triage/rollback": busy, "GET /usage": busy });
+    const api = fakeApi({
+      "POST /sets/triage/rollback": () => (++calls === 1 ? busy : { status: 200, body: { toVersion: 3 }, headers: { "idempotent-replayed": "true" } }),
+      "GET /usage": busy,
+    });
     const client = createClient(remote, { fetch: api.fetch, newId: () => "idem-1", sleep: async () => undefined });
-    expect(await client.request("POST", "/sets/triage/rollback", { body: {} })).toMatchObject({ ok: false, error: { status: 503 } });
-    expect(api.seen.filter((x) => x.method === "POST")).toHaveLength(1);
+    expect(await client.request("POST", "/sets/triage/rollback", { body: {} })).toMatchObject({ ok: true, status: 200, body: { toVersion: 3 } });
+    const posts = api.seen.filter((x) => x.method === "POST");
+    expect(posts.map((x) => x.headers["idempotency-key"])).toEqual(["idem-1", "idem-1"]);
     await client.request("GET", "/usage");
     expect(api.seen.filter((x) => x.method === "GET").length).toBeGreaterThan(1);
+  });
+
+  it("does not retry a write on a 503 the server marks not retryable", async () => {
+    const auth = { status: 503, body: { error: { code: "system_one_auth", message: "key", requestId: "r", retryable: false } } };
+    const api = fakeApi({ "POST /sets/triage/rollback": auth });
+    const client = createClient(remote, { fetch: api.fetch, newId: () => "idem-1", sleep: async () => undefined });
+    expect(await client.request("POST", "/sets/triage/rollback", { body: {} })).toMatchObject({ ok: false, error: { status: 503, code: "system_one_auth" } });
+    expect(api.seen).toHaveLength(1);
+  });
+
+  it("does not retry a run on a 503: the run route does not store keys", async () => {
+    const busy = { status: 503, body: { error: { code: "system_one_unavailable", message: "busy", requestId: "r", retryable: true } } };
+    const api = fakeApi({ "POST /sets/triage/run": busy });
+    const client = createClient(remote, { fetch: api.fetch, newId: () => "idem-1", sleep: async () => undefined });
+    expect(await client.request("POST", "/sets/triage/run", { body: { state: {} } })).toMatchObject({ ok: false, error: { status: 503 } });
+    expect(api.seen).toHaveLength(1);
   });
 
   it("refuses to follow redirects, so the bearer header goes only to the configured host", async () => {

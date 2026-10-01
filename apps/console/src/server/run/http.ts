@@ -42,6 +42,8 @@ export interface RunHttpDeps extends RunSetDeps {
 export interface RunHttpResponse {
   status: number;
   body: unknown;
+  /** Extra response headers: retry-after on a 429. */
+  headers?: Record<string, string>;
 }
 
 function unexpected(e: unknown, requestId: string, log: ((message: string, requestId: string) => void) | undefined): RunHttpResponse {
@@ -102,7 +104,11 @@ export async function handleRunHttp(
     const result = await runSetForCaller(auth.ctx, auth.orgSlug, { ref, channel, state: body.data.state, options: body.data.options }, deps, input.signal);
     return { status: 200, body: result };
   } catch (e) {
-    if (e instanceof OperationError) return { status: e.status, body: e.toEnvelope(requestId) };
+    if (e instanceof OperationError) {
+      const res: RunHttpResponse = { status: e.status, body: e.toEnvelope(requestId) };
+      if (e.retryAfterMs !== undefined) res.headers = { "retry-after": String(Math.max(1, Math.ceil(e.retryAfterMs / 1000))) };
+      return res;
+    }
     return unexpected(e, requestId, log);
   }
 }

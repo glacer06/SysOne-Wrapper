@@ -42,5 +42,5 @@ export async function POST(req: Request, ctx: { params: Promise<{ ref: string }>
     runDeps,
     log,
   );
-  return Response.json(res.body, { status: res.status, headers });
+  return Response.json(res.body, { status: res.status, headers: { ...headers, ...res.headers } });
 }

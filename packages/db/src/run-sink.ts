@@ -46,6 +46,11 @@ export interface RunSinkDeps {
   rand?: () => number;
   /** Missing until core/learning ships selectForLabeling: the sink then creates no label items. */
   selectForLabeling?: LabelSelector;
+  /**
+   * Runs last, in the run's own transaction, so what it writes (the hosted spend charge) commits
+   * or rolls back with the run row. A throw here rolls the run back too.
+   */
+  onPersist?: (tx: TenantTx, ctx: TenantContext, record: RunSinkRecord) => Promise<void>;
 }
 
 /** Thrown when the run's set is not in the caller's org. Callers map it to 404. */
@@ -231,6 +236,7 @@ export function createRunSink(deps: RunSinkDeps): RunSink {
       }
     }
 
+    if (deps.onPersist !== undefined) await deps.onPersist(tx, ctx, record);
     return { reviewItemIds: [...actionItems.values()], labelItemIds };
   }
 

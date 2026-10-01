@@ -3,7 +3,7 @@
 // (src/cross-tenant.test.ts) is generated from TENANT_REPOSITORY_NAMES and fails when a tenant
 // repository or method has no coverage.
 
-import { and, asc, desc, eq, getTableColumns, gt, gte, inArray, type InferInsertModel, type InferSelectModel, isNull, lt, lte, ne, or, type SQL, sql } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, gt, gte, inArray, type InferInsertModel, type InferSelectModel, isNull, lt, lte, ne, not, or, type SQL, sql } from "drizzle-orm";
 
 import type { Action, Band, Channel, ModelPrice, Page, PageReq, PointerChannel, ReviewItemKind, ReviewItemStatus, RunRecordSource, RunStatus, SystemOneProvider } from "@bandwise/core/contracts";
 
@@ -607,10 +607,52 @@ export function buildRepositories(opts: RepoOptions) {
     },
     idempotencyKeys: {
       ...idempotencyKeys,
-      async lookup(tx: TenantTx, actorKey: string, key: string) {
-        const where = and(eq(s.idempotencyKeys.actorKey, actorKey), eq(s.idempotencyKeys.key, key));
+      /** The caller's row for a key. With `liveSince`, a row created before it reads as absent. */
+      async lookup(tx: TenantTx, actorKey: string, key: string, liveSince?: Date) {
+        const t = s.idempotencyKeys;
+        const where = and(eq(t.actorKey, actorKey), eq(t.key, key), liveSince === undefined ? undefined : gte(t.createdAt, liveSince));
         const [row] = await idempotencyKeys.findMany(tx, where, 1);
         return row ?? null;
+      },
+      /**
+       * Claim a key for this transaction: insert the row with `responseStatus` 0, or take over a
+       * row created before `liveSince` (an expired key). A live row is left as it is and returned
+       * with `claimed: false`. A concurrent claim of the same key blocks on the unique index until
+       * the other transaction ends, then sees its committed row, or claims the key if it rolled back.
+       *
+       * Every claim also deletes the org's other expired rows, so a stored response does not
+       * outlive the key's lifetime by more than the time until the org's next keyed call.
+       */
+      async claim(
+        tx: TenantTx,
+        values: { actorKey: string; key: string; opId: string; requestHash: string; createdAt: Date },
+        liveSince: Date,
+      ): Promise<{ claimed: boolean; row: InferSelectModel<typeof s.idempotencyKeys> }> {
+        const t = s.idempotencyKeys;
+        await drizzleOf(tx)
+          .delete(t)
+          .where(
+            and(
+              eq(t.orgId, tx.orgId),
+              lt(t.createdAt, liveSince),
+              not(and(eq(t.actorKey, values.actorKey), eq(t.key, values.key)) as SQL),
+            ),
+          );
+        const fresh = { ...values, orgId: tx.orgId, responseStatus: 0, response: null };
+        const [row] = await drizzleOf(tx)
+          .insert(t)
+          .values(fresh)
+          .onConflictDoUpdate({
+            target: [t.orgId, t.actorKey, t.key],
+            set: { opId: values.opId, requestHash: values.requestHash, responseStatus: 0, response: null, createdAt: values.createdAt },
+            setWhere: lt(t.createdAt, liveSince),
+          })
+          .returning();
+        if (row !== undefined) return { claimed: true, row };
+        const where = and(eq(t.actorKey, values.actorKey), eq(t.key, values.key));
+        const [live] = await idempotencyKeys.findMany(tx, where, 1);
+        if (live === undefined) throw new Error("idempotency key conflict with no row");
+        return { claimed: false, row: live };
       },
     },
     jobs: tenantRepo(s.jobs, opts),
@@ -676,6 +718,77 @@ export const authRepositories = {
         await db.update(t).set({ windowStart: c.start, count: c.count + 1 }).where(eq(t.keyHash, c.k.keyHash));
       }
       return true;
+    },
+  },
+  runLimits: {
+    table: "run_limits",
+    /**
+     * Adds `amount` to the key's window in one locked upsert, so two instances cannot both slip
+     * under `max`. A newer window replaces an older one; a caller whose clock is behind counts
+     * against the newer window. Returns ok false, and counts nothing, when the window would pass
+     * `max`.
+     */
+    async take(tx: AnyTx, k: { keyHash: string; windowStart: Date; amount: number; max: number }): Promise<{ ok: boolean; used: number }> {
+      const t = s.runLimits;
+      if (k.amount > k.max) return { ok: false, used: 0 };
+      const rows = await drizzleOf(tx)
+        .insert(t)
+        .values({ keyHash: k.keyHash, windowStart: k.windowStart, used: k.amount })
+        .onConflictDoUpdate({
+          target: t.keyHash,
+          set: {
+            windowStart: sql`greatest(${t.windowStart}, excluded.window_start)`,
+            used: sql`case when excluded.window_start > ${t.windowStart} then excluded.used else ${t.used} + excluded.used end`,
+          },
+          setWhere: sql`excluded.window_start > ${t.windowStart} or ${t.used} + excluded.used <= ${k.max}`,
+        })
+        .returning({ used: t.used });
+      const row = rows[0];
+      return row === undefined ? { ok: false, used: k.max } : { ok: true, used: row.used };
+    },
+    /** Adds `amount` to the key's window with no limit: a cost that was already spent. */
+    async charge(tx: AnyTx, k: { keyHash: string; windowStart: Date; amount: number }): Promise<number> {
+      const t = s.runLimits;
+      const rows = await drizzleOf(tx)
+        .insert(t)
+        .values({ keyHash: k.keyHash, windowStart: k.windowStart, used: k.amount })
+        .onConflictDoUpdate({
+          target: t.keyHash,
+          set: {
+            windowStart: sql`greatest(${t.windowStart}, excluded.window_start)`,
+            used: sql`case when excluded.window_start > ${t.windowStart} then excluded.used else ${t.used} + excluded.used end`,
+          },
+        })
+        .returning({ used: t.used });
+      return rows[0]?.used ?? k.amount;
+    },
+    /** What the key used in the window that starts at `windowStart` (or a newer one), 0 for none. */
+    async used(tx: AnyTx, keyHash: string, windowStart: Date): Promise<number> {
+      const t = s.runLimits;
+      const rows = await drizzleOf(tx)
+        .select({ used: t.used })
+        .from(t)
+        .where(and(eq(t.keyHash, keyHash), gte(t.windowStart, windowStart)))
+        .limit(1);
+      return rows[0]?.used ?? 0;
+    },
+    /**
+     * Gives back up to `amount` from the key's window, never below 0: the unused part of a
+     * reservation. Only the window that starts at `windowStart` is changed, so a reservation from a
+     * window that has since moved on gives nothing back to the newer one.
+     */
+    async release(tx: AnyTx, k: { keyHash: string; windowStart: Date; amount: number }): Promise<void> {
+      const t = s.runLimits;
+      if (k.amount <= 0) return;
+      await drizzleOf(tx)
+        .update(t)
+        .set({ used: sql`greatest(0, ${t.used} - ${k.amount})` })
+        .where(and(eq(t.keyHash, k.keyHash), eq(t.windowStart, k.windowStart)));
+    },
+    /** Deletes windows that started before `before`. */
+    async prune(tx: AnyTx, before: Date): Promise<void> {
+      const t = s.runLimits;
+      await drizzleOf(tx).delete(t).where(lt(t.windowStart, before));
     },
   },
   consoleEnrollments: {

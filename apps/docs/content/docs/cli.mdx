@@ -138,7 +138,7 @@ error precondition_failed (HTTP 412): The draft changed. [request req_01J...]
   the draft changed on the server (now 9f2c...). Run bandwise spec diff, merge, then push again
 ```
 
-Reads retry after a network error, a `429` or a retryable `503`. Writes retry only after a `429`, which the server sends before anything runs. A write that hits a `503` or a network error is not retried, because it may have landed: check with a read, such as `bandwise spec pull` or the console, before you send it again. Writes carry an `Idempotency-Key`, which the server will use to make such retries safe.
+Reads retry after a network error, a `429` or a retryable `503`. Writes carry an `Idempotency-Key` and retry after a `429` or a retryable `503` with the same key. The server stores each write's answer under its key in the same transaction as the write, for 24 hours, so a retry of a write that already landed gets the stored answer back (with the header `Idempotent-Replayed: true`) and nothing runs twice. A write that hits a network error is not retried, because it may have landed: check with a read, such as `bandwise spec pull` or the console, before you send it again. `bandwise hook` never retries its run.
 
 ### Hooks on hosted Bandwise
 
