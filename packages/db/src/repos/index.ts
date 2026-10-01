@@ -3,7 +3,7 @@
 // (src/cross-tenant.test.ts) is generated from TENANT_REPOSITORY_NAMES and fails when a tenant
 // repository or method has no coverage.
 
-import { and, asc, desc, eq, getTableColumns, gte, inArray, type InferInsertModel, type InferSelectModel, isNull, lt, lte, ne, or, type SQL, sql } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, gt, gte, inArray, type InferInsertModel, type InferSelectModel, isNull, lt, lte, ne, or, type SQL, sql } from "drizzle-orm";
 
 import type { Action, Band, Channel, ModelPrice, Page, PageReq, PointerChannel, ReviewItemKind, ReviewItemStatus, RunRecordSource, RunStatus, SystemOneProvider } from "@bandwise/core/contracts";
 
@@ -298,6 +298,20 @@ export function buildRepositories(opts: RepoOptions) {
           .where(questionSetVersions.scope(tx, and(eq(t.setId, setId), ne(t.status, "draft"))));
         return Number(rows[0]?.max ?? 0);
       },
+      /**
+       * Write to a draft only while it is still a draft holding the spec hash the caller read, so two
+       * concurrent writers cannot both win. Null when the row moved on.
+       */
+      async updateDraftIf(tx: TenantTx, id: string, expectedSpecHash: string, patch: Partial<Omit<InferInsertModel<typeof s.questionSetVersions>, "orgId" | "id">>) {
+        const t = s.questionSetVersions;
+        const { orgId: _o, id: _i, ...set } = patch as typeof patch & { orgId?: unknown; id?: unknown };
+        const rows = await drizzleOf(tx)
+          .update(t)
+          .set(set)
+          .where(questionSetVersions.scope(tx, and(eq(t.id, id), eq(t.status, "draft"), eq(t.specHash, expectedSpecHash))))
+          .returning();
+        return rows[0] ?? null;
+      },
       /** The highest version number of the set, 0 when it has none. */
       async maxVersion(tx: TenantTx, setId: string): Promise<number> {
         const rows = await drizzleOf(tx)
@@ -549,6 +563,26 @@ export function buildRepositories(opts: RepoOptions) {
         );
         const [row] = await approvalRequests.findMany(tx, where, 1);
         return row ?? null;
+      },
+      /**
+       * Move a request on only from the status the caller expects (and, with `unexpiredAt`, only while
+       * it has not expired), so a double decide or a double run cannot both land. Null when it moved on.
+       */
+      async transition(
+        tx: TenantTx,
+        id: string,
+        from: "pending" | "approved",
+        patch: Partial<Omit<InferInsertModel<typeof s.approvalRequests>, "orgId" | "id">>,
+        unexpiredAt?: Date,
+      ) {
+        const t = s.approvalRequests;
+        const { orgId: _o, id: _i, ...set } = patch as typeof patch & { orgId?: unknown; id?: unknown };
+        const rows = await drizzleOf(tx)
+          .update(t)
+          .set(set)
+          .where(approvalRequests.scope(tx, and(eq(t.id, id), eq(t.status, from), unexpiredAt === undefined ? undefined : gt(t.expiresAt, unexpiredAt))))
+          .returning();
+        return rows[0] ?? null;
       },
       /** Pending, unexpired requests, newest first; only one token's when tokenId is set. */
       async listPending(tx: TenantTx, filter: { tokenId?: string; now: Date }, page: PageReq) {

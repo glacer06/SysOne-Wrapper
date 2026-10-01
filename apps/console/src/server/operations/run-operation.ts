@@ -249,9 +249,7 @@ export async function runOperation<K extends OperationId>(
     if (state.audit !== null) await writeAudit(tx, tenant, id, state.audit, approvalId);
     else if (!op.descriptor.readOnly && !state.unchanged) throw new Error(`${id} changed data without an audit row`);
 
-    if (approvalId !== null) {
-      await repos.approvalRequests.update(tx, approvalId, { status: "executed", result: { ok: true, response: output } });
-    }
+    if (approvalId !== null) await repos.approvalRequests.update(tx, approvalId, { result: { ok: true, response: output } });
     const ok: RunOperationResult<K> = { kind: "ok", output: output as OperationOutput<K> };
     if (state.etag !== undefined) ok.etag = state.etag;
     return ok;
@@ -266,7 +264,11 @@ export async function runOperation<K extends OperationId>(
   return result;
 }
 
-/** An approved request may run only as the token that asked, for the input and If-Match it asked with. */
+/**
+ * An approved request may run only as the token that asked, for the input and If-Match it asked
+ * with, and only once: it is claimed (approved to executed) in the handler's transaction, so a
+ * second run waits on the row lock and then finds it claimed. A failed run rolls the claim back.
+ */
 async function checkApproval(tx: TenantTx, ctx: TenantContext, id: OperationId, input: unknown, ifMatch: string | undefined, approvalId: string): Promise<void> {
   const row = await repos.approvalRequests.get(tx, approvalId);
   const actor = ctx.actor;
@@ -278,6 +280,8 @@ async function checkApproval(tx: TenantTx, ctx: TenantContext, id: OperationId, 
     row.requestedByTokenId === actor.tokenId &&
     row.inputHash === approvalInputHash(input, ifMatch);
   if (!ok) throw new Error("the approved request does not match this call");
+  const claimed = await repos.approvalRequests.transition(tx, approvalId, "approved", { status: "executed" });
+  if (claimed === null) throw new Error("the approved request already ran");
 }
 
 /** What a failed approved request records: the envelope's code and message, never a stack. */
@@ -323,7 +327,8 @@ async function executeApproval(decider: TenantContext, approvalId: string, deps:
   }
 
   return deps.db.withTenant(decider, async (tx) => {
-    if (outcome !== null) await repos.approvalRequests.update(tx, approvalId, { result: outcome });
+    // Only a request that is still approved records a failure, never one another run executed.
+    if (outcome !== null) await repos.approvalRequests.transition(tx, approvalId, "approved", { result: outcome });
     const after = await repos.approvalRequests.get(tx, approvalId);
     if (after === null) throw new Error("the approval disappeared after it ran");
     return describeApproval(tx, after, now);

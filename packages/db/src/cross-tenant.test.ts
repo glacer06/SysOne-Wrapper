@@ -560,6 +560,16 @@ const PROBES: Record<string, Probe> = {
     expect(await inB((tx) => r.questionSetVersions.maxInterfaceMajor(tx, B.setId))).toBeGreaterThan(0);
     expect(await inA((tx) => r.questionSetVersions.maxInterfaceMajor(tx, B.setId))).toBe(0);
   },
+  "questionSetVersions.updateDraftIf": async (r) => {
+    const before = await inB((tx) => r.questionSetVersions.get(tx, B.draftVersionId));
+    expect(before?.status).toBe("draft");
+    const hash = before?.specHash ?? "";
+    expect(await inA((tx) => r.questionSetVersions.updateDraftIf(tx, B.draftVersionId, hash, { changelog: "stolen" }))).toBeNull();
+    expect(await inB((tx) => r.questionSetVersions.get(tx, B.draftVersionId))).toEqual(before);
+    // In org B it writes only while the hash still matches.
+    expect(await inB((tx) => r.questionSetVersions.updateDraftIf(tx, B.draftVersionId, "sha256:other", { changelog: "x" }))).toBeNull();
+    expect((await inB((tx) => r.questionSetVersions.updateDraftIf(tx, B.draftVersionId, hash, { changelog: "kept" })))?.changelog).toBe("kept");
+  },
   "releaseEvents.listByChannel": async (r) => {
     expect((await inB((tx) => r.releaseEvents.listByChannel(tx, B.setId, "production"))).length).toBeGreaterThan(0);
     expect(await inA((tx) => r.releaseEvents.listByChannel(tx, B.setId, "production"))).toEqual([]);
@@ -656,6 +666,16 @@ const PROBES: Record<string, Probe> = {
     const args = [row?.requestedByTokenId ?? "", row?.opId ?? "", row?.inputHash ?? "", new Date()] as const;
     expect((await inB((tx) => r.approvalRequests.findPending(tx, ...args)))?.id).toBe(row?.id);
     expect(await inA((tx) => r.approvalRequests.findPending(tx, ...args))).toBeNull();
+  },
+  "approvalRequests.transition": async (r) => {
+    const row = await inB((tx) => filtered.approvalRequests.insert(tx, CASES["approvalRequests"]?.values(B) as never));
+    expect(await inA((tx) => r.approvalRequests.transition(tx, row.id, "pending", { status: "approved" }))).toBeNull();
+    expect((await inB((tx) => r.approvalRequests.get(tx, row.id)))?.status).toBe("pending");
+    // In org B it moves only from the expected status, and only before expiry when asked.
+    expect(await inB((tx) => r.approvalRequests.transition(tx, row.id, "approved", { status: "executed" }))).toBeNull();
+    expect(await inB((tx) => r.approvalRequests.transition(tx, row.id, "pending", { status: "approved" }, new Date(Date.now() + 30 * 86_400_000)))).toBeNull();
+    expect((await inB((tx) => r.approvalRequests.transition(tx, row.id, "pending", { status: "approved" }, new Date())))?.status).toBe("approved");
+    expect(await inB((tx) => r.approvalRequests.transition(tx, row.id, "pending", { status: "rejected" }))).toBeNull();
   },
   "approvalRequests.listPending": async (r) => {
     const id = created["approvalRequests"]?.b ?? "";

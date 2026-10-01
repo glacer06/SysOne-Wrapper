@@ -12,6 +12,14 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export const isUuid = (v: string): boolean => UUID.test(v);
 
+const SLUG = /^[a-z0-9][a-z0-9_-]{0,63}$/;
+
+/**
+ * A set slug: 1 to 64 lower case letters, digits, dashes or underscores, and not uuid-shaped,
+ * because every lookup reads a uuid-shaped ref as an id.
+ */
+export const isSetSlug = (v: string): boolean => SLUG.test(v) && !isUuid(v);
+
 type SetRow = NonNullable<Awaited<ReturnType<typeof repos.questionSets.get>>>;
 type VersionRow = NonNullable<Awaited<ReturnType<typeof repos.questionSetVersions.get>>>;
 type PointerRow = Awaited<ReturnType<typeof repos.releasePointers.listBySet>>[number];

@@ -23,13 +23,13 @@ import {
 } from "@bandwise/core";
 import { authRepositories, type BandwiseDb, repos, type TenantTx } from "@bandwise/db";
 
+import { isSetSlug } from "../manage/common";
+
 export const INTERNAL_ORG_SLUG = "internal";
 export const DOGFOOD_PROJECT_SLUG = "dogfood";
 export const DOGFOOD_GOAL_TITLE = "Keep Claude Code sessions on this repo honest, safe and cheap";
 export const DOGFOOD_APP_NAME = "Claude Code hooks";
 
-/** Set slugs follow set.create: 1 to 64 lower case letters, digits, dashes or underscores. */
-const SLUG = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export interface BootstrapMember {
@@ -89,7 +89,7 @@ async function audit(tx: TenantTx, action: string, targetType: string, targetId:
 function checkSpecs(files: BootstrapSpecFile[]): { slug: string; spec: QuestionSetSpec }[] {
   const seen = new Set<string>();
   return files.map(({ slug, json }) => {
-    if (!SLUG.test(slug)) throw new BootstrapError(`${slug}.json: the file name is not a valid set slug.`);
+    if (!isSetSlug(slug)) throw new BootstrapError(`${slug}.json: the file name is not a valid set slug.`);
     if (seen.has(slug)) throw new BootstrapError(`${slug}: two files give the same slug.`);
     seen.add(slug);
     const parsed = QuestionSetSpec.safeParse(json);

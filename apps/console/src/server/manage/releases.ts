@@ -26,7 +26,7 @@ import { repos, type TenantTx } from "@bandwise/db";
 import type { OperationEnv } from "../operations/define";
 import { OperationError } from "../operations/errors";
 import { actorIds, authorizeSet, type PointerRow, type SetRow, type VersionRow } from "./common";
-import { checkIfMatch, parseStoredSpec, profileFor, resolveSide } from "./sets";
+import { checkIfMatch, draftChanged, parseStoredSpec, profileFor, resolveSide } from "./sets";
 import { diffSpecs, specHash } from "./spec-diff";
 
 /** The stage a channel's first publish starts at (ADR-020, D2). */
@@ -149,7 +149,8 @@ export async function publish(env: OperationEnv, input: PublishInput): Promise<{
   const tx = env.tx;
   const by = actorIds(env.ctx);
   const iface = interfaceHash(interfaceOf(spec));
-  await repos.questionSetVersions.update(tx, draft.id, {
+  // Conditional on the draft hash the lints checked, so a save cannot slip in under the publish.
+  const published = await repos.questionSetVersions.updateDraftIf(tx, draft.id, draft.specHash, {
     status: "published",
     specHash: hash,
     interfaceHash: iface,
@@ -160,6 +161,7 @@ export async function publish(env: OperationEnv, input: PublishInput): Promise<{
     publishedByTokenId: by.tokenId,
     publishedAt: env.now,
   });
+  if (published === null) throw await draftChanged(tx, set.id);
   const next = await repos.questionSetVersions.insert(tx, {
     setId: set.id,
     version: draft.version + 1,
@@ -237,37 +239,54 @@ interface RollbackInput {
   toVersion?: number | undefined;
 }
 
+type ReleaseEventRow = Awaited<ReturnType<typeof repos.releaseEvents.listByChannel>>[number];
+
 /**
  * The version the channel served before the current one: the `from` of the newest publish or
  * promote that put the current version there. Rollbacks are skipped, so rolling back twice walks
- * further back instead of toggling. With no such event, the highest earlier published version.
+ * further back instead of toggling. With no such event, the highest earlier version the channel served.
  */
-async function previousVersion(tx: TenantTx, set: SetRow, channel: PointerChannel, current: VersionRow): Promise<VersionRow | null> {
-  const events = await repos.releaseEvents.listByChannel(tx, set.id, channel, 200);
+async function previousVersion(tx: TenantTx, events: ReleaseEventRow[], current: VersionRow): Promise<VersionRow | null> {
   const brought = events.find((e) => e.toVersionId === current.id && e.kind !== "rollback" && e.kind !== "rollout_change" && e.kind !== "auto_demote");
   if (brought !== undefined) {
     if (brought.fromVersionId === null) return null;
     return repos.questionSetVersions.get(tx, brought.fromVersionId);
   }
-  const page = await repos.questionSetVersions.listPublished(tx, set.id, { limit: 1, cursor: String(current.version) });
-  return page.data[0] ?? null;
+  let best: VersionRow | null = null;
+  for (const id of new Set(events.map((e) => e.toVersionId))) {
+    const v = id === null ? null : await repos.questionSetVersions.get(tx, id);
+    if (v !== null && v.version < current.version && (best === null || v.version > best.version)) best = v;
+  }
+  return best;
 }
 
+/**
+ * A rollback is never gated (a move toward safety), so it may only step back: to an earlier
+ * version this channel already served. Anything else is a publish and goes through set.publish.
+ */
 async function planRollback(env: OperationEnv, input: RollbackInput) {
   const { set, pointers } = await authorizeSet(env, input.ref, { channel: input.channel });
   const tx = env.tx;
   const pointer = pointers.find((p) => p.channel === input.channel);
   const current = pointer === undefined ? null : await repos.questionSetVersions.get(tx, pointer.versionId);
   if (pointer === undefined || current === null) throw new OperationError("set_not_live", `${set.slug} has no ${input.channel} version to roll back.`);
+  const events = await repos.releaseEvents.listByChannel(tx, set.id, input.channel, 200);
   let target: VersionRow | null;
   if (input.toVersion !== undefined) {
     target = await repos.questionSetVersions.getByNumber(tx, set.id, input.toVersion);
     if (target === null || target.status === "draft") throw new OperationError("not_found", `${set.slug} has no published version ${input.toVersion}.`);
   } else {
-    target = await previousVersion(tx, set, input.channel, current);
+    target = await previousVersion(tx, events, current);
     if (target === null) throw new OperationError("invalid_request", `${set.slug} has no earlier version on ${input.channel} to roll back to.`);
   }
   if (target.id === current.id) throw new OperationError("invalid_request", `${input.channel} already serves version ${current.version}.`);
+  const targetId = target.id;
+  if (target.version > current.version || !events.some((e) => e.toVersionId === targetId)) {
+    throw new OperationError(
+      "invalid_request",
+      `A rollback only moves ${input.channel} back to an earlier version it served. Version ${target.version} is not one, so publish it instead.`,
+    );
+  }
   return { set, pointer, current, target };
 }
 

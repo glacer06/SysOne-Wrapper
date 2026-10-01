@@ -196,12 +196,14 @@ export async function decideApproval(env: OperationEnv, input: { id: string; dec
   if (status !== "pending") throw new OperationError("invalid_request", `This approval is ${status}, not pending.`);
   const actor = env.ctx.actor;
   const userId = actor.type === "user" ? actor.userId : null;
-  const updated = await repos.approvalRequests.update(env.tx, row.id, { status: input.decision, decidedByUserId: userId, decidedAt: env.now });
+  // Conditional, so two people deciding at once cannot both land: the second finds it decided.
+  const updated = await repos.approvalRequests.transition(env.tx, row.id, "pending", { status: input.decision, decidedByUserId: userId, decidedAt: env.now }, env.now);
+  if (updated === null) throw new OperationError("invalid_request", "This approval is no longer pending.");
   env.audit({
     targetType: "approval_request",
     targetId: row.id,
     diff: { opId: row.opId, decision: input.decision, note: input.note ?? null, requestedByTokenId: row.requestedByTokenId },
   });
   if (input.decision === "approved") env.runApprovalAfterCommit(row.id);
-  return describeApproval(env.tx, updated ?? row, env.now);
+  return describeApproval(env.tx, updated, env.now);
 }

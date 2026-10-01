@@ -28,6 +28,7 @@ import {
   actorIds,
   authorizeSet,
   inAllowlist,
+  isSetSlug,
   isUuid,
   setNotFound,
   setView,
@@ -37,9 +38,6 @@ import {
   type VersionRow,
 } from "./common";
 import { diffSpecs, specHash } from "./spec-diff";
-
-/** A set slug: lower case letters, digits, dashes and underscores. A uuid-shaped slug would shadow ids. */
-const SLUG = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 
 /** The draft of a set created without a template or a version: one placeholder question to replace. */
 export const STARTER_SPEC: QuestionSetSpec = QuestionSetSpec.parse({
@@ -86,6 +84,16 @@ export function checkIfMatch(env: OperationEnv, current: string): void {
   }
 }
 
+/**
+ * The 412 for a draft write that lost a race: the row changed between the If-Match check and the
+ * conditional write. currentEtag is re-read from the set's draft as it is now.
+ */
+export async function draftChanged(tx: TenantTx, setId: string): Promise<OperationError> {
+  const set = await repos.questionSets.get(tx, setId);
+  const draft = set === null || set.draftVersionId === null ? null : await repos.questionSetVersions.get(tx, set.draftVersionId);
+  return new OperationError("precondition_failed", "The draft changed since you read it. Read it again and retry.", draft === null ? {} : { currentEtag: draft.specHash });
+}
+
 async function draftOf(tx: TenantTx, set: SetRow): Promise<VersionRow> {
   const draft = set.draftVersionId === null ? null : await repos.questionSetVersions.get(tx, set.draftVersionId);
   if (draft === null) throw new OperationError("not_found", `${set.slug} has no draft.`);
@@ -122,8 +130,8 @@ export async function createSet(
   input: { slug: string; name: string; goalId: string; fromTemplate?: string | undefined; fromVersion?: string | undefined },
 ): Promise<SetView> {
   env.authorize({});
-  if (!SLUG.test(input.slug)) {
-    throw new OperationError("invalid_request", "A slug is 1 to 64 lower case letters, digits, dashes or underscores.", {
+  if (!isSetSlug(input.slug)) {
+    throw new OperationError("invalid_request", "A slug is 1 to 64 lower case letters, digits, dashes or underscores, and not shaped like an id.", {
       details: [{ path: "/slug", rule: "request.invalid", severity: "error", message: "invalid slug" }],
     });
   }
@@ -199,12 +207,14 @@ export async function updateDraft(env: OperationEnv, input: { ref: string; spec:
     return { etag: next };
   }
   const before = QuestionSetSpec.safeParse(draft.spec);
-  await repos.questionSetVersions.update(env.tx, draft.id, {
+  // Conditional on the hash just checked, so a concurrent save between the check and here gets a 412.
+  const written = await repos.questionSetVersions.updateDraftIf(env.tx, draft.id, draft.specHash, {
     spec: input.spec,
     specHash: next,
     interfaceHash: interfaceHash(interfaceOf(input.spec)),
     model: input.spec.model,
   });
+  if (written === null) throw await draftChanged(env.tx, set.id);
   // The changed paths, not the spec itself, keep the audit row small.
   const paths = before.success ? diffSpecs({ label: "before", spec: before.data }, { label: "after", spec: input.spec }).changes.map((c) => c.path) : null;
   env.audit({ targetType: "question_set_version", targetId: draft.id, diff: { setId: set.id, slug: set.slug, from: draft.specHash, to: next, paths } });

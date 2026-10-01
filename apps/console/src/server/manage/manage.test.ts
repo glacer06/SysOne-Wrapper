@@ -148,6 +148,11 @@ describe("sets and drafts", () => {
     expect((await refused(op("set.create", owner(), { slug: "fresh", name: "Again", goalId: internal.goalId }))).code).toBe("already_exists");
   });
 
+  it("refuses a slug shaped like an id, which no lookup could reach", async () => {
+    const e = await refused(op("set.create", owner(), { slug: "123e4567-e89b-12d3-a456-426614174000", name: "Id", goalId: internal.goalId }));
+    expect(e).toMatchObject({ code: "invalid_request", details: [expect.objectContaining({ path: "/slug" })] });
+  });
+
   it("refuses set.create to a viewer and to a token without sets:write", async () => {
     const viewer = await refused(op("set.create", session(internal, VIC, "viewer"), { slug: "nope", name: "Nope", goalId: internal.goalId }));
     expect(viewer.code).toBe("insufficient_scope");
@@ -273,6 +278,23 @@ describe("publish, versions and rollback", () => {
     expect((await refused(op("channel.rollback", owner(), { ref: slug, channel: "production" }))).code).toBe("invalid_request");
     expect((await stageOf(internal, id))?.rolloutStage).toBe("shadow");
     expect((await auditRows(internal, "channel.rollback")).filter((r) => r.targetId === id)).toHaveLength(2);
+  });
+
+  it("refuses a rollback to a newer version or one this channel never served", async () => {
+    const { slug } = await liveSet();
+    await editDraft(slug, relabel("staging only"));
+    await ok(op("set.publish", owner(), { ref: slug, channel: "staging", changelog: "v2" }, { ifMatch: await draftEtag(slug) }));
+    await editDraft(slug, relabel("v3"));
+    await ok(op("set.publish", owner(), { ref: slug, channel: "production", changelog: "v3" }, { ifMatch: await draftEtag(slug) }));
+    await ok(op("rollout.change", owner(), { ref: slug, channel: "production", stage: "full", reason: "live" }));
+    const bot = await agent(internal, { scopes: ["release:production"] });
+    // v2 is older but was only ever on staging.
+    expect((await refused(op("channel.rollback", bot.ctx, { ref: slug, channel: "production", toVersion: 2 }))).code).toBe("invalid_request");
+    expect(await ok(op("channel.rollback", owner(), { ref: slug, channel: "production", toVersion: 1 }))).toMatchObject({ fromVersion: 3, toVersion: 1 });
+    // A person rolled v3 back; an agent cannot put it live again through rollback.
+    const forward = await refused(op("channel.rollback", bot.ctx, { ref: slug, channel: "production", toVersion: 3 }));
+    expect(forward.code).toBe("invalid_request");
+    expect((await ok<{ channels: { channel: string; version: number }[] }>(op("set.get", owner(), { ref: slug }))).channels.find((c) => c.channel === "production")?.version).toBe(1);
   });
 
   it("never gates a rollback, even for an agent on a controlled production channel", async () => {
@@ -447,8 +469,12 @@ describe("runs, usage and the manifest", () => {
     const low = await ok<{ data: { id: string }[] }>(op("run.list", owner(), { band: "low" }));
     expect(low.data.map((r) => r.id)).toEqual([b]);
     const first = await ok<{ data: { id: string }[]; nextCursor: string }>(op("run.list", owner(), { limit: "1" }));
-    const second = await ok<{ data: { id: string }[] }>(op("run.list", owner(), { limit: "1", cursor: first.nextCursor }));
-    expect(second.data[0]?.id).not.toBe(first.data[0]?.id);
+    const second = await ok<{ data: { id: string }[]; nextCursor: string | null }>(op("run.list", owner(), { limit: "1", cursor: first.nextCursor }));
+    expect(first.data).toHaveLength(1);
+    expect(second.data).toHaveLength(1);
+    // a and b can share created_at, so only the set of ids is fixed, not their order.
+    expect([...first.data, ...second.data].map((r) => r.id).sort()).toEqual([a, b].sort());
+    expect(second.nextCursor).toBeNull();
 
     const one = await ok<{ state: unknown; reviewItems: unknown[] }>(op("run.get", owner(), { id: a }));
     expect(one).toMatchObject({ state: { text: "hi" }, reviewItems: [] });
