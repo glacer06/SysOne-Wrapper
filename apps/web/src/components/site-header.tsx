@@ -15,9 +15,9 @@ export function HeaderLockup() {
   );
 }
 
-/** Mark A (Ascent), the supplied file for light or dark. Its viewBox is 1104.72 by 1044.77. */
+/** Mark A (Ascent), the supplied file for light or dark. Its viewBox is 1104.72 by 1155 (brand kit v1.6 and later). */
 export function MarkA({ width, className, alt = "" }: { width: number; className?: string; alt?: string }) {
-  const height = Math.round((width * 1044.77) / 1104.72);
+  const height = Math.round((width * 1155) / 1104.72);
   return (
     <picture className={className}>
       <source srcSet="/brand/bandwise-mark-A-dark.svg" media="(prefers-color-scheme: dark)" />
