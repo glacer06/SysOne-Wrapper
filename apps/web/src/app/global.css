@@ -221,47 +221,40 @@ picture {
   flex-shrink: 0;
 }
 
-/* The header pairing: the unloaded ant facing right, then the typed wordmark. The full marks with
-   the B appear at size in the hero, the brand moment and the footer. */
-.wordmark-pair {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.3em;
-  font-size: 23px;
+/* The header logo: the supplied primary lockup (mark A with the wordmark, kit v1.7), one file per
+   theme. At 190px wide the lockup's wordmark stands about 17px from the top of the b to the
+   baseline, the same as the 23px typed wordmark it replaced. The art stays above its 160px minimum
+   and inside the 44px link, so the header keeps its height. */
+.header-lockup {
+  display: block;
+  width: 190px;
 }
 
-/* The ant's body sits between the wordmark's x-height and cap height, and its feet stand on the
-   baseline. The box crops the supplied drawing (1400 units square) to the ant, 1014 by 357 units,
-   which leaves the trail out. */
-.header-ant {
-  --ant-h: 0.57em; /* 40% smaller than the first cut (Nick, 2026-10-01). */
-  position: relative;
-  display: inline-block;
-  flex-shrink: 0;
-  overflow: hidden;
-  width: calc(var(--ant-h) * 1014 / 357);
-  height: var(--ant-h);
-}
-
-.header-ant img {
-  position: absolute;
-  left: calc(var(--ant-h) * -236 / 357);
-  top: calc(var(--ant-h) * -518 / 357);
-  width: calc(var(--ant-h) * 1400 / 357);
-  max-width: none;
+.header-lockup img {
+  display: block;
+  width: 100%;
   height: auto;
 }
 
-/* The typed wordmark. */
-.wordmark {
-  font-family: var(--bw-font-display);
-  font-stretch: 125%;
-  font-weight: 800;
-  letter-spacing: var(--bw-track-display);
-  font-size: 23px;
-  line-height: 1;
-  color: var(--bw-text);
-  text-transform: lowercase;
+.header-lockup .header-lockup-dark {
+  display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .header-lockup .header-lockup-light {
+    display: none;
+  }
+  :root:not([data-theme="light"]) .header-lockup .header-lockup-dark {
+    display: block;
+  }
+}
+
+[data-theme="dark"] .header-lockup .header-lockup-light {
+  display: none;
+}
+
+[data-theme="dark"] .header-lockup .header-lockup-dark {
+  display: block;
 }
 
 .home-link {
@@ -903,7 +896,7 @@ picture {
 }
 
 /* The carry: the signature motion from brand/bandwise-motion-demo.html, with the unloaded
-   side-view ant (brand kit v1.5) carrying the B on its back (Nick, 2026-10-01).
+   side-view ant (brand kit v1.6) carrying the B on its back (Nick, 2026-10-01).
    Rest state is the end frame: the ant stands at the score, the B is down on the lit band, the
    readout shows. `.is-playing` runs it once from the start: the ant walks in from the left with
    its legs in an alternating tripod gait, the band lights up, the B sets down, the readout fades in.
@@ -1008,20 +1001,20 @@ picture {
 
 /* Each leg turns about its supplied shoulder pivot (the inline transform-origin). The front legs
    turn inside their resting-pose wrappers, which keep their own transforms. Tripod one:
-   front-near, middle-far, rear-near. Tripod two swings opposite. */
+   front-2, middle-1, rear-2 (v1.5 near, far, near). Tripod two swings opposite. */
 .carry-art [class^="leg-"] {
   transform-box: view-box;
 }
 
-.carry-art .leg-front-near,
-.carry-art .leg-middle-far,
-.carry-art .leg-rear-near {
+.carry-art .leg-front-2,
+.carry-art .leg-middle-1,
+.carry-art .leg-rear-2 {
   transform: rotate(calc(sin(var(--walk) * var(--steps) * 360deg) * var(--stride)));
 }
 
-.carry-art .leg-front-far,
-.carry-art .leg-middle-near,
-.carry-art .leg-rear-far {
+.carry-art .leg-front-1,
+.carry-art .leg-middle-2,
+.carry-art .leg-rear-1 {
   transform: rotate(calc(sin(var(--walk) * var(--steps) * 360deg) * var(--stride) * -1));
 }
 
@@ -1743,18 +1736,84 @@ input[type="range"] {
 
 /* Templates */
 
-.cases {
+.tpl-tablist {
   display: grid;
-  gap: var(--bw-space-7);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--bw-space-2);
+  margin-bottom: var(--bw-space-4);
 }
 
-.case-group h3 {
+@media (min-width: 640px) {
+  .tpl-tablist {
+    display: flex;
+    gap: var(--bw-space-1);
+    border-bottom: var(--bw-border-width) solid var(--bw-border-strong);
+    margin-bottom: 0;
+  }
+}
+
+.tpl-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--bw-space-2);
+  min-height: 44px;
+  padding: 0 var(--bw-space-4);
+  background: none;
+  border: var(--bw-border-width) solid var(--bw-border-control);
+  border-radius: var(--bw-radius-sm);
+  font: 500 var(--bw-text-small) / 1.2 var(--bw-font-body);
+  color: var(--bw-text-muted);
+  cursor: pointer;
+}
+
+@media (min-width: 640px) {
+  .tpl-tab {
+    border-color: transparent;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
+    margin-bottom: -1px;
+  }
+}
+
+.tpl-tab:hover {
+  color: var(--bw-text);
+}
+
+.tpl-tab[aria-selected="true"] {
+  color: var(--bw-text);
+  border-color: var(--bw-text);
+}
+
+@media (min-width: 640px) {
+  .tpl-tab[aria-selected="true"] {
+    border-color: transparent;
+    border-bottom-color: var(--bw-text);
+  }
+}
+
+.tpl-tab:focus-visible {
+  outline: var(--bw-focus-width) solid var(--bw-focus);
+  outline-offset: var(--bw-focus-offset);
+}
+
+.tpl-tab-count {
+  font-size: var(--bw-text-caption);
+  color: var(--bw-text-muted);
+}
+
+.tpl-panel[hidden] {
+  display: none;
+}
+
+.tpl-panel-title {
+  display: none;
   font: 500 var(--bw-text-caption) / var(--bw-lh-caption) var(--bw-font-mono);
   font-stretch: normal;
   letter-spacing: var(--bw-track-label);
   text-transform: uppercase;
   color: var(--bw-text-muted);
-  padding-bottom: var(--bw-space-3);
+  padding: var(--bw-space-5) 0 var(--bw-space-3);
   border-bottom: var(--bw-border-width) solid var(--bw-border-strong);
 }
 
@@ -1766,16 +1825,25 @@ input[type="range"] {
 
 .case {
   display: grid;
-  gap: var(--bw-space-3);
-  padding: var(--bw-space-5) 0;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--bw-space-2) var(--bw-space-4);
+  padding: var(--bw-space-3) 0;
   border-bottom: var(--bw-border-width) solid var(--bw-border);
+}
+
+.case-main {
+  grid-column: 1 / -1;
 }
 
 @media (min-width: 960px) {
   .case {
     grid-template-columns: minmax(0, 1fr) auto auto;
-    align-items: start;
     gap: var(--bw-space-6);
+  }
+
+  .case-main {
+    grid-column: auto;
   }
 }
 
@@ -1821,6 +1889,16 @@ code {
   white-space: nowrap;
   gap: var(--bw-space-2);
   align-content: start;
+}
+
+@media (max-width: 639px) {
+  .case-types {
+    gap: var(--bw-space-1);
+  }
+
+  .case .send-agent > summary {
+    padding: 0 var(--bw-space-2);
+  }
 }
 
 @media (min-width: 960px) {
@@ -2337,8 +2415,19 @@ code {
   line-height: var(--bw-lh-h3);
 }
 
+.legal h3 {
+  margin: var(--bw-space-5) 0 var(--bw-space-2);
+  font-size: var(--bw-text-body);
+  font-weight: 600;
+}
+
 .legal p + p {
   margin-top: var(--bw-space-3);
+}
+
+.legal code {
+  font-family: var(--bw-font-mono);
+  font-size: 0.9em;
 }
 
 .legal ul {

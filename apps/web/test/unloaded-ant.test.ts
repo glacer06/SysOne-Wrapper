@@ -9,7 +9,7 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 const brand = (path: string) => readFileSync(join(root, "../../brand", path), "utf8");
 const attrs = (svg: string, name: string) => [...svg.matchAll(new RegExp(` ${name}="([^"]*)"`, "g"))].map((m) => m[1]);
 
-describe("the unloaded ant (brand kit v1.5)", () => {
+describe("the unloaded ant (brand kit v1.7)", () => {
   for (const [theme, inline] of [
     ["light", UNLOADED_ANT_LIGHT],
     ["dark", UNLOADED_ANT_DARK],
@@ -27,10 +27,8 @@ describe("the unloaded ant (brand kit v1.5)", () => {
     });
   }
 
-  it("serves the header and ruler files unchanged", () => {
+  it("serves the ruler's B files unchanged", () => {
     const files = [
-      ["unloaded", "bandwise-ant-unloaded-A-r4-right-light.svg"],
-      ["unloaded", "bandwise-ant-unloaded-A-r4-right-dark.svg"],
       ["marks", "bandwise-b-monogram-light.svg"],
       ["marks", "bandwise-b-monogram-dark.svg"],
     ] as const;

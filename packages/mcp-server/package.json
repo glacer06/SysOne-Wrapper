@@ -2,7 +2,7 @@
   "name": "@bandwise/mcp-server",
   "version": "0.0.0",
   "private": true,
-  "description": "Curated MCP tools over management operations. Phase 3 stdio, Phase 7 HTTP.",
+  "description": "Bandwise Gate over MCP (ADR-021): stateless streamable HTTP, six preset tools. Phase 7 brings the full list.",
   "type": "module",
   "exports": {
     ".": {
@@ -19,6 +19,9 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
+  },
+  "dependencies": {
+    "@bandwise/core": "workspace:*"
   },
   "devDependencies": {
     "@bandwise/config": "workspace:*",

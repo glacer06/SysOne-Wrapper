@@ -1,0 +1,15 @@
+{
+  "name": "bandwise",
+  "description": "Bandwise plugins for Claude Code.",
+  "owner": {
+    "name": "Bandwise",
+    "url": "https://www.bandwise.dev"
+  },
+  "plugins": [
+    {
+      "name": "bandwise-gate",
+      "source": "./plugins/claude-code",
+      "description": "Checks whether a coding agent is really done, and whether an action needs a person, with a confidence band and a cost."
+    }
+  ]
+}

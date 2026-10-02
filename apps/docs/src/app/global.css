@@ -150,50 +150,25 @@ pre {
   color: var(--bw-text-muted);
 }
 
-/* The nav title: the unloaded ant facing right, then the typed wordmark. The ant's body sits
-   between the wordmark's x-height and cap height and its feet stand on the baseline. The box crops
-   the supplied drawing (1400 units square) to the ant, 1014 by 357 units, which leaves the trail
-   out. One file per theme, switched with the docs `dark` class like the hero mark. */
-.bw-wordmark-pair {
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.3em;
-  font-size: 20px;
-}
-.bw-header-ant {
-  --ant-h: 0.57em; /* 40% smaller than the first cut (Nick, 2026-10-01). */
-  position: relative;
-  display: inline-block;
+/* The nav title: the supplied primary lockup, one file per theme, switched with the docs `dark`
+   class like the hero mark. At 168px wide the lockup's wordmark matches the 20px typed wordmark it
+   replaced (15px from the top of the b to the baseline), stays above the 160px minimum and fits
+   the nav without making it taller. */
+.bw-header-logo {
+  display: flex;
   flex-shrink: 0;
-  overflow: hidden;
-  width: calc(var(--ant-h) * 1014 / 357);
-  height: var(--ant-h);
+  width: 168px;
 }
-.bw-header-ant img {
-  position: absolute;
-  left: calc(var(--ant-h) * -236 / 357);
-  top: calc(var(--ant-h) * -518 / 357);
-  width: calc(var(--ant-h) * 1400 / 357);
-  max-width: none;
+.bw-header-logo img {
+  width: 100%;
   height: auto;
 }
-.bw-header-ant-dark,
-.dark .bw-header-ant-light {
+.bw-header-logo-dark,
+.dark .bw-header-logo-light {
   display: none;
 }
-.dark .bw-header-ant-dark {
+.dark .bw-header-logo-dark {
   display: block;
-}
-
-/* The nav wordmark, typed. */
-.bw-wordmark {
-  font-family: var(--font-heading), "Helvetica Neue", Arial, sans-serif;
-  font-stretch: 125%;
-  font-weight: 800;
-  font-size: 20px;
-  line-height: 1;
-  letter-spacing: var(--bw-track-display);
-  color: var(--bw-text);
 }
 
 /* Hero: the supplied mark A on a dotted trail, with thin corner brackets. One file per theme. */

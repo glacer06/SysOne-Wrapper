@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 
 import { SideNav } from "~/components/shell/nav";
 import { UserMenu } from "~/components/shell/user-menu";
-import { Wordmark } from "~/components/shell/wordmark";
+import { HeaderLogo } from "~/components/shell/wordmark";
 import { ToastProvider } from "~/components/ui";
 import { requireConsole } from "~/server/auth/console";
 
@@ -17,16 +17,16 @@ export default async function OrgLayout({ children }: { children: ReactNode }) {
   const { org, user, ctx } = await requireConsole();
   const header = (
     <div className="flex flex-col gap-2">
-      <Wordmark />
+      <HeaderLogo />
       <span className="bw-label truncate" title={org.name}>
         {org.name}
       </span>
     </div>
   );
-  // The phone header carries the same typed wordmark, a size down.
+  // The phone header carries the same lockup at its 160px minimum.
   const compactHeader = (
     <div className="flex min-w-0 items-center gap-3">
-      <Wordmark size="sm" />
+      <HeaderLogo size="sm" />
       <span className="truncate text-sm font-semibold text-bw-text" title={org.name}>
         {org.name}
       </span>

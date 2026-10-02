@@ -115,6 +115,19 @@ The plugin opens to outside users only if the internal shadow period shows Bandw
 
 Reversal: remove the plugin from our marketplace and the connector from the directory, and turn off `/mcp`. Revoking the OAuth grants revokes their agent tokens. Nothing in the API, the CLI or the console depends on the MCP slice.
 
+## Implementation notes (2026-10-01, NSI-743)
+
+These follow the decision and change no part of it.
+
+- `bandwise_get_savings` runs `usage.get` (scope `usage:read`), not `report.get`. `usage.get` is the operation that returns spend and savings per set today; `report.get` is still a stub. The OAuth default grant in section 4 therefore uses `usage:read` where it says `reports:read`.
+- A tool appears in `tools/list` only when the token holds its scope and the operation has a handler. `feedback.report` has none yet, so `bandwise_report_feedback` is defined but hidden until it does.
+- The check tools do not take `content_preview`. The hook drops it too, so file contents never reach the gate.
+- The check tools run through `runCheckForCaller`, the same path as `POST /api/v1/sets/{ref}/run`, not through `runOperation`: `set.run` has no registry handler because its route serves it. The run gates, run caps, spend caps and the `RunResult` envelope apply the same way. Runs from `/mcp` are stored with source `api`, like the route, because `RunRequest.source` has no `mcp` value and the contracts are frozen; the token's `client` tells MCP traffic apart for now.
+- The hooks read `BANDWISE_TOKEN` and the MCP entry reads `BANDWISE_MCP_TOKEN`, so the hook token stays run-only when someone adds the review scopes for the MCP tools. The hooks pin `@bandwise/cli@0.3.0` and run it from the plugin folder, so an opened project cannot supply its own copy.
+- Security review findings fixed before PJ's review (2026-10-01): the redaction patterns had unbounded runs that backtracked on a few KB of crafted input and froze the server, so the runs are bounded, each field is cut before it is redacted, and `/mcp` refuses a field over its `maxLength`. The CLI copy got the same fix.
+- PJ's Security review of PR #27: a quoted secret cut at its length limit, or sent already cut, now redacts through the end of the field. Check results carry no set-author text: answers show as plain option keys, the set's criteria never reach the model, and every result says it grants no permission. This narrows section 2's "the reason" to the answer code until reason text has a safe, server-owned form.
+- The boundary rules let the console import `@bandwise/mcp-server`, which section 2 needs. `mcp-server` itself still imports only core contracts, never the database or the SDK.
+
 ## Decisions (Nick, 2026-10-01)
 
 1. The name is **Bandwise Gate** in both stores.

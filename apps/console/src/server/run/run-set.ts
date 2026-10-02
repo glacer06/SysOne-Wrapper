@@ -12,6 +12,8 @@
 import {
   type JsonValue,
   type PointerChannel,
+  type QuestionSetSpec,
+  type ResolvedRun,
   type RunDryRunResult,
   type RunOptions,
   type RunPorts,
@@ -31,6 +33,7 @@ import {
   isRunRefusedError,
   latencyBudgetMs,
   runQuestionSet,
+  shapeState,
   staticKeyResolver,
 } from "@bandwise/core";
 import { type BandwiseDb, createRunSink } from "@bandwise/db";
@@ -117,6 +120,46 @@ export async function runSetForCaller(
   assertRunCaller(ctx, orgSlug);
 
   const resolved = await deps.db.withTenant(ctx, (tx) => resolveRun(tx, ctx, { ref: input.ref, channel: input.channel }));
+  return runResolved(ctx, input, resolved, deps, signal);
+}
+
+export interface CheckInput {
+  /** The set to run, a slug on the caller's channel. */
+  ref: string;
+  /** Fields from an agent host, before shaping. */
+  candidate: Readonly<Record<string, unknown>>;
+  /** Fields never sent, even when the set names them. */
+  drop?: readonly string[];
+}
+
+/**
+ * Run a check for an agent host (ADR-021, Bandwise Gate). The same gates and engine as
+ * runSetForCaller, but the state is built on the server from the resolved set: only the fields its
+ * input schema names, cut to maxLength, with secret-shaped text redacted (core's shapeState, the
+ * same rules as the CLI hook). Returns the spec too, so the caller can explain the answer.
+ */
+export async function runCheckForCaller(
+  ctx: TenantContext,
+  orgSlug: string,
+  input: CheckInput,
+  deps: RunSetDeps,
+  signal: AbortSignal = new AbortController().signal,
+): Promise<{ result: RunResult; spec: QuestionSetSpec }> {
+  assertRunCaller(ctx, orgSlug);
+  const resolved = await deps.db.withTenant(ctx, (tx) => resolveRun(tx, ctx, { ref: input.ref }));
+  const state = shapeState(input.candidate, resolved.spec.input.schema, input.drop ?? []) as JsonValue;
+  const result = await runResolved(ctx, { ref: input.ref, state }, resolved, deps, signal);
+  // runResolved returns a dry run only when options.dryRun is set, and a check never sets it.
+  return { result: result as RunResult, spec: resolved.spec };
+}
+
+async function runResolved(
+  ctx: TenantContext,
+  input: RunSetInput,
+  resolved: ResolvedRun,
+  deps: RunSetDeps,
+  signal: AbortSignal,
+): Promise<RunResult | RunDryRunResult> {
   const base = serverRunPorts(deps);
   // The engine keeps only the code of a rate refusal; the wait goes out as Retry-After.
   let retryAfterMs: number | undefined;

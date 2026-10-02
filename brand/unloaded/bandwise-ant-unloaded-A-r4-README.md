@@ -16,8 +16,8 @@ Each SVG has a 1400 x 1400 viewBox. Transparent PNG masters are 1800 x 1800. The
 - `trail`: independent dots and teal endpoint
 - `ant`: ant shapes
 - `body`: head with eye knockout, thorax and abdomen
-- `leg-rear-far`, `leg-rear-near`, `leg-middle-far`, `leg-middle-near`, `leg-front-far`, `leg-front-near`: six leg groups with `data-pivot-x` and `data-pivot-y` metadata
+- `leg-rear-1`, `leg-rear-2`, `leg-middle-1`, `leg-middle-2`, `leg-front-1`, `leg-front-2`: six leg groups with `data-pivot-x` and `data-pivot-y` metadata
 
 The front-leg groups sit inside `front-far-pose` and `front-near-pose` wrappers. Preserve those resting-pose transforms and animate the inner leg groups around their indicated shoulder pivots. These are static animation-ready assets, not a completed walk cycle.
 
-Palette, ant outlines and eye come from the supplied brand kit. Trail dots were rebuilt as equal circles to make the line uniform, continuous and independent of the feet. Included in kit v1.5.
+Palette, ant outlines and eye come from the supplied brand kit. Trail dots were rebuilt as equal circles to make the line uniform, continuous and independent of the feet. Included in kit v1.6. See README.md for the shared A/C leg-ID mapping.

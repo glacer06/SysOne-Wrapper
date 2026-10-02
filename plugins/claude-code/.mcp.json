@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "bandwise": {
+      "type": "http",
+      "url": "https://app.bandwise.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer ${BANDWISE_MCP_TOKEN:-}"
+      }
+    }
+  }
+}

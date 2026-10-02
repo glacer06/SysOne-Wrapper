@@ -2,21 +2,15 @@ import Link from "next/link";
 import { docsUrl, kitUrl, productName } from "~/site";
 
 /**
- * The header pairing (Nick, 2026-10-01): the unloaded side-view ant facing right, then the typed
- * wordmark in lowercase Archivo display. The ant is the supplied file for light or dark, cropped by
- * its box to the ant above its trail (the drawing's units 236 to 1250 across, 518 to 875 down).
- * It is decorative: the home link carries the name.
+ * The header logo (Nick, 2026-10-01): the supplied primary lockup, mark A (the loaded ant on its
+ * trail, carrying the B) with the lowercase wordmark, kit v1.7. One file per theme, switched in
+ * global.css. The viewBox is 1798 by 408. The images are decorative: the home link carries the name.
  */
-export function Wordmark() {
+export function HeaderLockup() {
   return (
-    <span className="wordmark-pair">
-      <span className="header-ant" aria-hidden="true">
-        <picture>
-          <source srcSet="/brand/bandwise-ant-unloaded-A-r4-right-dark.svg" media="(prefers-color-scheme: dark)" />
-          <img src="/brand/bandwise-ant-unloaded-A-r4-right-light.svg" alt="" width={74} height={74} />
-        </picture>
-      </span>
-      <span className="wordmark">bandwise</span>
+    <span className="header-lockup" aria-hidden="true">
+      <img className="header-lockup-light" src="/brand/bandwise-lockup-horizontal-A-light.svg" alt="" width={1798} height={408} />
+      <img className="header-lockup-dark" src="/brand/bandwise-lockup-horizontal-A-dark.svg" alt="" width={1798} height={408} />
     </span>
   );
 }
@@ -37,7 +31,7 @@ export function SiteHeader() {
     <header className="site-header">
       <div className="wrap">
         <Link href="/" className="home-link" aria-label={`${productName} home`}>
-          <Wordmark />
+          <HeaderLockup />
         </Link>
         <nav className="site-nav" aria-label="Main">
           <Link href="/#how">How it works</Link>

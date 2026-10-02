@@ -439,3 +439,18 @@ describe("the key rule", () => {
     expect(importers.map((f) => f.slice(src.length))).toEqual(["live/transport.ts"]);
   });
 });
+
+describe("redaction parity with core", () => {
+  // Hosted hook mode loads without @bandwise/core, so the CLI keeps its own copy of the rules. The
+  // server's MCP path uses core's. Both must redact the same way (ADR-021).
+  it("keeps live/redact.ts identical to packages/core/src/redact/index.ts below the header", () => {
+    const body = (file: URL): string => {
+      const text = readFileSync(file, "utf8");
+      return text.slice(text.indexOf("const SECRET_PATTERNS"));
+    };
+    const cli = body(new URL("./redact.ts", import.meta.url));
+    const core = body(new URL("../../../core/src/redact/index.ts", import.meta.url));
+    expect(cli.length).toBeGreaterThan(0);
+    expect(cli).toBe(core);
+  });
+});

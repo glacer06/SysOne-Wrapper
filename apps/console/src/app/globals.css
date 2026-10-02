@@ -107,42 +107,16 @@ body {
     color: var(--bw-text);
   }
 
-  /* The header pairing, top-left in the sidebar and the phone header: the unloaded ant facing
-     right, then the typed wordmark. Size comes from the caller. The ant's body sits between the
-     wordmark's x-height and cap height and its feet stand on the baseline. The box crops the
-     supplied drawing (1400 units square) to the ant, 1014 by 357 units, which leaves the trail out. */
-  .bw-wordmark-pair {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 0.3em;
+  /* The header logo, top-left in the sidebar and the phone header: the supplied primary lockup,
+     one file per theme (.bw-for-*). Width comes from the caller: 168px sets the lockup's wordmark
+     at the size of the 20px typed wordmark it replaced, and 160px is the lockup's minimum. The
+     box is a flex row so the image sits on no text baseline. */
+  .bw-header-logo {
+    display: flex;
   }
-  .bw-header-ant {
-    --ant-h: 0.57em; /* 40% smaller than the first cut (Nick, 2026-10-01). */
-    position: relative;
-    display: inline-block;
-    flex-shrink: 0;
-    overflow: hidden;
-    width: calc(var(--ant-h) * 1014 / 357);
-    height: var(--ant-h);
-  }
-  .bw-header-ant img {
-    position: absolute;
-    left: calc(var(--ant-h) * -236 / 357);
-    top: calc(var(--ant-h) * -518 / 357);
-    width: calc(var(--ant-h) * 1400 / 357);
-    max-width: none;
+  .bw-header-logo img {
+    width: 100%;
     height: auto;
-  }
-
-  /* The typed wordmark. Size comes from the caller. */
-  .bw-wordmark {
-    font-family: var(--font-display);
-    font-stretch: 125%;
-    font-weight: 800;
-    letter-spacing: var(--bw-track-display);
-    line-height: 1;
-    color: var(--bw-text);
-    text-transform: lowercase;
   }
 
   /* Mono 12px caps in the muted color, for labels above values and table heads. */

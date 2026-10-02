@@ -52,6 +52,17 @@ Built in five slices, one PR each:
 - [x] Runs explorer and a savings view per set. Built 2026-10-01: `/runs` filters by time, set, channel, status, source and band, and `/runs/{id}` shows decisions, bands, policy and allowed actions, route, cost, savings, warnings and the state when it was kept. `/savings` shows spend, estimated savings and LLM calls avoided per set and per UTC day (`usage.get` gained `days`), with a plain SVG chart and a table of the same numbers. Every set shows its production stage next to its slug
 - [x] Review queue for medium and low band decisions. Built 2026-10-01: `/review` with status tabs and filters, and `/review/{id}` to agree with one keystroke, correct with a reason, or dismiss after a confirm. `review.list`, `review.resolve`, `review.dismiss` and `review.confirm` have real handlers with audit rows and `run_feedback` truth rows; an agent's answer waits for a person to confirm it
 
+## D4: Bandwise Gate (ADR-021, NSI-743)
+
+The first plugin: a Claude Code plugin and a remote MCP connector that check whether the agent is really done and whether an action needs a person. Steps follow ADR-021, Rollout. OAuth (step 4) is its own PR with a Security review.
+
+- [x] `@bandwise/core` holds the input shaping and secret scrub (`src/redact`); the CLI keeps a copy for hosted hook mode, with a test that fails if the two drift.
+- [x] Step 1 code: `packages/mcp-server` (stateless streamable HTTP, the six preset tools, the check result text) and `/mcp` in the console (`server/mcp/handler.ts`, `app/mcp/route.ts`). Agent tokens only, `internal` only, no browser Origin. Check tools run through `runCheckForCaller`, which shapes and redacts the input on the server; the others through `runOperation`. A tool shows only when the token has its scope and the operation has a handler, so `bandwise_report_feedback` appears once `feedback.report` gets one. Live once D2e lands; exit: MCP Inspector runs every tool.
+- [x] Step 2 code: `plugins/claude-code` is the `bandwise-gate` plugin (skill, Stop and PreToolUse hooks through `npx @bandwise/cli@0.3 hook`, the `/mcp` entry), listed in `.claude-plugin/marketplace.json`. `claude plugin validate --strict` passes. Exit: Nick and PJ install it; see `docs/runbooks/bandwise-gate.md`. Needs `@bandwise/cli` 0.3 on npm.
+- [x] The privacy notice on www names TypeSafe, Supabase, Vercel and Anthropic (the shadow baseline) as processors (version 2, 2026-10-01).
+- [ ] Step 3: two to four weeks on `internal` in shadow with the parallel Haiku baseline, then the section 6 bar, read by Nick.
+- [ ] Step 4: OAuth 2.1 (CIMD, one org per grant), its own PR, PJ's Security review before merge.
+
 ## Exit gate
 - A week of receipts from real Claude Code sessions on this repo, with `bandwise report` showing System One spend and estimated savings per set.
 - At least one set moved from `shadow` to `controlled` by Nick.

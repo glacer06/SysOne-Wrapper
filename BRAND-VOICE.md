@@ -1,6 +1,6 @@
 # Bandwise brand voice (v1.0)
 
-Source: the brand kit v1 that PJ delivered, locked in by Nick on 2026-10-01 (ADR-022). The writing rules in `CLAUDE.md` still apply on top of this file.
+Source: the brand kit v1 that PJ delivered, locked in by Nick on 2026-10-01 (ADR-022), now at v1.7 (`brand/CHANGES.md`). The writing rules in `CLAUDE.md` still apply on top of this file.
 
 ## One line
 

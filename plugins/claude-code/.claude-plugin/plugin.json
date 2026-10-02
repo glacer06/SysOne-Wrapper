@@ -1,0 +1,13 @@
+{
+  "name": "bandwise-gate",
+  "displayName": "Bandwise Gate",
+  "version": "0.1.0",
+  "description": "Checks whether a coding agent is really done, and whether an action needs a person, with a confidence band and a cost.",
+  "author": {
+    "name": "Bandwise",
+    "url": "https://www.bandwise.dev"
+  },
+  "homepage": "https://www.bandwise.dev",
+  "repository": "https://github.com/glacer06/bandwise",
+  "keywords": ["bandwise", "done-check", "hooks", "confidence", "review", "agents", "mcp"]
+}

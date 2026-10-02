@@ -220,7 +220,7 @@ Phase 5 adds a GitHub Action that comments `bandwise spec diff` on PRs and runs 
 
 ## MCP server
 
-- Package `packages/mcp-server`, owned by Integrations. stdio transport in Phase 3, HTTP transport in Phase 7.
+- Package `packages/mcp-server`, owned by Integrations. stdio transport in Phase 3, HTTP transport in Phase 7. ADR-021 pulls a six-tool HTTP slice forward for Bandwise Gate: `/mcp` in the console, stateless, served in process over `runOperation` and `runCheckForCaller`. Those tools are presets named `bandwise_*`; the curated list below arrives with Phase 3 and Phase 7.
 - It authenticates with an agent token (`BANDWISE_TOKEN` or a profile). Never an `sk_` app token, never a TypeSafe key.
 - Tools wrap registry operations. Input schemas are the operation zod schemas converted to JSON Schema. `readOnlyHint` and `destructiveHint` come from the registry's `readOnly` and `destructive`.
 - A tool that hits the approval gate returns the pending approval and its URL. The agent should tell the person and poll `get_approval`.

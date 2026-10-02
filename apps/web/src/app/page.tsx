@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { BandBadge, BandLegend, ConfidenceRuler } from "~/components/confidence-ruler";
 import { SendToAgent } from "~/components/send-to-agent";
+import { TemplateTabs } from "~/components/template-tabs";
 import { CopyLine } from "~/components/copy-line";
 import { EarlyAccessForm } from "~/components/early-access-form";
 import { HowSteps, type CodeLine, type HowStep } from "~/components/how-steps";
@@ -386,48 +387,45 @@ function Calculator() {
 }
 
 function UseCases() {
-  const groups = (Object.keys(groupLabels) as Array<UseCase["group"]>).map((g) => ({
-    g,
-    items: useCases.filter((u) => u.group === g),
-  }));
+  const tabs = (Object.keys(groupLabels) as Array<UseCase["group"]>).map((g) => {
+    const items = useCases.filter((u) => u.group === g);
+    return {
+      id: g,
+      label: groupLabels[g],
+      count: items.length,
+      panel: (
+        <ul className="case-list">
+          {items.map((u) => (
+            <li className="case" key={u.id}>
+              <div className="case-main">
+                <p className="case-title">
+                  <a href={templateDocs(u.id)}>{u.title}</a>
+                </p>
+                <p className="case-job">{u.job}</p>
+              </div>
+              <p className="case-types" aria-label="Question types">
+                {u.types.map((t) => (
+                  <span className="chip" key={t}>
+                    {typeLabels[t]}
+                  </span>
+                ))}
+              </p>
+              <SendToAgent title={u.title} docsPage={templateDocs(u.id)} id={u.id} />
+            </li>
+          ))}
+        </ul>
+      ),
+    };
+  });
   return (
     <section className="section" id="templates" aria-labelledby="templates-title">
       <div className="wrap">
         <div className="section-head">
           <p className="label">Templates</p>
           <h2 id="templates-title">Nine decisions to start from.</h2>
-          <p>
-            Each template is a working spec with example and borderline states. They are checked to run, not measured for
-            accuracy. Tune them on your own data before anything acts on its own.
-          </p>
+          <p>Each is a working spec, checked to run and not measured for accuracy.</p>
         </div>
-        <div className="cases">
-          {groups.map(({ g, items }) => (
-            <div className="case-group" key={g}>
-              <h3>{groupLabels[g]}</h3>
-              <ul className="case-list">
-                {items.map((u) => (
-                  <li className="case" key={u.id}>
-                    <div>
-                      <p className="case-title">
-                        <a href={templateDocs(u.id)}>{u.title}</a>
-                      </p>
-                      <p className="case-job">{u.job}</p>
-                    </div>
-                    <p className="case-types" aria-label="Question types">
-                      {u.types.map((t) => (
-                        <span className="chip" key={t}>
-                          {typeLabels[t]}
-                        </span>
-                      ))}
-                    </p>
-                    <SendToAgent title={u.title} docsPage={templateDocs(u.id)} id={u.id} />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
+        <TemplateTabs tabs={tabs} label="Template groups" />
       </div>
     </section>
   );
@@ -618,7 +616,7 @@ function BrandMoment() {
             src="/brand/bandwise-lockup-horizontal-A-dark.svg"
             alt={productName}
             width={680}
-            height={Math.round((680 * 744) / 2168)}
+            height={Math.round((680 * 408) / 1798)}
           />
         </picture>
       </DrawOnView>

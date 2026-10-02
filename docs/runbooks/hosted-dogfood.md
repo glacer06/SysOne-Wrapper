@@ -67,6 +67,8 @@ curl -s -o /dev/null -w "%{http_code}\n" -X POST https://app.bandwise.dev/api/v1
 
 **PJ.** Check in Vercel that Preview has none of the variables above, and that only Nick and PJ can read Production env.
 
+Done 2026-10-01 (PJ, on Nick's handoff): `BANDWISE_TOKEN_PEPPER` (in the team vault), `TYPESAFE_API_KEY` (the dedicated hosted-server key), `SYSTEM_ONE_TRANSPORT`, `BETTER_AUTH_URL` and `BANDWISE_CONSOLE_EMAILS` set on Production only; `DATABASE_URL` and `AUTH_SECRET` confirmed; Preview unchanged. Production redeployed, and the unauthenticated run call returns 401. Still open: a signed-in call (section 6) and the check that only Nick and PJ can read Production env.
+
 ## 3. Bootstrap the `internal` org
 
 **Nick.** In this repo on `main`, in a fresh terminal. The script reads `DATABASE_URL` from the shell. Use the same `bandwise_console` pooler string as Vercel, so the bootstrap runs under RLS like the app.
