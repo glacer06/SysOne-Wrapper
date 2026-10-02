@@ -8,8 +8,8 @@ import { cx } from "../ui/cx";
 // brand/marks, copied to public/brand, never redrawn or recolored. Each comes as a file for light
 // backgrounds and one for dark; CSS shows the one for the theme (globals.css, .bw-for-*).
 
-/** Mark A's viewBox is 1104.72 by 1044.77. */
-const MARK_A_RATIO = 1044.77 / 1104.72;
+/** Mark A's viewBox is 1104.72 by 1155 (brand kit v1.6 and later). */
+const MARK_A_RATIO = 1155 / 1104.72;
 
 /** The horizontal lockup A's viewBox is 1798 by 408 (kit v1.7). */
 const LOCKUP_A = { width: 1798, height: 408 };
